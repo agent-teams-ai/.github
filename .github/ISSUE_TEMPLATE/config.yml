@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/agent-teams-ai/.github/security
-    about: Use private vulnerability reporting instead of a public issue.
+    url: https://github.com/agent-teams-ai/.github/blob/main/SECURITY.md
+    about: Read the policy, then report privately in the affected repository.
