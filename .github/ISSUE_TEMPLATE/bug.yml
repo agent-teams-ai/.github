@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible defect without sensitive data.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, private workspace content, or security vulnerabilities.
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What failed and who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest safe, deterministic reproduction.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
