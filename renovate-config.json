@@ -1,0 +1,62 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Agent Teams dependency update baseline. Repositories own product-specific overrides.",
+  "extends": [
+    "config:best-practices"
+  ],
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard",
+  "labels": [
+    "dependencies"
+  ],
+  "prConcurrentLimit": 5,
+  "branchConcurrentLimit": 7,
+  "prHourlyLimit": 2,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "separateMajorMinor": true,
+  "separateMinorPatch": false,
+  "vulnerabilityAlerts": {
+    "labels": [
+      "security",
+      "dependencies"
+    ],
+    "minimumReleaseAge": null,
+    "schedule": []
+  },
+  "packageRules": [
+    {
+      "description": "Foundation upgrades require an explicit reviewed migration.",
+      "matchPackageNames": [
+        "@agent-teams/engineering-foundation"
+      ],
+      "rangeStrategy": "pin",
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "engineering-foundation"
+      ]
+    },
+    {
+      "description": "Keep Node.js type declarations on the Node 24 line.",
+      "matchPackageNames": [
+        "@types/node"
+      ],
+      "allowedVersions": "24.x"
+    },
+    {
+      "description": "Group non-major Oxc toolchain updates without automerging them.",
+      "matchPackageNames": [
+        "oxlint",
+        "oxlint-tsgolint"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "Oxc toolchain",
+      "automerge": false
+    }
+  ]
+}

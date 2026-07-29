@@ -1,0 +1,20 @@
+{
+  "name": "@agent-teams/organization-governance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Validation tooling for Agent Teams organization defaults.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "pnpm": ">=11.17.0 <12"
+  },
+  "scripts": {
+    "check": "pnpm renovate:validate && node scripts/check-community-files.mjs",
+    "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json"
+  },
+  "devDependencies": {
+    "renovate": "43.280.5"
+  }
+}
