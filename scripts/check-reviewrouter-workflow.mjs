@@ -5,8 +5,8 @@ import { parse } from "yaml";
 const reviewPath = ".github/workflows/reviewrouter-codex.yml";
 const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
 const reusablePath = ".github/workflows/reviewrouter-reusable.yml";
-const actionCommit = "626739854b5c67d94b3f0118738c106b4a232c41";
-const sharedActionCommit = "581133471dcc66941a39510cb1e8f2e1c5070a96";
+const actionCommit = "e982a5e3aebe71404dac948fd67cb7291e8be0fb";
+const sharedActionCommit = "e982a5e3aebe71404dac948fd67cb7291e8be0fb";
 const expectedReviewUses =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${actionCommit}`;
 const expectedReusableUses =
