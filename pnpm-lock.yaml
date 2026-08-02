@@ -11,6 +11,9 @@ importers:
       renovate:
         specifier: 43.280.5
         version: 43.280.5(supports-color@7.2.0)(typanion@3.14.0)
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
 
 packages:
 
