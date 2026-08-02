@@ -2,8 +2,11 @@ import { readFile } from "node:fs/promises";
 
 import { parse } from "yaml";
 
-const reusablePath = ".github/workflows/reviewrouter-reusable.yml";
-const callerPath = ".github/workflows/reviewrouter.yml";
+const reviewPath = ".github/workflows/reviewrouter-codex.yml";
+const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
+const actionCommit = "626739854b5c67d94b3f0118738c106b4a232c41";
+const expectedReviewUses =
+  `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${actionCommit}`;
 const fullSha = /^[0-9a-f]{40}$/u;
 
 function assert(condition, message) {
@@ -12,68 +15,110 @@ function assert(condition, message) {
   }
 }
 
-async function loadYaml(path) {
-  return parse(await readFile(path, "utf8"));
+function samePermissions(actual, expected) {
+  return (
+    JSON.stringify(Object.entries(actual ?? {}).sort()) ===
+    JSON.stringify(Object.entries(expected).sort())
+  );
 }
 
-const reusable = await loadYaml(reusablePath);
-const caller = await loadYaml(callerPath);
+async function loadWorkflow(path) {
+  const source = await readFile(path, "utf8");
+  return { source, workflow: parse(source) };
+}
 
-assert(reusable.on?.workflow_call, `${reusablePath} must expose workflow_call.`);
+const review = await loadWorkflow(reviewPath);
+const interaction = await loadWorkflow(interactionPath);
+
+assert(review.workflow.on?.pull_request, `${reviewPath} must use pull_request.`);
 assert(
-  JSON.stringify(reusable.permissions) === JSON.stringify({ contents: "read" }),
-  `${reusablePath} must default to contents: read.`
+  !review.source.includes("pull_request_target"),
+  `${reviewPath} must not use pull_request_target.`,
+);
+assert(
+  samePermissions(review.workflow.permissions, {}),
+  `${reviewPath} must deny root token permissions.`,
 );
 
-const review = reusable.jobs?.review;
-assert(review, `${reusablePath} must define the review job.`);
-assert(review.permissions?.contents === "read", "Review job must keep contents read-only.");
-for (const permission of ["issues", "pull-requests", "statuses"]) {
-  assert(review.permissions?.[permission] === "write", `Review job must grant ${permission}: write.`);
-}
+const reviewJob = review.workflow.jobs?.["codex-review"];
+assert(reviewJob?.uses === expectedReviewUses, `${reviewPath} must use the immutable T0 workflow.`);
+assert(
+  samePermissions(reviewJob.permissions, {
+    contents: "read",
+    "pull-requests": "read",
+    "id-token": "write",
+  }),
+  "codex-review must keep the Actions token read-only and grant only OIDC write.",
+);
+assert(reviewJob.with?.workflow_schema_version === 2, "codex-review must use workflow schema 2.");
+assert(
+  reviewJob.with?.provider_instance_id === "codex-rotating:1316243981",
+  "codex-review must bind the .github repository provider identity.",
+);
+assert(
+  reviewJob.secrets?.CODEX_AUTH_JSON ===
+    "${{ secrets.REVIEWROUTER_CODEX_AUTH_JSON }}",
+  "codex-review must use the dedicated rotating provider secret.",
+);
 
-const externalUses = review.steps
+const refreshJob = review.workflow.jobs?.["codex-refresh"];
+assert(
+  samePermissions(refreshJob?.permissions, { "id-token": "write" }),
+  "codex-refresh must grant only OIDC write.",
+);
+assert(
+  refreshJob?.steps?.[0]?.with?.["workflow-schema-version"] === "2",
+  "codex-refresh must use workflow schema 2.",
+);
+
+assert(
+  samePermissions(interaction.workflow.permissions, {}),
+  `${interactionPath} must deny root token permissions.`,
+);
+const interactionJob = interaction.workflow.jobs?.interaction;
+assert(
+  samePermissions(interactionJob?.permissions, {
+    contents: "read",
+    issues: "read",
+    "pull-requests": "read",
+    "id-token": "write",
+  }),
+  "interaction must keep the Actions token read-only and grant only OIDC write.",
+);
+assert(
+  interactionJob?.env?.RR_RUNTIME_REF === actionCommit,
+  "interaction must pin the same ReviewRouter runtime commit.",
+);
+assert(
+  interactionJob?.env?.REVIEWROUTER_COMMENT_TOKEN_MODE === "app-oidc",
+  "interaction publication must use the GitHub App OIDC token.",
+);
+
+const externalUses = interactionJob.steps
   .map((step) => step.uses)
   .filter((value) => typeof value === "string" && !value.startsWith("./"));
 for (const value of externalUses) {
   const [, reference = ""] = value.split("@");
   assert(fullSha.test(reference), `External action is not pinned to a full SHA: ${value}`);
 }
+const runtimeCheckout = interactionJob.steps.find(
+  (step) => step.with?.repository === "777genius/review-router",
+);
+assert(runtimeCheckout, "Interaction must checkout the ReviewRouter runtime explicitly.");
 assert(
-  !externalUses.some((value) => value.startsWith("777genius/review-router@")),
-  "ReviewRouter v1.0.76 is a control-plane action and must not be invoked as the legacy action."
+  runtimeCheckout.with.ref === "${{ env.RR_RUNTIME_REF }}",
+  "Interaction checkout must use the pinned runtime environment value.",
 );
 
-const runtimeCheckout = review.steps.find(
-  (step) => step.with?.repository === "777genius/review-router"
-);
-assert(runtimeCheckout, "Shared workflow must checkout the ReviewRouter runtime explicitly.");
-assert(
-  runtimeCheckout.with.ref === "0924fc20a0e22a7d43928eb19418c1f2a2a2ab81",
-  "Shared workflow must pin the reviewed ReviewRouter v1.0.76 runtime commit."
-);
+for (const legacyMarker of [
+  "pull_request_target",
+  "mode: codex-oauth-rotating",
+  "REVIEWROUTER_COMMENT_TOKEN_MODE: github-token",
+]) {
+  assert(
+    !review.source.includes(legacyMarker) && !interaction.source.includes(legacyMarker),
+    `Legacy ReviewRouter marker is forbidden: ${legacyMarker}`,
+  );
+}
 
-const runtimeStep = review.steps.find((step) => step.run === "node .reviewrouter-runtime/dist/index.js");
-assert(runtimeStep, "Shared workflow must run the checked-out ReviewRouter runtime.");
-assert(
-  runtimeStep.env?.REVIEWROUTER_RUNTIME_CONFIG_MODE === "static",
-  "ReviewRouter must run without an implicit SaaS/OIDC dependency."
-);
-assert(
-  runtimeStep.env?.REVIEWROUTER_COMMENT_TOKEN_MODE === "github-token",
-  "ReviewRouter must use the caller repository token in static mode."
-);
-
-assert(caller.on?.pull_request, `${callerPath} must run for pull requests.`);
-assert(caller.on?.workflow_dispatch, `${callerPath} must support manual recovery dispatch.`);
-assert(
-  JSON.stringify(caller.permissions) === JSON.stringify({ contents: "read" }),
-  `${callerPath} must default to contents: read.`
-);
-assert(
-  caller.jobs?.review?.uses === "./.github/workflows/reviewrouter-reusable.yml",
-  `${callerPath} must contain only the local reusable-workflow call.`
-);
-assert(caller.jobs.review.secrets === "inherit", `${callerPath} must pass repository secrets explicitly.`);
-
-console.log("ReviewRouter workflow verified: one reusable implementation and one minimal caller.");
+console.log("ReviewRouter workflow verified: App-first T0 schema 2 with read-only Actions tokens.");
