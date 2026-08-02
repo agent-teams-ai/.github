@@ -18,6 +18,8 @@ the owning repository.
 - `.github/ISSUE_TEMPLATE/` - default issue forms.
 - `.github/PULL_REQUEST_TEMPLATE.md` - default pull request evidence.
 - `renovate-config.json` - organization Renovate preset.
+- `.github/workflows/reviewrouter-reusable.yml` - the single executable
+  ReviewRouter implementation for organization repositories.
 
 Repositories consume the Renovate policy explicitly:
 
@@ -29,4 +31,17 @@ Repositories consume the Renovate policy explicitly:
 
 The repository-local file is intentionally tiny. It can add project-specific
 package rules but must not copy the organization preset.
+
+## Shared ReviewRouter
+
+Product repositories keep a minimal caller workflow and invoke the reusable
+workflow from this repository at an exact commit SHA. The shared workflow owns
+the reviewed action versions, fork policy, size guard, Codex setup, and review
+configuration. Repository variables may override only the documented timeout,
+size limit, draft policy, and model.
+
+The caller grants write permissions only to the reusable review job and passes
+repository secrets explicitly with `secrets: inherit`. Renovate updates the
+pinned reusable-workflow SHA through ordinary reviewed pull requests. Product
+repositories must not copy the reusable job steps locally.
 Organization-wide community health, repository policy, and dependency automation configuration.

@@ -11,10 +11,11 @@
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
-    "check": "pnpm renovate:validate && node scripts/check-community-files.mjs",
+    "check": "pnpm renovate:validate && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json"
   },
   "devDependencies": {
-    "renovate": "43.280.5"
+    "renovate": "43.280.5",
+    "yaml": "2.9.0"
   }
 }
