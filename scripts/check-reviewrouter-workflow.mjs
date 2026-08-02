@@ -4,9 +4,13 @@ import { parse } from "yaml";
 
 const reviewPath = ".github/workflows/reviewrouter-codex.yml";
 const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
+const reusablePath = ".github/workflows/reviewrouter-reusable.yml";
 const actionCommit = "626739854b5c67d94b3f0118738c106b4a232c41";
+const sharedActionCommit = "581133471dcc66941a39510cb1e8f2e1c5070a96";
 const expectedReviewUses =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${actionCommit}`;
+const expectedReusableUses =
+  `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${sharedActionCommit}`;
 const fullSha = /^[0-9a-f]{40}$/u;
 
 function assert(condition, message) {
@@ -29,6 +33,7 @@ async function loadWorkflow(path) {
 
 const review = await loadWorkflow(reviewPath);
 const interaction = await loadWorkflow(interactionPath);
+const reusable = await loadWorkflow(reusablePath);
 
 assert(review.workflow.on?.pull_request, `${reviewPath} must use pull_request.`);
 assert(
@@ -110,13 +115,50 @@ assert(
   "Interaction checkout must use the pinned runtime environment value.",
 );
 
+assert(reusable.workflow.on?.workflow_call, `${reusablePath} must use workflow_call.`);
+assert(
+  samePermissions(reusable.workflow.permissions, {}),
+  `${reusablePath} must deny root token permissions.`,
+);
+const reusableJob = reusable.workflow.jobs?.review;
+assert(
+  reusableJob?.uses === expectedReusableUses,
+  `${reusablePath} must use the immutable T0 workflow.`,
+);
+assert(
+  samePermissions(reusableJob?.permissions, {
+    contents: "read",
+    "pull-requests": "read",
+    "id-token": "write",
+  }),
+  "Shared review must keep the Actions token read-only and grant only OIDC write.",
+);
+assert(
+  reusableJob.with?.runtime_ref === sharedActionCommit,
+  "Shared review must pin the matching ReviewRouter runtime commit.",
+);
+assert(
+  reusableJob.with?.runtime_config_mode === "oidc",
+  "Shared review must use OIDC runtime config.",
+);
+assert(
+  reusableJob.with?.workflow_schema_version === 2,
+  "Shared review must use workflow schema 2.",
+);
+assert(
+  reusableJob.secrets?.CODEX_AUTH_JSON === "${{ secrets.CODEX_AUTH_JSON }}",
+  "Shared review must forward the rotating provider secret.",
+);
+
 for (const legacyMarker of [
   "pull_request_target",
   "mode: codex-oauth-rotating",
   "REVIEWROUTER_COMMENT_TOKEN_MODE: github-token",
 ]) {
   assert(
-    !review.source.includes(legacyMarker) && !interaction.source.includes(legacyMarker),
+    !review.source.includes(legacyMarker) &&
+      !interaction.source.includes(legacyMarker) &&
+      !reusable.source.includes(legacyMarker),
     `Legacy ReviewRouter marker is forbidden: ${legacyMarker}`,
   );
 }

@@ -1,0 +1,65 @@
+name: Shared ReviewRouter
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        description: Pull request number resolved by the caller.
+        required: true
+        type: string
+      review_head_sha:
+        description: Exact pull request head selected by the caller.
+        required: true
+        type: string
+      provider_instance_id:
+        description: Server-registered ReviewRouter provider instance.
+        required: true
+        type: string
+      review_drafts:
+        description: Whether draft pull requests may be reviewed.
+        required: false
+        type: boolean
+        default: false
+      timeout_minutes:
+        description: Maximum review job duration.
+        required: false
+        type: number
+        default: 60
+      max_changed_lines:
+        description: Maximum additions plus deletions before review is rejected; zero disables the limit.
+        required: false
+        type: number
+        default: 250000
+    secrets:
+      CODEX_AUTH_JSON:
+        required: true
+      CODEX_CONFIG_TOML:
+        required: false
+      REVIEW_ROUTER_LEDGER_KEY:
+        required: false
+
+permissions: {}
+
+jobs:
+  review:
+    name: review
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.draft == false || inputs.review_drafts)) }}
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    uses: 777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@581133471dcc66941a39510cb1e8f2e1c5070a96
+    with:
+      runtime_ref: 581133471dcc66941a39510cb1e8f2e1c5070a96
+      api_url: https://api.reviewrouter.site
+      runtime_config_mode: oidc
+      pr_number: ${{ inputs.pr_number }}
+      review_head_sha: ${{ inputs.review_head_sha }}
+      provider_instance_id: ${{ inputs.provider_instance_id }}
+      workflow_schema_version: 2
+      max_changed_lines: ${{ format('{0}', inputs.max_changed_lines) }}
+      review_timeout_minutes: ${{ inputs.timeout_minutes }}
+    secrets:
+      CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
+      CODEX_CONFIG_TOML: ${{ secrets.CODEX_CONFIG_TOML }}
+      REVIEW_ROUTER_LEDGER_KEY: ${{ secrets.REVIEW_ROUTER_LEDGER_KEY }}

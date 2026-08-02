@@ -14,6 +14,7 @@ const requiredFiles = [
   "profile/README.md",
   ".github/workflows/reviewrouter-codex.yml",
   ".github/workflows/reviewrouter-interaction.yml",
+  ".github/workflows/reviewrouter-reusable.yml",
   "renovate-config.json",
   "renovate.json"
 ];
