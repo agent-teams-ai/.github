@@ -138,6 +138,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Checkout ReviewRouter runtime
+        if: ${{ steps.pr.outputs.skip_reason != 'fork' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: 777genius/review-router
+          ref: 0924fc20a0e22a7d43928eb19418c1f2a2a2ab81 # v1.0.76
+          path: .reviewrouter-runtime
+          persist-credentials: false
+
       - name: Setup Node.js
         if: ${{ steps.pr.outputs.skip_reason != 'fork' }}
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -170,17 +179,21 @@ jobs:
 
       - name: Run ReviewRouter
         if: ${{ steps.pr.outputs.skip_reason != 'fork' }}
-        uses: 777genius/review-router@0924fc20a0e22a7d43928eb19418c1f2a2a2ab81 # v1.0.76
+        shell: bash
         env:
-          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
-          REVIEW_ROUTER_LEDGER_KEY: ${{ secrets.REVIEW_ROUTER_LEDGER_KEY }}
-        with:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
           CODEX_MODEL: ${{ inputs.codex_model }}
           CODEX_REASONING_EFFORT: medium
           CODEX_HEALTHCHECK_MODE: binary
           CODEX_AGENTIC_CONTEXT: "true"
+          REVIEW_AUTH_MODE: codex-oauth
+          REVIEWROUTER_RUNTIME_CONFIG_MODE: static
+          REVIEWROUTER_STATIC_CONFIG_FALLBACK: "false"
+          REVIEWROUTER_COMMENT_TOKEN_MODE: github-token
+          REVIEW_ROUTER_LEDGER_KEY: ${{ secrets.REVIEW_ROUTER_LEDGER_KEY }}
+          REVIEW_ROUTER_MEMORY_ENABLED: "false"
           FAIL_ON_NO_HEALTHY_PROVIDERS: "true"
           INLINE_MAX_COMMENTS: "5"
           INLINE_MIN_SEVERITY: major
@@ -194,3 +207,4 @@ jobs:
           ENABLE_AI_DETECTION: "false"
           LEARNING_ENABLED: "false"
           GRAPH_ENABLED: "false"
+        run: node .reviewrouter-runtime/dist/index.js

@@ -40,8 +40,28 @@ for (const value of externalUses) {
   assert(fullSha.test(reference), `External action is not pinned to a full SHA: ${value}`);
 }
 assert(
-  externalUses.includes("777genius/review-router@0924fc20a0e22a7d43928eb19418c1f2a2a2ab81"),
-  "Shared workflow must use the reviewed ReviewRouter v1.0.76 commit."
+  !externalUses.some((value) => value.startsWith("777genius/review-router@")),
+  "ReviewRouter v1.0.76 is a control-plane action and must not be invoked as the legacy action."
+);
+
+const runtimeCheckout = review.steps.find(
+  (step) => step.with?.repository === "777genius/review-router"
+);
+assert(runtimeCheckout, "Shared workflow must checkout the ReviewRouter runtime explicitly.");
+assert(
+  runtimeCheckout.with.ref === "0924fc20a0e22a7d43928eb19418c1f2a2a2ab81",
+  "Shared workflow must pin the reviewed ReviewRouter v1.0.76 runtime commit."
+);
+
+const runtimeStep = review.steps.find((step) => step.run === "node .reviewrouter-runtime/dist/index.js");
+assert(runtimeStep, "Shared workflow must run the checked-out ReviewRouter runtime.");
+assert(
+  runtimeStep.env?.REVIEWROUTER_RUNTIME_CONFIG_MODE === "static",
+  "ReviewRouter must run without an implicit SaaS/OIDC dependency."
+);
+assert(
+  runtimeStep.env?.REVIEWROUTER_COMMENT_TOKEN_MODE === "github-token",
+  "ReviewRouter must use the caller repository token in static mode."
 );
 
 assert(caller.on?.pull_request, `${callerPath} must run for pull requests.`);
