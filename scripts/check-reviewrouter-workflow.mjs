@@ -95,12 +95,13 @@ assert(
 const interactionJob = interaction.workflow.jobs?.interaction;
 assert(
   samePermissions(interactionJob?.permissions, {
+    actions: "write",
     contents: "read",
     issues: "read",
     "pull-requests": "read",
     "id-token": "write",
   }),
-  "interaction must keep the Actions token read-only and grant only OIDC write.",
+  "interaction must grant only the permissions required for App publication, OIDC, and exact-run reruns.",
 );
 assert(
   interactionJob?.env?.RR_RUNTIME_REF === actionCommit,
@@ -138,4 +139,4 @@ for (const legacyMarker of [
   );
 }
 
-console.log("ReviewRouter workflow verified: App-first T0 schema 2 with read-only Actions tokens.");
+console.log("ReviewRouter workflow verified: App-first T0 schema 2 with least-privilege tokens.");
