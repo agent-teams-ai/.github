@@ -4,7 +4,7 @@ import { parse } from "yaml";
 
 const reviewPath = ".github/workflows/reviewrouter-codex.yml";
 const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
-const actionCommit = "626739854b5c67d94b3f0118738c106b4a232c41";
+const actionCommit = "08f6bc1481fd284fa82adfa47cda05c76b161b00";
 const expectedReviewUses =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${actionCommit}`;
 const fullSha = /^[0-9a-f]{40}$/u;
@@ -32,6 +32,10 @@ const interaction = await loadWorkflow(interactionPath);
 
 assert(review.workflow.on?.pull_request, `${reviewPath} must use pull_request.`);
 assert(
+  review.workflow.on?.workflow_dispatch === undefined,
+  `${reviewPath} must not enable workflow_dispatch for the client-triggered schema.`,
+);
+assert(
   !review.source.includes("pull_request_target"),
   `${reviewPath} must not use pull_request_target.`,
 );
@@ -42,6 +46,10 @@ assert(
 
 const reviewJob = review.workflow.jobs?.["codex-review"];
 assert(reviewJob?.uses === expectedReviewUses, `${reviewPath} must use the immutable T0 workflow.`);
+assert(
+  reviewJob.with?.runtime_ref === actionCommit,
+  "codex-review must pin the reusable workflow and runtime to the same commit.",
+);
 assert(
   samePermissions(reviewJob.permissions, {
     contents: "read",
@@ -62,13 +70,22 @@ assert(
 );
 
 const refreshJob = review.workflow.jobs?.["codex-refresh"];
+const refreshStep = refreshJob?.steps?.[0];
 assert(
   samePermissions(refreshJob?.permissions, { "id-token": "write" }),
   "codex-refresh must grant only OIDC write.",
 );
 assert(
-  refreshJob?.steps?.[0]?.with?.["workflow-schema-version"] === "2",
+  refreshStep?.uses === `777genius/review-router@${actionCommit}`,
+  "codex-refresh must pin the same immutable ReviewRouter runtime commit.",
+);
+assert(
+  refreshStep?.with?.["workflow-schema-version"] === "2",
   "codex-refresh must use workflow schema 2.",
+);
+assert(
+  refreshStep?.with?.["provider-instance-id"] === "codex-rotating:1316243981",
+  "codex-refresh must bind the .github repository provider identity.",
 );
 
 assert(
@@ -78,12 +95,13 @@ assert(
 const interactionJob = interaction.workflow.jobs?.interaction;
 assert(
   samePermissions(interactionJob?.permissions, {
+    actions: "write",
     contents: "read",
     issues: "read",
     "pull-requests": "read",
     "id-token": "write",
   }),
-  "interaction must keep the Actions token read-only and grant only OIDC write.",
+  "interaction must grant only the permissions required for App publication, OIDC, and exact-run reruns.",
 );
 assert(
   interactionJob?.env?.RR_RUNTIME_REF === actionCommit,
@@ -121,4 +139,4 @@ for (const legacyMarker of [
   );
 }
 
-console.log("ReviewRouter workflow verified: App-first T0 schema 2 with read-only Actions tokens.");
+console.log("ReviewRouter workflow verified: App-first T0 schema 2 with least-privilege tokens.");
