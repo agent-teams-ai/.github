@@ -39,13 +39,19 @@ authority. Required executable-specification gates run deterministic local
 tooling in CI; they must not require hosted AI inference, credentials, or
 availability.
 
+GitHub does not inherit the organization pull request template into a repository
+that defines a local override. Every local override must mirror the
+executable-specification evidence block: schema or contract and version,
+positive and negative fixtures, and the exact deterministic gate or an explicit
+`N/A` with ownership rationale.
+
 ## Applicability Matrix
 
 This matrix is authoritative for the six organization repositories.
 
 | Repository | Applicability | Owned boundary |
 | --- | --- | --- |
-| `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. |
+| `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. Its local pull request template must mirror the organization evidence block. |
 | `agent-runtime` | Applicable | Repository-owned JSON Schema with Ajv validation, fast-check properties/fixtures, and XState guards/transitions with an explicit runtime binding. |
 | `agent-teams-platform` | Applicable | Internal Project Management model only; adoption makes no public wire-contract claim. |
 | `agent-teams-orchestrator` | Applicable | Accepted, repository-owned state projections only; external or proposed state is out of scope. |
