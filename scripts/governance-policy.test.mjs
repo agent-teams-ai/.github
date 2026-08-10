@@ -363,14 +363,24 @@ test("rejects duplicate Platform security evidence claims", () => {
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /claims must be unique/u);
 });
 
-test("accepts the dated partial Actions rollout snapshot", () => {
+test("accepts the dated fully enforced Actions snapshot", () => {
   assert.doesNotThrow(() => validateActionsPolicy(clone(actions), actionsSchema));
 });
 
-test("rejects a fully-enforced Actions claim while Gateway remains pending", () => {
+test("rejects a fully-enforced Actions claim with a pending repository", () => {
   const changed = clone(actions);
-  changed.action_sha_pinning.fully_enforced = true;
+  changed.action_sha_pinning.pending.push({
+    repository: "agent-teams-ai/craig-meeting-gateway",
+    reason: "Synthetic pending repository.",
+    reference: "https://github.com/agent-teams-ai/craig-meeting-gateway/pull/7",
+  });
   assert.throws(() => validateActionsPolicy(changed, actionsSchema), /Fully enforced SHA pinning/u);
+});
+
+test("rejects an incomplete organization Actions coverage snapshot", () => {
+  const changed = clone(actions);
+  changed.action_sha_pinning.enabled_repositories = "selected";
+  assert.throws(() => validateActionsPolicy(changed, actionsSchema), /must be equal to constant/u);
 });
 
 test("accepts cross-policy required-check exception references", () => {

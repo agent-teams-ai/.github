@@ -72,8 +72,8 @@ change that approval rule.
 ## Actions rollout is separate
 
 Code-security configuration enforcement does not prove GitHub Actions policy
-enforcement. The dated Actions snapshot records read-only default workflow
-permissions and disabled workflow approval, but organization-wide SHA pinning is
-still pending Gateway pull request `#7`. Platform also retains exception
-`platform-private-required-checks-github-free`. The organization must not be described as fully
-Actions-enforced until those conditions and a later snapshot say otherwise.
+enforcement. The dated Actions API snapshot records read-only default workflow
+permissions, disabled workflow approval, all-repository coverage, and required
+immutable commit SHAs for external actions. Platform retains exception
+`platform-private-required-checks-github-free` only for protected required
+checks; it does not weaken the organization-wide action-reference policy.

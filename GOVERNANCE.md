@@ -67,6 +67,11 @@ they are not silently omitted. Do not copy repository applicability into another
 human table: the JSON ledger is the sole value authority. Evidence entries are
 dated, human-reviewed Git revision/path/blob coordinates.
 
+New repositories inherit the organization security and immutable Actions
+defaults, but they begin architecturally unqualified. A repository must receive
+an owned ledger record, scoped evidence, and deterministic gates before any
+implementation or deployment qualification is claimed.
+
 The internal checksum hashes lexically sorted `path`, NUL, Git blob SHA, and LF
 records with SHA-256. It detects inconsistent edits inside the ledger; it does
 not prove that remote Git objects exist or that a revision contains those blobs.
@@ -90,7 +95,7 @@ Policy must not describe those CI gates as remotely enforced.
 The dated Actions posture is recorded separately in
 [`governance/actions-policy.json`](governance/actions-policy.json). Default
 workflow permissions are read-only and workflow approval is disabled. Immutable
-action-reference enforcement is not yet organization-wide: Gateway pull request
-`#7` remains pending, and Platform retains exception
-`platform-private-required-checks-github-free`. Do not describe Actions SHA pinning as fully enforced until the JSON
-snapshot is updated with new evidence.
+action-reference enforcement is enabled organization-wide. Platform retains the
+separate required-check exception
+`platform-private-required-checks-github-free`; that GitHub Free limitation does
+not weaken immutable action-reference enforcement.

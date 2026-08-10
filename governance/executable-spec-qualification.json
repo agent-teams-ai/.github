@@ -1,7 +1,7 @@
 {
   "$schema": "./executable-spec-qualification.schema.json",
   "schema_version": 3,
-  "ledger_revision": "2026-08-10.3",
+  "ledger_revision": "2026-08-10.4",
   "snapshot_date": "2026-08-10",
   "authority": "this-ledger",
   "coordinate_checksum_algorithm": "sha256-internal-consistency(sorted(path + NUL + git_blob_sha + LF))",
@@ -61,7 +61,7 @@
       "specification_scope": "Generic development-only executable-specification mechanisms and evidence contracts; no product domain model is qualified here.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "b6e537b68c6bb5f06ba0224fd853341ca15c7947",
+        "revision": "e56fbbe81f9104cd60813d4e0dc6f490eecdd002",
         "entries": [
           { "path": "packages/engineering-foundation/schemas/quality-executable-specifications/v1.schema.json", "git_blob_sha": "c0fa6a794be57c9ba2e88f744dc39b6addcae50f" },
           { "path": "packages/engineering-foundation/src/capabilities/executable-specifications/module.ts", "git_blob_sha": "fa1a387c1a9ea382957c24d84419944caaa99fdb" },
@@ -70,7 +70,7 @@
         "coordinate_checksum_sha256": "2f742cbe3c017cf776c52171a797d8b3b151db41e92b951a038c7266d82d8a63",
         "approval_evidence": {
           "status": "accepted_transitive",
-          "revision": "b6e537b68c6bb5f06ba0224fd853341ca15c7947",
+          "revision": "e56fbbe81f9104cd60813d4e0dc6f490eecdd002",
           "entries": [
             { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "cd7b3e4b9cd0ed3dd3c5048c82a064eca733afae" },
             { "path": "docs/decisions/0001-executable-capability-foundation.md", "git_blob_sha": "e8e494b5785884e9d2e7fecdefd865788ca0859c" }
@@ -123,16 +123,16 @@
       "specification_scope": "Synthetic runtime-operation oracle and proposed model evidence only; this is not proof of production runtime binding.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "7d97e3cada94725f1f2f0bc19f479ea61479d650",
+        "revision": "2efa174b9a49e2da51fa308a2026ef5824cc2f87",
         "entries": [
           { "path": "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/manifest.json", "git_blob_sha": "748125afa8681db0697a2163c25857574ac4a705" },
           { "path": "experiments/runtime-profile-behavior/src/features/evidence/validate-runtime-operation-oracle.ts", "git_blob_sha": "a182ee733e432797d08d0f07e008669e934a9495" },
-          { "path": "experiments/runtime-profile-behavior/test/runtime-operation-oracle-properties.test.ts", "git_blob_sha": "8d18af724314bb921a8d37c205bb5c6161c58ca2" }
+          { "path": "experiments/runtime-profile-behavior/test/runtime-operation-oracle-properties.test.ts", "git_blob_sha": "dd364d47ccea6cb08bc061127c6da988a9aa0136" }
         ],
-        "coordinate_checksum_sha256": "f71523359f0ec421d120745259093e554faf592f74f58bebe6f01dfe7f98b13c",
+        "coordinate_checksum_sha256": "4db489bfd5d168b9751cc11eed02e9371932708b1612cbafb1bb2f6ad0337817",
         "approval_evidence": {
           "status": "proposed_unapproved",
-          "revision": "7d97e3cada94725f1f2f0bc19f479ea61479d650",
+          "revision": "2efa174b9a49e2da51fa308a2026ef5824cc2f87",
           "entries": [
             { "path": "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/README.md", "git_blob_sha": "8168541957ede047160deb5bf1780bed62f75d5d" }
           ],
@@ -183,16 +183,16 @@
       "specification_scope": "Repository-internal Project Management executable-specification slice only; no public wire-contract or whole-platform claim.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "8267db104053ae8b16c0761496998f5e8216034c",
+        "revision": "f725a3727f459249bc4f0d9a1e4baf7ab53eded7",
         "entries": [
-          { "path": "architecture/project-management/executable-specifications.json", "git_blob_sha": "3df2406f75d77ef1cbdd3f941ef8cb1258aff732" },
-          { "path": "tooling/executable-specifications/package.json", "git_blob_sha": "e32be5fff26bb176c09d73f03b6b4e2772739e49" },
+          { "path": "architecture/project-management/executable-specifications.json", "git_blob_sha": "32b4de4073b11d578de2d704b597ac79c0bfb9d7" },
+          { "path": "tooling/executable-specifications/package.json", "git_blob_sha": "17fff2736255b7d1236ff14f7aa21d1342128b01" },
           { "path": "tooling/executable-specifications/scripts/managed-scope-admission-model.mjs", "git_blob_sha": "e31066a3648fb19bf87ce4a3b12bdd6a95288bf4" }
         ],
-        "coordinate_checksum_sha256": "0c08cbf398e3cfc22df58412b1b1684646185a9258f2336e3d383a094547e066",
+        "coordinate_checksum_sha256": "d133cda7f9b1a84106ae39ec0f50aabafeca2daf0e43918053f72d8d10fad3d0",
         "approval_evidence": {
           "status": "accepted_transitive",
-          "revision": "8267db104053ae8b16c0761496998f5e8216034c",
+          "revision": "f725a3727f459249bc4f0d9a1e4baf7ab53eded7",
           "entries": [
             { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "f1f6f3b001b5e35f84d1043c400399545190cece" },
             { "path": "docs/decisions/0007-platform-strategic-context-map-and-first-project-management-slice.md", "git_blob_sha": "afcc50bc4d5de85db69fcd47a65e25a48f533d5d" }
@@ -202,16 +202,18 @@
       },
       "implementation_qualification": {
         "status": "partially_qualified_internal_slice",
-        "statement": "Governance accepts the dated property, mutation, model, and clean-checkout evidence coordinates only for the implemented internal slice; this ledger does not mechanically verify their remote Git linkage.",
+        "statement": "Governance accepts the dated property, semantic and boundary mutation, model, production-conformance, and clean-checkout evidence coordinates only for the implemented internal slice; this ledger does not mechanically verify their remote Git linkage.",
         "evidence_status": "governance_accepted_coordinates",
-        "accepted_revision": "8267db104053ae8b16c0761496998f5e8216034c",
+        "accepted_revision": "f725a3727f459249bc4f0d9a1e4baf7ab53eded7",
         "evidence_entries": [
-          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.model.test.mjs", "git_blob_sha": "918a1c60086700e93b5acd38df39b2711db30af7" },
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.model.test.mjs", "git_blob_sha": "5d412e4d3f0a10bdb1a04ba06bcefa944dacbd63" },
           { "path": "tooling/executable-specifications/scripts/managed-scope-admission.mutation.test.mjs", "git_blob_sha": "ca5fdd9572879067eb8d9177a0e4e781a60f8443" },
-          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.property.test.mjs", "git_blob_sha": "08f2b0bd92535854a8518e8bd0e791bdf4f97198" },
-          { "path": "tooling/executable-specifications/scripts/verify-clean-spec-gates.mjs", "git_blob_sha": "e1af0bcbdf41dcada0669c3f28107d8f3c876dd6" }
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.boundary-mutation.test.mjs", "git_blob_sha": "e3af7bb65e9f80ad6195c5c9d2a050b681536f51" },
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.property.test.mjs", "git_blob_sha": "b480c99896bb3e5db0145dd46ce95abb5aafe1e0" },
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.production-conformance.test.mjs", "git_blob_sha": "8d696ea2d8ebe3ff6f1b8e3b71a13547b4f6b02d" },
+          { "path": "tooling/executable-specifications/scripts/verify-clean-spec-gates.mjs", "git_blob_sha": "c4d18b08b66e2dc3add7b48e60580401b208e049" }
         ],
-        "coordinate_checksum_sha256": "9a1783baf14a741675083aa44ffeca9420159f5e64b85f3eb909d65fd09533ac"
+        "coordinate_checksum_sha256": "d0dab6dc7f2e957e8e9f133a26d5a24880347649dfe7f15cc18752f705b78d94"
       },
       "deployment_qualification": {
         "status": "not_qualified",
@@ -227,6 +229,7 @@
           "pnpm spec:property",
           "pnpm spec:mutation",
           "pnpm spec:model",
+          "pnpm spec:production-conformance",
           "pnpm spec:clean-checkout"
         ],
         "remote_required_checks": {
@@ -251,7 +254,7 @@
       "specification_scope": "Accepted repository-owned orchestration state projections only; proposed and external state, full runtime binding, and end-to-end behavior remain outside the claim.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "7ee4f733293811dcafa516610e191cd23ad812b8",
+        "revision": "f7585b2ed2e71a81d98a58ac454975f182ab76c3",
         "entries": [
           { "path": "architecture/executable-specs/catalog.json", "git_blob_sha": "5525c8459fc65529045576b0e567a9c3095ed72a" },
           { "path": "architecture/executable-specs/orchestration-project-lifecycle.json", "git_blob_sha": "ed80d5e6adfae7c5296e68055577598a64b59c2b" },
@@ -260,7 +263,7 @@
         "coordinate_checksum_sha256": "d50d2044b3bc2fa98e29afc4ea791f4725744068128261e5757bdbcb45f0e184",
         "approval_evidence": {
           "status": "accepted_transitive",
-          "revision": "7ee4f733293811dcafa516610e191cd23ad812b8",
+          "revision": "f7585b2ed2e71a81d98a58ac454975f182ab76c3",
           "entries": [
             { "path": "architecture/executable-specs/catalog.json", "git_blob_sha": "5525c8459fc65529045576b0e567a9c3095ed72a" },
             { "path": "docs/decisions/0079-runtime-authority-binding-cutoff-and-disposition.md", "git_blob_sha": "7212c21f6fe10212767faca851af75afd65ee574" },
@@ -406,6 +409,9 @@
           "require_code_owner_review": false,
           "reason": null,
           "checks": [
+            { "context": "Build Apps", "integration_id": 15368 },
+            { "context": "Lint source code", "integration_id": 15368 },
+            { "context": "Lint monorepo", "integration_id": 15368 },
             { "context": "ReviewRouter", "integration_id": 3599233 }
           ]
         }

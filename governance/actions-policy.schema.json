@@ -16,7 +16,7 @@
   ],
   "properties": {
     "$schema": { "const": "./actions-policy.schema.json" },
-    "schema_version": { "const": 2 },
+    "schema_version": { "const": 3 },
     "snapshot_revision": { "$ref": "#/$defs/nonEmpty" },
     "observed_at": { "$ref": "#/$defs/date" },
     "continuous_audit": { "const": false },
@@ -31,7 +31,7 @@
         "evidence_endpoint"
       ],
       "properties": {
-        "verification": { "const": "reported_dated_observation" },
+        "verification": { "const": "observed_api_snapshot" },
         "default_workflow_permissions": { "const": "read" },
         "can_approve_pull_request_reviews": { "const": false },
         "evidence_endpoint": { "type": "string", "pattern": "^https://api\\.github\\.com/" }
@@ -40,8 +40,23 @@
     "action_sha_pinning": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["organization_policy_enabled", "rollout_status", "fully_enforced", "pending"],
+      "required": [
+        "verification",
+        "evidence_endpoint",
+        "enabled_repositories",
+        "allowed_actions",
+        "organization_policy_enabled",
+        "rollout_status",
+        "fully_enforced",
+        "pending"
+      ],
       "properties": {
+        "verification": { "const": "observed_api_snapshot" },
+        "evidence_endpoint": {
+          "const": "https://api.github.com/orgs/agent-teams-ai/actions/permissions"
+        },
+        "enabled_repositories": { "const": "all" },
+        "allowed_actions": { "const": "all" },
         "organization_policy_enabled": { "type": "boolean" },
         "rollout_status": { "enum": ["pending_gateway_pr", "enforced"] },
         "fully_enforced": { "type": "boolean" },

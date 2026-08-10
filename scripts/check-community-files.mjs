@@ -77,8 +77,10 @@ requireMarkers(governance, "GOVERNANCE.md", [
   "Dependabot owns security updates only; Renovate owns routine version updates",
   "transferred repository",
   "GitHub Free exception",
-  "Immutable action-reference enforcement is not yet organization-wide",
-  "Do not describe Actions SHA pinning as fully enforced",
+  "New repositories inherit the organization security",
+  "architecturally unqualified",
+  "action-reference enforcement is enabled organization-wide",
+  "does not weaken immutable action-reference enforcement",
 ]);
 if (governance.includes("| Repository | Applicability |")) {
   throw new Error("GOVERNANCE.md must not mirror the authoritative JSON applicability ledger.");
