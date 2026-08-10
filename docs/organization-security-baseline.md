@@ -18,10 +18,11 @@ default configurations:
   disabled.
 
 The existing private `agent-teams-platform` repository, ID `1319378484`, was
-also observed attached to enforced configuration `266048`. Enabling Dependabot
-alerts returned HTTP `204`, security updates are enabled and unpaused, and the
-GHAS billing repository count remains `0`. This is dated attachment evidence,
-not continuous monitoring.
+also observed attached to enforced configuration `266048`. Separate evidence
+records preserve the exact API endpoint and method for that attachment, the
+Dependabot alerts HTTP `204`, automated security fixes enabled and unpaused, and
+the organization GHAS billing repository count of `0`. No one endpoint is cited
+for multiple observations. This is dated evidence, not continuous monitoring.
 
 The live source of truth is the GitHub organization configuration API. The
 checked-in snapshot is strict-schema validated and reviewable, but validation
@@ -42,11 +43,11 @@ transferred repository must not be assumed to have received the current default:
 audit it after transfer and explicitly apply configuration `266049` or `266048`
 as appropriate.
 
-`agent-teams-platform` is currently private under an organization on GitHub Free.
-GitHub currently rejects ruleset and branch-protection configuration for that
-repository, so its deterministic commands and CI workflow are not protected
-required checks. This is a documented plan-tier exception, not evidence that the
-checks are optional. Reassess it after a visibility or plan change.
+The canonical plan-tier exception is
+`platform-private-required-checks-github-free` in the code-security snapshot.
+The executable-specification and Actions snapshots reference that ID instead of
+copying its definition. It does not make local or CI checks optional; reassess
+the exception after a visibility or plan change.
 
 ## Dated required-check observation
 
@@ -67,6 +68,6 @@ change that approval rule.
 Code-security configuration enforcement does not prove GitHub Actions policy
 enforcement. The dated Actions snapshot records read-only default workflow
 permissions and disabled workflow approval, but organization-wide SHA pinning is
-still pending Gateway pull request `#7`. Platform also retains its private-plan
-required-check exception. The organization must not be described as fully
+still pending Gateway pull request `#7`. Platform also retains exception
+`platform-private-required-checks-github-free`. The organization must not be described as fully
 Actions-enforced until those conditions and a later snapshot say otherwise.

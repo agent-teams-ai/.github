@@ -33,6 +33,10 @@ if (!renovateConfig.extends?.includes("config:best-practices")) {
 }
 
 const governance = await readFile("GOVERNANCE.md", "utf8");
+const securityBaseline = await readFile("docs/organization-security-baseline.md", "utf8");
+const securityPolicy = JSON.parse(
+  await readFile("governance/code-security-defaults.json", "utf8"),
+);
 const contributing = await readFile("CONTRIBUTING.md", "utf8");
 const pullRequestTemplate = await readFile(
   ".github/PULL_REQUEST_TEMPLATE.md",
@@ -78,6 +82,10 @@ requireMarkers(governance, "GOVERNANCE.md", [
 ]);
 if (governance.includes("| Repository | Applicability |")) {
   throw new Error("GOVERNANCE.md must not mirror the authoritative JSON applicability ledger.");
+}
+for (const { id } of securityPolicy.required_check_exceptions) {
+  requireMarkers(governance, "GOVERNANCE.md", [id]);
+  requireMarkers(securityBaseline, "docs/organization-security-baseline.md", [id]);
 }
 requireMarkers(contributing, "CONTRIBUTING.md", [
   "repository-owned schema or",

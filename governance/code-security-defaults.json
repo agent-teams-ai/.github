@@ -1,11 +1,12 @@
 {
   "$schema": "./code-security-defaults.schema.json",
-  "schema_version": 2,
-  "snapshot_revision": "2026-08-10.2",
+  "schema_version": 3,
+  "snapshot_revision": "2026-08-10.3",
   "observed_at": "2026-08-10",
+  "continuous_audit": false,
   "organization": "agent-teams-ai",
   "owner": "https://github.com/777genius",
-  "evidence": {
+  "defaults_evidence": {
     "verification": "observed_api_snapshot",
     "endpoint": "/orgs/agent-teams-ai/code-security/configurations/defaults"
   },
@@ -41,13 +42,36 @@
     {
       "repository": "agent-teams-ai/agent-teams-platform",
       "repository_id": 1319378484,
-      "configuration_id": 266048,
-      "status": "enforced",
-      "dependabot_alerts_enablement_http_status": 204,
-      "dependabot_security_updates": "enabled_unpaused",
-      "ghas_billing_repositories": 0,
       "observed_at": "2026-08-10",
-      "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/code-security-configuration"
+      "evidence_records": [
+        {
+          "claim": "configuration_attachment",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/code-security-configuration",
+          "configuration_id": 266048,
+          "status": "enforced"
+        },
+        {
+          "claim": "dependabot_alerts_enablement",
+          "method": "PUT",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/vulnerability-alerts",
+          "http_status": 204
+        },
+        {
+          "claim": "automated_security_fixes",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/automated-security-fixes",
+          "http_status": 200,
+          "enabled": true,
+          "paused": false
+        },
+        {
+          "claim": "organization_ghas_billing",
+          "method": "GET",
+          "endpoint": "https://api.github.com/orgs/agent-teams-ai/settings/billing/advanced-security",
+          "total_count": 0
+        }
+      ]
     }
   ],
   "dependabot_policy": {
@@ -60,6 +84,7 @@
   },
   "required_check_exceptions": [
     {
+      "id": "platform-private-required-checks-github-free",
       "repository": "agent-teams-ai/agent-teams-platform",
       "reason": "GitHub Free does not provide private-repository rulesets or branch protection required checks for this organization.",
       "compensation": "Keep deterministic local and CI gate declarations, but do not represent them as protected required checks."

@@ -1,7 +1,7 @@
 {
   "$schema": "./actions-policy.schema.json",
-  "schema_version": 1,
-  "snapshot_revision": "2026-08-10.1",
+  "schema_version": 2,
+  "snapshot_revision": "2026-08-10.2",
   "observed_at": "2026-08-10",
   "continuous_audit": false,
   "owner_reference": "https://github.com/777genius",
@@ -23,11 +23,5 @@
       }
     ]
   },
-  "required_check_exceptions": [
-    {
-      "repository": "agent-teams-ai/agent-teams-platform",
-      "reason": "GitHub Free does not expose protected required checks for this private repository.",
-      "reference": "https://github.com/agent-teams-ai/agent-teams-platform"
-    }
-  ]
+  "required_check_exception_ids": ["platform-private-required-checks-github-free"]
 }

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -6,6 +8,7 @@ import {
   validateActionsPolicy,
   validateCodeSecurityDefaults,
   validateExecutableSpecLedger,
+  validateGovernanceReferences,
 } from "./governance-policy.mjs";
 
 const ledger = await loadJson("governance/executable-spec-qualification.json");
@@ -15,6 +18,13 @@ const securitySchema = await loadJson("governance/code-security-defaults.schema.
 const actions = await loadJson("governance/actions-policy.json");
 const actionsSchema = await loadJson("governance/actions-policy.schema.json");
 const clone = (value) => structuredClone(value);
+const coordinateChecksum = (entries) => {
+  const canonical = [...entries]
+    .sort(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(({ path, git_blob_sha: blob }) => `${path}\0${blob}\n`)
+    .join("");
+  return createHash("sha256").update(canonical).digest("hex");
+};
 
 test("accepts the authoritative executable-spec qualification ledger", () => {
   assert.doesNotThrow(() => validateExecutableSpecLedger(clone(ledger), ledgerSchema));
@@ -32,14 +42,14 @@ test("rejects a non-resolvable owner reference shape", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /JSON Schema/u);
 });
 
-test("rejects qualification without an immutable revision", () => {
+test("rejects governance acceptance without a revision coordinate", () => {
   const changed = clone(ledger);
   const qualified = changed.repositories.find(
     ({ implementation_qualification }) =>
-      implementation_qualification.verification === "qualified_at_revision",
+      implementation_qualification.evidence_status === "governance_accepted_coordinates",
   );
-  qualified.implementation_qualification.qualified_revision = null;
-  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /must bind evidence/u);
+  qualified.implementation_qualification.accepted_revision = null;
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /requires a revision coordinate/u);
 });
 
 test("rejects a claim of continuous remote audit", () => {
@@ -48,56 +58,75 @@ test("rejects a claim of continuous remote audit", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /JSON Schema/u);
 });
 
-test("rejects a positive maturity without verified and accepted evidence", () => {
+test("rejects a positive maturity without human-reviewed and accepted coordinates", () => {
   const changed = clone(ledger);
   const positive = changed.repositories.find(
     ({ specification_maturity }) => specification_maturity === "capability_implemented",
   );
-  positive.specification_evidence.verification = "unverified_snapshot";
+  positive.specification_evidence.evidence_status = "unverified_snapshot";
   positive.specification_evidence.revision = null;
   positive.specification_evidence.entries = [];
-  positive.specification_evidence.manifest_sha256 = null;
+  positive.specification_evidence.coordinate_checksum_sha256 = null;
   positive.specification_evidence.approval_evidence = {
     status: "not_applicable",
     revision: null,
     entries: [],
-    manifest_sha256: null,
+    coordinate_checksum_sha256: null,
   };
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /positive maturity requires/u);
 });
 
-test("rejects capability-only status with qualified product evidence", () => {
+test("rejects capability-only status with governance-accepted product coordinates", () => {
   const changed = clone(ledger);
   const capability = changed.repositories.find(
     ({ implementation_qualification }) =>
       implementation_qualification.status === "capability_only_not_product_qualified",
   );
   const qualification = capability.implementation_qualification;
-  qualification.verification = "qualified_at_revision";
-  qualification.qualified_revision = capability.specification_evidence.revision;
+  qualification.evidence_status = "governance_accepted_coordinates";
+  qualification.accepted_revision = capability.specification_evidence.revision;
   qualification.evidence_entries = structuredClone(capability.specification_evidence.entries);
-  qualification.manifest_sha256 = capability.specification_evidence.manifest_sha256;
+  qualification.coordinate_checksum_sha256 = capability.specification_evidence.coordinate_checksum_sha256;
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /capability-only status/u);
 });
 
-test("rejects a positive qualification status with an unverified snapshot", () => {
+test("rejects a positive qualification status with an unreviewed snapshot", () => {
   const changed = clone(ledger);
   const qualified = changed.repositories.find(
     ({ implementation_qualification }) =>
       implementation_qualification.status === "partially_qualified_internal_slice",
   );
-  qualified.implementation_qualification.verification = "unverified_snapshot";
-  qualified.implementation_qualification.qualified_revision = null;
+  qualified.implementation_qualification.evidence_status = "unverified_snapshot";
+  qualified.implementation_qualification.accepted_revision = null;
   qualified.implementation_qualification.evidence_entries = [];
-  qualified.implementation_qualification.manifest_sha256 = null;
+  qualified.implementation_qualification.coordinate_checksum_sha256 = null;
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /positive qualification status/u);
+});
+
+test("rejects governance acceptance backed only by proposed approval evidence", () => {
+  const changed = clone(ledger);
+  const proposed = changed.repositories.find(
+    ({ specification_maturity }) => specification_maturity === "synthetic_proposed",
+  );
+  proposed.implementation_qualification = {
+    status: "partially_qualified_internal_slice",
+    statement: "Adversarial qualification claim.",
+    evidence_status: "governance_accepted_coordinates",
+    accepted_revision: proposed.specification_evidence.revision,
+    evidence_entries: structuredClone(proposed.specification_evidence.entries),
+    coordinate_checksum_sha256: proposed.specification_evidence.coordinate_checksum_sha256,
+  };
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /requires accepted catalog or ADR evidence/u,
+  );
 });
 
 test("rejects governance-only records with a product qualification status", () => {
   const changed = clone(ledger);
   const governance = changed.repositories.find(({ applicability }) => applicability === "governance_only");
   governance.implementation_qualification.status = "not_qualified";
-  governance.implementation_qualification.verification = "unverified_snapshot";
+  governance.implementation_qualification.evidence_status = "unverified_snapshot";
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /governance-only axes/u);
 });
 
@@ -108,16 +137,72 @@ test("rejects N/A records with non-N/A maturity", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /N\/A axes/u);
 });
 
-test("rejects an altered Git blob manifest", () => {
+test("rejects an internally inconsistent evidence-coordinate edit", () => {
   const changed = clone(ledger);
   changed.repositories[0].specification_evidence.entries[0].git_blob_sha = "0".repeat(40);
-  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /manifest digest/u);
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /internal coordinate checksum/u);
+});
+
+test("treats the coordinate checksum only as ledger-internal consistency", () => {
+  const changed = clone(ledger);
+  const evidence = changed.repositories[0].specification_evidence;
+  evidence.revision = "0".repeat(40);
+  evidence.entries = evidence.entries.map((entry) => ({
+    ...entry,
+    git_blob_sha: "0".repeat(40),
+  }));
+  evidence.coordinate_checksum_sha256 = coordinateChecksum(evidence.entries);
+  evidence.approval_evidence.revision = evidence.revision;
+  evidence.approval_evidence.entries = evidence.approval_evidence.entries.map((entry) => ({
+    ...entry,
+    git_blob_sha: "0".repeat(40),
+  }));
+  evidence.approval_evidence.coordinate_checksum_sha256 = coordinateChecksum(
+    evidence.approval_evidence.entries,
+  );
+  assert.doesNotThrow(() => validateExecutableSpecLedger(changed, ledgerSchema));
+});
+
+test("does not describe evidence coordinates as external or offline verification", async () => {
+  const sources = await Promise.all(
+    [
+      "GOVERNANCE.md",
+      "README.md",
+      "docs/organization-security-baseline.md",
+      "governance/executable-spec-qualification.schema.json",
+    ].map((path) => readFile(path, "utf8")),
+  );
+  const forbiddenClaims = [
+    /verified_at_revision/u,
+    /qualified_at_revision/u,
+    /offline[- ]verified/u,
+    /offline (?:external )?(?:binding|proof|verification)/u,
+    /external Git (?:binding|proof|verification)/u,
+    /mechanically bind/u,
+    /deterministic external (?:binding|proof|verification)/u,
+  ];
+  for (const pattern of forbiddenClaims) {
+    assert.doesNotMatch(sources.join("\n"), pattern);
+  }
 });
 
 test("rejects overlap between active scope and archived exclusions", () => {
   const changed = clone(ledger);
   changed.scope.archived_exclusions[0].repository = changed.repositories[0].repository;
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /both active and excluded/u);
+});
+
+test("rejects duplicate archived repository IDs", () => {
+  const changed = clone(ledger);
+  changed.scope.archived_exclusions[1].repository_id =
+    changed.scope.archived_exclusions[0].repository_id;
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /IDs must be unique/u);
+});
+
+test("rejects an archived repository ID reused by an active repository", () => {
+  const changed = clone(ledger);
+  changed.scope.archived_exclusions[0].repository_id = changed.repositories[0].repository_id;
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /ID cannot be both active and excluded/u);
 });
 
 test("rejects a scope count that omits an organization repository", () => {
@@ -138,7 +223,7 @@ test("rejects active required checks without a ruleset identity", () => {
     ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_active",
   );
   observed.gate_contract.remote_required_checks.ruleset_id = null;
-  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /must bind a ruleset ID/u);
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /must cite a ruleset ID/u);
 });
 
 test("rejects a nonzero approval count in the zero-approval ruleset snapshot", () => {
@@ -152,6 +237,12 @@ test("rejects a nonzero approval count in the zero-approval ruleset snapshot", (
 
 test("accepts the authoritative code-security defaults snapshot", () => {
   assert.doesNotThrow(() => validateCodeSecurityDefaults(clone(security), securitySchema));
+});
+
+test("rejects a claim of continuous code-security audit", () => {
+  const changed = clone(security);
+  changed.continuous_audit = true;
+  assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /JSON Schema/u);
 });
 
 test("rejects routine Dependabot version-update ownership", () => {
@@ -169,8 +260,19 @@ test("rejects duplicate security-default visibility targets", () => {
 
 test("rejects a repository attachment to an unknown security configuration", () => {
   const changed = clone(security);
-  changed.repository_attachments[0].configuration_id = 999999;
+  const attachment = changed.repository_attachments[0].evidence_records.find(
+    ({ claim }) => claim === "configuration_attachment",
+  );
+  attachment.configuration_id = 999999;
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /unknown security configuration/u);
+});
+
+test("rejects duplicate Platform security evidence claims", () => {
+  const changed = clone(security);
+  changed.repository_attachments[0].evidence_records[1] = structuredClone(
+    changed.repository_attachments[0].evidence_records[0],
+  );
+  assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /claims must be unique/u);
 });
 
 test("accepts the dated partial Actions rollout snapshot", () => {
@@ -181,4 +283,17 @@ test("rejects a fully-enforced Actions claim while Gateway remains pending", () 
   const changed = clone(actions);
   changed.action_sha_pinning.fully_enforced = true;
   assert.throws(() => validateActionsPolicy(changed, actionsSchema), /Fully enforced SHA pinning/u);
+});
+
+test("accepts cross-policy required-check exception references", () => {
+  assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions)));
+});
+
+test("rejects a dangling Actions required-check exception reference", () => {
+  const changed = clone(actions);
+  changed.required_check_exception_ids = ["missing-policy-exception"];
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), clone(security), changed),
+    /references unknown required-check exception/u,
+  );
 });

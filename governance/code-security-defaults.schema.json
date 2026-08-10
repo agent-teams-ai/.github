@@ -9,9 +9,10 @@
     "schema_version",
     "snapshot_revision",
     "observed_at",
+    "continuous_audit",
     "organization",
     "owner",
-    "evidence",
+    "defaults_evidence",
     "defaults",
     "repository_attachments",
     "dependabot_policy",
@@ -20,12 +21,13 @@
   ],
   "properties": {
     "$schema": { "const": "./code-security-defaults.schema.json" },
-    "schema_version": { "const": 2 },
+    "schema_version": { "const": 3 },
     "snapshot_revision": { "$ref": "#/$defs/nonEmpty" },
     "observed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "continuous_audit": { "const": false },
     "organization": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
     "owner": { "type": "string", "pattern": "^https://github\\.com/[^/]+$" },
-    "evidence": {
+    "defaults_evidence": {
       "type": "object",
       "additionalProperties": false,
       "required": ["verification", "endpoint"],
@@ -47,24 +49,19 @@
         "required": [
           "repository",
           "repository_id",
-          "configuration_id",
-          "status",
-          "dependabot_alerts_enablement_http_status",
-          "dependabot_security_updates",
-          "ghas_billing_repositories",
           "observed_at",
-          "evidence_endpoint"
+          "evidence_records"
         ],
         "properties": {
           "repository": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
           "repository_id": { "type": "integer", "minimum": 1 },
-          "configuration_id": { "type": "integer", "minimum": 1 },
-          "status": { "const": "enforced" },
-          "dependabot_alerts_enablement_http_status": { "const": 204 },
-          "dependabot_security_updates": { "const": "enabled_unpaused" },
-          "ghas_billing_repositories": { "type": "integer", "minimum": 0 },
           "observed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
-          "evidence_endpoint": { "type": "string", "pattern": "^https://api\\.github\\.com/" }
+          "evidence_records": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": { "$ref": "#/$defs/attachmentEvidence" }
+          }
         }
       }
     },
@@ -94,6 +91,58 @@
   "$defs": {
     "nonEmpty": { "type": "string", "minLength": 1 },
     "toggle": { "enum": ["enabled", "disabled"] },
+    "apiEndpoint": { "type": "string", "pattern": "^https://api\\.github\\.com/" },
+    "attachmentEvidence": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim", "method", "endpoint", "configuration_id", "status"],
+          "properties": {
+            "claim": { "const": "configuration_attachment" },
+            "method": { "const": "GET" },
+            "endpoint": { "$ref": "#/$defs/apiEndpoint" },
+            "configuration_id": { "type": "integer", "minimum": 1 },
+            "status": { "const": "enforced" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim", "method", "endpoint", "http_status"],
+          "properties": {
+            "claim": { "const": "dependabot_alerts_enablement" },
+            "method": { "const": "PUT" },
+            "endpoint": { "$ref": "#/$defs/apiEndpoint" },
+            "http_status": { "const": 204 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim", "method", "endpoint", "http_status", "enabled", "paused"],
+          "properties": {
+            "claim": { "const": "automated_security_fixes" },
+            "method": { "const": "GET" },
+            "endpoint": { "$ref": "#/$defs/apiEndpoint" },
+            "http_status": { "const": 200 },
+            "enabled": { "const": true },
+            "paused": { "const": false }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim", "method", "endpoint", "total_count"],
+          "properties": {
+            "claim": { "const": "organization_ghas_billing" },
+            "method": { "const": "GET" },
+            "endpoint": { "$ref": "#/$defs/apiEndpoint" },
+            "total_count": { "const": 0 }
+          }
+        }
+      ]
+    },
     "default": {
       "type": "object",
       "additionalProperties": false,
@@ -129,8 +178,9 @@
     "requiredCheckException": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "reason", "compensation"],
+      "required": ["id", "repository", "reason", "compensation"],
       "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
         "repository": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
         "reason": { "$ref": "#/$defs/nonEmpty" },
         "compensation": { "$ref": "#/$defs/nonEmpty" }

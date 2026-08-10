@@ -18,7 +18,7 @@ function validateSchema(value, schema, label) {
   }
 }
 
-function manifestDigest(entries) {
+function coordinateChecksum(entries) {
   const canonical = [...entries]
     .sort(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
     .map(({ path, git_blob_sha: blob }) => `${path}\0${blob}\n`)
@@ -26,74 +26,80 @@ function manifestDigest(entries) {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
-function validateManifest(entries, digest, required, label) {
+function validateCoordinateChecksum(entries, digest, required, label) {
   if (!required) {
     assert(entries.length === 0 && digest === null, `${label} must be explicitly empty.`);
     return;
   }
-  assert(entries.length > 0 && digest !== null, `${label} must contain immutable blob evidence.`);
+  assert(entries.length > 0 && digest !== null, `${label} must contain dated Git evidence coordinates.`);
   const paths = entries.map(({ path }) => path);
   assert(new Set(paths).size === paths.length, `${label} paths must be unique.`);
-  assert(digest === manifestDigest(entries), `${label} manifest digest does not match its Git blob entries.`);
+  assert(
+    digest === coordinateChecksum(entries),
+    `${label} internal coordinate checksum does not match its ledger entries.`,
+  );
 }
 
 function validateSpecificationEvidence(evidence, repository) {
-  const verified = evidence.verification === "verified_at_revision";
+  const reviewed = evidence.evidence_status === "dated_human_reviewed_coordinates";
   assert(
-    verified === (evidence.revision !== null && evidence.entries.length > 0),
-    `${repository} specification evidence must bind verified paths to one immutable revision.`,
+    reviewed === (evidence.revision !== null && evidence.entries.length > 0),
+    `${repository} reviewed specification coordinates require a source revision and entries.`,
   );
-  validateManifest(evidence.entries, evidence.manifest_sha256, verified, `${repository} specification evidence`);
-  assert(verified || evidence.revision === null, `${repository} unverified specification evidence must not imply a revision.`);
+  validateCoordinateChecksum(evidence.entries, evidence.coordinate_checksum_sha256, reviewed, `${repository} specification evidence`);
+  assert(reviewed || evidence.revision === null, `${repository} unreviewed specification evidence must not imply a revision.`);
   const approval = evidence.approval_evidence;
   const approvalApplicable = approval.status !== "not_applicable";
   assert(
     approvalApplicable === (approval.revision !== null && approval.entries.length > 0),
-    `${repository} approval evidence must explicitly bind a revision or be N/A.`,
+    `${repository} approval evidence must cite a revision or be N/A.`,
   );
-  validateManifest(approval.entries, approval.manifest_sha256, approvalApplicable, `${repository} approval evidence`);
+  validateCoordinateChecksum(approval.entries, approval.coordinate_checksum_sha256, approvalApplicable, `${repository} approval evidence`);
   assert(approvalApplicable || approval.revision === null, `${repository} N/A approval evidence must not imply a revision.`);
   assert(!approvalApplicable || approval.revision === evidence.revision, `${repository} approval evidence revision must match the specification snapshot.`);
 }
 
 function validateQualification(qualification, repository, axis) {
-  const qualified = qualification.verification === "qualified_at_revision";
-  const notApplicable = qualification.verification === "not_applicable";
+  const accepted = qualification.evidence_status === "governance_accepted_coordinates";
+  const notApplicable = qualification.evidence_status === "not_applicable";
   assert(
-    qualified ===
-      (qualification.qualified_revision !== null && qualification.evidence_entries.length > 0),
-    `${repository} ${axis} qualification must bind evidence to one immutable revision.`,
+    accepted ===
+      (qualification.accepted_revision !== null && qualification.evidence_entries.length > 0),
+    `${repository} ${axis} governance acceptance requires a revision coordinate and evidence entries.`,
   );
-  validateManifest(
+  validateCoordinateChecksum(
     qualification.evidence_entries,
-    qualification.manifest_sha256,
-    qualified,
+    qualification.coordinate_checksum_sha256,
+    accepted,
     `${repository} ${axis} qualification evidence`,
   );
   assert(
-    qualified || qualification.qualified_revision === null,
-    `${repository} unverified or N/A ${axis} qualification must not imply a revision.`,
+    accepted || qualification.accepted_revision === null,
+    `${repository} unaccepted or N/A ${axis} qualification must not imply a revision.`,
   );
   assert(
     notApplicable === (qualification.status === "not_applicable"),
-    `${repository} ${axis} N/A status and verification must agree.`,
+    `${repository} ${axis} N/A status and evidence_status must agree.`,
   );
   assert(
-    !qualified || !["not_qualified", "not_applicable"].includes(qualification.status),
-    `${repository} ${axis} cannot be both qualified and ${qualification.status}.`,
+    !accepted || !["not_qualified", "not_applicable"].includes(qualification.status),
+    `${repository} ${axis} cannot be both governance-accepted and ${qualification.status}.`,
   );
 }
 
 function validateRemoteChecks(remote, repository) {
   const observed = remote.status === "observed_active";
+  const excepted = remote.status === "unavailable_free_private_repository";
   assert(
     observed === (remote.ruleset_id !== null && remote.checks.length > 0),
-    `${repository} active remote checks must bind a ruleset ID and checks.`,
+    `${repository} active remote-check observation must cite a ruleset ID and checks.`,
   );
-  assert(
-    observed === (remote.reason === null),
-    `${repository} remote-check reason must be null only for an active observation.`,
-  );
+  assert(observed === (remote.reason === null && remote.exception_id === null),
+    `${repository} active remote-check observation must not cite a reason or exception.`);
+  assert(excepted === (remote.exception_id !== null),
+    `${repository} unavailable required checks must cite exactly one policy exception.`);
+  assert(excepted || observed || (remote.reason !== null && remote.exception_id === null),
+    `${repository} unobserved remote checks must cite a reason, not an exception.`);
   assert(
     observed ===
       (remote.required_approving_review_count === 0 &&
@@ -107,12 +113,20 @@ function validateRemoteChecks(remote, repository) {
 export function validateExecutableSpecLedger(ledger, schema) {
   validateSchema(ledger, schema, "Executable-spec qualification ledger");
   const repositories = new Set();
+  const activeRepositoryIds = new Set();
   const exclusions = new Set(
     ledger.scope.archived_exclusions.map(({ repository }) => repository),
+  );
+  const excludedRepositoryIds = new Set(
+    ledger.scope.archived_exclusions.map(({ repository_id }) => repository_id),
   );
   assert(
     exclusions.size === ledger.scope.archived_exclusions.length,
     "Archived exclusions must be unique.",
+  );
+  assert(
+    excludedRepositoryIds.size === ledger.scope.archived_exclusions.length,
+    "Archived exclusion repository IDs must be unique.",
   );
   assert(
     ledger.scope.active_repository_count === ledger.repositories.length,
@@ -126,7 +140,10 @@ export function validateExecutableSpecLedger(ledger, schema) {
   for (const record of ledger.repositories) {
     assert(!repositories.has(record.repository), `Duplicate repository: ${record.repository}`);
     assert(!exclusions.has(record.repository), `${record.repository} cannot be both active and excluded.`);
+    assert(!activeRepositoryIds.has(record.repository_id), `Duplicate active repository ID: ${record.repository_id}`);
+    assert(!excludedRepositoryIds.has(record.repository_id), `${record.repository} ID cannot be both active and excluded.`);
     repositories.add(record.repository);
+    activeRepositoryIds.add(record.repository_id);
     validateSpecificationEvidence(record.specification_evidence, record.repository);
     validateQualification(record.implementation_qualification, record.repository, "implementation");
     validateQualification(record.deployment_qualification, record.repository, "deployment");
@@ -147,22 +164,22 @@ export function validateExecutableSpecLedger(ledger, schema) {
     ].includes(record.specification_maturity);
     if (positiveMaturity) {
       assert(
-        record.specification_evidence.verification === "verified_at_revision" &&
+        record.specification_evidence.evidence_status === "dated_human_reviewed_coordinates" &&
           record.specification_evidence.approval_evidence.status === "accepted_transitive",
-        `${record.repository} positive maturity requires verified specification and accepted approval evidence.`,
+        `${record.repository} positive maturity requires human-reviewed coordinates and accepted approval evidence.`,
       );
     }
     if (record.specification_maturity === "synthetic_proposed") {
       assert(
-        record.specification_evidence.verification === "verified_at_revision" &&
+        record.specification_evidence.evidence_status === "dated_human_reviewed_coordinates" &&
           record.specification_evidence.approval_evidence.status === "proposed_unapproved",
-        `${record.repository} proposed maturity must remain verified but explicitly unapproved.`,
+        `${record.repository} proposed maturity must retain reviewed coordinates but remain explicitly unapproved.`,
       );
     }
     if (record.applicability === "governance_only") {
       assert(
         record.specification_maturity === "governance_only" &&
-          record.specification_evidence.verification === "unverified_snapshot" &&
+          record.specification_evidence.evidence_status === "unverified_snapshot" &&
           record.implementation_qualification.status === "not_applicable" &&
           record.deployment_qualification.status === "not_applicable",
         `${record.repository} governance-only axes are inconsistent.`,
@@ -171,7 +188,7 @@ export function validateExecutableSpecLedger(ledger, schema) {
     if (record.applicability === "not_applicable") {
       assert(
         record.specification_maturity === "not_applicable" &&
-          record.specification_evidence.verification === "not_applicable" &&
+          record.specification_evidence.evidence_status === "not_applicable" &&
           record.implementation_qualification.status === "not_applicable" &&
           record.deployment_qualification.status === "not_applicable",
         `${record.repository} N/A axes are inconsistent.`,
@@ -180,18 +197,23 @@ export function validateExecutableSpecLedger(ledger, schema) {
     for (const qualification of [record.implementation_qualification, record.deployment_qualification]) {
       assert(
         qualification.status !== "capability_only_not_product_qualified" ||
-          qualification.verification !== "qualified_at_revision",
+          qualification.evidence_status !== "governance_accepted_coordinates",
         `${record.repository} capability-only status cannot claim product qualification.`,
       );
       assert(
         (qualification.status === "partially_qualified_internal_slice") ===
-          (qualification.verification === "qualified_at_revision"),
-        `${record.repository} positive qualification status requires immutable verified evidence.`,
+          (qualification.evidence_status === "governance_accepted_coordinates"),
+        `${record.repository} positive qualification status requires governance-accepted evidence coordinates.`,
       );
       assert(
-        qualification.verification !== "qualified_at_revision" ||
-          qualification.qualified_revision === record.specification_evidence.revision,
+        qualification.evidence_status !== "governance_accepted_coordinates" ||
+          qualification.accepted_revision === record.specification_evidence.revision,
         `${record.repository} qualification revision must match its specification revision.`,
+      );
+      assert(
+        qualification.evidence_status !== "governance_accepted_coordinates" ||
+          record.specification_evidence.approval_evidence.status === "accepted_transitive",
+        `${record.repository} governance-accepted qualification requires accepted catalog or ADR evidence.`,
       );
     }
   }
@@ -212,18 +234,29 @@ export function validateCodeSecurityDefaults(policy, schema) {
   assert(new Set(targets).size === targets.length, "Security default visibility targets must be unique.");
   assert(targets.includes("public"), "A public-repository security default is required.");
   assert(targets.includes("private_and_internal"), "A private_and_internal security default is required.");
-  const observed = policy.evidence.verification === "observed_api_snapshot";
+  const observed = policy.defaults_evidence.verification === "observed_api_snapshot";
   assert(
-    observed === (typeof policy.evidence.endpoint === "string" && policy.evidence.endpoint.length > 0),
+    observed ===
+      (typeof policy.defaults_evidence.endpoint === "string" &&
+        policy.defaults_evidence.endpoint.length > 0),
     "Observed security state must cite its API endpoint; unverified state must not.",
   );
-  const exceptions = policy.required_check_exceptions.map(({ repository }) => repository);
-  assert(new Set(exceptions).size === exceptions.length, "Required-check exceptions must be unique by repository.");
+  const exceptionRepositories = policy.required_check_exceptions.map(({ repository }) => repository);
+  const exceptionIds = policy.required_check_exceptions.map(({ id }) => id);
+  assert(new Set(exceptionRepositories).size === exceptionRepositories.length, "Required-check exceptions must be unique by repository.");
+  assert(new Set(exceptionIds).size === exceptionIds.length, "Required-check exception IDs must be unique.");
   const defaultIds = new Set(policy.defaults.map(({ id }) => id));
   const attachments = policy.repository_attachments.map(({ repository }) => repository);
+  const attachmentIds = policy.repository_attachments.map(({ repository_id }) => repository_id);
   assert(new Set(attachments).size === attachments.length, "Security attachments must be unique by repository.");
+  assert(new Set(attachmentIds).size === attachmentIds.length, "Security attachments must be unique by repository ID.");
   for (const attachment of policy.repository_attachments) {
-    assert(defaultIds.has(attachment.configuration_id), `${attachment.repository} references an unknown security configuration.`);
+    const claims = attachment.evidence_records.map(({ claim }) => claim);
+    assert(new Set(claims).size === claims.length, `${attachment.repository} security evidence claims must be unique.`);
+    const configuration = attachment.evidence_records.find(
+      ({ claim }) => claim === "configuration_attachment",
+    );
+    assert(defaultIds.has(configuration?.configuration_id), `${attachment.repository} references an unknown security configuration.`);
   }
 }
 
@@ -247,6 +280,30 @@ export function validateActionsPolicy(policy, schema) {
   }
   const pending = pinning.pending.map(({ repository }) => repository);
   assert(new Set(pending).size === pending.length, "Pending Actions repositories must be unique.");
+}
+
+export function validateGovernanceReferences(ledger, security, actions) {
+  const exceptions = new Map(
+    security.required_check_exceptions.map((exception) => [exception.id, exception]),
+  );
+  const actionReferences = new Set(actions.required_check_exception_ids);
+  const ledgerReferences = new Map(
+    ledger.repositories
+      .filter(({ gate_contract }) => gate_contract.remote_required_checks.exception_id !== null)
+      .map((record) => [record.gate_contract.remote_required_checks.exception_id, record]),
+  );
+  for (const reference of actionReferences) {
+    assert(exceptions.has(reference), `Actions policy references unknown required-check exception: ${reference}`);
+  }
+  for (const [reference, record] of ledgerReferences) {
+    const exception = exceptions.get(reference);
+    assert(exception, `${record.repository} references unknown required-check exception: ${reference}`);
+    assert(exception.repository === record.repository, `${record.repository} references an exception owned by another repository.`);
+  }
+  for (const exception of exceptions.values()) {
+    assert(actionReferences.has(exception.id), `Actions policy must reference required-check exception: ${exception.id}`);
+    assert(ledgerReferences.has(exception.id), `Executable-spec ledger must reference required-check exception: ${exception.id}`);
+  }
 }
 
 export async function loadJson(path) {

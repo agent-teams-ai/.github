@@ -51,7 +51,7 @@ The machine-readable
 [`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
 ledger is authoritative for the six active in-scope organization repositories.
 It records specification maturity, implementation qualification, deployment qualification,
-owners, immutable evidence revisions, and exact deterministic commands as
+owners, dated evidence coordinates, and exact deterministic commands as
 separate claims. JSON Schema validates the strict structure; generic cross-field
 checks prevent unverified snapshots from implying qualification. Repository
 values are owned by the ledger rather than mirrored in validator code.
@@ -64,11 +64,12 @@ and a one-approval rule would deadlock a single-member organization.
 The scope is the six active, non-archived governance and product repositories.
 Four archived one-shot security canaries are explicit exclusions in the ledger;
 they are not silently omitted. Do not copy repository applicability into another
-human table: the JSON ledger is the sole value authority and its offline check
-binds evidence paths to immutable Git blob manifests.
+human table: the JSON ledger is the sole value authority. Evidence entries are
+dated, human-reviewed Git revision/path/blob coordinates.
 
-Each manifest hashes lexically sorted `path`, NUL, Git blob SHA, and LF records
-with SHA-256, so validation is deterministic and offline.
+The internal checksum hashes lexically sorted `path`, NUL, Git blob SHA, and LF
+records with SHA-256. It detects inconsistent edits inside the ledger; it does
+not prove that remote Git objects exist or that a revision contains those blobs.
 
 ## Organization Security Defaults
 
@@ -82,14 +83,14 @@ updates only; Renovate owns routine version updates.
 Do not assume that a transferred repository received an organization default.
 Audit and explicitly apply the visibility-appropriate configuration after a
 transfer. The current private `agent-teams-platform` repository has a documented
-GitHub Free exception: its CI gates cannot be configured as protected required
-checks on the current plan, so policy must not describe them as remotely
-enforced.
+GitHub Free exception, `platform-private-required-checks-github-free`, defined
+once in the code-security snapshot and referenced by the other policy records.
+Policy must not describe those CI gates as remotely enforced.
 
 The dated Actions posture is recorded separately in
 [`governance/actions-policy.json`](governance/actions-policy.json). Default
 workflow permissions are read-only and workflow approval is disabled. Immutable
 action-reference enforcement is not yet organization-wide: Gateway pull request
-`#7` remains pending, and Platform retains its private GitHub Free required-check
-exception. Do not describe Actions SHA pinning as fully enforced until the JSON
+`#7` remains pending, and Platform retains exception
+`platform-private-required-checks-github-free`. Do not describe Actions SHA pinning as fully enforced until the JSON
 snapshot is updated with new evidence.

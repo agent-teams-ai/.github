@@ -10,7 +10,7 @@
     "ledger_revision",
     "snapshot_date",
     "authority",
-    "evidence_manifest_algorithm",
+    "coordinate_checksum_algorithm",
     "scope",
     "approval_policy",
     "remote_enforcement",
@@ -18,12 +18,12 @@
   ],
   "properties": {
     "$schema": { "const": "./executable-spec-qualification.schema.json" },
-    "schema_version": { "const": 2 },
+    "schema_version": { "const": 3 },
     "ledger_revision": { "$ref": "#/$defs/nonEmpty" },
     "snapshot_date": { "$ref": "#/$defs/date" },
     "authority": { "const": "this-ledger" },
-    "evidence_manifest_algorithm": {
-      "const": "sha256(sorted(path + NUL + git_blob_sha + LF))"
+    "coordinate_checksum_algorithm": {
+      "const": "sha256-internal-consistency(sorted(path + NUL + git_blob_sha + LF))"
     },
     "scope": {
       "type": "object",
@@ -116,25 +116,25 @@
     "approvalEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "revision", "entries", "manifest_sha256"],
+      "required": ["status", "revision", "entries", "coordinate_checksum_sha256"],
       "properties": {
         "status": { "enum": ["accepted_transitive", "proposed_unapproved", "not_applicable"] },
         "revision": { "oneOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }] },
         "entries": { "$ref": "#/$defs/entries" },
-        "manifest_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+        "coordinate_checksum_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
       }
     },
     "specificationEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["verification", "revision", "entries", "manifest_sha256", "approval_evidence"],
+      "required": ["evidence_status", "revision", "entries", "coordinate_checksum_sha256", "approval_evidence"],
       "properties": {
-        "verification": {
-          "enum": ["verified_at_revision", "unverified_snapshot", "not_applicable"]
+        "evidence_status": {
+          "enum": ["dated_human_reviewed_coordinates", "unverified_snapshot", "not_applicable"]
         },
         "revision": { "oneOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }] },
         "entries": { "$ref": "#/$defs/entries" },
-        "manifest_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "coordinate_checksum_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
         "approval_evidence": { "$ref": "#/$defs/approvalEvidence" }
       }
     },
@@ -144,10 +144,10 @@
       "required": [
         "status",
         "statement",
-        "verification",
-        "qualified_revision",
+        "evidence_status",
+        "accepted_revision",
         "evidence_entries",
-        "manifest_sha256"
+        "coordinate_checksum_sha256"
       ],
       "properties": {
         "status": {
@@ -159,14 +159,14 @@
           ]
         },
         "statement": { "$ref": "#/$defs/nonEmpty" },
-        "verification": {
-          "enum": ["qualified_at_revision", "unverified_snapshot", "not_applicable"]
+        "evidence_status": {
+          "enum": ["governance_accepted_coordinates", "unverified_snapshot", "not_applicable"]
         },
-        "qualified_revision": {
+        "accepted_revision": {
           "oneOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }]
         },
         "evidence_entries": { "$ref": "#/$defs/entries" },
-        "manifest_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+        "coordinate_checksum_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
       }
     },
     "gateContract": {
@@ -194,6 +194,7 @@
       "additionalProperties": false,
       "required": [
         "status",
+        "exception_id",
         "default_branch",
         "ruleset_id",
         "required_approving_review_count",
@@ -204,6 +205,12 @@
       "properties": {
         "status": {
           "enum": ["observed_active", "unavailable_free_private_repository", "not_observed"]
+        },
+        "exception_id": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+            { "type": "null" }
+          ]
         },
         "default_branch": { "$ref": "#/$defs/nonEmpty" },
         "ruleset_id": { "type": ["integer", "null"], "minimum": 1 },
@@ -229,6 +236,7 @@
       "additionalProperties": false,
       "required": [
         "repository",
+        "repository_id",
         "archived",
         "owner_reference",
         "applicability",
@@ -241,6 +249,7 @@
       ],
       "properties": {
         "repository": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
+        "repository_id": { "type": "integer", "minimum": 1 },
         "archived": { "const": false },
         "owner_reference": {
           "type": "string",

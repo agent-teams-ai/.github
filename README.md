@@ -45,7 +45,8 @@ human governance document intentionally does not duplicate its matrix.
 
 This repository pins the externally owned ReviewRouter reusable workflow and
 runtime to immutable commit SHAs. Product repositories own their reviewed caller
-configuration. Interaction migration to the upstream reusable workflow remains
-deferred until its actions and input contract are safely pinned; organization
-governance does not copy ReviewRouter bounded-context runtime logic.
+configuration. The inherited explicit `reviewrouter-interaction.yml` temporarily
+contains existing integration logic. Migration to the upstream reusable workflow
+remains deferred until a fixed, safely pinned upstream release is available; this
+branch does not add a second organization-owned reusable implementation.
 Organization-wide community health, repository policy, and dependency automation configuration.
