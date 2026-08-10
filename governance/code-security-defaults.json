@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-08-10",
+  "organization": "agent-teams-ai",
+  "defaults": [
+    {
+      "id": 266049,
+      "name": "Public repository security baseline",
+      "default_for_new_repositories": "public",
+      "enforcement": "enforced",
+      "dependency_graph": "enabled",
+      "dependabot_alerts": "enabled",
+      "dependabot_security_updates": "enabled",
+      "advanced_security": "enabled",
+      "code_scanning_default_setup": "enabled",
+      "secret_scanning": "enabled",
+      "secret_scanning_push_protection": "enabled"
+    },
+    {
+      "id": 266048,
+      "name": "Free dependency security baseline",
+      "default_for_new_repositories": "private_and_internal",
+      "enforcement": "enforced",
+      "dependency_graph": "enabled",
+      "dependabot_alerts": "enabled",
+      "dependabot_security_updates": "enabled",
+      "advanced_security": "disabled",
+      "code_scanning_default_setup": "disabled",
+      "secret_scanning": "disabled",
+      "secret_scanning_push_protection": "disabled"
+    }
+  ],
+  "dependabot_policy": {
+    "scope": "security_updates_only",
+    "routine_version_update_owner": "renovate"
+  },
+  "transfer_policy": {
+    "automatic_default_application_assumed": false,
+    "required_action": "Audit and explicitly apply the visibility-appropriate organization configuration after transfer."
+  },
+  "required_check_exceptions": [
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "reason": "GitHub Free does not provide private-repository rulesets or branch protection required checks for this organization.",
+      "compensation": "Keep deterministic local and CI gate declarations, but do not represent them as protected required checks."
+    }
+  ]
+}

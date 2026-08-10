@@ -47,13 +47,37 @@ positive and negative fixtures, and the exact deterministic gate or an explicit
 
 ## Applicability Matrix
 
-This matrix is authoritative for the six organization repositories.
+The machine-readable
+[`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
+ledger is authoritative for the six organization repositories. It records
+specification maturity, implementation qualification, deployment qualification,
+and exact deterministic commands as separate claims. Its validator rejects
+broader Runtime, Platform, or Orchestrator claims and rejects any implication
+that checked-in commands are remotely enforced required checks.
+
+This table is a human summary only.
 
 | Repository | Applicability | Owned boundary |
 | --- | --- | --- |
 | `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. Its local pull request template must mirror the organization evidence block. |
-| `agent-runtime` | Applicable | Repository-owned JSON Schema with Ajv validation, fast-check properties/fixtures, and XState guards/transitions with an explicit runtime binding. |
-| `agent-teams-platform` | Applicable | Internal Project Management model only; adoption makes no public wire-contract claim. |
-| `agent-teams-orchestrator` | Applicable | Accepted, repository-owned state projections only; external or proposed state is out of scope. |
+| `agent-runtime` | Applicable | Synthetic and proposed runtime-operation oracle only; no production runtime-binding or qualification claim. |
+| `agent-teams-platform` | Applicable | Implemented internal Project Management slice only; no public wire-contract, whole-platform, or deployment qualification claim. |
+| `agent-teams-orchestrator` | Applicable | Accepted partial state projections only; full runtime binding, proposed/external state, and deployment qualification are out of scope. |
 | `.github` | Governance-only | Organization policy, contribution evidence, and marker checks; no product executable specification. |
 | `craig-meeting-gateway` | N/A | Fork: N/A until an upstream-owned test/spec boundary exists and is adopted explicitly. |
+
+## Organization Security Defaults
+
+The live organization code-security defaults and their limitations are recorded
+in [`governance/code-security-defaults.json`](governance/code-security-defaults.json)
+and [the security baseline](docs/organization-security-baseline.md). Configuration
+`266049` is enforced for new public repositories and configuration `266048` is
+enforced for new private and internal repositories. Dependabot owns security
+updates only; Renovate owns routine version updates.
+
+Do not assume that a transferred repository received an organization default.
+Audit and explicitly apply the visibility-appropriate configuration after a
+transfer. The current private `agent-teams-platform` repository has a documented
+GitHub Free exception: its CI gates cannot be configured as protected required
+checks on the current plan, so policy must not describe them as remotely
+enforced.

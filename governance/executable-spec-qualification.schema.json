@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agent-teams-ai/.github/blob/main/governance/executable-spec-qualification.schema.json",
+  "title": "Agent Teams executable-specification qualification ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "snapshot_date",
+    "authority",
+    "remote_enforcement",
+    "repositories"
+  ],
+  "properties": {
+    "$schema": { "const": "./executable-spec-qualification.schema.json" },
+    "schema_version": { "const": 1 },
+    "snapshot_date": { "type": "string", "format": "date" },
+    "authority": { "const": "organization-policy" },
+    "remote_enforcement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attestation", "statement"],
+      "properties": {
+        "attestation": { "const": "not_provided" },
+        "statement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/repository" }
+    }
+  },
+  "$defs": {
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "statement"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "applicability",
+        "specification_maturity",
+        "specification_scope",
+        "implementation_qualification",
+        "deployment_qualification",
+        "gate_contract"
+      ],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "applicability": { "type": "string", "minLength": 1 },
+        "specification_maturity": { "type": "string", "minLength": 1 },
+        "specification_scope": { "type": "string", "minLength": 1 },
+        "implementation_qualification": { "$ref": "#/$defs/qualification" },
+        "deployment_qualification": { "$ref": "#/$defs/qualification" },
+        "gate_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "full_repository_command",
+            "executable_spec_commands",
+            "remote_required_check"
+          ],
+          "properties": {
+            "full_repository_command": {
+              "type": ["string", "null"]
+            },
+            "executable_spec_commands": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            },
+            "remote_required_check": {
+              "enum": [
+                "not_attested",
+                "unavailable_free_private_repository",
+                "not_applicable"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

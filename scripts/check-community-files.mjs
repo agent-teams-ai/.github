@@ -14,6 +14,11 @@ const requiredFiles = [
   "profile/README.md",
   ".github/workflows/reviewrouter-codex.yml",
   ".github/workflows/reviewrouter-interaction.yml",
+  ".github/workflows/reviewrouter-interaction-reusable.yml",
+  "docs/organization-security-baseline.md",
+  "governance/code-security-defaults.json",
+  "governance/executable-spec-qualification.json",
+  "governance/executable-spec-qualification.schema.json",
   "renovate-config.json",
   "renovate.json"
 ];
@@ -55,11 +60,17 @@ requireMarkers(governance, "GOVERNANCE.md", [
   "Do not add Ajv, fast-check,",
   "empty dependency or placeholder model",
   "| `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. Its local pull request template must mirror the organization evidence block.",
-  "| `agent-runtime` | Applicable | Repository-owned JSON Schema with Ajv validation, fast-check properties/fixtures, and XState",
-  "| `agent-teams-platform` | Applicable | Internal Project Management model only; adoption makes no public wire-contract claim.",
-  "| `agent-teams-orchestrator` | Applicable | Accepted, repository-owned state projections only",
+  "ledger is authoritative for the six organization repositories",
+  "| `agent-runtime` | Applicable | Synthetic and proposed runtime-operation oracle only",
+  "| `agent-teams-platform` | Applicable | Implemented internal Project Management slice only",
+  "| `agent-teams-orchestrator` | Applicable | Accepted partial state projections only",
   "| `.github` | Governance-only |",
   "| `craig-meeting-gateway` | N/A | Fork: N/A until an upstream-owned test/spec boundary exists",
+  "Configuration `266049` is enforced for new public repositories",
+  "configuration `266048` is enforced for new private and internal repositories",
+  "Dependabot owns security updates only; Renovate owns routine version updates",
+  "transferred repository",
+  "GitHub Free exception",
 ]);
 requireMarkers(contributing, "CONTRIBUTING.md", [
   "repository-owned schema or",

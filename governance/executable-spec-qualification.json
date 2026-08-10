@@ -1,0 +1,140 @@
+{
+  "$schema": "./executable-spec-qualification.schema.json",
+  "schema_version": 1,
+  "snapshot_date": "2026-08-10",
+  "authority": "organization-policy",
+  "remote_enforcement": {
+    "attestation": "not_provided",
+    "statement": "This ledger defines local deterministic gate contracts. It does not attest that a GitHub ruleset, branch protection rule, or required status check is currently enforcing them."
+  },
+  "repositories": [
+    {
+      "repository": "agent-teams-ai/engineering-foundation",
+      "applicability": "capability_owner",
+      "specification_maturity": "capability_implemented",
+      "specification_scope": "Generic development-only executable-specification mechanisms and evidence contracts; no product domain model is qualified here.",
+      "implementation_qualification": {
+        "status": "capability_only_not_product_qualified",
+        "statement": "Foundation implementation checks qualify the reusable mechanism, not a consumer product implementation."
+      },
+      "deployment_qualification": {
+        "status": "not_applicable",
+        "statement": "Consumer deployment qualification remains consumer-owned."
+      },
+      "gate_contract": {
+        "full_repository_command": "pnpm check",
+        "executable_spec_commands": [
+          "pnpm foundation:check"
+        ],
+        "remote_required_check": "not_attested"
+      }
+    },
+    {
+      "repository": "agent-teams-ai/agent-runtime",
+      "applicability": "applicable",
+      "specification_maturity": "synthetic_proposed",
+      "specification_scope": "Synthetic runtime-operation oracle and proposed model evidence only; this is not proof of production runtime binding.",
+      "implementation_qualification": {
+        "status": "not_qualified",
+        "statement": "The synthetic oracle does not qualify the production implementation."
+      },
+      "deployment_qualification": {
+        "status": "not_qualified",
+        "statement": "No deployment profile is qualified by the synthetic oracle."
+      },
+      "gate_contract": {
+        "full_repository_command": "pnpm check",
+        "executable_spec_commands": [
+          "pnpm architecture:operation-oracle"
+        ],
+        "remote_required_check": "not_attested"
+      }
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "applicability": "applicable",
+      "specification_maturity": "implemented_internal_slice",
+      "specification_scope": "Repository-internal Project Management executable-specification slice only; no public wire-contract or whole-platform claim.",
+      "implementation_qualification": {
+        "status": "partially_qualified_internal_slice",
+        "statement": "Property, mutation, model, and clean-checkout gates qualify only the implemented internal slice."
+      },
+      "deployment_qualification": {
+        "status": "not_qualified",
+        "statement": "The internal slice does not qualify a deployment profile."
+      },
+      "gate_contract": {
+        "full_repository_command": "pnpm check",
+        "executable_spec_commands": [
+          "pnpm spec:property",
+          "pnpm spec:mutation",
+          "pnpm spec:model",
+          "pnpm spec:clean-checkout"
+        ],
+        "remote_required_check": "unavailable_free_private_repository"
+      }
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-orchestrator",
+      "applicability": "applicable",
+      "specification_maturity": "accepted_partial_projections",
+      "specification_scope": "Accepted repository-owned orchestration state projections only; proposed and external state, full runtime binding, and end-to-end behavior remain outside the claim.",
+      "implementation_qualification": {
+        "status": "not_qualified",
+        "statement": "Projection conformance does not qualify the complete orchestrator implementation."
+      },
+      "deployment_qualification": {
+        "status": "not_qualified",
+        "statement": "No deployment profile is qualified by the accepted projections."
+      },
+      "gate_contract": {
+        "full_repository_command": "pnpm check",
+        "executable_spec_commands": [
+          "pnpm specs:check",
+          "pnpm specs:test"
+        ],
+        "remote_required_check": "not_attested"
+      }
+    },
+    {
+      "repository": "agent-teams-ai/.github",
+      "applicability": "governance_only",
+      "specification_maturity": "governance_only",
+      "specification_scope": "Organization governance records and deterministic policy validation; no product executable specification.",
+      "implementation_qualification": {
+        "status": "not_applicable",
+        "statement": "This repository owns governance, not a product implementation."
+      },
+      "deployment_qualification": {
+        "status": "not_applicable",
+        "statement": "No product deployment is owned here."
+      },
+      "gate_contract": {
+        "full_repository_command": "pnpm check",
+        "executable_spec_commands": [
+          "pnpm governance:validate"
+        ],
+        "remote_required_check": "not_attested"
+      }
+    },
+    {
+      "repository": "agent-teams-ai/craig-meeting-gateway",
+      "applicability": "not_applicable",
+      "specification_maturity": "not_applicable",
+      "specification_scope": "N/A until an upstream-owned executable test or specification boundary is explicitly adopted by this fork.",
+      "implementation_qualification": {
+        "status": "not_applicable",
+        "statement": "No organization executable-specification implementation claim exists."
+      },
+      "deployment_qualification": {
+        "status": "not_applicable",
+        "statement": "No organization executable-specification deployment claim exists."
+      },
+      "gate_contract": {
+        "full_repository_command": null,
+        "executable_spec_commands": [],
+        "remote_required_check": "not_applicable"
+      }
+    }
+  ]
+}
