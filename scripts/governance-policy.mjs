@@ -111,7 +111,7 @@ function validateRemoteChecks(remote, repository) {
     remote.required_approving_review_count === null &&
     remote.require_code_owner_review === null &&
     typeof remote.reason === "string" &&
-    remote.reason.length > 0 &&
+    remote.reason.trim().length > 0 &&
     remote.exception_id === null;
   assert(
     observed === observedShape,
@@ -179,10 +179,14 @@ export function validateExecutableSpecLedger(ledger, schema) {
     validateQualification(record.deployment_qualification, record.repository, "deployment");
 
     const notApplicable = record.applicability === "not_applicable";
+    const disabledGateShape =
+      record.gate_contract.full_repository_command === null &&
+      record.gate_contract.executable_spec_commands.length === 0;
+    const enabledGateShape =
+      record.gate_contract.full_repository_command !== null &&
+      record.gate_contract.executable_spec_commands.length > 0;
     assert(
-      notApplicable ===
-        (record.gate_contract.full_repository_command === null &&
-          record.gate_contract.executable_spec_commands.length === 0),
+      notApplicable === disabledGateShape && !notApplicable === enabledGateShape,
       `${record.repository} local gate applicability is inconsistent.`,
     );
     validateRemoteChecks(record.gate_contract.remote_required_checks, record.repository);
@@ -220,6 +224,26 @@ export function validateExecutableSpecLedger(ledger, schema) {
         `${record.repository} governance-only axes are inconsistent.`,
       );
     }
+    if (record.applicability === "capability_owner") {
+      assert(
+        record.implementation_qualification.status ===
+          "capability_only_not_product_qualified" &&
+          record.deployment_qualification.status === "not_applicable" &&
+          record.deployment_qualification.evidence_status === "not_applicable",
+        `${record.repository} capability-owner qualification axes are inconsistent.`,
+      );
+    }
+    if (record.applicability === "applicable") {
+      const allowedProductStatuses = new Set([
+        "not_qualified",
+        "partially_qualified_internal_slice",
+      ]);
+      assert(
+        allowedProductStatuses.has(record.implementation_qualification.status) &&
+          allowedProductStatuses.has(record.deployment_qualification.status),
+        `${record.repository} product qualification axes are inconsistent.`,
+      );
+    }
     if (record.applicability === "not_applicable") {
       assert(
         record.specification_maturity === "not_applicable" &&
@@ -252,6 +276,15 @@ export function validateExecutableSpecLedger(ledger, schema) {
       );
     }
   }
+  const hasRemoteObservation = ledger.repositories.some(
+    ({ gate_contract }) =>
+      gate_contract.remote_required_checks.status !== "not_observed",
+  );
+  assert(
+    hasRemoteObservation ===
+      (ledger.remote_enforcement.verification === "dated_api_observation"),
+    "Remote enforcement verification must match the repository observations.",
+  );
   if (!ledger.approval_policy.can_approve_pull_request_reviews) {
     assert(
       ledger.approval_policy.minimum_required_approvals === 0,
@@ -270,10 +303,11 @@ export function validateCodeSecurityDefaults(policy, schema) {
   assert(targets.includes("public"), "A public-repository security default is required.");
   assert(targets.includes("private_and_internal"), "A private_and_internal security default is required.");
   const observed = policy.defaults_evidence.verification === "observed_api_snapshot";
+  const defaultsEndpoint =
+    `https://api.github.com/orgs/${policy.organization}/code-security/configurations/defaults`;
   assert(
     observed ===
-      (typeof policy.defaults_evidence.endpoint === "string" &&
-        policy.defaults_evidence.endpoint.length > 0),
+      (policy.defaults_evidence.endpoint === defaultsEndpoint),
     "Observed security state must cite its API endpoint; unverified state must not.",
   );
   const organizationClaims = policy.organization_observations.map(({ claim }) => claim);
@@ -282,8 +316,12 @@ export function validateCodeSecurityDefaults(policy, schema) {
     "Organization security observation claims must be unique.",
   );
   for (const observation of policy.organization_observations) {
+    const expectedEndpoint =
+      observation.claim === "organization_ghas_billing"
+        ? `https://api.github.com/orgs/${policy.organization}/settings/billing/advanced-security`
+        : `https://api.github.com/orgs/${policy.organization}`;
     assert(
-      observation.endpoint.startsWith(`https://api.github.com/orgs/${policy.organization}`),
+      observation.endpoint === expectedEndpoint,
       `${observation.claim} must cite an endpoint scoped to the observed organization.`,
     );
   }
@@ -299,9 +337,11 @@ export function validateCodeSecurityDefaults(policy, schema) {
     );
   } else {
     assert(
-      twoFactor.transition_status !== "none" &&
+        twoFactor.transition_status !== "none" &&
         typeof twoFactor.risk === "string" &&
-        typeof twoFactor.compensation === "string",
+        twoFactor.risk.trim().length > 0 &&
+        typeof twoFactor.compensation === "string" &&
+        twoFactor.compensation.trim().length > 0,
       "A disabled two-factor requirement must record its transition, risk, and compensation.",
     );
   }
@@ -317,6 +357,26 @@ export function validateCodeSecurityDefaults(policy, schema) {
   for (const attachment of policy.repository_attachments) {
     const claims = attachment.evidence_records.map(({ claim }) => claim);
     assert(new Set(claims).size === claims.length, `${attachment.repository} security evidence claims must be unique.`);
+    const expectedEndpoints = new Map([
+      [
+        "configuration_attachment",
+        `https://api.github.com/repos/${attachment.repository}/code-security-configuration`,
+      ],
+      [
+        "dependabot_alerts_enablement",
+        `https://api.github.com/repos/${attachment.repository}/vulnerability-alerts`,
+      ],
+      [
+        "automated_security_fixes",
+        `https://api.github.com/repos/${attachment.repository}/automated-security-fixes`,
+      ],
+    ]);
+    for (const evidence of attachment.evidence_records) {
+      assert(
+        evidence.endpoint === expectedEndpoints.get(evidence.claim),
+        `${attachment.repository} ${evidence.claim} endpoint must match the repository scope.`,
+      );
+    }
     const configuration = attachment.evidence_records.find(
       ({ claim }) => claim === "configuration_attachment",
     );
@@ -329,14 +389,14 @@ export function validateActionsPolicy(policy, schema) {
   const pinning = policy.action_sha_pinning;
   if (pinning.fully_enforced) {
     assert(
-      pinning.organization_policy_enabled &&
+      pinning.sha_pinning_required &&
         pinning.rollout_status === "enforced" &&
         pinning.pending.length === 0,
       "Fully enforced SHA pinning requires enabled organization policy and no pending repositories.",
     );
   } else {
     assert(
-      !pinning.organization_policy_enabled &&
+      !pinning.sha_pinning_required &&
         pinning.rollout_status === "pending_gateway_pr" &&
         pinning.pending.length > 0,
       "Pending SHA pinning must name at least one blocking repository.",

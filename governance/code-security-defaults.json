@@ -1,14 +1,14 @@
 {
   "$schema": "./code-security-defaults.schema.json",
   "schema_version": 4,
-  "snapshot_revision": "2026-08-10.4",
+  "snapshot_revision": "2026-08-10.5",
   "observed_at": "2026-08-10",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
   "owner": "https://github.com/777genius",
   "defaults_evidence": {
     "verification": "observed_api_snapshot",
-    "endpoint": "/orgs/agent-teams-ai/code-security/configurations/defaults"
+    "endpoint": "https://api.github.com/orgs/agent-teams-ai/code-security/configurations/defaults"
   },
   "defaults": [
     {

@@ -34,7 +34,9 @@
       "required": ["verification", "endpoint"],
       "properties": {
         "verification": { "enum": ["observed_api_snapshot", "unverified_snapshot"] },
-        "endpoint": { "type": ["string", "null"] }
+        "endpoint": {
+          "oneOf": [{ "$ref": "#/$defs/apiEndpoint" }, { "type": "null" }]
+        }
       }
     },
     "defaults": {
@@ -95,7 +97,7 @@
     }
   },
   "$defs": {
-    "nonEmpty": { "type": "string", "minLength": 1 },
+    "nonEmpty": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "toggle": { "enum": ["enabled", "disabled"] },
     "apiEndpoint": { "type": "string", "pattern": "^https://api\\.github\\.com/" },
     "organizationObservation": {
@@ -123,8 +125,8 @@
             "endpoint": { "$ref": "#/$defs/apiEndpoint" },
             "value": { "type": "boolean" },
             "transition_status": { "enum": ["none", "pending_user_confirmation", "deferred_by_owner"] },
-            "risk": { "type": ["string", "null"], "minLength": 1 },
-            "compensation": { "type": ["string", "null"], "minLength": 1 }
+            "risk": { "type": ["string", "null"], "minLength": 1, "pattern": "\\S" },
+            "compensation": { "type": ["string", "null"], "minLength": 1, "pattern": "\\S" }
           }
         }
       ]

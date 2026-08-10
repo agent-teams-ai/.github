@@ -155,6 +155,47 @@ test("rejects every applicability and maturity mismatch", () => {
   }
 });
 
+test("requires both aggregate and executable-spec gates for every applicable repository", () => {
+  for (const mutation of [
+    (record) => {
+      record.gate_contract.full_repository_command = null;
+    },
+    (record) => {
+      record.gate_contract.executable_spec_commands = [];
+    },
+  ]) {
+    const changed = clone(ledger);
+    const record = changed.repositories.find(
+      ({ applicability }) => applicability === "capability_owner",
+    );
+    mutation(record);
+    assert.throws(
+      () => validateExecutableSpecLedger(changed, ledgerSchema),
+      /local gate applicability is inconsistent/u,
+    );
+  }
+});
+
+test("rejects product qualification on the capability owner", () => {
+  const changed = clone(ledger);
+  const capability = changed.repositories.find(
+    ({ applicability }) => applicability === "capability_owner",
+  );
+  capability.implementation_qualification = {
+    status: "partially_qualified_internal_slice",
+    statement: "Adversarial product qualification.",
+    evidence_status: "governance_accepted_coordinates",
+    accepted_revision: capability.specification_evidence.revision,
+    evidence_entries: structuredClone(capability.specification_evidence.entries),
+    coordinate_checksum_sha256:
+      capability.specification_evidence.coordinate_checksum_sha256,
+  };
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /capability-owner qualification axes/u,
+  );
+});
+
 test("rejects an internally inconsistent evidence-coordinate edit", () => {
   const changed = clone(ledger);
   changed.repositories[0].specification_evidence.entries[0].git_blob_sha = "0".repeat(40);
@@ -229,6 +270,19 @@ test("rejects a scope count that omits an organization repository", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /repository count/u);
 });
 
+test("accepts a dynamically counted additional repository", () => {
+  const changed = clone(ledger);
+  const additional = structuredClone(
+    changed.repositories.find(({ applicability }) => applicability === "not_applicable"),
+  );
+  additional.repository = "agent-teams-ai/future-product";
+  additional.repository_id = 999999999;
+  changed.repositories.push(additional);
+  changed.scope.active_repository_count += 1;
+  changed.scope.observed_repository_count += 1;
+  assert.doesNotThrow(() => validateExecutableSpecLedger(changed, ledgerSchema));
+});
+
 test("rejects an approval requirement that would deadlock current governance", () => {
   const changed = clone(ledger);
   changed.approval_policy.minimum_required_approvals = 1;
@@ -275,6 +329,15 @@ test("rejects observed required checks carrying an exception", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /exact enforced shape/u);
 });
 
+test("rejects observed rulesets under an unverified remote snapshot", () => {
+  const changed = clone(ledger);
+  changed.remote_enforcement.verification = "unverified_snapshot";
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /verification must match the repository observations/u,
+  );
+});
+
 test("accepts the authoritative code-security defaults snapshot", () => {
   assert.doesNotThrow(() => validateCodeSecurityDefaults(clone(security), securitySchema));
 });
@@ -296,6 +359,16 @@ test("rejects duplicate security-default visibility targets", () => {
   changed.defaults[1].default_for_new_repositories =
     changed.defaults[0].default_for_new_repositories;
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /visibility targets/u);
+});
+
+test("rejects a security-default snapshot with the wrong API endpoint", () => {
+  const changed = clone(security);
+  changed.defaults_evidence.endpoint =
+    "https://api.github.com/orgs/agent-teams-ai/code-security/configurations/266049";
+  assert.throws(
+    () => validateCodeSecurityDefaults(changed, securitySchema),
+    /Observed security state must cite its API endpoint/u,
+  );
 });
 
 test("accepts a confirmed true two-factor requirement observation", () => {
@@ -338,6 +411,16 @@ test("rejects duplicate organization security observations", () => {
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /claims must be unique/u);
 });
 
+test("rejects an organization endpoint with a shared-prefix owner", () => {
+  const changed = clone(security);
+  changed.organization_observations[0].endpoint =
+    "https://api.github.com/orgs/agent-teams-ai-evil/settings/billing/advanced-security";
+  assert.throws(
+    () => validateCodeSecurityDefaults(changed, securitySchema),
+    /scoped to the observed organization/u,
+  );
+});
+
 test("rejects organization billing evidence inside a repository attachment", () => {
   const changed = clone(security);
   changed.repository_attachments[0].evidence_records.push(
@@ -363,6 +446,27 @@ test("rejects duplicate Platform security evidence claims", () => {
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /claims must be unique/u);
 });
 
+test("rejects repository security evidence scoped to another repository", () => {
+  const changed = clone(security);
+  changed.repository_attachments[0].evidence_records[0].endpoint =
+    "https://api.github.com/repos/agent-teams-ai/engineering-foundation/code-security-configuration";
+  assert.throws(
+    () => validateCodeSecurityDefaults(changed, securitySchema),
+    /endpoint must match the repository scope/u,
+  );
+});
+
+test("rejects whitespace-only required-check exception explanations", () => {
+  for (const field of ["reason", "compensation"]) {
+    const changed = clone(security);
+    changed.required_check_exceptions[0][field] = " ";
+    assert.throws(
+      () => validateCodeSecurityDefaults(changed, securitySchema),
+      /JSON Schema/u,
+    );
+  }
+});
+
 test("accepts the dated fully enforced Actions snapshot", () => {
   assert.doesNotThrow(() => validateActionsPolicy(clone(actions), actionsSchema));
 });
@@ -381,6 +485,15 @@ test("rejects an incomplete organization Actions coverage snapshot", () => {
   const changed = clone(actions);
   changed.action_sha_pinning.enabled_repositories = "selected";
   assert.throws(() => validateActionsPolicy(changed, actionsSchema), /must be equal to constant/u);
+});
+
+test("requires the canonical GitHub SHA-pinning API field", () => {
+  const changed = clone(actions);
+  changed.action_sha_pinning.sha_pinning_required = false;
+  assert.throws(
+    () => validateActionsPolicy(changed, actionsSchema),
+    /Fully enforced SHA pinning/u,
+  );
 });
 
 test("accepts cross-policy required-check exception references", () => {

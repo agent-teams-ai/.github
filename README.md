@@ -35,10 +35,9 @@ Repositories consume the Renovate policy explicitly:
 The repository-local file is intentionally tiny. It can add project-specific
 package rules but must not copy the organization preset.
 
-The executable-specification ledger scopes all ten observed organization
-repositories: six active, non-archived records and four archived security
-canaries named as explicit exclusions. Repository scope, maturity, and
-qualification values live only in the JSON ledger; the
+The executable-specification ledger scopes observed organization repositories
+as active, non-archived records or named archived exclusions. Repository scope,
+maturity, and qualification values live only in the JSON ledger; the
 human governance document intentionally does not duplicate its matrix.
 
 ## ReviewRouter

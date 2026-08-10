@@ -16,7 +16,7 @@
     "evidence_endpoint": "https://api.github.com/orgs/agent-teams-ai/actions/permissions",
     "enabled_repositories": "all",
     "allowed_actions": "all",
-    "organization_policy_enabled": true,
+    "sha_pinning_required": true,
     "rollout_status": "enforced",
     "fully_enforced": true,
     "pending": []

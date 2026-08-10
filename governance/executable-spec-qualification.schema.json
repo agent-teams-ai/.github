@@ -89,13 +89,12 @@
     },
     "repositories": {
       "type": "array",
-      "minItems": 6,
-      "maxItems": 6,
+      "minItems": 1,
       "items": { "$ref": "#/$defs/repository" }
     }
   },
   "$defs": {
-    "nonEmpty": { "type": "string", "minLength": 1 },
+    "nonEmpty": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
     "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
     "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },

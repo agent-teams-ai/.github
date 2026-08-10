@@ -45,7 +45,7 @@
         "evidence_endpoint",
         "enabled_repositories",
         "allowed_actions",
-        "organization_policy_enabled",
+        "sha_pinning_required",
         "rollout_status",
         "fully_enforced",
         "pending"
@@ -57,7 +57,7 @@
         },
         "enabled_repositories": { "const": "all" },
         "allowed_actions": { "const": "all" },
-        "organization_policy_enabled": { "type": "boolean" },
+        "sha_pinning_required": { "type": "boolean" },
         "rollout_status": { "enum": ["pending_gateway_pr", "enforced"] },
         "fully_enforced": { "type": "boolean" },
         "pending": {
@@ -73,7 +73,7 @@
     }
   },
   "$defs": {
-    "nonEmpty": { "type": "string", "minLength": 1 },
+    "nonEmpty": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
     "exceptionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
     "githubReference": { "type": "string", "pattern": "^https://github\\.com/[^/]+(?:/[^/]+(?:/.*)?)?$" },

@@ -49,7 +49,7 @@ positive and negative fixtures, and the exact deterministic gate or an explicit
 
 The machine-readable
 [`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
-ledger is authoritative for the six active in-scope organization repositories.
+ledger is authoritative for the active in-scope organization repositories.
 It records specification maturity, implementation qualification, deployment qualification,
 owners, dated evidence coordinates, and exact deterministic commands as
 separate claims. JSON Schema validates the strict structure; generic cross-field
@@ -61,8 +61,8 @@ and integration IDs. They are not a claim of continuous live audit. Approval
 metadata currently requires zero approvals because review approval is disabled
 and a one-approval rule would deadlock a single-member organization.
 
-The scope is the six active, non-archived governance and product repositories.
-Four archived one-shot security canaries are explicit exclusions in the ledger;
+The scope is the active, non-archived governance and product repositories.
+Archived one-shot security canaries are explicit exclusions in the ledger;
 they are not silently omitted. Do not copy repository applicability into another
 human table: the JSON ledger is the sole value authority. Evidence entries are
 dated, human-reviewed Git revision/path/blob coordinates.
