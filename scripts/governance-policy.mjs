@@ -90,25 +90,55 @@ function validateQualification(qualification, repository, axis) {
 function validateRemoteChecks(remote, repository) {
   const observed = remote.status === "observed_active";
   const excepted = remote.status === "unavailable_free_private_repository";
+  const unobserved = remote.status === "not_observed";
+  const observedShape =
+    remote.ruleset_id !== null &&
+    remote.checks.length > 0 &&
+    remote.required_approving_review_count === 0 &&
+    remote.require_code_owner_review === false &&
+    remote.reason === null &&
+    remote.exception_id === null;
+  const unavailableShape =
+    remote.ruleset_id === null &&
+    remote.checks.length === 0 &&
+    remote.required_approving_review_count === null &&
+    remote.require_code_owner_review === null &&
+    remote.reason === null &&
+    remote.exception_id !== null;
+  const unobservedShape =
+    remote.ruleset_id === null &&
+    remote.checks.length === 0 &&
+    remote.required_approving_review_count === null &&
+    remote.require_code_owner_review === null &&
+    typeof remote.reason === "string" &&
+    remote.reason.length > 0 &&
+    remote.exception_id === null;
   assert(
-    observed === (remote.ruleset_id !== null && remote.checks.length > 0),
-    `${repository} active remote-check observation must cite a ruleset ID and checks.`,
+    observed === observedShape,
+    `${repository} observed-active remote checks must use the exact enforced shape.`,
   );
-  assert(observed === (remote.reason === null && remote.exception_id === null),
-    `${repository} active remote-check observation must not cite a reason or exception.`);
-  assert(excepted === (remote.exception_id !== null),
-    `${repository} unavailable required checks must cite exactly one policy exception.`);
-  assert(excepted || observed || (remote.reason !== null && remote.exception_id === null),
-    `${repository} unobserved remote checks must cite a reason, not an exception.`);
   assert(
-    observed ===
-      (remote.required_approving_review_count === 0 &&
-        remote.require_code_owner_review === false),
-    `${repository} ruleset approval observation must be exact zero-approval or unavailable.`,
+    excepted === unavailableShape,
+    `${repository} unavailable remote checks must use the exact exception shape.`,
+  );
+  assert(
+    unobserved === unobservedShape,
+    `${repository} unobserved remote checks must use the exact reason shape.`,
   );
   const identities = remote.checks.map(({ context, integration_id }) => `${context}\0${integration_id}`);
   assert(new Set(identities).size === identities.length, `${repository} remote checks must be unique.`);
 }
+
+const maturityByApplicability = {
+  capability_owner: ["capability_implemented"],
+  applicable: [
+    "synthetic_proposed",
+    "implemented_internal_slice",
+    "accepted_partial_projections",
+  ],
+  governance_only: ["governance_only"],
+  not_applicable: ["not_applicable"],
+};
 
 export function validateExecutableSpecLedger(ledger, schema) {
   validateSchema(ledger, schema, "Executable-spec qualification ledger");
@@ -156,6 +186,11 @@ export function validateExecutableSpecLedger(ledger, schema) {
       `${record.repository} local gate applicability is inconsistent.`,
     );
     validateRemoteChecks(record.gate_contract.remote_required_checks, record.repository);
+
+    assert(
+      maturityByApplicability[record.applicability].includes(record.specification_maturity),
+      `${record.repository} maturity is incompatible with applicability ${record.applicability}.`,
+    );
 
     const positiveMaturity = [
       "capability_implemented",
@@ -283,16 +318,25 @@ export function validateActionsPolicy(policy, schema) {
 }
 
 export function validateGovernanceReferences(ledger, security, actions) {
+  const exceptionIds = security.required_check_exceptions.map(({ id }) => id);
+  assert(new Set(exceptionIds).size === exceptionIds.length, "Required-check exception authority IDs must be unique.");
   const exceptions = new Map(
     security.required_check_exceptions.map((exception) => [exception.id, exception]),
   );
-  const actionReferences = new Set(actions.required_check_exception_ids);
-  const ledgerReferences = new Map(
-    ledger.repositories
-      .filter(({ gate_contract }) => gate_contract.remote_required_checks.exception_id !== null)
-      .map((record) => [record.gate_contract.remote_required_checks.exception_id, record]),
+  const actionReferenceIds = actions.required_check_exception_ids;
+  assert(new Set(actionReferenceIds).size === actionReferenceIds.length, "Actions exception references must be unique.");
+  const actionReferences = new Set(actionReferenceIds);
+  const ledgerReferenceRecords = ledger.repositories.filter(
+    ({ gate_contract }) => gate_contract.remote_required_checks.exception_id !== null,
   );
-  for (const reference of actionReferences) {
+  const ledgerReferenceIds = ledgerReferenceRecords.map(
+    ({ gate_contract }) => gate_contract.remote_required_checks.exception_id,
+  );
+  assert(new Set(ledgerReferenceIds).size === ledgerReferenceIds.length, "Ledger exception references must be one-to-one.");
+  const ledgerReferences = new Map(
+    ledgerReferenceRecords.map((record) => [record.gate_contract.remote_required_checks.exception_id, record]),
+  );
+  for (const reference of actionReferenceIds) {
     assert(exceptions.has(reference), `Actions policy references unknown required-check exception: ${reference}`);
   }
   for (const [reference, record] of ledgerReferences) {

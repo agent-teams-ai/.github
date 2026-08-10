@@ -134,7 +134,25 @@ test("rejects N/A records with non-N/A maturity", () => {
   const changed = clone(ledger);
   const notApplicable = changed.repositories.find(({ applicability }) => applicability === "not_applicable");
   notApplicable.specification_maturity = "governance_only";
-  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /N\/A axes/u);
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /maturity is incompatible/u);
+});
+
+test("rejects every applicability and maturity mismatch", () => {
+  const cases = [
+    ["capability_owner", "accepted_partial_projections"],
+    ["applicable", "governance_only"],
+    ["governance_only", "not_applicable"],
+    ["not_applicable", "synthetic_proposed"],
+  ];
+  for (const [applicability, invalidMaturity] of cases) {
+    const changed = clone(ledger);
+    const record = changed.repositories.find((candidate) => candidate.applicability === applicability);
+    record.specification_maturity = invalidMaturity;
+    assert.throws(
+      () => validateExecutableSpecLedger(changed, ledgerSchema),
+      /maturity is incompatible with applicability/u,
+    );
+  }
 });
 
 test("rejects an internally inconsistent evidence-coordinate edit", () => {
@@ -223,7 +241,7 @@ test("rejects active required checks without a ruleset identity", () => {
     ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_active",
   );
   observed.gate_contract.remote_required_checks.ruleset_id = null;
-  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /must cite a ruleset ID/u);
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /exact enforced shape/u);
 });
 
 test("rejects a nonzero approval count in the zero-approval ruleset snapshot", () => {
@@ -232,7 +250,29 @@ test("rejects a nonzero approval count in the zero-approval ruleset snapshot", (
     ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_active",
   );
   observed.gate_contract.remote_required_checks.required_approving_review_count = 1;
-  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /exact zero-approval/u);
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /exact enforced shape/u);
+});
+
+test("rejects unavailable required checks mixed with enforced fields", () => {
+  const changed = clone(ledger);
+  const unavailable = changed.repositories.find(
+    ({ gate_contract }) =>
+      gate_contract.remote_required_checks.status === "unavailable_free_private_repository",
+  );
+  unavailable.gate_contract.remote_required_checks.ruleset_id = 1;
+  unavailable.gate_contract.remote_required_checks.required_approving_review_count = 0;
+  unavailable.gate_contract.remote_required_checks.require_code_owner_review = false;
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /exact exception shape/u);
+});
+
+test("rejects observed required checks carrying an exception", () => {
+  const changed = clone(ledger);
+  const observed = changed.repositories.find(
+    ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_active",
+  );
+  observed.gate_contract.remote_required_checks.exception_id =
+    "platform-private-required-checks-github-free";
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /exact enforced shape/u);
 });
 
 test("accepts the authoritative code-security defaults snapshot", () => {
@@ -295,5 +335,52 @@ test("rejects a dangling Actions required-check exception reference", () => {
   assert.throws(
     () => validateGovernanceReferences(clone(ledger), clone(security), changed),
     /references unknown required-check exception/u,
+  );
+});
+
+test("rejects duplicate authority exception IDs before building lookup maps", () => {
+  const changed = clone(security);
+  changed.required_check_exceptions.push({
+    ...structuredClone(changed.required_check_exceptions[0]),
+    repository: "agent-teams-ai/engineering-foundation",
+  });
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions)),
+    /authority IDs must be unique/u,
+  );
+});
+
+test("rejects duplicate Actions exception references", () => {
+  const changed = clone(actions);
+  changed.required_check_exception_ids.push(changed.required_check_exception_ids[0]);
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), clone(security), changed),
+    /Actions exception references must be unique/u,
+  );
+});
+
+test("rejects one exception referenced by multiple ledger repositories", () => {
+  const changed = clone(ledger);
+  const platform = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
+  );
+  const foundation = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/engineering-foundation",
+  );
+  foundation.gate_contract.remote_required_checks = structuredClone(
+    platform.gate_contract.remote_required_checks,
+  );
+  assert.throws(
+    () => validateGovernanceReferences(changed, clone(security), clone(actions)),
+    /Ledger exception references must be one-to-one/u,
+  );
+});
+
+test("rejects an exception referenced outside its repository scope", () => {
+  const changed = clone(security);
+  changed.required_check_exceptions[0].repository = "agent-teams-ai/engineering-foundation";
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions)),
+    /exception owned by another repository/u,
   );
 });
