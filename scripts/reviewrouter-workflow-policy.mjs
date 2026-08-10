@@ -1,9 +1,8 @@
 const ACTION_COMMIT = "08f6bc1481fd284fa82adfa47cda05c76b161b00";
-const INTERACTION_WORKFLOW_COMMIT = "18fe8dac76d85f421c3e90489322474f7e76578f";
 const EXPECTED_REVIEW_USES =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${ACTION_COMMIT}`;
 const EXPECTED_INTERACTION_USES =
-  `agent-teams-ai/.github/.github/workflows/reviewrouter-interaction-reusable.yml@${INTERACTION_WORKFLOW_COMMIT}`;
+  "./.github/workflows/reviewrouter-interaction-reusable.yml";
 const FULL_SHA = /^[0-9a-f]{40}$/u;
 const INTERACTION_PERMISSIONS = {
   actions: "write",
@@ -64,9 +63,7 @@ function validateInteractionCaller(caller) {
   const jobEntries = Object.entries(caller.workflow.jobs ?? {});
   assert(jobEntries.length === 1, "Interaction caller must contain exactly one thin reusable-workflow job.");
   const interaction = caller.workflow.jobs?.interaction;
-  assert(interaction?.uses === EXPECTED_INTERACTION_USES, "Interaction caller must pin the organization reusable workflow.");
-  const [, reference = ""] = interaction.uses.split("@");
-  assert(FULL_SHA.test(reference), "Interaction reusable workflow must be pinned to a full SHA.");
+  assert(interaction?.uses === EXPECTED_INTERACTION_USES, "Self-caller must use the local reusable workflow from the same ref.");
   assert(samePermissions(interaction.permissions, INTERACTION_PERMISSIONS), "Interaction caller permissions changed.");
   assert(interaction.steps === undefined && interaction["runs-on"] === undefined, "Interaction caller must remain thin.");
   assert(interaction.secrets !== "inherit", "Interaction caller must not inherit all secrets.");

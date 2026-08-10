@@ -21,15 +21,15 @@ function cloneWorkflows() {
   return structuredClone(checkedIn);
 }
 
-test("accepts the pinned reusable interaction workflow and thin caller", () => {
+test("accepts the pinned interaction runtime and thin local self-caller", () => {
   assert.doesNotThrow(() => validateReviewRouterWorkflows(cloneWorkflows()));
 });
 
-test("rejects a mutable reusable-workflow caller reference", () => {
+test("rejects a remote self-caller reference that can break after squash merge", () => {
   const changed = cloneWorkflows();
   changed.caller.workflow.jobs.interaction.uses =
     "agent-teams-ai/.github/.github/workflows/reviewrouter-interaction-reusable.yml@main";
-  assert.throws(() => validateReviewRouterWorkflows(changed), /pin the organization reusable workflow/u);
+  assert.throws(() => validateReviewRouterWorkflows(changed), /must use the local reusable workflow/u);
 });
 
 test("rejects caller-wide secret inheritance", () => {

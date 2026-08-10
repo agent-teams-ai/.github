@@ -18,7 +18,7 @@ jobs:
       issues: read
       pull-requests: read
       id-token: write
-    uses: agent-teams-ai/.github/.github/workflows/reviewrouter-interaction-reusable.yml@18fe8dac76d85f421c3e90489322474f7e76578f
+    uses: ./.github/workflows/reviewrouter-interaction-reusable.yml
     with:
       discussion_mode: ${{ vars.REVIEW_ROUTER_DISCUSSION_MODE || 'off' }}
       discussion_max_per_pr: ${{ vars.REVIEW_ROUTER_DISCUSSION_MAX_PER_PR || '20' }}

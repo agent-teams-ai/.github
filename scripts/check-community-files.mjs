@@ -31,6 +31,7 @@ if (!renovateConfig.extends?.includes("config:best-practices")) {
 }
 
 const governance = await readFile("GOVERNANCE.md", "utf8");
+const readme = await readFile("README.md", "utf8");
 const contributing = await readFile("CONTRIBUTING.md", "utf8");
 const pullRequestTemplate = await readFile(
   ".github/PULL_REQUEST_TEMPLATE.md",
@@ -77,6 +78,11 @@ requireMarkers(contributing, "CONTRIBUTING.md", [
   "positive and negative fixtures",
   "exact command",
   "`N/A` with the ownership reason",
+]);
+requireMarkers(readme, "README.md", [
+  "thin local caller",
+  "reviewrouter-interaction-reusable.yml@<full-commit-sha>",
+  "mutable branch or tag is not an accepted production pin",
 ]);
 requireMarkers(pullRequestTemplate, ".github/PULL_REQUEST_TEMPLATE.md", [
   "Repository-owned schema or contract and version:",
