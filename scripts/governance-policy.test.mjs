@@ -49,5 +49,5 @@ test("rejects routine Dependabot version-update ownership", () => {
 test("rejects removal of the GitHub Free private Platform exception", () => {
   const changed = clone(security);
   changed.required_check_exceptions = [];
-  assert.throws(() => validateCodeSecurityDefaults(changed), /exception is missing/u);
+  assert.throws(() => validateCodeSecurityDefaults(changed), /required-check exception/u);
 });

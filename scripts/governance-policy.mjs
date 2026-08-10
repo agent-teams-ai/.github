@@ -192,27 +192,76 @@ const SECURITY_KEYS = [
 export function validateCodeSecurityDefaults(policy) {
   assertExactKeys(policy, SECURITY_KEYS, "security policy");
   assert(policy.schema_version === 1, "Security policy schema_version must be 1.");
+  assert(/^\d{4}-\d{2}-\d{2}$/u.test(policy.observed_at), "Security policy observed_at must use YYYY-MM-DD.");
   assert(policy.organization === "agent-teams-ai", "Security policy organization is invalid.");
   assert(Array.isArray(policy.defaults) && policy.defaults.length === 2, "Security policy must contain two defaults.");
   const byId = new Map(policy.defaults.map((entry) => [entry.id, entry]));
   const publicDefault = byId.get(266049);
   const privateDefault = byId.get(266048);
-  assert(publicDefault?.default_for_new_repositories === "public", "Configuration 266049 must target public repositories.");
-  assert(privateDefault?.default_for_new_repositories === "private_and_internal", "Configuration 266048 must target private_and_internal repositories.");
-  for (const entry of [publicDefault, privateDefault]) {
-    assert(entry?.enforcement === "enforced", `Security configuration ${entry?.id ?? "missing"} must be enforced.`);
-    assert(entry.dependency_graph === "enabled", `Security configuration ${entry.id} must enable dependency graph.`);
-    assert(entry.dependabot_alerts === "enabled", `Security configuration ${entry.id} must enable Dependabot alerts.`);
-    assert(entry.dependabot_security_updates === "enabled", `Security configuration ${entry.id} must enable security updates.`);
+  const expectedDefaults = [
+    [
+      publicDefault,
+      {
+        id: 266049,
+        name: "Public repository security baseline",
+        default_for_new_repositories: "public",
+        enforcement: "enforced",
+        dependency_graph: "enabled",
+        dependabot_alerts: "enabled",
+        dependabot_security_updates: "enabled",
+        advanced_security: "enabled",
+        code_scanning_default_setup: "enabled",
+        secret_scanning: "enabled",
+        secret_scanning_push_protection: "enabled",
+      },
+    ],
+    [
+      privateDefault,
+      {
+        id: 266048,
+        name: "Free dependency security baseline",
+        default_for_new_repositories: "private_and_internal",
+        enforcement: "enforced",
+        dependency_graph: "enabled",
+        dependabot_alerts: "enabled",
+        dependabot_security_updates: "enabled",
+        advanced_security: "disabled",
+        code_scanning_default_setup: "disabled",
+        secret_scanning: "disabled",
+        secret_scanning_push_protection: "disabled",
+      },
+    ],
+  ];
+  for (const [actual, expected] of expectedDefaults) {
+    assert(actual, `Security configuration ${expected.id} is missing.`);
+    assertExactKeys(actual, Object.keys(expected), `security configuration ${expected.id}`);
+    assert(
+      JSON.stringify(actual) === JSON.stringify(expected),
+      `Security configuration ${expected.id} does not match the observed enforced default.`,
+    );
   }
+  assertExactKeys(policy.dependabot_policy, ["scope", "routine_version_update_owner"], "dependabot_policy");
   assert(policy.dependabot_policy?.scope === "security_updates_only", "Dependabot scope must remain security-only.");
   assert(policy.dependabot_policy?.routine_version_update_owner === "renovate", "Renovate must own routine updates.");
+  assertExactKeys(
+    policy.transfer_policy,
+    ["automatic_default_application_assumed", "required_action"],
+    "transfer_policy",
+  );
   assert(policy.transfer_policy?.automatic_default_application_assumed === false, "Transfers must fail closed to an explicit audit.");
+  assertNonEmpty(policy.transfer_policy.required_action, "transfer_policy.required_action");
+  assert(
+    Array.isArray(policy.required_check_exceptions) && policy.required_check_exceptions.length === 1,
+    "Security policy must contain exactly the current required-check exception.",
+  );
   const platformException = policy.required_check_exceptions?.find(
     ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
   );
   assert(platformException, "The GitHub Free private Platform required-check exception is missing.");
+  assertExactKeys(platformException, ["repository", "reason", "compensation"], "Platform required-check exception");
   assert(platformException.reason.includes("GitHub Free"), "The Platform exception must identify the plan constraint.");
+  assert(platformException.reason.includes("private-repository"), "The Platform exception must remain visibility-scoped.");
+  assert(platformException.compensation.includes("do not represent"), "The Platform exception must forbid false enforcement claims.");
 }
 
 export async function loadJson(path) {
