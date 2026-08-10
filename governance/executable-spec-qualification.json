@@ -1,67 +1,155 @@
 {
   "$schema": "./executable-spec-qualification.schema.json",
-  "schema_version": 1,
+  "schema_version": 2,
+  "ledger_revision": "2026-08-10.1",
   "snapshot_date": "2026-08-10",
-  "authority": "organization-policy",
+  "authority": "this-ledger",
+  "approval_policy": {
+    "observed_at": "2026-08-10",
+    "can_approve_pull_request_reviews": false,
+    "minimum_required_approvals": 0,
+    "evidence_reference": "organization governance observation",
+    "statement": "Approval metadata does not require a pull request approval while the organization has a single-member deadlock risk."
+  },
   "remote_enforcement": {
-    "attestation": "not_provided",
-    "statement": "This ledger defines local deterministic gate contracts. It does not attest that a GitHub ruleset, branch protection rule, or required status check is currently enforcing them."
+    "verification": "dated_api_observation",
+    "observed_at": "2026-08-10",
+    "continuous_audit": false,
+    "source": "GitHub repository rulesets API",
+    "statement": "Required-check records below are a dated observation, not a claim of continuous live enforcement."
   },
   "repositories": [
     {
       "repository": "agent-teams-ai/engineering-foundation",
+      "owner": {
+        "repository": "agent-teams-ai/engineering-foundation",
+        "authority": "repository-maintainers"
+      },
       "applicability": "capability_owner",
       "specification_maturity": "capability_implemented",
       "specification_scope": "Generic development-only executable-specification mechanisms and evidence contracts; no product domain model is qualified here.",
+      "specification_evidence": {
+        "verification": "verified_at_revision",
+        "revision": "b6e537b68c6bb5f06ba0224fd853341ca15c7947",
+        "paths": [
+          "packages/engineering-foundation/src/capabilities/executable-specifications/module.ts",
+          "packages/engineering-foundation/schemas/quality-executable-specifications/v1.schema.json",
+          "tests/executable-specifications.test.mjs"
+        ]
+      },
       "implementation_qualification": {
         "status": "capability_only_not_product_qualified",
-        "statement": "Foundation implementation checks qualify the reusable mechanism, not a consumer product implementation."
+        "statement": "Foundation checks cover the reusable capability, but no consumer product implementation is qualified here.",
+        "verification": "unverified_snapshot",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "deployment_qualification": {
         "status": "not_applicable",
-        "statement": "Consumer deployment qualification remains consumer-owned."
+        "statement": "Consumer deployment qualification remains consumer-owned.",
+        "verification": "not_applicable",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
-        "executable_spec_commands": [
-          "pnpm foundation:check"
-        ],
-        "remote_required_check": "not_attested"
+        "executable_spec_commands": ["pnpm foundation:check"],
+        "remote_required_checks": {
+          "status": "observed_active",
+          "default_branch": "main",
+          "ruleset_id": 19979782,
+          "reason": null,
+          "checks": [
+            { "context": "check", "integration_id": 15368 },
+            { "context": "windows-check", "integration_id": 15368 },
+            { "context": "ReviewGate", "integration_id": 15368 }
+          ]
+        }
       }
     },
     {
       "repository": "agent-teams-ai/agent-runtime",
+      "owner": {
+        "repository": "agent-teams-ai/agent-runtime",
+        "authority": "repository-maintainers"
+      },
       "applicability": "applicable",
       "specification_maturity": "synthetic_proposed",
       "specification_scope": "Synthetic runtime-operation oracle and proposed model evidence only; this is not proof of production runtime binding.",
+      "specification_evidence": {
+        "verification": "verified_at_revision",
+        "revision": "7d97e3cada94725f1f2f0bc19f479ea61479d650",
+        "paths": [
+          "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/manifest.json",
+          "experiments/runtime-profile-behavior/src/features/evidence/validate-runtime-operation-oracle.ts",
+          "experiments/runtime-profile-behavior/test/runtime-operation-oracle-properties.test.ts"
+        ]
+      },
       "implementation_qualification": {
         "status": "not_qualified",
-        "statement": "The synthetic oracle does not qualify the production implementation."
+        "statement": "The synthetic oracle does not qualify the production implementation.",
+        "verification": "unverified_snapshot",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "deployment_qualification": {
         "status": "not_qualified",
-        "statement": "No deployment profile is qualified by the synthetic oracle."
+        "statement": "No deployment profile is qualified by the synthetic oracle.",
+        "verification": "unverified_snapshot",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
-        "executable_spec_commands": [
-          "pnpm architecture:operation-oracle"
-        ],
-        "remote_required_check": "not_attested"
+        "executable_spec_commands": ["pnpm architecture:operation-oracle"],
+        "remote_required_checks": {
+          "status": "observed_active",
+          "default_branch": "main",
+          "ruleset_id": 19979781,
+          "reason": null,
+          "checks": [
+            { "context": "check", "integration_id": 15368 },
+            { "context": "ReviewRouter", "integration_id": 3599233 }
+          ]
+        }
       }
     },
     {
       "repository": "agent-teams-ai/agent-teams-platform",
+      "owner": {
+        "repository": "agent-teams-ai/agent-teams-platform",
+        "authority": "repository-maintainers"
+      },
       "applicability": "applicable",
       "specification_maturity": "implemented_internal_slice",
       "specification_scope": "Repository-internal Project Management executable-specification slice only; no public wire-contract or whole-platform claim.",
+      "specification_evidence": {
+        "verification": "verified_at_revision",
+        "revision": "8267db104053ae8b16c0761496998f5e8216034c",
+        "paths": [
+          "architecture/project-management/executable-specifications.json",
+          "tooling/executable-specifications/package.json",
+          "tooling/executable-specifications/scripts/managed-scope-admission-model.mjs"
+        ]
+      },
       "implementation_qualification": {
         "status": "partially_qualified_internal_slice",
-        "statement": "Property, mutation, model, and clean-checkout gates qualify only the implemented internal slice."
+        "statement": "Property, mutation, model, and clean-checkout gates qualify only the implemented internal slice.",
+        "verification": "qualified_at_revision",
+        "qualified_revision": "8267db104053ae8b16c0761496998f5e8216034c",
+        "evidence_paths": [
+          "tooling/executable-specifications/scripts/managed-scope-admission.property.test.mjs",
+          "tooling/executable-specifications/scripts/managed-scope-admission.mutation.test.mjs",
+          "tooling/executable-specifications/scripts/managed-scope-admission.model.test.mjs",
+          "tooling/executable-specifications/scripts/verify-clean-spec-gates.mjs"
+        ]
       },
       "deployment_qualification": {
         "status": "not_qualified",
-        "statement": "The internal slice does not qualify a deployment profile."
+        "statement": "The internal slice does not qualify a deployment profile.",
+        "verification": "unverified_snapshot",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
@@ -71,69 +159,146 @@
           "pnpm spec:model",
           "pnpm spec:clean-checkout"
         ],
-        "remote_required_check": "unavailable_free_private_repository"
+        "remote_required_checks": {
+          "status": "unavailable_free_private_repository",
+          "default_branch": "main",
+          "ruleset_id": null,
+          "reason": "GitHub Free does not expose private-repository rulesets or protected required checks for this organization.",
+          "checks": []
+        }
       }
     },
     {
       "repository": "agent-teams-ai/agent-teams-orchestrator",
+      "owner": {
+        "repository": "agent-teams-ai/agent-teams-orchestrator",
+        "authority": "repository-maintainers"
+      },
       "applicability": "applicable",
       "specification_maturity": "accepted_partial_projections",
       "specification_scope": "Accepted repository-owned orchestration state projections only; proposed and external state, full runtime binding, and end-to-end behavior remain outside the claim.",
+      "specification_evidence": {
+        "verification": "verified_at_revision",
+        "revision": "7ee4f733293811dcafa516610e191cd23ad812b8",
+        "paths": [
+          "architecture/executable-specs/catalog.json",
+          "architecture/executable-specs/orchestration-project-lifecycle.json",
+          "architecture/executable-specs/run-authority-state.json"
+        ]
+      },
       "implementation_qualification": {
         "status": "not_qualified",
-        "statement": "Projection conformance does not qualify the complete orchestrator implementation."
+        "statement": "Projection conformance does not qualify the complete orchestrator implementation.",
+        "verification": "unverified_snapshot",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "deployment_qualification": {
         "status": "not_qualified",
-        "statement": "No deployment profile is qualified by the accepted projections."
+        "statement": "No deployment profile is qualified by the accepted projections.",
+        "verification": "unverified_snapshot",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
-        "executable_spec_commands": [
-          "pnpm specs:check",
-          "pnpm specs:test"
-        ],
-        "remote_required_check": "not_attested"
+        "executable_spec_commands": ["pnpm specs:check", "pnpm specs:test"],
+        "remote_required_checks": {
+          "status": "observed_active",
+          "default_branch": "main",
+          "ruleset_id": 19979784,
+          "reason": null,
+          "checks": [
+            { "context": "architecture", "integration_id": 15368 },
+            { "context": "Review dependency changes", "integration_id": 15368 },
+            { "context": "ReviewRouter", "integration_id": 3599233 }
+          ]
+        }
       }
     },
     {
       "repository": "agent-teams-ai/.github",
+      "owner": {
+        "repository": "agent-teams-ai/.github",
+        "authority": "organization-governance-maintainers"
+      },
       "applicability": "governance_only",
       "specification_maturity": "governance_only",
       "specification_scope": "Organization governance records and deterministic policy validation; no product executable specification.",
+      "specification_evidence": {
+        "verification": "unverified_snapshot",
+        "revision": null,
+        "paths": []
+      },
       "implementation_qualification": {
         "status": "not_applicable",
-        "statement": "This repository owns governance, not a product implementation."
+        "statement": "This repository owns governance, not a product implementation.",
+        "verification": "not_applicable",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "deployment_qualification": {
         "status": "not_applicable",
-        "statement": "No product deployment is owned here."
+        "statement": "No product deployment is owned here.",
+        "verification": "not_applicable",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
-        "executable_spec_commands": [
-          "pnpm governance:validate"
-        ],
-        "remote_required_check": "not_attested"
+        "executable_spec_commands": ["pnpm governance:validate"],
+        "remote_required_checks": {
+          "status": "observed_active",
+          "default_branch": "main",
+          "ruleset_id": 19979783,
+          "reason": null,
+          "checks": [
+            { "context": "check", "integration_id": 15368 },
+            { "context": "ReviewRouter", "integration_id": 3599233 }
+          ]
+        }
       }
     },
     {
       "repository": "agent-teams-ai/craig-meeting-gateway",
+      "owner": {
+        "repository": "agent-teams-ai/craig-meeting-gateway",
+        "authority": "repository-maintainers"
+      },
       "applicability": "not_applicable",
       "specification_maturity": "not_applicable",
       "specification_scope": "N/A until an upstream-owned executable test or specification boundary is explicitly adopted by this fork.",
+      "specification_evidence": {
+        "verification": "not_applicable",
+        "revision": null,
+        "paths": []
+      },
       "implementation_qualification": {
         "status": "not_applicable",
-        "statement": "No organization executable-specification implementation claim exists."
+        "statement": "No organization executable-specification implementation claim exists.",
+        "verification": "not_applicable",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "deployment_qualification": {
         "status": "not_applicable",
-        "statement": "No organization executable-specification deployment claim exists."
+        "statement": "No organization executable-specification deployment claim exists.",
+        "verification": "not_applicable",
+        "qualified_revision": null,
+        "evidence_paths": []
       },
       "gate_contract": {
         "full_repository_command": null,
         "executable_spec_commands": [],
-        "remote_required_check": "not_applicable"
+        "remote_required_checks": {
+          "status": "observed_active",
+          "default_branch": "master",
+          "ruleset_id": 20231582,
+          "reason": null,
+          "checks": [
+            { "context": "ReviewRouter", "integration_id": 3599233 }
+          ]
+        }
       }
     }
   ]

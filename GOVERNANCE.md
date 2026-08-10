@@ -51,9 +51,15 @@ The machine-readable
 [`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
 ledger is authoritative for the six organization repositories. It records
 specification maturity, implementation qualification, deployment qualification,
-and exact deterministic commands as separate claims. Its validator rejects
-broader Runtime, Platform, or Orchestrator claims and rejects any implication
-that checked-in commands are remotely enforced required checks.
+owners, immutable evidence revisions, and exact deterministic commands as
+separate claims. JSON Schema validates the strict structure; generic cross-field
+checks prevent unverified snapshots from implying qualification. Repository
+values are owned by the ledger rather than mirrored in validator code.
+
+Required-check entries are a dated GitHub rulesets API observation with ruleset
+and integration IDs. They are not a claim of continuous live audit. Approval
+metadata currently requires zero approvals because review approval is disabled
+and a one-approval rule would deadlock a single-member organization.
 
 This table is a human summary only.
 

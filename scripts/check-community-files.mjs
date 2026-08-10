@@ -14,9 +14,9 @@ const requiredFiles = [
   "profile/README.md",
   ".github/workflows/reviewrouter-codex.yml",
   ".github/workflows/reviewrouter-interaction.yml",
-  ".github/workflows/reviewrouter-interaction-reusable.yml",
   "docs/organization-security-baseline.md",
   "governance/code-security-defaults.json",
+  "governance/code-security-defaults.schema.json",
   "governance/executable-spec-qualification.json",
   "governance/executable-spec-qualification.schema.json",
   "renovate-config.json",
@@ -31,7 +31,6 @@ if (!renovateConfig.extends?.includes("config:best-practices")) {
 }
 
 const governance = await readFile("GOVERNANCE.md", "utf8");
-const readme = await readFile("README.md", "utf8");
 const contributing = await readFile("CONTRIBUTING.md", "utf8");
 const pullRequestTemplate = await readFile(
   ".github/PULL_REQUEST_TEMPLATE.md",
@@ -62,6 +61,9 @@ requireMarkers(governance, "GOVERNANCE.md", [
   "empty dependency or placeholder model",
   "| `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. Its local pull request template must mirror the organization evidence block.",
   "ledger is authoritative for the six organization repositories",
+  "Repository values are owned by the ledger rather than mirrored in validator code",
+  "not a claim of continuous live audit",
+  "one-approval rule would deadlock a single-member organization",
   "| `agent-runtime` | Applicable | Synthetic and proposed runtime-operation oracle only",
   "| `agent-teams-platform` | Applicable | Implemented internal Project Management slice only",
   "| `agent-teams-orchestrator` | Applicable | Accepted partial state projections only",
@@ -78,11 +80,6 @@ requireMarkers(contributing, "CONTRIBUTING.md", [
   "positive and negative fixtures",
   "exact command",
   "`N/A` with the ownership reason",
-]);
-requireMarkers(readme, "README.md", [
-  "thin local caller",
-  "reviewrouter-interaction-reusable.yml@<full-commit-sha>",
-  "mutable branch or tag is not an accepted production pin",
 ]);
 requireMarkers(pullRequestTemplate, ".github/PULL_REQUEST_TEMPLATE.md", [
   "Repository-owned schema or contract and version:",

@@ -1,7 +1,14 @@
 {
-  "schema_version": 1,
+  "$schema": "./code-security-defaults.schema.json",
+  "schema_version": 2,
+  "snapshot_revision": "2026-08-10.1",
   "observed_at": "2026-08-10",
   "organization": "agent-teams-ai",
+  "owner": "agent-teams-ai/security-administrators",
+  "evidence": {
+    "verification": "observed_api_snapshot",
+    "endpoint": "/orgs/agent-teams-ai/code-security/configurations/defaults"
+  },
   "defaults": [
     {
       "id": 266049,

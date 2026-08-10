@@ -17,9 +17,9 @@ default configurations:
   Dependabot security updates are enabled. Paid security features remain
   disabled.
 
-The source of truth is the GitHub organization configuration API. The checked-in
-snapshot is validated locally so an ID, visibility target, or security-only
-semantic cannot drift silently in policy review.
+The live source of truth is the GitHub organization configuration API. The
+checked-in snapshot is strict-schema validated and reviewable, but validation
+does not continuously compare it with GitHub.
 
 ## Dependabot ownership
 
@@ -41,3 +41,17 @@ GitHub currently rejects ruleset and branch-protection configuration for that
 repository, so its deterministic commands and CI workflow are not protected
 required checks. This is a documented plan-tier exception, not evidence that the
 checks are optional. Reassess it after a visibility or plan change.
+
+## Dated required-check observation
+
+The executable-specification ledger records the active public-repository
+rulesets observed through the GitHub API on 2026-08-10, including each ruleset
+ID, check context, and integration ID. GitHub Actions checks are app-bound to
+integration `15368`; ReviewRouter checks are app-bound to integration `3599233`.
+This checked-in evidence is not continuous monitoring and must be refreshed
+before relying on live enforcement.
+
+Pull request approval is not required in this snapshot. Requiring one approval
+while organization review approval is disabled would deadlock the current
+single-member organization; CODEOWNERS may document ownership but does not
+change that approval rule.

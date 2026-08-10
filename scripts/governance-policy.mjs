@@ -1,267 +1,118 @@
 import { readFile } from "node:fs/promises";
 
-const LEDGER_KEYS = [
-  "$schema",
-  "schema_version",
-  "snapshot_date",
-  "authority",
-  "remote_enforcement",
-  "repositories",
-];
-const REPOSITORY_KEYS = [
-  "repository",
-  "applicability",
-  "specification_maturity",
-  "specification_scope",
-  "implementation_qualification",
-  "deployment_qualification",
-  "gate_contract",
-];
-
-const EXPECTED_REPOSITORIES = new Map(
-  [
-    [
-      "agent-teams-ai/engineering-foundation",
-      "capability_owner",
-      "capability_implemented",
-      "capability_only_not_product_qualified",
-      "not_applicable",
-      "pnpm check",
-      ["pnpm foundation:check"],
-      "not_attested",
-      ["Generic development-only", "no product domain model"],
-    ],
-    [
-      "agent-teams-ai/agent-runtime",
-      "applicable",
-      "synthetic_proposed",
-      "not_qualified",
-      "not_qualified",
-      "pnpm check",
-      ["pnpm architecture:operation-oracle"],
-      "not_attested",
-      ["Synthetic", "proposed", "not proof of production runtime binding"],
-    ],
-    [
-      "agent-teams-ai/agent-teams-platform",
-      "applicable",
-      "implemented_internal_slice",
-      "partially_qualified_internal_slice",
-      "not_qualified",
-      "pnpm check",
-      [
-        "pnpm spec:property",
-        "pnpm spec:mutation",
-        "pnpm spec:model",
-        "pnpm spec:clean-checkout",
-      ],
-      "unavailable_free_private_repository",
-      ["internal Project Management", "no public wire-contract", "whole-platform claim"],
-    ],
-    [
-      "agent-teams-ai/agent-teams-orchestrator",
-      "applicable",
-      "accepted_partial_projections",
-      "not_qualified",
-      "not_qualified",
-      "pnpm check",
-      ["pnpm specs:check", "pnpm specs:test"],
-      "not_attested",
-      ["Accepted", "projections only", "full runtime binding", "outside the claim"],
-    ],
-    [
-      "agent-teams-ai/.github",
-      "governance_only",
-      "governance_only",
-      "not_applicable",
-      "not_applicable",
-      "pnpm check",
-      ["pnpm governance:validate"],
-      "not_attested",
-      ["governance", "no product executable specification"],
-    ],
-    [
-      "agent-teams-ai/craig-meeting-gateway",
-      "not_applicable",
-      "not_applicable",
-      "not_applicable",
-      "not_applicable",
-      null,
-      [],
-      "not_applicable",
-      ["N/A", "upstream-owned", "explicitly adopted"],
-    ],
-  ].map(
-    ([repository, applicability, maturity, implementation, deployment, full, commands, remote, phrases]) => [
-      repository,
-      { applicability, maturity, implementation, deployment, full, commands, remote, phrases },
-    ],
-  ),
-);
+import Ajv2020 from "ajv/dist/2020.js";
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function assertObject(value, path) {
-  assert(value && typeof value === "object" && !Array.isArray(value), `${path} must be an object.`);
+function validateSchema(value, schema, label) {
+  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  const validate = ajv.compile(schema);
+  if (!validate(value)) {
+    const details = validate.errors
+      .map(({ instancePath, message }) => `${instancePath || "/"} ${message}`)
+      .join("; ");
+    throw new Error(`${label} does not satisfy its JSON Schema: ${details}`);
+  }
 }
 
-function assertExactKeys(value, expected, path) {
-  assertObject(value, path);
-  const actual = Object.keys(value).sort();
-  const wanted = [...expected].sort();
-  assert(JSON.stringify(actual) === JSON.stringify(wanted), `${path} has unexpected or missing fields.`);
-}
-
-function assertNonEmpty(value, path) {
-  assert(typeof value === "string" && value.trim().length > 0, `${path} must be a non-empty string.`);
-}
-
-function assertQualification(value, expectedStatus, path) {
-  assertExactKeys(value, ["status", "statement"], path);
-  assert(value.status === expectedStatus, `${path}.status must be ${expectedStatus}.`);
-  assertNonEmpty(value.statement, `${path}.statement`);
-}
-
-export function validateExecutableSpecLedger(ledger) {
-  assertExactKeys(ledger, LEDGER_KEYS, "ledger");
-  assert(ledger.$schema === "./executable-spec-qualification.schema.json", "Ledger schema reference is invalid.");
-  assert(ledger.schema_version === 1, "Ledger schema_version must be 1.");
-  assert(/^\d{4}-\d{2}-\d{2}$/u.test(ledger.snapshot_date), "Ledger snapshot_date must use YYYY-MM-DD.");
-  assert(ledger.authority === "organization-policy", "Ledger authority is invalid.");
-  assertExactKeys(ledger.remote_enforcement, ["attestation", "statement"], "ledger.remote_enforcement");
-  assert(ledger.remote_enforcement.attestation === "not_provided", "Ledger must not claim remote enforcement.");
+function validateSpecificationEvidence(evidence, repository) {
+  const verified = evidence.verification === "verified_at_revision";
   assert(
-    ledger.remote_enforcement.statement.includes("does not attest"),
-    "Ledger must explicitly disclaim remote enforcement attestation.",
+    verified === (evidence.revision !== null && evidence.paths.length > 0),
+    `${repository} specification evidence must bind verified paths to one immutable revision.`,
   );
-  assert(Array.isArray(ledger.repositories), "ledger.repositories must be an array.");
-  assert(ledger.repositories.length === EXPECTED_REPOSITORIES.size, "Ledger must contain exactly six repositories.");
+  if (!verified) {
+    assert(
+      evidence.revision === null && evidence.paths.length === 0,
+      `${repository} unverified or N/A specification evidence must not imply a revision.`,
+    );
+  }
+}
 
-  const seen = new Set();
+function validateQualification(qualification, repository, axis) {
+  const qualified = qualification.verification === "qualified_at_revision";
+  const notApplicable = qualification.verification === "not_applicable";
+  assert(
+    qualified ===
+      (qualification.qualified_revision !== null && qualification.evidence_paths.length > 0),
+    `${repository} ${axis} qualification must bind evidence to one immutable revision.`,
+  );
+  if (!qualified) {
+    assert(
+      qualification.qualified_revision === null && qualification.evidence_paths.length === 0,
+      `${repository} unverified or N/A ${axis} qualification must not imply evidence.`,
+    );
+  }
+  assert(
+    notApplicable === (qualification.status === "not_applicable"),
+    `${repository} ${axis} N/A status and verification must agree.`,
+  );
+  assert(
+    !qualified || !["not_qualified", "not_applicable"].includes(qualification.status),
+    `${repository} ${axis} cannot be both qualified and ${qualification.status}.`,
+  );
+}
+
+function validateRemoteChecks(remote, repository) {
+  const observed = remote.status === "observed_active";
+  assert(
+    observed === (remote.ruleset_id !== null && remote.checks.length > 0),
+    `${repository} active remote checks must bind a ruleset ID and checks.`,
+  );
+  assert(
+    observed === (remote.reason === null),
+    `${repository} remote-check reason must be null only for an active observation.`,
+  );
+  const identities = remote.checks.map(({ context, integration_id }) => `${context}\0${integration_id}`);
+  assert(new Set(identities).size === identities.length, `${repository} remote checks must be unique.`);
+}
+
+export function validateExecutableSpecLedger(ledger, schema) {
+  validateSchema(ledger, schema, "Executable-spec qualification ledger");
+  const repositories = new Set();
   for (const record of ledger.repositories) {
-    assertExactKeys(record, REPOSITORY_KEYS, "repository record");
-    assert(!seen.has(record.repository), `Duplicate repository: ${record.repository}`);
-    seen.add(record.repository);
-    const expected = EXPECTED_REPOSITORIES.get(record.repository);
-    assert(expected, `Unexpected repository: ${record.repository}`);
-    assert(record.applicability === expected.applicability, `${record.repository} applicability is invalid.`);
-    assert(record.specification_maturity === expected.maturity, `${record.repository} maturity is invalid.`);
-    assertNonEmpty(record.specification_scope, `${record.repository}.specification_scope`);
-    for (const phrase of expected.phrases) {
-      assert(record.specification_scope.includes(phrase), `${record.repository} scope must preserve: ${phrase}`);
-    }
-    assertQualification(
-      record.implementation_qualification,
-      expected.implementation,
-      `${record.repository}.implementation_qualification`,
-    );
-    assertQualification(
-      record.deployment_qualification,
-      expected.deployment,
-      `${record.repository}.deployment_qualification`,
-    );
-    assertExactKeys(
-      record.gate_contract,
-      ["full_repository_command", "executable_spec_commands", "remote_required_check"],
-      `${record.repository}.gate_contract`,
-    );
-    assert(record.gate_contract.full_repository_command === expected.full, `${record.repository} full gate is invalid.`);
+    assert(!repositories.has(record.repository), `Duplicate repository: ${record.repository}`);
+    repositories.add(record.repository);
+    assert(record.owner.repository === record.repository, `${record.repository} owner must name the same repository.`);
+    validateSpecificationEvidence(record.specification_evidence, record.repository);
+    validateQualification(record.implementation_qualification, record.repository, "implementation");
+    validateQualification(record.deployment_qualification, record.repository, "deployment");
+
+    const notApplicable = record.applicability === "not_applicable";
     assert(
-      JSON.stringify(record.gate_contract.executable_spec_commands) === JSON.stringify(expected.commands),
-      `${record.repository} executable-spec gates are invalid.`,
+      notApplicable ===
+        (record.gate_contract.full_repository_command === null &&
+          record.gate_contract.executable_spec_commands.length === 0),
+      `${record.repository} local gate applicability is inconsistent.`,
     );
+    validateRemoteChecks(record.gate_contract.remote_required_checks, record.repository);
+  }
+  if (!ledger.approval_policy.can_approve_pull_request_reviews) {
     assert(
-      record.gate_contract.remote_required_check === expected.remote,
-      `${record.repository} remote gate evidence is invalid.`,
+      ledger.approval_policy.minimum_required_approvals === 0,
+      "Approval policy must not create a single-member deadlock.",
     );
   }
 }
 
-const SECURITY_KEYS = [
-  "schema_version",
-  "observed_at",
-  "organization",
-  "defaults",
-  "dependabot_policy",
-  "transfer_policy",
-  "required_check_exceptions",
-];
-
-export function validateCodeSecurityDefaults(policy) {
-  assertExactKeys(policy, SECURITY_KEYS, "security policy");
-  assert(policy.schema_version === 1, "Security policy schema_version must be 1.");
-  assert(/^\d{4}-\d{2}-\d{2}$/u.test(policy.observed_at), "Security policy observed_at must use YYYY-MM-DD.");
-  assert(policy.organization === "agent-teams-ai", "Security policy organization is invalid.");
-  assert(Array.isArray(policy.defaults) && policy.defaults.length === 2, "Security policy must contain two defaults.");
-  const byId = new Map(policy.defaults.map((entry) => [entry.id, entry]));
-  const publicDefault = byId.get(266049);
-  const privateDefault = byId.get(266048);
-  const expectedDefaults = [
-    [
-      publicDefault,
-      {
-        id: 266049,
-        name: "Public repository security baseline",
-        default_for_new_repositories: "public",
-        enforcement: "enforced",
-        dependency_graph: "enabled",
-        dependabot_alerts: "enabled",
-        dependabot_security_updates: "enabled",
-        advanced_security: "enabled",
-        code_scanning_default_setup: "enabled",
-        secret_scanning: "enabled",
-        secret_scanning_push_protection: "enabled",
-      },
-    ],
-    [
-      privateDefault,
-      {
-        id: 266048,
-        name: "Free dependency security baseline",
-        default_for_new_repositories: "private_and_internal",
-        enforcement: "enforced",
-        dependency_graph: "enabled",
-        dependabot_alerts: "enabled",
-        dependabot_security_updates: "enabled",
-        advanced_security: "disabled",
-        code_scanning_default_setup: "disabled",
-        secret_scanning: "disabled",
-        secret_scanning_push_protection: "disabled",
-      },
-    ],
-  ];
-  for (const [actual, expected] of expectedDefaults) {
-    assert(actual, `Security configuration ${expected.id} is missing.`);
-    assertExactKeys(actual, Object.keys(expected), `security configuration ${expected.id}`);
-    assert(
-      JSON.stringify(actual) === JSON.stringify(expected),
-      `Security configuration ${expected.id} does not match the observed enforced default.`,
-    );
-  }
-  assertExactKeys(policy.dependabot_policy, ["scope", "routine_version_update_owner"], "dependabot_policy");
-  assert(policy.dependabot_policy?.scope === "security_updates_only", "Dependabot scope must remain security-only.");
-  assert(policy.dependabot_policy?.routine_version_update_owner === "renovate", "Renovate must own routine updates.");
-  assertExactKeys(
-    policy.transfer_policy,
-    ["automatic_default_application_assumed", "required_action"],
-    "transfer_policy",
-  );
-  assert(policy.transfer_policy?.automatic_default_application_assumed === false, "Transfers must fail closed to an explicit audit.");
-  assertNonEmpty(policy.transfer_policy.required_action, "transfer_policy.required_action");
+export function validateCodeSecurityDefaults(policy, schema) {
+  validateSchema(policy, schema, "Code-security defaults snapshot");
+  const ids = policy.defaults.map(({ id }) => id);
+  assert(new Set(ids).size === ids.length, "Security configuration IDs must be unique.");
+  const targets = policy.defaults.map(({ default_for_new_repositories }) =>
+    default_for_new_repositories);
+  assert(new Set(targets).size === targets.length, "Security default visibility targets must be unique.");
+  assert(targets.includes("public"), "A public-repository security default is required.");
+  assert(targets.includes("private_and_internal"), "A private_and_internal security default is required.");
+  const observed = policy.evidence.verification === "observed_api_snapshot";
   assert(
-    Array.isArray(policy.required_check_exceptions) && policy.required_check_exceptions.length === 1,
-    "Security policy must contain exactly the current required-check exception.",
+    observed === (typeof policy.evidence.endpoint === "string" && policy.evidence.endpoint.length > 0),
+    "Observed security state must cite its API endpoint; unverified state must not.",
   );
-  const platformException = policy.required_check_exceptions?.find(
-    ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
-  );
-  assert(platformException, "The GitHub Free private Platform required-check exception is missing.");
-  assertExactKeys(platformException, ["repository", "reason", "compensation"], "Platform required-check exception");
-  assert(platformException.reason.includes("GitHub Free"), "The Platform exception must identify the plan constraint.");
-  assert(platformException.reason.includes("private-repository"), "The Platform exception must remain visibility-scoped.");
-  assert(platformException.compensation.includes("do not represent"), "The Platform exception must forbid false enforcement claims.");
+  const exceptions = policy.required_check_exceptions.map(({ repository }) => repository);
+  assert(new Set(exceptions).size === exceptions.length, "Required-check exceptions must be unique by repository.");
 }
 
 export async function loadJson(path) {

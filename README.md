@@ -37,13 +37,9 @@ package rules but must not copy the organization preset.
 
 ## ReviewRouter
 
-This repository publishes the organization reusable ReviewRouter interaction
-workflow and pins its external runtime and actions to immutable commit SHAs. Its
-own event workflow is a thin local caller, so pull requests and squash merges use
-the reusable file from the same ref. Product repositories keep their current
-interaction workflows until an explicit consumer migration is reviewed;
-publishing the reusable workflow does not silently migrate them. A future
-external consumer must use
-`agent-teams-ai/.github/.github/workflows/reviewrouter-interaction-reusable.yml@<full-commit-sha>`;
-a mutable branch or tag is not an accepted production pin.
+This repository pins the externally owned ReviewRouter reusable workflow and
+runtime to immutable commit SHAs. Product repositories own their reviewed caller
+configuration. Interaction migration to the upstream reusable workflow remains
+deferred until its actions and input contract are safely pinned; organization
+governance does not copy ReviewRouter bounded-context runtime logic.
 Organization-wide community health, repository policy, and dependency automation configuration.
