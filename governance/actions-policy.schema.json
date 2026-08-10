@@ -34,7 +34,9 @@
         "verification": { "const": "observed_api_snapshot" },
         "default_workflow_permissions": { "const": "read" },
         "can_approve_pull_request_reviews": { "const": false },
-        "evidence_endpoint": { "type": "string", "pattern": "^https://api\\.github\\.com/" }
+        "evidence_endpoint": {
+          "const": "https://api.github.com/orgs/agent-teams-ai/actions/permissions/workflow"
+        }
       }
     },
     "action_sha_pinning": {

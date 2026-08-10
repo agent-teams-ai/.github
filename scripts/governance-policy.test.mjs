@@ -289,6 +289,13 @@ test("rejects an approval requirement that would deadlock current governance", (
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /single-member deadlock/u);
 });
 
+test("rejects approval-policy evidence from another organization", () => {
+  const changed = clone(ledger);
+  changed.approval_policy.evidence_reference =
+    "https://api.github.com/orgs/other/actions/permissions/workflow";
+  assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /JSON Schema/u);
+});
+
 test("rejects active required checks without a ruleset identity", () => {
   const changed = clone(ledger);
   const observed = changed.repositories.find(
@@ -485,6 +492,13 @@ test("rejects an incomplete organization Actions coverage snapshot", () => {
   const changed = clone(actions);
   changed.action_sha_pinning.enabled_repositories = "selected";
   assert.throws(() => validateActionsPolicy(changed, actionsSchema), /must be equal to constant/u);
+});
+
+test("rejects workflow-permission evidence from another organization", () => {
+  const changed = clone(actions);
+  changed.organization_workflow_permissions.evidence_endpoint =
+    "https://api.github.com/orgs/other/actions/permissions/workflow";
+  assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
 });
 
 test("requires the canonical GitHub SHA-pinning API field", () => {
