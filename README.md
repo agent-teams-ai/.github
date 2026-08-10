@@ -45,8 +45,8 @@ human governance document intentionally does not duplicate its matrix.
 
 This repository pins the externally owned ReviewRouter reusable workflow and
 runtime to immutable commit SHAs. Product repositories own their reviewed caller
-configuration. The inherited explicit `reviewrouter-interaction.yml` temporarily
-contains existing integration logic. Migration to the upstream reusable workflow
-remains deferred until a fixed, safely pinned upstream release is available; this
-branch does not add a second organization-owned reusable implementation.
+configuration. `reviewrouter-interaction.yml` is a thin caller of the upstream
+interaction workflow and pins both `uses` and `runtime_ref` to the same immutable
+release commit. It preserves organization event filters, discussion variables,
+and secret mappings without copying checkout, setup, or runtime steps.
 Organization-wide community health, repository policy, and dependency automation configuration.
