@@ -1,7 +1,7 @@
 {
   "$schema": "./code-security-defaults.schema.json",
-  "schema_version": 3,
-  "snapshot_revision": "2026-08-10.3",
+  "schema_version": 4,
+  "snapshot_revision": "2026-08-10.4",
   "observed_at": "2026-08-10",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
@@ -38,6 +38,25 @@
       "secret_scanning_push_protection": "disabled"
     }
   ],
+  "organization_observations": [
+    {
+      "claim": "organization_ghas_billing",
+      "observed_at": "2026-08-10",
+      "method": "GET",
+      "endpoint": "https://api.github.com/orgs/agent-teams-ai/settings/billing/advanced-security",
+      "total_count": 0
+    },
+    {
+      "claim": "two_factor_requirement_enabled",
+      "observed_at": "2026-08-10",
+      "method": "GET",
+      "endpoint": "https://api.github.com/orgs/agent-teams-ai",
+      "value": false,
+      "transition_status": "deferred_by_owner",
+      "risk": "Organization membership is not protected by an organization-enforced two-factor requirement.",
+      "compensation": "Reassess two-factor enforcement before adding or changing organization membership."
+    }
+  ],
   "repository_attachments": [
     {
       "repository": "agent-teams-ai/agent-teams-platform",
@@ -64,12 +83,6 @@
           "http_status": 200,
           "enabled": true,
           "paused": false
-        },
-        {
-          "claim": "organization_ghas_billing",
-          "method": "GET",
-          "endpoint": "https://api.github.com/orgs/agent-teams-ai/settings/billing/advanced-security",
-          "total_count": 0
         }
       ]
     }

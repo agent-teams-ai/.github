@@ -20,9 +20,15 @@ default configurations:
 The existing private `agent-teams-platform` repository, ID `1319378484`, was
 also observed attached to enforced configuration `266048`. Separate evidence
 records preserve the exact API endpoint and method for that attachment, the
-Dependabot alerts HTTP `204`, automated security fixes enabled and unpaused, and
-the organization GHAS billing repository count of `0`. No one endpoint is cited
-for multiple observations. This is dated evidence, not continuous monitoring.
+Dependabot alerts HTTP `204`, and automated security fixes enabled and unpaused.
+The organization GHAS billing repository count of `0` is recorded separately as
+an organization observation, so repository attachments do not duplicate it.
+This is dated evidence, not continuous monitoring.
+
+The organization API reported `two_factor_requirement_enabled: false` on
+2026-08-10. The owner deferred enabling that requirement. The snapshot records
+the membership risk and requires reassessment before organization membership
+changes; it must not claim `true` unless a later API observation confirms it.
 
 The live source of truth is the GitHub organization configuration API. The
 checked-in snapshot is strict-schema validated and reviewable, but validation

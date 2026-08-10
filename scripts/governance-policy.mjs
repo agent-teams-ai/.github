@@ -276,6 +276,35 @@ export function validateCodeSecurityDefaults(policy, schema) {
         policy.defaults_evidence.endpoint.length > 0),
     "Observed security state must cite its API endpoint; unverified state must not.",
   );
+  const organizationClaims = policy.organization_observations.map(({ claim }) => claim);
+  assert(
+    new Set(organizationClaims).size === organizationClaims.length,
+    "Organization security observation claims must be unique.",
+  );
+  for (const observation of policy.organization_observations) {
+    assert(
+      observation.endpoint.startsWith(`https://api.github.com/orgs/${policy.organization}`),
+      `${observation.claim} must cite an endpoint scoped to the observed organization.`,
+    );
+  }
+  const twoFactor = policy.organization_observations.find(
+    ({ claim }) => claim === "two_factor_requirement_enabled",
+  );
+  if (twoFactor.value) {
+    assert(
+      twoFactor.transition_status === "none" &&
+        twoFactor.risk === null &&
+        twoFactor.compensation === null,
+      "Enabled two-factor enforcement must not retain a pending transition or compensation.",
+    );
+  } else {
+    assert(
+      twoFactor.transition_status !== "none" &&
+        typeof twoFactor.risk === "string" &&
+        typeof twoFactor.compensation === "string",
+      "A disabled two-factor requirement must record its transition, risk, and compensation.",
+    );
+  }
   const exceptionRepositories = policy.required_check_exceptions.map(({ repository }) => repository);
   const exceptionIds = policy.required_check_exceptions.map(({ id }) => id);
   assert(new Set(exceptionRepositories).size === exceptionRepositories.length, "Required-check exceptions must be unique by repository.");

@@ -298,6 +298,54 @@ test("rejects duplicate security-default visibility targets", () => {
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /visibility targets/u);
 });
 
+test("accepts a confirmed true two-factor requirement observation", () => {
+  const changed = clone(security);
+  const twoFactor = changed.organization_observations.find(
+    ({ claim }) => claim === "two_factor_requirement_enabled",
+  );
+  twoFactor.value = true;
+  twoFactor.transition_status = "none";
+  twoFactor.risk = null;
+  twoFactor.compensation = null;
+  assert.doesNotThrow(() => validateCodeSecurityDefaults(changed, securitySchema));
+});
+
+test("rejects enabled two-factor while user confirmation is pending", () => {
+  const changed = clone(security);
+  const twoFactor = changed.organization_observations.find(
+    ({ claim }) => claim === "two_factor_requirement_enabled",
+  );
+  twoFactor.value = true;
+  assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /must not retain/u);
+});
+
+test("rejects a disabled two-factor requirement without an explicit disposition", () => {
+  const changed = clone(security);
+  const twoFactor = changed.organization_observations.find(
+    ({ claim }) => claim === "two_factor_requirement_enabled",
+  );
+  twoFactor.transition_status = "none";
+  twoFactor.risk = null;
+  twoFactor.compensation = null;
+  assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /must record/u);
+});
+
+test("rejects duplicate organization security observations", () => {
+  const changed = clone(security);
+  changed.organization_observations[1] = structuredClone(
+    changed.organization_observations[0],
+  );
+  assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /claims must be unique/u);
+});
+
+test("rejects organization billing evidence inside a repository attachment", () => {
+  const changed = clone(security);
+  changed.repository_attachments[0].evidence_records.push(
+    structuredClone(changed.organization_observations[0]),
+  );
+  assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /JSON Schema/u);
+});
+
 test("rejects a repository attachment to an unknown security configuration", () => {
   const changed = clone(security);
   const attachment = changed.repository_attachments[0].evidence_records.find(
