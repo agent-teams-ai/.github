@@ -1,14 +1,46 @@
 {
   "$schema": "./executable-spec-qualification.schema.json",
   "schema_version": 2,
-  "ledger_revision": "2026-08-10.1",
+  "ledger_revision": "2026-08-10.2",
   "snapshot_date": "2026-08-10",
   "authority": "this-ledger",
+  "evidence_manifest_algorithm": "sha256(sorted(path + NUL + git_blob_sha + LF))",
+  "scope": {
+    "definition": "active_non_archived_governance_and_product_repositories",
+    "observed_repository_count": 10,
+    "active_repository_count": 6,
+    "archived_exclusions": [
+      {
+        "repository": "agent-teams-ai/governance-security-canary-private-20260810",
+        "repository_id": 1329959749,
+        "archived": true,
+        "reason": "Archived one-shot private security-configuration canary; not a maintained product or governance repository."
+      },
+      {
+        "repository": "agent-teams-ai/governance-security-canary-public-20260810",
+        "repository_id": 1329959694,
+        "archived": true,
+        "reason": "Archived one-shot public security-configuration canary; not a maintained product or governance repository."
+      },
+      {
+        "repository": "agent-teams-ai/governance-security-default-private-20260810",
+        "repository_id": 1329961377,
+        "archived": true,
+        "reason": "Archived one-shot private default-configuration canary; not a maintained product or governance repository."
+      },
+      {
+        "repository": "agent-teams-ai/governance-security-default-public-20260810",
+        "repository_id": 1329961342,
+        "archived": true,
+        "reason": "Archived one-shot public default-configuration canary; not a maintained product or governance repository."
+      }
+    ]
+  },
   "approval_policy": {
     "observed_at": "2026-08-10",
     "can_approve_pull_request_reviews": false,
     "minimum_required_approvals": 0,
-    "evidence_reference": "organization governance observation",
+    "evidence_reference": "https://api.github.com/orgs/agent-teams-ai/actions/permissions/workflow",
     "statement": "Approval metadata does not require a pull request approval while the organization has a single-member deadlock risk."
   },
   "remote_enforcement": {
@@ -21,35 +53,45 @@
   "repositories": [
     {
       "repository": "agent-teams-ai/engineering-foundation",
-      "owner": {
-        "repository": "agent-teams-ai/engineering-foundation",
-        "authority": "repository-maintainers"
-      },
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
       "applicability": "capability_owner",
       "specification_maturity": "capability_implemented",
       "specification_scope": "Generic development-only executable-specification mechanisms and evidence contracts; no product domain model is qualified here.",
       "specification_evidence": {
         "verification": "verified_at_revision",
         "revision": "b6e537b68c6bb5f06ba0224fd853341ca15c7947",
-        "paths": [
-          "packages/engineering-foundation/src/capabilities/executable-specifications/module.ts",
-          "packages/engineering-foundation/schemas/quality-executable-specifications/v1.schema.json",
-          "tests/executable-specifications.test.mjs"
-        ]
+        "entries": [
+          { "path": "packages/engineering-foundation/schemas/quality-executable-specifications/v1.schema.json", "git_blob_sha": "c0fa6a794be57c9ba2e88f744dc39b6addcae50f" },
+          { "path": "packages/engineering-foundation/src/capabilities/executable-specifications/module.ts", "git_blob_sha": "fa1a387c1a9ea382957c24d84419944caaa99fdb" },
+          { "path": "tests/executable-specifications.test.mjs", "git_blob_sha": "8cb7026d741f8bf33c67162f55572ce4427270e5" }
+        ],
+        "manifest_sha256": "2f742cbe3c017cf776c52171a797d8b3b151db41e92b951a038c7266d82d8a63",
+        "approval_evidence": {
+          "status": "accepted_transitive",
+          "revision": "b6e537b68c6bb5f06ba0224fd853341ca15c7947",
+          "entries": [
+            { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "cd7b3e4b9cd0ed3dd3c5048c82a064eca733afae" },
+            { "path": "docs/decisions/0001-executable-capability-foundation.md", "git_blob_sha": "e8e494b5785884e9d2e7fecdefd865788ca0859c" }
+          ],
+          "manifest_sha256": "40f3e533d661d95f499de3741c977df8ede0dfb659c5f3db6a3203261924b421"
+        }
       },
       "implementation_qualification": {
         "status": "capability_only_not_product_qualified",
         "statement": "Foundation checks cover the reusable capability, but no consumer product implementation is qualified here.",
         "verification": "unverified_snapshot",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "deployment_qualification": {
         "status": "not_applicable",
         "statement": "Consumer deployment qualification remains consumer-owned.",
         "verification": "not_applicable",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
@@ -58,6 +100,8 @@
           "status": "observed_active",
           "default_branch": "main",
           "ruleset_id": 19979782,
+          "required_approving_review_count": 0,
+          "require_code_owner_review": false,
           "reason": null,
           "checks": [
             { "context": "check", "integration_id": 15368 },
@@ -69,35 +113,44 @@
     },
     {
       "repository": "agent-teams-ai/agent-runtime",
-      "owner": {
-        "repository": "agent-teams-ai/agent-runtime",
-        "authority": "repository-maintainers"
-      },
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
       "applicability": "applicable",
       "specification_maturity": "synthetic_proposed",
       "specification_scope": "Synthetic runtime-operation oracle and proposed model evidence only; this is not proof of production runtime binding.",
       "specification_evidence": {
         "verification": "verified_at_revision",
         "revision": "7d97e3cada94725f1f2f0bc19f479ea61479d650",
-        "paths": [
-          "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/manifest.json",
-          "experiments/runtime-profile-behavior/src/features/evidence/validate-runtime-operation-oracle.ts",
-          "experiments/runtime-profile-behavior/test/runtime-operation-oracle-properties.test.ts"
-        ]
+        "entries": [
+          { "path": "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/manifest.json", "git_blob_sha": "748125afa8681db0697a2163c25857574ac4a705" },
+          { "path": "experiments/runtime-profile-behavior/src/features/evidence/validate-runtime-operation-oracle.ts", "git_blob_sha": "a182ee733e432797d08d0f07e008669e934a9495" },
+          { "path": "experiments/runtime-profile-behavior/test/runtime-operation-oracle-properties.test.ts", "git_blob_sha": "8d18af724314bb921a8d37c205bb5c6161c58ca2" }
+        ],
+        "manifest_sha256": "f71523359f0ec421d120745259093e554faf592f74f58bebe6f01dfe7f98b13c",
+        "approval_evidence": {
+          "status": "proposed_unapproved",
+          "revision": "7d97e3cada94725f1f2f0bc19f479ea61479d650",
+          "entries": [
+            { "path": "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/README.md", "git_blob_sha": "8168541957ede047160deb5bf1780bed62f75d5d" }
+          ],
+          "manifest_sha256": "177e1fc1c1b2b2657c8897b08f327b65cc07a2aacc26c447fa4fb46651e19146"
+        }
       },
       "implementation_qualification": {
         "status": "not_qualified",
         "statement": "The synthetic oracle does not qualify the production implementation.",
         "verification": "unverified_snapshot",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "deployment_qualification": {
         "status": "not_qualified",
         "statement": "No deployment profile is qualified by the synthetic oracle.",
         "verification": "unverified_snapshot",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
@@ -106,6 +159,8 @@
           "status": "observed_active",
           "default_branch": "main",
           "ruleset_id": 19979781,
+          "required_approving_review_count": 0,
+          "require_code_owner_review": false,
           "reason": null,
           "checks": [
             { "context": "check", "integration_id": 15368 },
@@ -116,40 +171,50 @@
     },
     {
       "repository": "agent-teams-ai/agent-teams-platform",
-      "owner": {
-        "repository": "agent-teams-ai/agent-teams-platform",
-        "authority": "repository-maintainers"
-      },
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
       "applicability": "applicable",
       "specification_maturity": "implemented_internal_slice",
       "specification_scope": "Repository-internal Project Management executable-specification slice only; no public wire-contract or whole-platform claim.",
       "specification_evidence": {
         "verification": "verified_at_revision",
         "revision": "8267db104053ae8b16c0761496998f5e8216034c",
-        "paths": [
-          "architecture/project-management/executable-specifications.json",
-          "tooling/executable-specifications/package.json",
-          "tooling/executable-specifications/scripts/managed-scope-admission-model.mjs"
-        ]
+        "entries": [
+          { "path": "architecture/project-management/executable-specifications.json", "git_blob_sha": "3df2406f75d77ef1cbdd3f941ef8cb1258aff732" },
+          { "path": "tooling/executable-specifications/package.json", "git_blob_sha": "e32be5fff26bb176c09d73f03b6b4e2772739e49" },
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission-model.mjs", "git_blob_sha": "e31066a3648fb19bf87ce4a3b12bdd6a95288bf4" }
+        ],
+        "manifest_sha256": "0c08cbf398e3cfc22df58412b1b1684646185a9258f2336e3d383a094547e066",
+        "approval_evidence": {
+          "status": "accepted_transitive",
+          "revision": "8267db104053ae8b16c0761496998f5e8216034c",
+          "entries": [
+            { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "f1f6f3b001b5e35f84d1043c400399545190cece" },
+            { "path": "docs/decisions/0007-platform-strategic-context-map-and-first-project-management-slice.md", "git_blob_sha": "afcc50bc4d5de85db69fcd47a65e25a48f533d5d" }
+          ],
+          "manifest_sha256": "ed9852e0a5287e4d6d14d6afa4dd5465cc4952e5eb20e770276483639396f497"
+        }
       },
       "implementation_qualification": {
         "status": "partially_qualified_internal_slice",
         "statement": "Property, mutation, model, and clean-checkout gates qualify only the implemented internal slice.",
         "verification": "qualified_at_revision",
         "qualified_revision": "8267db104053ae8b16c0761496998f5e8216034c",
-        "evidence_paths": [
-          "tooling/executable-specifications/scripts/managed-scope-admission.property.test.mjs",
-          "tooling/executable-specifications/scripts/managed-scope-admission.mutation.test.mjs",
-          "tooling/executable-specifications/scripts/managed-scope-admission.model.test.mjs",
-          "tooling/executable-specifications/scripts/verify-clean-spec-gates.mjs"
-        ]
+        "evidence_entries": [
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.model.test.mjs", "git_blob_sha": "918a1c60086700e93b5acd38df39b2711db30af7" },
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.mutation.test.mjs", "git_blob_sha": "ca5fdd9572879067eb8d9177a0e4e781a60f8443" },
+          { "path": "tooling/executable-specifications/scripts/managed-scope-admission.property.test.mjs", "git_blob_sha": "08f2b0bd92535854a8518e8bd0e791bdf4f97198" },
+          { "path": "tooling/executable-specifications/scripts/verify-clean-spec-gates.mjs", "git_blob_sha": "e1af0bcbdf41dcada0669c3f28107d8f3c876dd6" }
+        ],
+        "manifest_sha256": "9a1783baf14a741675083aa44ffeca9420159f5e64b85f3eb909d65fd09533ac"
       },
       "deployment_qualification": {
         "status": "not_qualified",
         "statement": "The internal slice does not qualify a deployment profile.",
         "verification": "unverified_snapshot",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
@@ -163,6 +228,8 @@
           "status": "unavailable_free_private_repository",
           "default_branch": "main",
           "ruleset_id": null,
+          "required_approving_review_count": null,
+          "require_code_owner_review": null,
           "reason": "GitHub Free does not expose private-repository rulesets or protected required checks for this organization.",
           "checks": []
         }
@@ -170,35 +237,46 @@
     },
     {
       "repository": "agent-teams-ai/agent-teams-orchestrator",
-      "owner": {
-        "repository": "agent-teams-ai/agent-teams-orchestrator",
-        "authority": "repository-maintainers"
-      },
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
       "applicability": "applicable",
       "specification_maturity": "accepted_partial_projections",
       "specification_scope": "Accepted repository-owned orchestration state projections only; proposed and external state, full runtime binding, and end-to-end behavior remain outside the claim.",
       "specification_evidence": {
         "verification": "verified_at_revision",
         "revision": "7ee4f733293811dcafa516610e191cd23ad812b8",
-        "paths": [
-          "architecture/executable-specs/catalog.json",
-          "architecture/executable-specs/orchestration-project-lifecycle.json",
-          "architecture/executable-specs/run-authority-state.json"
-        ]
+        "entries": [
+          { "path": "architecture/executable-specs/catalog.json", "git_blob_sha": "5525c8459fc65529045576b0e567a9c3095ed72a" },
+          { "path": "architecture/executable-specs/orchestration-project-lifecycle.json", "git_blob_sha": "ed80d5e6adfae7c5296e68055577598a64b59c2b" },
+          { "path": "architecture/executable-specs/run-authority-state.json", "git_blob_sha": "b1be3d9336fb28895827ec4e360b6e91acc109e3" }
+        ],
+        "manifest_sha256": "d50d2044b3bc2fa98e29afc4ea791f4725744068128261e5757bdbcb45f0e184",
+        "approval_evidence": {
+          "status": "accepted_transitive",
+          "revision": "7ee4f733293811dcafa516610e191cd23ad812b8",
+          "entries": [
+            { "path": "architecture/executable-specs/catalog.json", "git_blob_sha": "5525c8459fc65529045576b0e567a9c3095ed72a" },
+            { "path": "docs/decisions/0079-runtime-authority-binding-cutoff-and-disposition.md", "git_blob_sha": "7212c21f6fe10212767faca851af75afd65ee574" },
+            { "path": "docs/decisions/0080-orchestration-scope-project-authority-and-disposition.md", "git_blob_sha": "e063ff7b38b6dcd60f2fc7c17a10a7d18870cf8b" }
+          ],
+          "manifest_sha256": "b1d53a711958d4f59cd9c74435424a17c4ab4dddfad22d9a2eb4144afccc1690"
+        }
       },
       "implementation_qualification": {
         "status": "not_qualified",
         "statement": "Projection conformance does not qualify the complete orchestrator implementation.",
         "verification": "unverified_snapshot",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "deployment_qualification": {
         "status": "not_qualified",
         "statement": "No deployment profile is qualified by the accepted projections.",
         "verification": "unverified_snapshot",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
@@ -207,6 +285,8 @@
           "status": "observed_active",
           "default_branch": "main",
           "ruleset_id": 19979784,
+          "required_approving_review_count": 0,
+          "require_code_owner_review": false,
           "reason": null,
           "checks": [
             { "context": "architecture", "integration_id": 15368 },
@@ -218,31 +298,38 @@
     },
     {
       "repository": "agent-teams-ai/.github",
-      "owner": {
-        "repository": "agent-teams-ai/.github",
-        "authority": "organization-governance-maintainers"
-      },
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
       "applicability": "governance_only",
       "specification_maturity": "governance_only",
       "specification_scope": "Organization governance records and deterministic policy validation; no product executable specification.",
       "specification_evidence": {
         "verification": "unverified_snapshot",
         "revision": null,
-        "paths": []
+        "entries": [],
+        "manifest_sha256": null,
+        "approval_evidence": {
+          "status": "not_applicable",
+          "revision": null,
+          "entries": [],
+          "manifest_sha256": null
+        }
       },
       "implementation_qualification": {
         "status": "not_applicable",
         "statement": "This repository owns governance, not a product implementation.",
         "verification": "not_applicable",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "deployment_qualification": {
         "status": "not_applicable",
         "statement": "No product deployment is owned here.",
         "verification": "not_applicable",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "gate_contract": {
         "full_repository_command": "pnpm check",
@@ -251,6 +338,8 @@
           "status": "observed_active",
           "default_branch": "main",
           "ruleset_id": 19979783,
+          "required_approving_review_count": 0,
+          "require_code_owner_review": false,
           "reason": null,
           "checks": [
             { "context": "check", "integration_id": 15368 },
@@ -261,31 +350,38 @@
     },
     {
       "repository": "agent-teams-ai/craig-meeting-gateway",
-      "owner": {
-        "repository": "agent-teams-ai/craig-meeting-gateway",
-        "authority": "repository-maintainers"
-      },
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
       "applicability": "not_applicable",
       "specification_maturity": "not_applicable",
       "specification_scope": "N/A until an upstream-owned executable test or specification boundary is explicitly adopted by this fork.",
       "specification_evidence": {
         "verification": "not_applicable",
         "revision": null,
-        "paths": []
+        "entries": [],
+        "manifest_sha256": null,
+        "approval_evidence": {
+          "status": "not_applicable",
+          "revision": null,
+          "entries": [],
+          "manifest_sha256": null
+        }
       },
       "implementation_qualification": {
         "status": "not_applicable",
         "statement": "No organization executable-specification implementation claim exists.",
         "verification": "not_applicable",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "deployment_qualification": {
         "status": "not_applicable",
         "statement": "No organization executable-specification deployment claim exists.",
         "verification": "not_applicable",
         "qualified_revision": null,
-        "evidence_paths": []
+        "evidence_entries": [],
+        "manifest_sha256": null
       },
       "gate_contract": {
         "full_repository_command": null,
@@ -294,6 +390,8 @@
           "status": "observed_active",
           "default_branch": "master",
           "ruleset_id": 20231582,
+          "required_approving_review_count": 0,
+          "require_code_owner_review": false,
           "reason": null,
           "checks": [
             { "context": "ReviewRouter", "integration_id": 3599233 }

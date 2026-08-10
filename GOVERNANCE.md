@@ -45,12 +45,12 @@ executable-specification evidence block: schema or contract and version,
 positive and negative fixtures, and the exact deterministic gate or an explicit
 `N/A` with ownership rationale.
 
-## Applicability Matrix
+## Executable Specification Ledger
 
 The machine-readable
 [`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
-ledger is authoritative for the six organization repositories. It records
-specification maturity, implementation qualification, deployment qualification,
+ledger is authoritative for the six active in-scope organization repositories.
+It records specification maturity, implementation qualification, deployment qualification,
 owners, immutable evidence revisions, and exact deterministic commands as
 separate claims. JSON Schema validates the strict structure; generic cross-field
 checks prevent unverified snapshots from implying qualification. Repository
@@ -61,16 +61,14 @@ and integration IDs. They are not a claim of continuous live audit. Approval
 metadata currently requires zero approvals because review approval is disabled
 and a one-approval rule would deadlock a single-member organization.
 
-This table is a human summary only.
+The scope is the six active, non-archived governance and product repositories.
+Four archived one-shot security canaries are explicit exclusions in the ledger;
+they are not silently omitted. Do not copy repository applicability into another
+human table: the JSON ledger is the sole value authority and its offline check
+binds evidence paths to immutable Git blob manifests.
 
-| Repository | Applicability | Owned boundary |
-| --- | --- | --- |
-| `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. Its local pull request template must mirror the organization evidence block. |
-| `agent-runtime` | Applicable | Synthetic and proposed runtime-operation oracle only; no production runtime-binding or qualification claim. |
-| `agent-teams-platform` | Applicable | Implemented internal Project Management slice only; no public wire-contract, whole-platform, or deployment qualification claim. |
-| `agent-teams-orchestrator` | Applicable | Accepted partial state projections only; full runtime binding, proposed/external state, and deployment qualification are out of scope. |
-| `.github` | Governance-only | Organization policy, contribution evidence, and marker checks; no product executable specification. |
-| `craig-meeting-gateway` | N/A | Fork: N/A until an upstream-owned test/spec boundary exists and is adopted explicitly. |
+Each manifest hashes lexically sorted `path`, NUL, Git blob SHA, and LF records
+with SHA-256, so validation is deterministic and offline.
 
 ## Organization Security Defaults
 
@@ -87,3 +85,11 @@ transfer. The current private `agent-teams-platform` repository has a documented
 GitHub Free exception: its CI gates cannot be configured as protected required
 checks on the current plan, so policy must not describe them as remotely
 enforced.
+
+The dated Actions posture is recorded separately in
+[`governance/actions-policy.json`](governance/actions-policy.json). Default
+workflow permissions are read-only and workflow approval is disabled. Immutable
+action-reference enforcement is not yet organization-wide: Gateway pull request
+`#7` remains pending, and Platform retains its private GitHub Free required-check
+exception. Do not describe Actions SHA pinning as fully enforced until the JSON
+snapshot is updated with new evidence.

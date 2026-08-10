@@ -10,6 +10,8 @@
     "ledger_revision",
     "snapshot_date",
     "authority",
+    "evidence_manifest_algorithm",
+    "scope",
     "approval_policy",
     "remote_enforcement",
     "repositories"
@@ -20,6 +22,38 @@
     "ledger_revision": { "$ref": "#/$defs/nonEmpty" },
     "snapshot_date": { "$ref": "#/$defs/date" },
     "authority": { "const": "this-ledger" },
+    "evidence_manifest_algorithm": {
+      "const": "sha256(sorted(path + NUL + git_blob_sha + LF))"
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definition",
+        "observed_repository_count",
+        "active_repository_count",
+        "archived_exclusions"
+      ],
+      "properties": {
+        "definition": { "const": "active_non_archived_governance_and_product_repositories" },
+        "observed_repository_count": { "type": "integer", "minimum": 1 },
+        "active_repository_count": { "type": "integer", "minimum": 1 },
+        "archived_exclusions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["repository", "repository_id", "archived", "reason"],
+            "properties": {
+              "repository": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
+              "repository_id": { "type": "integer", "minimum": 1 },
+              "archived": { "const": true },
+              "reason": { "$ref": "#/$defs/nonEmpty" }
+            }
+          }
+        }
+      }
+    },
     "approval_policy": {
       "type": "object",
       "additionalProperties": false,
@@ -34,7 +68,10 @@
         "observed_at": { "$ref": "#/$defs/date" },
         "can_approve_pull_request_reviews": { "type": "boolean" },
         "minimum_required_approvals": { "type": "integer", "minimum": 0 },
-        "evidence_reference": { "$ref": "#/$defs/nonEmpty" },
+        "evidence_reference": {
+          "type": "string",
+          "pattern": "^https://api\\.github\\.com/"
+        },
         "statement": { "$ref": "#/$defs/nonEmpty" }
       }
     },
@@ -61,31 +98,44 @@
     "nonEmpty": { "type": "string", "minLength": 1 },
     "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
     "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\.\\.).+$" },
-    "paths": {
+    "entries": {
       "type": "array",
-      "items": { "$ref": "#/$defs/path" },
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "git_blob_sha"],
+        "properties": {
+          "path": { "$ref": "#/$defs/path" },
+          "git_blob_sha": { "$ref": "#/$defs/revision" }
+        }
+      },
       "uniqueItems": true
     },
-    "owner": {
+    "approvalEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "authority"],
+      "required": ["status", "revision", "entries", "manifest_sha256"],
       "properties": {
-        "repository": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
-        "authority": { "$ref": "#/$defs/nonEmpty" }
+        "status": { "enum": ["accepted_transitive", "proposed_unapproved", "not_applicable"] },
+        "revision": { "oneOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }] },
+        "entries": { "$ref": "#/$defs/entries" },
+        "manifest_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
       }
     },
     "specificationEvidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["verification", "revision", "paths"],
+      "required": ["verification", "revision", "entries", "manifest_sha256", "approval_evidence"],
       "properties": {
         "verification": {
           "enum": ["verified_at_revision", "unverified_snapshot", "not_applicable"]
         },
         "revision": { "oneOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }] },
-        "paths": { "$ref": "#/$defs/paths" }
+        "entries": { "$ref": "#/$defs/entries" },
+        "manifest_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "approval_evidence": { "$ref": "#/$defs/approvalEvidence" }
       }
     },
     "qualification": {
@@ -96,7 +146,8 @@
         "statement",
         "verification",
         "qualified_revision",
-        "evidence_paths"
+        "evidence_entries",
+        "manifest_sha256"
       ],
       "properties": {
         "status": {
@@ -114,7 +165,8 @@
         "qualified_revision": {
           "oneOf": [{ "$ref": "#/$defs/revision" }, { "type": "null" }]
         },
-        "evidence_paths": { "$ref": "#/$defs/paths" }
+        "evidence_entries": { "$ref": "#/$defs/entries" },
+        "manifest_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
       }
     },
     "gateContract": {
@@ -140,13 +192,23 @@
     "remoteRequiredChecks": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "default_branch", "ruleset_id", "reason", "checks"],
+      "required": [
+        "status",
+        "default_branch",
+        "ruleset_id",
+        "required_approving_review_count",
+        "require_code_owner_review",
+        "reason",
+        "checks"
+      ],
       "properties": {
         "status": {
           "enum": ["observed_active", "unavailable_free_private_repository", "not_observed"]
         },
         "default_branch": { "$ref": "#/$defs/nonEmpty" },
         "ruleset_id": { "type": ["integer", "null"], "minimum": 1 },
+        "required_approving_review_count": { "type": ["integer", "null"], "minimum": 0 },
+        "require_code_owner_review": { "type": ["boolean", "null"] },
         "reason": { "type": ["string", "null"] },
         "checks": {
           "type": "array",
@@ -167,7 +229,8 @@
       "additionalProperties": false,
       "required": [
         "repository",
-        "owner",
+        "archived",
+        "owner_reference",
         "applicability",
         "specification_maturity",
         "specification_scope",
@@ -178,7 +241,11 @@
       ],
       "properties": {
         "repository": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
-        "owner": { "$ref": "#/$defs/owner" },
+        "archived": { "const": false },
+        "owner_reference": {
+          "type": "string",
+          "pattern": "^https://github\\.com/[A-Za-z0-9-]+$"
+        },
         "applicability": {
           "enum": ["capability_owner", "applicable", "governance_only", "not_applicable"]
         },

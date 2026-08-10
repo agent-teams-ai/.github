@@ -1,10 +1,10 @@
 {
   "$schema": "./code-security-defaults.schema.json",
   "schema_version": 2,
-  "snapshot_revision": "2026-08-10.1",
+  "snapshot_revision": "2026-08-10.2",
   "observed_at": "2026-08-10",
   "organization": "agent-teams-ai",
-  "owner": "agent-teams-ai/security-administrators",
+  "owner": "https://github.com/777genius",
   "evidence": {
     "verification": "observed_api_snapshot",
     "endpoint": "/orgs/agent-teams-ai/code-security/configurations/defaults"
@@ -35,6 +35,19 @@
       "code_scanning_default_setup": "disabled",
       "secret_scanning": "disabled",
       "secret_scanning_push_protection": "disabled"
+    }
+  ],
+  "repository_attachments": [
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "repository_id": 1319378484,
+      "configuration_id": 266048,
+      "status": "enforced",
+      "dependabot_alerts_enablement_http_status": 204,
+      "dependabot_security_updates": "enabled_unpaused",
+      "ghas_billing_repositories": 0,
+      "observed_at": "2026-08-10",
+      "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/code-security-configuration"
     }
   ],
   "dependabot_policy": {

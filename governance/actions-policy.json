@@ -1,0 +1,33 @@
+{
+  "$schema": "./actions-policy.schema.json",
+  "schema_version": 1,
+  "snapshot_revision": "2026-08-10.1",
+  "observed_at": "2026-08-10",
+  "continuous_audit": false,
+  "owner_reference": "https://github.com/777genius",
+  "organization_workflow_permissions": {
+    "verification": "reported_dated_observation",
+    "default_workflow_permissions": "read",
+    "can_approve_pull_request_reviews": false,
+    "evidence_endpoint": "https://api.github.com/orgs/agent-teams-ai/actions/permissions/workflow"
+  },
+  "action_sha_pinning": {
+    "organization_policy_enabled": false,
+    "rollout_status": "pending_gateway_pr",
+    "fully_enforced": false,
+    "pending": [
+      {
+        "repository": "agent-teams-ai/craig-meeting-gateway",
+        "reason": "Immutable action-reference migration is still under review.",
+        "reference": "https://github.com/agent-teams-ai/craig-meeting-gateway/pull/7"
+      }
+    ]
+  },
+  "required_check_exceptions": [
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "reason": "GitHub Free does not expose protected required checks for this private repository.",
+      "reference": "https://github.com/agent-teams-ai/agent-teams-platform"
+    }
+  ]
+}

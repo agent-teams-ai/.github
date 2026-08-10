@@ -17,6 +17,12 @@ default configurations:
   Dependabot security updates are enabled. Paid security features remain
   disabled.
 
+The existing private `agent-teams-platform` repository, ID `1319378484`, was
+also observed attached to enforced configuration `266048`. Enabling Dependabot
+alerts returned HTTP `204`, security updates are enabled and unpaused, and the
+GHAS billing repository count remains `0`. This is dated attachment evidence,
+not continuous monitoring.
+
 The live source of truth is the GitHub organization configuration API. The
 checked-in snapshot is strict-schema validated and reviewable, but validation
 does not continuously compare it with GitHub.
@@ -55,3 +61,12 @@ Pull request approval is not required in this snapshot. Requiring one approval
 while organization review approval is disabled would deadlock the current
 single-member organization; CODEOWNERS may document ownership but does not
 change that approval rule.
+
+## Actions rollout is separate
+
+Code-security configuration enforcement does not prove GitHub Actions policy
+enforcement. The dated Actions snapshot records read-only default workflow
+permissions and disabled workflow approval, but organization-wide SHA pinning is
+still pending Gateway pull request `#7`. Platform also retains its private-plan
+required-check exception. The organization must not be described as fully
+Actions-enforced until those conditions and a later snapshot say otherwise.
