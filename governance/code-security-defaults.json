@@ -1,8 +1,8 @@
 {
   "$schema": "./code-security-defaults.schema.json",
   "schema_version": 4,
-  "snapshot_revision": "2026-08-10.5",
-  "observed_at": "2026-08-10",
+  "snapshot_revision": "2026-08-11.1",
+  "observed_at": "2026-08-11",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
   "owner": "https://github.com/777genius",
@@ -80,6 +80,62 @@
           "claim": "automated_security_fixes",
           "method": "GET",
           "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/automated-security-fixes",
+          "http_status": 200,
+          "enabled": true,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "repository": "agent-teams-ai/agent-plugin-submission-e2e",
+      "repository_id": 1330849083,
+      "observed_at": "2026-08-11",
+      "evidence_records": [
+        {
+          "claim": "configuration_attachment",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-plugin-submission-e2e/code-security-configuration",
+          "configuration_id": 266049,
+          "status": "enforced"
+        },
+        {
+          "claim": "dependabot_alerts_enablement",
+          "method": "PUT",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-plugin-submission-e2e/vulnerability-alerts",
+          "http_status": 204
+        },
+        {
+          "claim": "automated_security_fixes",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-plugin-submission-e2e/automated-security-fixes",
+          "http_status": 200,
+          "enabled": true,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "repository": "agent-teams-ai/universal-agent-plugins",
+      "repository_id": 1330849109,
+      "observed_at": "2026-08-11",
+      "evidence_records": [
+        {
+          "claim": "configuration_attachment",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins/code-security-configuration",
+          "configuration_id": 266049,
+          "status": "enforced"
+        },
+        {
+          "claim": "dependabot_alerts_enablement",
+          "method": "PUT",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins/vulnerability-alerts",
+          "http_status": 204
+        },
+        {
+          "claim": "automated_security_fixes",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins/automated-security-fixes",
           "http_status": 200,
           "enabled": true,
           "paused": false

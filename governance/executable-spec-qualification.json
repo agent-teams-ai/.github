@@ -1,14 +1,14 @@
 {
   "$schema": "./executable-spec-qualification.schema.json",
   "schema_version": 3,
-  "ledger_revision": "2026-08-11.1",
+  "ledger_revision": "2026-08-11.2",
   "snapshot_date": "2026-08-11",
   "authority": "this-ledger",
   "coordinate_checksum_algorithm": "sha256-internal-consistency(sorted(path + NUL + git_blob_sha + LF))",
   "scope": {
     "definition": "active_non_archived_governance_and_product_repositories",
-    "observed_repository_count": 10,
-    "active_repository_count": 6,
+    "observed_repository_count": 12,
+    "active_repository_count": 8,
     "archived_exclusions": [
       {
         "repository": "agent-teams-ai/governance-security-canary-private-20260810",
@@ -45,7 +45,7 @@
   },
   "remote_enforcement": {
     "verification": "dated_api_observation",
-    "observed_at": "2026-08-10",
+    "observed_at": "2026-08-11",
     "continuous_audit": false,
     "source": "GitHub repository rulesets API",
     "statement": "Required-check records below are a dated observation, not a claim of continuous live enforcement."
@@ -188,7 +188,7 @@
       "specification_scope": "Repository-internal Project Management executable-specification slice only; no public wire-contract or whole-platform claim.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "f725a3727f459249bc4f0d9a1e4baf7ab53eded7",
+        "revision": "38c0571bcc339f8710bb05b80061fff4bcdb829c",
         "entries": [
           { "path": "architecture/project-management/executable-specifications.json", "git_blob_sha": "32b4de4073b11d578de2d704b597ac79c0bfb9d7" },
           { "path": "tooling/executable-specifications/package.json", "git_blob_sha": "17fff2736255b7d1236ff14f7aa21d1342128b01" },
@@ -197,7 +197,7 @@
         "coordinate_checksum_sha256": "d133cda7f9b1a84106ae39ec0f50aabafeca2daf0e43918053f72d8d10fad3d0",
         "approval_evidence": {
           "status": "accepted_transitive",
-          "revision": "f725a3727f459249bc4f0d9a1e4baf7ab53eded7",
+          "revision": "38c0571bcc339f8710bb05b80061fff4bcdb829c",
           "entries": [
             { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "f1f6f3b001b5e35f84d1043c400399545190cece" },
             { "path": "docs/decisions/0007-platform-strategic-context-map-and-first-project-management-slice.md", "git_blob_sha": "afcc50bc4d5de85db69fcd47a65e25a48f533d5d" }
@@ -209,7 +209,7 @@
         "status": "partially_qualified_internal_slice",
         "statement": "Governance accepts the dated property, semantic and boundary mutation, model, production-conformance, and clean-checkout evidence coordinates only for the implemented internal slice; this ledger does not mechanically verify their remote Git linkage.",
         "evidence_status": "governance_accepted_coordinates",
-        "accepted_revision": "f725a3727f459249bc4f0d9a1e4baf7ab53eded7",
+        "accepted_revision": "38c0571bcc339f8710bb05b80061fff4bcdb829c",
         "evidence_entries": [
           { "path": "tooling/executable-specifications/scripts/managed-scope-admission.model.test.mjs", "git_blob_sha": "5d412e4d3f0a10bdb1a04ba06bcefa944dacbd63" },
           { "path": "tooling/executable-specifications/scripts/managed-scope-admission.mutation.test.mjs", "git_blob_sha": "ca5fdd9572879067eb8d9177a0e4e781a60f8443" },
@@ -259,7 +259,7 @@
       "specification_scope": "Accepted repository-owned orchestration state projections only; proposed and external state, full runtime binding, and end-to-end behavior remain outside the claim.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "f7585b2ed2e71a81d98a58ac454975f182ab76c3",
+        "revision": "5c72dfa53b3a91d2463cf131c50065035d0dde2e",
         "entries": [
           { "path": "architecture/executable-specs/catalog.json", "git_blob_sha": "5525c8459fc65529045576b0e567a9c3095ed72a" },
           { "path": "architecture/executable-specs/orchestration-project-lifecycle.json", "git_blob_sha": "ed80d5e6adfae7c5296e68055577598a64b59c2b" },
@@ -268,7 +268,7 @@
         "coordinate_checksum_sha256": "d50d2044b3bc2fa98e29afc4ea791f4725744068128261e5757bdbcb45f0e184",
         "approval_evidence": {
           "status": "accepted_transitive",
-          "revision": "f7585b2ed2e71a81d98a58ac454975f182ab76c3",
+          "revision": "5c72dfa53b3a91d2463cf131c50065035d0dde2e",
           "entries": [
             { "path": "architecture/executable-specs/catalog.json", "git_blob_sha": "5525c8459fc65529045576b0e567a9c3095ed72a" },
             { "path": "docs/decisions/0079-runtime-authority-binding-cutoff-and-disposition.md", "git_blob_sha": "7212c21f6fe10212767faca851af75afd65ee574" },
@@ -419,6 +419,108 @@
             { "context": "Lint monorepo", "integration_id": 15368 },
             { "context": "ReviewRouter", "integration_id": 3599233 }
           ]
+        }
+      }
+    },
+    {
+      "repository": "agent-teams-ai/agent-plugin-submission-e2e",
+      "repository_id": 1330849083,
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
+      "applicability": "not_applicable",
+      "specification_maturity": "not_applicable",
+      "specification_scope": "N/A for this public end-to-end fixture repository; it makes no product executable-specification claim.",
+      "specification_evidence": {
+        "evidence_status": "not_applicable",
+        "revision": null,
+        "entries": [],
+        "coordinate_checksum_sha256": null,
+        "approval_evidence": {
+          "status": "not_applicable",
+          "revision": null,
+          "entries": [],
+          "coordinate_checksum_sha256": null
+        }
+      },
+      "implementation_qualification": {
+        "status": "not_applicable",
+        "statement": "No organization product executable-specification implementation claim exists for this fixture.",
+        "evidence_status": "not_applicable",
+        "accepted_revision": null,
+        "evidence_entries": [],
+        "coordinate_checksum_sha256": null
+      },
+      "deployment_qualification": {
+        "status": "not_applicable",
+        "statement": "No organization product executable-specification deployment claim exists for this fixture.",
+        "evidence_status": "not_applicable",
+        "accepted_revision": null,
+        "evidence_entries": [],
+        "coordinate_checksum_sha256": null
+      },
+      "gate_contract": {
+        "full_repository_command": null,
+        "executable_spec_commands": [],
+        "remote_required_checks": {
+          "status": "not_observed",
+          "exception_id": null,
+          "default_branch": "main",
+          "ruleset_id": null,
+          "required_approving_review_count": null,
+          "require_code_owner_review": null,
+          "reason": "GitHub repository rulesets API returned zero repository rulesets on 2026-08-11; no protected required checks were observed.",
+          "checks": []
+        }
+      }
+    },
+    {
+      "repository": "agent-teams-ai/universal-agent-plugins",
+      "repository_id": 1330849109,
+      "archived": false,
+      "owner_reference": "https://github.com/777genius",
+      "applicability": "not_applicable",
+      "specification_maturity": "not_applicable",
+      "specification_scope": "N/A for this public fork and product-distribution repository until it adopts an organization-owned executable-specification boundary.",
+      "specification_evidence": {
+        "evidence_status": "not_applicable",
+        "revision": null,
+        "entries": [],
+        "coordinate_checksum_sha256": null,
+        "approval_evidence": {
+          "status": "not_applicable",
+          "revision": null,
+          "entries": [],
+          "coordinate_checksum_sha256": null
+        }
+      },
+      "implementation_qualification": {
+        "status": "not_applicable",
+        "statement": "No organization executable-specification implementation claim exists without an adopted boundary.",
+        "evidence_status": "not_applicable",
+        "accepted_revision": null,
+        "evidence_entries": [],
+        "coordinate_checksum_sha256": null
+      },
+      "deployment_qualification": {
+        "status": "not_applicable",
+        "statement": "No organization executable-specification deployment claim exists without an adopted boundary.",
+        "evidence_status": "not_applicable",
+        "accepted_revision": null,
+        "evidence_entries": [],
+        "coordinate_checksum_sha256": null
+      },
+      "gate_contract": {
+        "full_repository_command": null,
+        "executable_spec_commands": [],
+        "remote_required_checks": {
+          "status": "not_observed",
+          "exception_id": null,
+          "default_branch": "main",
+          "ruleset_id": null,
+          "required_approving_review_count": null,
+          "require_code_owner_review": null,
+          "reason": "GitHub repository rulesets API returned zero repository rulesets on 2026-08-11; no protected required checks were observed.",
+          "checks": []
         }
       }
     }
