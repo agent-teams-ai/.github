@@ -56,13 +56,15 @@ separate claims. JSON Schema validates the strict structure; generic cross-field
 checks prevent unverified snapshots from implying qualification. Repository
 values are owned by the ledger rather than mirrored in validator code.
 
-Scope completeness is anchored separately by the dated, human-reviewed GitHub
-API snapshot in
+Checked-in scope consistency is anchored separately by the dated,
+human-reviewed GitHub API snapshot in
 [`governance/organization-repository-inventory.json`](governance/organization-repository-inventory.json).
 Validation requires its exact repository names, IDs, archived split, and default
 branches to reconcile with the ledger. Its structural checksum detects
-inconsistent checked-in edits; neither the snapshot nor its checksum is remote
-attestation or continuous live inventory monitoring.
+inconsistent checked-in edits. A coordinated edit of the inventory and ledger,
+or repository drift after the observation date, requires a fresh authenticated
+API audit to detect. Neither the snapshot nor its checksum is remote attestation,
+a CI-enforced live completeness gate, or continuous inventory monitoring.
 
 Required-check entries are a dated GitHub rulesets API observation with ruleset
 and integration IDs, repository-scoped evidence endpoints, HTTP status, and
