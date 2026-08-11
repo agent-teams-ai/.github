@@ -45,15 +45,80 @@ executable-specification evidence block: schema or contract and version,
 positive and negative fixtures, and the exact deterministic gate or an explicit
 `N/A` with ownership rationale.
 
-## Applicability Matrix
+## Executable Specification Ledger
 
-This matrix is authoritative for the six organization repositories.
+The machine-readable
+[`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
+ledger is authoritative for the active in-scope organization repositories.
+It records specification maturity, implementation qualification, deployment qualification,
+owners, dated evidence coordinates, and exact deterministic commands as
+separate claims. JSON Schema validates the strict structure; generic cross-field
+checks prevent unverified snapshots from implying qualification. Repository
+values are owned by the ledger rather than mirrored in validator code.
 
-| Repository | Applicability | Owned boundary |
-| --- | --- | --- |
-| `engineering-foundation` | Capability owner | Generic mechanism and evidence contracts only; it is not a material cross-axis donor of product models. Its local pull request template must mirror the organization evidence block. |
-| `agent-runtime` | Applicable | Repository-owned JSON Schema with Ajv validation, fast-check properties/fixtures, and XState guards/transitions with an explicit runtime binding. |
-| `agent-teams-platform` | Applicable | Internal Project Management model only; adoption makes no public wire-contract claim. |
-| `agent-teams-orchestrator` | Applicable | Accepted, repository-owned state projections only; external or proposed state is out of scope. |
-| `.github` | Governance-only | Organization policy, contribution evidence, and marker checks; no product executable specification. |
-| `craig-meeting-gateway` | N/A | Fork: N/A until an upstream-owned test/spec boundary exists and is adopted explicitly. |
+Checked-in scope consistency is anchored separately by the dated,
+human-reviewed GitHub API snapshot in
+[`governance/organization-repository-inventory.json`](governance/organization-repository-inventory.json).
+Validation requires its exact repository names, IDs, archived split, and default
+branches to reconcile with the ledger. Its structural checksum detects
+inconsistent checked-in edits. A coordinated edit of the inventory and ledger,
+or repository drift after the observation date, requires a fresh authenticated
+API audit to detect. Neither the snapshot nor its checksum is remote attestation,
+a CI-enforced live completeness gate, or continuous inventory monitoring.
+
+Required-check entries are a dated GitHub rulesets API observation with ruleset
+and integration IDs, repository-scoped evidence endpoints, HTTP status, and
+observation date. An `observed_absent` record means a dated successful query
+returned no repository rulesets; it is not an enforcement claim. They are not a
+claim of continuous live audit. Approval
+metadata currently requires zero approvals because review approval is disabled
+and a one-approval rule would deadlock a single-member organization.
+
+The scope is the active, non-archived governance and product repositories.
+Archived one-shot security canaries are explicit exclusions in the ledger;
+they are not silently omitted. Do not copy repository applicability into another
+human table: the JSON ledger is the sole value authority. Evidence entries are
+dated, human-reviewed Git revision/path/blob coordinates.
+
+New repositories inherit the organization security and immutable Actions
+defaults, but they begin architecturally unqualified. A repository must receive
+an owned ledger record, scoped evidence, and deterministic gates before any
+implementation or deployment qualification is claimed.
+
+The internal checksum hashes lexically sorted `path`, NUL, Git blob SHA, and LF
+records with SHA-256. It detects inconsistent edits inside the ledger; it does
+not prove that remote Git objects exist or that a revision contains those blobs.
+
+## Organization Security Defaults
+
+The live organization code-security defaults and their limitations are recorded
+in [`governance/code-security-defaults.json`](governance/code-security-defaults.json)
+and [the security baseline](docs/organization-security-baseline.md). Configuration
+`266049` is enforced for new public repositories and configuration `266048` is
+enforced for new private and internal repositories. Dependabot owns security
+updates only; Renovate owns routine version updates.
+
+Do not assume that a transferred repository received an organization default.
+Audit and explicitly apply the visibility-appropriate configuration after a
+transfer. The current private `agent-teams-platform` repository has a documented
+GitHub Free exception, `platform-private-required-checks-github-free`, defined
+once in the code-security snapshot and referenced by the other policy records.
+Policy must not describe those CI gates as remotely enforced.
+
+The dated Actions posture is recorded separately in
+[`governance/actions-policy.json`](governance/actions-policy.json). Default
+workflow permissions are read-only and workflow approval is disabled. Immutable
+action-reference enforcement is enabled organization-wide. Platform retains the
+separate required-check exception
+`platform-private-required-checks-github-free`; that GitHub Free limitation does
+not weaken immutable action-reference enforcement.
+
+Workflow-generated release pull requests use the owner-bootstrap policy without
+enabling organization-wide Actions pull-request creation or approval. The
+repository owner creates the pull request only after verifying the exact
+generated diff, head SHA, and base SHA. The owner may manually approve a
+workflow run only after inspecting that same tuple and confirming the exact head
+commit is authored by `github-actions[bot]`; automatic or broader workflow
+approval is forbidden. Only a failed Release run may be rerun. The release pull
+request may merge only after its required checks, ReviewRouter result, and
+release attestation have all passed for the verified head.

@@ -11,10 +11,13 @@
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
-    "check": "pnpm renovate:validate && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs",
+    "check": "pnpm renovate:validate && pnpm governance:validate && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "governance:validate": "node scripts/validate-governance.mjs",
+    "test": "node --test scripts/*.test.mjs",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json"
   },
   "devDependencies": {
+    "ajv": "8.20.0",
     "renovate": "43.280.5",
     "yaml": "2.9.0"
   }

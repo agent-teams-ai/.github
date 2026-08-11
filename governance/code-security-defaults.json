@@ -1,0 +1,165 @@
+{
+  "$schema": "./code-security-defaults.schema.json",
+  "schema_version": 5,
+  "snapshot_revision": "2026-08-11.2",
+  "observed_at": "2026-08-11",
+  "continuous_audit": false,
+  "organization": "agent-teams-ai",
+  "owner": "https://github.com/777genius",
+  "defaults_evidence": {
+    "verification": "observed_api_snapshot",
+    "endpoint": "https://api.github.com/orgs/agent-teams-ai/code-security/configurations/defaults"
+  },
+  "defaults": [
+    {
+      "id": 266049,
+      "name": "Public repository security baseline",
+      "default_for_new_repositories": "public",
+      "enforcement": "enforced",
+      "dependency_graph": "enabled",
+      "dependabot_alerts": "enabled",
+      "dependabot_security_updates": "enabled",
+      "advanced_security": "enabled",
+      "code_scanning_default_setup": "enabled",
+      "secret_scanning": "enabled",
+      "secret_scanning_push_protection": "enabled"
+    },
+    {
+      "id": 266048,
+      "name": "Free dependency security baseline",
+      "default_for_new_repositories": "private_and_internal",
+      "enforcement": "enforced",
+      "dependency_graph": "enabled",
+      "dependabot_alerts": "enabled",
+      "dependabot_security_updates": "enabled",
+      "advanced_security": "disabled",
+      "code_scanning_default_setup": "disabled",
+      "secret_scanning": "disabled",
+      "secret_scanning_push_protection": "disabled"
+    }
+  ],
+  "organization_observations": [
+    {
+      "claim": "organization_ghas_billing",
+      "observed_at": "2026-08-10",
+      "method": "GET",
+      "endpoint": "https://api.github.com/orgs/agent-teams-ai/settings/billing/advanced-security",
+      "total_count": 0
+    },
+    {
+      "claim": "two_factor_requirement_enabled",
+      "observed_at": "2026-08-10",
+      "method": "GET",
+      "endpoint": "https://api.github.com/orgs/agent-teams-ai",
+      "value": false,
+      "transition_status": "deferred_by_owner",
+      "risk": "Organization membership is not protected by an organization-enforced two-factor requirement.",
+      "compensation": "Reassess two-factor enforcement before adding or changing organization membership."
+    }
+  ],
+  "repository_attachments": [
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "repository_id": 1319378484,
+      "visibility": "private",
+      "observed_at": "2026-08-10",
+      "evidence_records": [
+        {
+          "claim": "configuration_attachment",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/code-security-configuration",
+          "configuration_id": 266048,
+          "status": "enforced"
+        },
+        {
+          "claim": "dependabot_alerts_enablement",
+          "method": "PUT",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/vulnerability-alerts",
+          "http_status": 204
+        },
+        {
+          "claim": "automated_security_fixes",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/automated-security-fixes",
+          "http_status": 200,
+          "enabled": true,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "repository": "agent-teams-ai/agent-plugin-submission-e2e",
+      "repository_id": 1330849083,
+      "visibility": "public",
+      "observed_at": "2026-08-11",
+      "evidence_records": [
+        {
+          "claim": "configuration_attachment",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-plugin-submission-e2e/code-security-configuration",
+          "configuration_id": 266049,
+          "status": "enforced"
+        },
+        {
+          "claim": "dependabot_alerts_enablement",
+          "method": "PUT",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-plugin-submission-e2e/vulnerability-alerts",
+          "http_status": 204
+        },
+        {
+          "claim": "automated_security_fixes",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/agent-plugin-submission-e2e/automated-security-fixes",
+          "http_status": 200,
+          "enabled": true,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "repository": "agent-teams-ai/universal-agent-plugins",
+      "repository_id": 1330849109,
+      "visibility": "public",
+      "observed_at": "2026-08-11",
+      "evidence_records": [
+        {
+          "claim": "configuration_attachment",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins/code-security-configuration",
+          "configuration_id": 266049,
+          "status": "enforced"
+        },
+        {
+          "claim": "dependabot_alerts_enablement",
+          "method": "PUT",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins/vulnerability-alerts",
+          "http_status": 204
+        },
+        {
+          "claim": "automated_security_fixes",
+          "method": "GET",
+          "endpoint": "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins/automated-security-fixes",
+          "http_status": 200,
+          "enabled": true,
+          "paused": false
+        }
+      ]
+    }
+  ],
+  "dependabot_policy": {
+    "scope": "security_updates_only",
+    "routine_version_update_owner": "renovate"
+  },
+  "transfer_policy": {
+    "automatic_default_application_assumed": false,
+    "required_action": "Audit and explicitly apply the visibility-appropriate organization configuration after transfer."
+  },
+  "required_check_exceptions": [
+    {
+      "id": "platform-private-required-checks-github-free",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "reason": "GitHub Free does not provide private-repository rulesets or branch protection required checks for this organization.",
+      "compensation": "Keep deterministic local and CI gate declarations, but do not represent them as protected required checks."
+    }
+  ]
+}

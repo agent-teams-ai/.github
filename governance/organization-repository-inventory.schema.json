@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agent-teams-ai/.github/governance/organization-repository-inventory.schema.json",
+  "title": "Agent Teams dated organization repository inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "snapshot_revision",
+    "observed_at",
+    "continuous_audit",
+    "organization",
+    "verification",
+    "endpoint",
+    "checksum_algorithm",
+    "checksum_sha256",
+    "repositories"
+  ],
+  "properties": {
+    "$schema": { "const": "./organization-repository-inventory.schema.json" },
+    "schema_version": { "const": 1 },
+    "snapshot_revision": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[1-9][0-9]*$"
+    },
+    "observed_at": { "$ref": "#/$defs/date" },
+    "continuous_audit": { "const": false },
+    "organization": { "const": "agent-teams-ai" },
+    "verification": { "const": "human_reviewed_dated_api_snapshot" },
+    "endpoint": { "const": "https://api.github.com/orgs/agent-teams-ai/repos?type=all&per_page=100" },
+    "checksum_algorithm": {
+      "const": "sha256-internal-consistency(sorted(repository + NUL + id + NUL + archived + NUL + visibility + NUL + default_branch + LF))"
+    },
+    "checksum_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/repository" }
+    }
+  },
+  "$defs": {
+    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "id", "archived", "visibility", "default_branch"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
+        "id": { "type": "integer", "minimum": 1 },
+        "archived": { "type": "boolean" },
+        "visibility": { "enum": ["public", "private", "internal"] },
+        "default_branch": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      }
+    }
+  }
+}

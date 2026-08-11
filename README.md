@@ -13,13 +13,16 @@ the owning repository.
 - `CONTRIBUTING.md` - baseline contribution workflow.
 - `SECURITY.md` - private vulnerability reporting policy.
 - `GOVERNANCE.md` - ownership and decision boundaries.
+- `governance/` - machine-readable qualification and security-policy records.
+- `docs/organization-security-baseline.md` - live-default snapshot, transfer
+  handling, and plan-tier exceptions.
 - `SUPPORT.md` - support routing.
 - `CODE_OF_CONDUCT.md` - community conduct policy.
 - `.github/ISSUE_TEMPLATE/` - default issue forms.
 - `.github/PULL_REQUEST_TEMPLATE.md` - default pull request evidence.
 - `renovate-config.json` - organization Renovate preset.
-- `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter callers for this
-  repository's own reviews and review interactions.
+- `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter review and
+  interaction workflows.
 
 Repositories consume the Renovate policy explicitly:
 
@@ -32,10 +35,17 @@ Repositories consume the Renovate policy explicitly:
 The repository-local file is intentionally tiny. It can add project-specific
 package rules but must not copy the organization preset.
 
+The executable-specification ledger scopes observed organization repositories
+as active, non-archived records or named archived exclusions. Repository scope,
+maturity, and qualification values live only in the JSON ledger; the
+human governance document intentionally does not duplicate its matrix.
+
 ## ReviewRouter
 
 This repository pins the externally owned ReviewRouter reusable workflow and
-runtime to immutable commit SHAs. It does not currently publish an organization
-reusable ReviewRouter workflow. Product repositories own their reviewed caller
-configuration until a separate shared-workflow change is accepted.
+runtime to immutable commit SHAs. Product repositories own their reviewed caller
+configuration. `reviewrouter-interaction.yml` is a thin caller of the upstream
+interaction workflow and pins both `uses` and `runtime_ref` to the same immutable
+release commit. It preserves organization event filters, discussion variables,
+and secret mappings without copying checkout, setup, or runtime steps.
 Organization-wide community health, repository policy, and dependency automation configuration.

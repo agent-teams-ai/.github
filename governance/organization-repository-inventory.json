@@ -1,0 +1,26 @@
+{
+  "$schema": "./organization-repository-inventory.schema.json",
+  "schema_version": 1,
+  "snapshot_revision": "2026-08-11.1",
+  "observed_at": "2026-08-11",
+  "continuous_audit": false,
+  "organization": "agent-teams-ai",
+  "verification": "human_reviewed_dated_api_snapshot",
+  "endpoint": "https://api.github.com/orgs/agent-teams-ai/repos?type=all&per_page=100",
+  "checksum_algorithm": "sha256-internal-consistency(sorted(repository + NUL + id + NUL + archived + NUL + visibility + NUL + default_branch + LF))",
+  "checksum_sha256": "3e857ec30cea891e96cc4de6cde41c2445a17a5818596ba67da494e343b52fcc",
+  "repositories": [
+    { "repository": "agent-teams-ai/.github", "id": 1316243981, "archived": false, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/agent-plugin-submission-e2e", "id": 1330849083, "archived": false, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/agent-runtime", "id": 1314129620, "archived": false, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/agent-teams-orchestrator", "id": 1310245598, "archived": false, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/agent-teams-platform", "id": 1319378484, "archived": false, "visibility": "private", "default_branch": "main" },
+    { "repository": "agent-teams-ai/craig-meeting-gateway", "id": 1319652670, "archived": false, "visibility": "public", "default_branch": "master" },
+    { "repository": "agent-teams-ai/engineering-foundation", "id": 1316243988, "archived": false, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/governance-security-canary-private-20260810", "id": 1329959749, "archived": true, "visibility": "private", "default_branch": "main" },
+    { "repository": "agent-teams-ai/governance-security-canary-public-20260810", "id": 1329959694, "archived": true, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/governance-security-default-private-20260810", "id": 1329961377, "archived": true, "visibility": "private", "default_branch": "main" },
+    { "repository": "agent-teams-ai/governance-security-default-public-20260810", "id": 1329961342, "archived": true, "visibility": "public", "default_branch": "main" },
+    { "repository": "agent-teams-ai/universal-agent-plugins", "id": 1330849109, "archived": false, "visibility": "public", "default_branch": "main" }
+  ]
+}
