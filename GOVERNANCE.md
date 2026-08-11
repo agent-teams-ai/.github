@@ -99,3 +99,13 @@ action-reference enforcement is enabled organization-wide. Platform retains the
 separate required-check exception
 `platform-private-required-checks-github-free`; that GitHub Free limitation does
 not weaken immutable action-reference enforcement.
+
+Workflow-generated release pull requests use the owner-bootstrap policy without
+enabling organization-wide Actions pull-request creation or approval. The
+repository owner creates the pull request only after verifying the exact
+generated diff, head SHA, and base SHA. The owner may manually approve a
+workflow run only after inspecting that same tuple and confirming the exact head
+commit is authored by `github-actions[bot]`; automatic or broader workflow
+approval is forbidden. Only a failed Release run may be rerun. The release pull
+request may merge only after its required checks, ReviewRouter result, and
+release attestation have all passed for the verified head.

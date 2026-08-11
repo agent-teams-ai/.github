@@ -142,6 +142,10 @@ const maturityByApplicability = {
 
 export function validateExecutableSpecLedger(ledger, schema) {
   validateSchema(ledger, schema, "Executable-spec qualification ledger");
+  assert(
+    ledger.ledger_revision.startsWith(`${ledger.snapshot_date}.`),
+    "Ledger revision date must match its snapshot date.",
+  );
   const repositories = new Set();
   const activeRepositoryIds = new Set();
   const exclusions = new Set(

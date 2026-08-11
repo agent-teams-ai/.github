@@ -42,6 +42,15 @@ test("rejects a non-resolvable owner reference shape", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /JSON Schema/u);
 });
 
+test("requires the ledger revision date to match the snapshot date", () => {
+  const changed = clone(ledger);
+  changed.ledger_revision = "2026-08-10.5";
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /revision date must match its snapshot date/u,
+  );
+});
+
 test("rejects governance acceptance without a revision coordinate", () => {
   const changed = clone(ledger);
   const qualified = changed.repositories.find(
@@ -498,6 +507,57 @@ test("rejects workflow-permission evidence from another organization", () => {
   const changed = clone(actions);
   changed.organization_workflow_permissions.evidence_endpoint =
     "https://api.github.com/orgs/other/actions/permissions/workflow";
+  assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
+});
+
+test("rejects organization-wide workflow pull-request creation or approval", () => {
+  const changed = clone(actions);
+  changed.owner_bootstrap_release_pr.organization_create_and_approve_enabled = true;
+  assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
+});
+
+test("requires owner creation of the exact generated release revision tuple", () => {
+  for (const mutation of [
+    (policy) => {
+      policy.pull_request_creation.actor = "github-actions[bot]";
+    },
+    (policy) => {
+      policy.pull_request_creation.required_verification = ["exact_head_sha", "exact_base_sha"];
+    },
+  ]) {
+    const changed = clone(actions);
+    mutation(changed.owner_bootstrap_release_pr);
+    assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
+  }
+});
+
+test("approves only exact bot-authored release runs after manual inspection", () => {
+  for (const mutation of [
+    (approval) => {
+      approval.mode = "automatic";
+    },
+    (approval) => {
+      approval.allowed_run_author = "dependabot[bot]";
+    },
+    (approval) => {
+      approval.required_verification = ["exact_generated_diff", "exact_head_sha"];
+    },
+  ]) {
+    const changed = clone(actions);
+    mutation(changed.owner_bootstrap_release_pr.workflow_run_approval);
+    assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
+  }
+});
+
+test("reruns only a failed Release workflow", () => {
+  const changed = clone(actions);
+  changed.owner_bootstrap_release_pr.rerun_policy = "any_release_run";
+  assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
+});
+
+test("requires checks, ReviewRouter, and attestation before release merge", () => {
+  const changed = clone(actions);
+  changed.owner_bootstrap_release_pr.merge_requirements.pop();
   assert.throws(() => validateActionsPolicy(changed, actionsSchema), /JSON Schema/u);
 });
 

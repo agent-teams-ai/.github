@@ -1,8 +1,8 @@
 {
   "$schema": "./executable-spec-qualification.schema.json",
   "schema_version": 3,
-  "ledger_revision": "2026-08-10.4",
-  "snapshot_date": "2026-08-10",
+  "ledger_revision": "2026-08-11.1",
+  "snapshot_date": "2026-08-11",
   "authority": "this-ledger",
   "coordinate_checksum_algorithm": "sha256-internal-consistency(sorted(path + NUL + git_blob_sha + LF))",
   "scope": {
@@ -61,21 +61,24 @@
       "specification_scope": "Generic development-only executable-specification mechanisms and evidence contracts; no product domain model is qualified here.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "e56fbbe81f9104cd60813d4e0dc6f490eecdd002",
+        "revision": "6532173f9f1af97e7f57f58a47e187f0754a16ed",
         "entries": [
+          { "path": "packages/engineering-foundation/package.json", "git_blob_sha": "be07646cca6dc6cf1e89a19987f6fd566dea91f3" },
+          { "path": "packages/engineering-foundation/schemas/quality-executable-specification-catalog/v1.schema.json", "git_blob_sha": "6bcc9ff89ec06929563b4fb74d6eaf8d5e412717" },
           { "path": "packages/engineering-foundation/schemas/quality-executable-specifications/v1.schema.json", "git_blob_sha": "c0fa6a794be57c9ba2e88f744dc39b6addcae50f" },
           { "path": "packages/engineering-foundation/src/capabilities/executable-specifications/module.ts", "git_blob_sha": "fa1a387c1a9ea382957c24d84419944caaa99fdb" },
-          { "path": "tests/executable-specifications.test.mjs", "git_blob_sha": "8cb7026d741f8bf33c67162f55572ce4427270e5" }
+          { "path": "tests/executable-specifications.test.mjs", "git_blob_sha": "4c05794a454c2a29e1b8b192fcb0b56fbd730f42" }
         ],
-        "coordinate_checksum_sha256": "2f742cbe3c017cf776c52171a797d8b3b151db41e92b951a038c7266d82d8a63",
+        "coordinate_checksum_sha256": "028dfa3014c4517f7923db1c602136feb33987797568d8072f19ab3c49192ace",
         "approval_evidence": {
           "status": "accepted_transitive",
-          "revision": "e56fbbe81f9104cd60813d4e0dc6f490eecdd002",
+          "revision": "6532173f9f1af97e7f57f58a47e187f0754a16ed",
           "entries": [
-            { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "cd7b3e4b9cd0ed3dd3c5048c82a064eca733afae" },
-            { "path": "docs/decisions/0001-executable-capability-foundation.md", "git_blob_sha": "e8e494b5785884e9d2e7fecdefd865788ca0859c" }
+            { "path": "architecture/decisions/accepted-decisions.json", "git_blob_sha": "37db066239c3d11c23da2e7361e26b00224502ef" },
+            { "path": "docs/decisions/0001-executable-capability-foundation.md", "git_blob_sha": "e8e494b5785884e9d2e7fecdefd865788ca0859c" },
+            { "path": "docs/decisions/0021-consumer-owned-state-model-axis-topology.md", "git_blob_sha": "de55bfe2be298e1562f5e2d06277c1d54b6e30d9" }
           ],
-          "coordinate_checksum_sha256": "40f3e533d661d95f499de3741c977df8ede0dfb659c5f3db6a3203261924b421"
+          "coordinate_checksum_sha256": "5e491084018af973e0e968e15dc8c45c92e93665d0f877c7314791dd71c8c6ae"
         }
       },
       "implementation_qualification": {
@@ -125,7 +128,7 @@
       "specification_scope": "Synthetic runtime-operation oracle and proposed model evidence only; this is not proof of production runtime binding.",
       "specification_evidence": {
         "evidence_status": "dated_human_reviewed_coordinates",
-        "revision": "2efa174b9a49e2da51fa308a2026ef5824cc2f87",
+        "revision": "f61f9e44f9424405925c5b11cc12242d97716c60",
         "entries": [
           { "path": "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/manifest.json", "git_blob_sha": "748125afa8681db0697a2163c25857574ac4a705" },
           { "path": "experiments/runtime-profile-behavior/src/features/evidence/validate-runtime-operation-oracle.ts", "git_blob_sha": "a182ee733e432797d08d0f07e008669e934a9495" },
@@ -134,7 +137,7 @@
         "coordinate_checksum_sha256": "4db489bfd5d168b9751cc11eed02e9371932708b1612cbafb1bb2f6ad0337817",
         "approval_evidence": {
           "status": "proposed_unapproved",
-          "revision": "2efa174b9a49e2da51fa308a2026ef5824cc2f87",
+          "revision": "f61f9e44f9424405925c5b11cc12242d97716c60",
           "entries": [
             { "path": "experiments/runtime-profile-behavior/spec/runtime-operation-oracle/README.md", "git_blob_sha": "8168541957ede047160deb5bf1780bed62f75d5d" }
           ],
