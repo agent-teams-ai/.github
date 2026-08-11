@@ -73,8 +73,8 @@ rulesets observed through the GitHub API on 2026-08-11, including each ruleset
 ID, check context, and integration ID. GitHub Actions checks are app-bound to
 integration `15368`; ReviewRouter checks are app-bound to integration `3599233`.
 The two new public repositories returned zero repository rulesets, so their
-ledger records explicitly say `not_observed` and do not claim required-check
-enforcement.
+ledger records explicitly say `observed_absent`, cite the successful dated API
+queries, and do not claim required-check enforcement.
 This checked-in evidence is not continuous monitoring and must be refreshed
 before relying on live enforcement.
 

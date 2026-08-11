@@ -9,8 +9,11 @@ import {
   validateCodeSecurityDefaults,
   validateExecutableSpecLedger,
   validateGovernanceReferences,
+  validateOrganizationRepositoryInventory,
 } from "./governance-policy.mjs";
 
+const inventory = await loadJson("governance/organization-repository-inventory.json");
+const inventorySchema = await loadJson("governance/organization-repository-inventory.schema.json");
 const ledger = await loadJson("governance/executable-spec-qualification.json");
 const ledgerSchema = await loadJson("governance/executable-spec-qualification.schema.json");
 const security = await loadJson("governance/code-security-defaults.json");
@@ -25,6 +28,20 @@ const coordinateChecksum = (entries) => {
     .join("");
   return createHash("sha256").update(canonical).digest("hex");
 };
+
+test("accepts the authoritative dated organization repository inventory", () => {
+  assert.doesNotThrow(() =>
+    validateOrganizationRepositoryInventory(clone(inventory), inventorySchema));
+});
+
+test("rejects an internally inconsistent organization inventory entry", () => {
+  const changed = clone(inventory);
+  changed.repositories[0].id += 1;
+  assert.throws(
+    () => validateOrganizationRepositoryInventory(changed, inventorySchema),
+    /Inventory internal checksum/u,
+  );
+});
 
 test("accepts the authoritative executable-spec qualification ledger", () => {
   assert.doesNotThrow(() => validateExecutableSpecLedger(clone(ledger), ledgerSchema));
@@ -279,13 +296,15 @@ test("rejects a scope count that omits an organization repository", () => {
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /repository count/u);
 });
 
-test("accepts a dynamically counted additional repository", () => {
+test("accepts a structurally counted additional ledger record before inventory reconciliation", () => {
   const changed = clone(ledger);
   const additional = structuredClone(
     changed.repositories.find(({ applicability }) => applicability === "not_applicable"),
   );
   additional.repository = "agent-teams-ai/future-product";
   additional.repository_id = 999999999;
+  additional.gate_contract.remote_required_checks.evidence_endpoint =
+    `https://api.github.com/repos/${additional.repository}/rulesets/${additional.gate_contract.remote_required_checks.ruleset_id}`;
   changed.repositories.push(additional);
   changed.scope.active_repository_count += 1;
   changed.scope.observed_repository_count += 1;
@@ -351,6 +370,44 @@ test("rejects observed rulesets under an unverified remote snapshot", () => {
   assert.throws(
     () => validateExecutableSpecLedger(changed, ledgerSchema),
     /verification must match the repository observations/u,
+  );
+});
+
+test("rejects ruleset evidence scoped to another repository", () => {
+  const changed = clone(ledger);
+  const observed = changed.repositories.find(
+    ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_active",
+  );
+  observed.gate_contract.remote_required_checks.evidence_endpoint =
+    "https://api.github.com/repos/agent-teams-ai/other/rulesets/19979782";
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /exact enforced shape/u,
+  );
+});
+
+test("rejects ruleset evidence outside the root observation date", () => {
+  const changed = clone(ledger);
+  changed.repositories[0].gate_contract.remote_required_checks.observed_at = "2026-08-10";
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /dated organization snapshot/u,
+  );
+});
+
+test("rejects an unqueried ruleset under the dated full snapshot", () => {
+  const changed = clone(ledger);
+  const remote = changed.repositories.find(
+    ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_absent",
+  ).gate_contract.remote_required_checks;
+  remote.status = "not_observed";
+  remote.observed_at = null;
+  remote.evidence_endpoint = null;
+  remote.http_status = null;
+  remote.reason = "Rulesets were not queried.";
+  assert.throws(
+    () => validateExecutableSpecLedger(changed, ledgerSchema),
+    /dated organization snapshot/u,
   );
 });
 
@@ -452,6 +509,20 @@ test("rejects a repository attachment to an unknown security configuration", () 
   );
   attachment.configuration_id = 999999;
   assert.throws(() => validateCodeSecurityDefaults(changed, securitySchema), /unknown security configuration/u);
+});
+
+test("rejects a public attachment using the private security default", () => {
+  const changed = clone(security);
+  const publicAttachment = changed.repository_attachments.find(
+    ({ visibility }) => visibility === "public",
+  );
+  publicAttachment.evidence_records.find(
+    ({ claim }) => claim === "configuration_attachment",
+  ).configuration_id = 266048;
+  assert.throws(
+    () => validateCodeSecurityDefaults(changed, securitySchema),
+    /does not match repository visibility/u,
+  );
 });
 
 test("rejects duplicate Platform security evidence claims", () => {
@@ -571,14 +642,49 @@ test("requires the canonical GitHub SHA-pinning API field", () => {
 });
 
 test("accepts cross-policy required-check exception references", () => {
-  assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions)));
+  assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory)));
+});
+
+test("rejects ledger removal hidden by decremented self-counts", () => {
+  const changed = clone(ledger);
+  changed.repositories.pop();
+  changed.scope.active_repository_count -= 1;
+  changed.scope.observed_repository_count -= 1;
+  assert.throws(
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory)),
+    /scope counts must match/u,
+  );
+});
+
+test("rejects a security attachment with the wrong inventory ID", () => {
+  const changed = clone(security);
+  changed.repository_attachments[0].repository_id += 1;
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    /attachment identity must match/u,
+  );
+});
+
+test("rejects a security attachment with the wrong inventory visibility", () => {
+  const changed = clone(security);
+  const publicAttachment = changed.repository_attachments.find(
+    ({ visibility }) => visibility === "public",
+  );
+  publicAttachment.visibility = "private";
+  publicAttachment.evidence_records.find(
+    ({ claim }) => claim === "configuration_attachment",
+  ).configuration_id = 266048;
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    /attachment identity must match/u,
+  );
 });
 
 test("rejects a dangling Actions required-check exception reference", () => {
   const changed = clone(actions);
   changed.required_check_exception_ids = ["missing-policy-exception"];
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), clone(security), changed),
+    () => validateGovernanceReferences(clone(ledger), clone(security), changed, clone(inventory)),
     /references unknown required-check exception/u,
   );
 });
@@ -590,7 +696,7 @@ test("rejects duplicate authority exception IDs before building lookup maps", ()
     repository: "agent-teams-ai/engineering-foundation",
   });
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
     /authority IDs must be unique/u,
   );
 });
@@ -599,7 +705,7 @@ test("rejects duplicate Actions exception references", () => {
   const changed = clone(actions);
   changed.required_check_exception_ids.push(changed.required_check_exception_ids[0]);
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), clone(security), changed),
+    () => validateGovernanceReferences(clone(ledger), clone(security), changed, clone(inventory)),
     /Actions exception references must be unique/u,
   );
 });
@@ -616,7 +722,7 @@ test("rejects one exception referenced by multiple ledger repositories", () => {
     platform.gate_contract.remote_required_checks,
   );
   assert.throws(
-    () => validateGovernanceReferences(changed, clone(security), clone(actions)),
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory)),
     /Ledger exception references must be one-to-one/u,
   );
 });
@@ -625,7 +731,7 @@ test("rejects an exception referenced outside its repository scope", () => {
   const changed = clone(security);
   changed.required_check_exceptions[0].repository = "agent-teams-ai/engineering-foundation";
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
     /exception owned by another repository/u,
   );
 });

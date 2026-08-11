@@ -21,6 +21,8 @@ const requiredFiles = [
   "governance/code-security-defaults.schema.json",
   "governance/executable-spec-qualification.json",
   "governance/executable-spec-qualification.schema.json",
+  "governance/organization-repository-inventory.json",
+  "governance/organization-repository-inventory.schema.json",
   "renovate-config.json",
   "renovate.json"
 ];
@@ -71,6 +73,8 @@ requireMarkers(governance, "GOVERNANCE.md", [
   "one-approval rule would deadlock a single-member organization",
   "active, non-archived governance and product repositories",
   "Archived one-shot security canaries are explicit exclusions",
+  "Scope completeness is anchored separately by the dated, human-reviewed GitHub API snapshot",
+  "An `observed_absent` record means a dated successful query",
   "Do not copy repository applicability into another human table",
   "Configuration `266049` is enforced for new public repositories",
   "configuration `266048` is enforced for new private and internal repositories",

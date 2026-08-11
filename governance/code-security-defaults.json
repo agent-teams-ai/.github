@@ -1,7 +1,7 @@
 {
   "$schema": "./code-security-defaults.schema.json",
-  "schema_version": 4,
-  "snapshot_revision": "2026-08-11.1",
+  "schema_version": 5,
+  "snapshot_revision": "2026-08-11.2",
   "observed_at": "2026-08-11",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
@@ -61,6 +61,7 @@
     {
       "repository": "agent-teams-ai/agent-teams-platform",
       "repository_id": 1319378484,
+      "visibility": "private",
       "observed_at": "2026-08-10",
       "evidence_records": [
         {
@@ -89,6 +90,7 @@
     {
       "repository": "agent-teams-ai/agent-plugin-submission-e2e",
       "repository_id": 1330849083,
+      "visibility": "public",
       "observed_at": "2026-08-11",
       "evidence_records": [
         {
@@ -117,6 +119,7 @@
     {
       "repository": "agent-teams-ai/universal-agent-plugins",
       "repository_id": 1330849109,
+      "visibility": "public",
       "observed_at": "2026-08-11",
       "evidence_records": [
         {

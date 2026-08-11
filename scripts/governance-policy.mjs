@@ -89,16 +89,34 @@ function validateQualification(qualification, repository, axis) {
 
 function validateRemoteChecks(remote, repository) {
   const observed = remote.status === "observed_active";
+  const absent = remote.status === "observed_absent";
   const excepted = remote.status === "unavailable_free_private_repository";
   const unobserved = remote.status === "not_observed";
+  const collectionEndpoint = `https://api.github.com/repos/${repository}/rulesets`;
   const observedShape =
+    remote.observed_at !== null &&
+    remote.evidence_endpoint === `${collectionEndpoint}/${remote.ruleset_id}` &&
+    remote.http_status === 200 &&
     remote.ruleset_id !== null &&
     remote.checks.length > 0 &&
     remote.required_approving_review_count === 0 &&
     remote.require_code_owner_review === false &&
     remote.reason === null &&
     remote.exception_id === null;
+  const absentShape =
+    remote.observed_at !== null &&
+    remote.evidence_endpoint === collectionEndpoint &&
+    remote.http_status === 200 &&
+    remote.ruleset_id === null &&
+    remote.checks.length === 0 &&
+    remote.required_approving_review_count === null &&
+    remote.require_code_owner_review === null &&
+    remote.reason === null &&
+    remote.exception_id === null;
   const unavailableShape =
+    remote.observed_at !== null &&
+    remote.evidence_endpoint === collectionEndpoint &&
+    remote.http_status === 403 &&
     remote.ruleset_id === null &&
     remote.checks.length === 0 &&
     remote.required_approving_review_count === null &&
@@ -106,6 +124,9 @@ function validateRemoteChecks(remote, repository) {
     remote.reason === null &&
     remote.exception_id !== null;
   const unobservedShape =
+    remote.observed_at === null &&
+    remote.evidence_endpoint === null &&
+    remote.http_status === null &&
     remote.ruleset_id === null &&
     remote.checks.length === 0 &&
     remote.required_approving_review_count === null &&
@@ -116,6 +137,10 @@ function validateRemoteChecks(remote, repository) {
   assert(
     observed === observedShape,
     `${repository} observed-active remote checks must use the exact enforced shape.`,
+  );
+  assert(
+    absent === absentShape,
+    `${repository} observed-absent remote checks must use the exact empty-ruleset shape.`,
   );
   assert(
     excepted === unavailableShape,
@@ -289,6 +314,21 @@ export function validateExecutableSpecLedger(ledger, schema) {
       (ledger.remote_enforcement.verification === "dated_api_observation"),
     "Remote enforcement verification must match the repository observations.",
   );
+  for (const { repository, gate_contract } of ledger.repositories) {
+    const remote = gate_contract.remote_required_checks;
+    if (ledger.remote_enforcement.verification === "dated_api_observation") {
+      assert(
+        remote.status !== "not_observed" &&
+          remote.observed_at === ledger.remote_enforcement.observed_at,
+        `${repository} ruleset evidence must match the dated organization snapshot.`,
+      );
+    } else {
+      assert(
+        remote.status === "not_observed",
+        `${repository} cannot retain ruleset observations under an unverified snapshot.`,
+      );
+    }
+  }
   if (!ledger.approval_policy.can_approve_pull_request_reviews) {
     assert(
       ledger.approval_policy.minimum_required_approvals === 0,
@@ -354,6 +394,7 @@ export function validateCodeSecurityDefaults(policy, schema) {
   assert(new Set(exceptionRepositories).size === exceptionRepositories.length, "Required-check exceptions must be unique by repository.");
   assert(new Set(exceptionIds).size === exceptionIds.length, "Required-check exception IDs must be unique.");
   const defaultIds = new Set(policy.defaults.map(({ id }) => id));
+  const defaultsById = new Map(policy.defaults.map((configuration) => [configuration.id, configuration]));
   const attachments = policy.repository_attachments.map(({ repository }) => repository);
   const attachmentIds = policy.repository_attachments.map(({ repository_id }) => repository_id);
   assert(new Set(attachments).size === attachments.length, "Security attachments must be unique by repository.");
@@ -385,7 +426,40 @@ export function validateCodeSecurityDefaults(policy, schema) {
       ({ claim }) => claim === "configuration_attachment",
     );
     assert(defaultIds.has(configuration?.configuration_id), `${attachment.repository} references an unknown security configuration.`);
+    const expectedVisibility =
+      attachment.visibility === "public" ? "public" : "private_and_internal";
+    assert(
+      defaultsById.get(configuration?.configuration_id)?.default_for_new_repositories ===
+        expectedVisibility,
+      `${attachment.repository} security configuration does not match repository visibility.`,
+    );
   }
+}
+
+function inventoryChecksum(entries) {
+  const canonical = [...entries]
+    .sort(({ repository: left }, { repository: right }) =>
+      left < right ? -1 : left > right ? 1 : 0)
+    .map(({ repository, id, archived, visibility, default_branch: branch }) =>
+      `${repository}\0${id}\0${archived}\0${visibility}\0${branch}\n`)
+    .join("");
+  return createHash("sha256").update(canonical).digest("hex");
+}
+
+export function validateOrganizationRepositoryInventory(inventory, schema) {
+  validateSchema(inventory, schema, "Organization repository inventory");
+  assert(
+    inventory.snapshot_revision.startsWith(`${inventory.observed_at}.`),
+    "Inventory revision date must match its observation date.",
+  );
+  const repositories = inventory.repositories.map(({ repository }) => repository);
+  const ids = inventory.repositories.map(({ id }) => id);
+  assert(new Set(repositories).size === repositories.length, "Inventory repositories must be unique.");
+  assert(new Set(ids).size === ids.length, "Inventory repository IDs must be unique.");
+  assert(
+    inventory.checksum_sha256 === inventoryChecksum(inventory.repositories),
+    "Inventory internal checksum does not match its structural entries.",
+  );
 }
 
 export function validateActionsPolicy(policy, schema) {
@@ -410,7 +484,52 @@ export function validateActionsPolicy(policy, schema) {
   assert(new Set(pending).size === pending.length, "Pending Actions repositories must be unique.");
 }
 
-export function validateGovernanceReferences(ledger, security, actions) {
+export function validateGovernanceReferences(ledger, security, actions, inventory) {
+  const inventoryByRepository = new Map(
+    inventory.repositories.map((record) => [record.repository, record]),
+  );
+  const activeInventory = inventory.repositories.filter(({ archived }) => !archived);
+  const archivedInventory = inventory.repositories.filter(({ archived }) => archived);
+  assert(
+    ledger.snapshot_date === inventory.observed_at &&
+      ledger.scope.observed_repository_count === inventory.repositories.length &&
+      ledger.scope.active_repository_count === activeInventory.length &&
+      ledger.scope.archived_exclusions.length === archivedInventory.length,
+    "Ledger scope counts must match the dated organization inventory.",
+  );
+  const activeLedger = new Map(ledger.repositories.map((record) => [record.repository, record]));
+  const archivedLedger = new Map(
+    ledger.scope.archived_exclusions.map((record) => [record.repository, record]),
+  );
+  for (const record of activeInventory) {
+    const ledgerRecord = activeLedger.get(record.repository);
+    assert(
+      ledgerRecord?.repository_id === record.id &&
+        ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch,
+      `${record.repository} active ledger identity must match the organization inventory.`,
+    );
+  }
+  for (const record of archivedInventory) {
+    const exclusion = archivedLedger.get(record.repository);
+    assert(
+      exclusion?.repository_id === record.id,
+      `${record.repository} archived exclusion must match the organization inventory.`,
+    );
+  }
+  assert(
+    activeLedger.size === activeInventory.length && archivedLedger.size === archivedInventory.length,
+    "Ledger repository sets must exactly match the organization inventory split.",
+  );
+  for (const attachment of security.repository_attachments) {
+    const inventoryRecord = inventoryByRepository.get(attachment.repository);
+    assert(
+      inventoryRecord &&
+        !inventoryRecord.archived &&
+        inventoryRecord.id === attachment.repository_id &&
+        inventoryRecord.visibility === attachment.visibility,
+      `${attachment.repository} security attachment identity must match the active organization inventory.`,
+    );
+  }
   const exceptionIds = security.required_check_exceptions.map(({ id }) => id);
   assert(new Set(exceptionIds).size === exceptionIds.length, "Required-check exception authority IDs must be unique.");
   const exceptions = new Map(

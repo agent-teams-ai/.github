@@ -18,7 +18,7 @@
   ],
   "properties": {
     "$schema": { "const": "./executable-spec-qualification.schema.json" },
-    "schema_version": { "const": 3 },
+    "schema_version": { "const": 4 },
     "ledger_revision": {
       "type": "string",
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[1-9][0-9]*$"
@@ -197,6 +197,9 @@
         "status",
         "exception_id",
         "default_branch",
+        "observed_at",
+        "evidence_endpoint",
+        "http_status",
         "ruleset_id",
         "required_approving_review_count",
         "require_code_owner_review",
@@ -205,7 +208,7 @@
       ],
       "properties": {
         "status": {
-          "enum": ["observed_active", "unavailable_free_private_repository", "not_observed"]
+          "enum": ["observed_active", "observed_absent", "unavailable_free_private_repository", "not_observed"]
         },
         "exception_id": {
           "oneOf": [
@@ -214,6 +217,14 @@
           ]
         },
         "default_branch": { "$ref": "#/$defs/nonEmpty" },
+        "observed_at": { "oneOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] },
+        "evidence_endpoint": {
+          "oneOf": [
+            { "type": "string", "pattern": "^https://api\\.github\\.com/repos/agent-teams-ai/[^/]+/rulesets(?:/[1-9][0-9]*)?$" },
+            { "type": "null" }
+          ]
+        },
+        "http_status": { "type": ["integer", "null"], "minimum": 100, "maximum": 599 },
         "ruleset_id": { "type": ["integer", "null"], "minimum": 1 },
         "required_approving_review_count": { "type": ["integer", "null"], "minimum": 0 },
         "require_code_owner_review": { "type": ["boolean", "null"] },

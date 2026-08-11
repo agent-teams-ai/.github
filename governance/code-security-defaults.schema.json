@@ -22,7 +22,7 @@
   ],
   "properties": {
     "$schema": { "const": "./code-security-defaults.schema.json" },
-    "schema_version": { "const": 4 },
+    "schema_version": { "const": 5 },
     "snapshot_revision": { "$ref": "#/$defs/nonEmpty" },
     "observed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
     "continuous_audit": { "const": false },
@@ -57,12 +57,14 @@
         "required": [
           "repository",
           "repository_id",
+          "visibility",
           "observed_at",
           "evidence_records"
         ],
         "properties": {
-          "repository": { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+          "repository": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
           "repository_id": { "type": "integer", "minimum": 1 },
+          "visibility": { "enum": ["public", "private", "internal"] },
           "observed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
           "evidence_records": {
             "type": "array",
