@@ -22,11 +22,12 @@ also observed attached to enforced configuration `266048`. Separate evidence
 records preserve the exact API endpoint and method for that attachment, the
 Dependabot alerts HTTP `204`, and automated security fixes enabled and unpaused.
 The newly created public `agent-plugin-submission-e2e` and
-`universal-agent-plugins` repositories automatically inherited enforced public
+`universal-agent-plugins` repositories were observed attached to enforced public
 configuration `266049`. Each has separate 2026-08-11 evidence for the attachment,
 the Dependabot alerts HTTP `204`, and automated security fixes enabled and
-unpaused. This confirms automatic default application for these new public
-repositories; it does not change the transfer policy below.
+unpaused. This post-creation state is consistent with the configured public
+default and confirms that the expected baseline is present; it does not by itself
+prove attachment causality or change the transfer policy below.
 The organization GHAS billing repository count of `0` is recorded separately as
 an organization observation, so repository attachments do not duplicate it.
 This is dated evidence, not continuous monitoring.
