@@ -680,6 +680,43 @@ test("rejects a security attachment with the wrong inventory visibility", () => 
   );
 });
 
+test("rejects private-plan ruleset unavailability on a public repository", () => {
+  const changed = clone(ledger);
+  const publicRecord = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/engineering-foundation",
+  );
+  const privateRecord = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
+  );
+  publicRecord.gate_contract.remote_required_checks = clone(
+    privateRecord.gate_contract.remote_required_checks,
+  );
+  publicRecord.gate_contract.remote_required_checks.evidence_endpoint =
+    `https://api.github.com/repos/${publicRecord.repository}/rulesets`;
+  assert.throws(
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory)),
+    /requires private inventory visibility/u,
+  );
+});
+
+test("rejects a security snapshot rebound to another organization", () => {
+  const changed = clone(security);
+  changed.organization = "other-org";
+  changed.defaults_evidence.endpoint =
+    "https://api.github.com/orgs/other-org/code-security/configurations/defaults";
+  for (const observation of changed.organization_observations) {
+    observation.endpoint = observation.endpoint.replace(
+      "/orgs/agent-teams-ai",
+      "/orgs/other-org",
+    );
+  }
+  assert.doesNotThrow(() => validateCodeSecurityDefaults(changed, securitySchema));
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    /organization evidence must match/u,
+  );
+});
+
 test("rejects a dangling Actions required-check exception reference", () => {
   const changed = clone(actions);
   changed.required_check_exception_ids = ["missing-policy-exception"];
@@ -712,6 +749,7 @@ test("rejects duplicate Actions exception references", () => {
 
 test("rejects one exception referenced by multiple ledger repositories", () => {
   const changed = clone(ledger);
+  const changedInventory = clone(inventory);
   const platform = changed.repositories.find(
     ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
   );
@@ -721,8 +759,11 @@ test("rejects one exception referenced by multiple ledger repositories", () => {
   foundation.gate_contract.remote_required_checks = structuredClone(
     platform.gate_contract.remote_required_checks,
   );
+  changedInventory.repositories.find(
+    ({ repository }) => repository === foundation.repository,
+  ).visibility = "private";
   assert.throws(
-    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), changedInventory),
     /Ledger exception references must be one-to-one/u,
   );
 });

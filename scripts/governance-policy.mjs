@@ -485,6 +485,17 @@ export function validateActionsPolicy(policy, schema) {
 }
 
 export function validateGovernanceReferences(ledger, security, actions, inventory) {
+  const organizationApi = `https://api.github.com/orgs/${inventory.organization}`;
+  assert(
+    security.organization === inventory.organization &&
+      ledger.approval_policy.evidence_reference ===
+        `${organizationApi}/actions/permissions/workflow` &&
+      actions.organization_workflow_permissions.evidence_endpoint ===
+        `${organizationApi}/actions/permissions/workflow` &&
+      actions.action_sha_pinning.evidence_endpoint ===
+        `${organizationApi}/actions/permissions`,
+    "Governance policy organization evidence must match the organization inventory authority.",
+  );
   const inventoryByRepository = new Map(
     inventory.repositories.map((record) => [record.repository, record]),
   );
@@ -507,6 +518,11 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       ledgerRecord?.repository_id === record.id &&
         ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch,
       `${record.repository} active ledger identity must match the organization inventory.`,
+    );
+    assert(
+      ledgerRecord.gate_contract.remote_required_checks.status !==
+        "unavailable_free_private_repository" || record.visibility === "private",
+      `${record.repository} private-repository ruleset unavailability requires private inventory visibility.`,
     );
   }
   for (const record of archivedInventory) {
