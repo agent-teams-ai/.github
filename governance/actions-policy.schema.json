@@ -10,6 +10,7 @@
     "observed_at",
     "continuous_audit",
     "owner_reference",
+    "last_live_audit_attempt",
     "organization_workflow_permissions",
     "owner_bootstrap_release_pr",
     "action_sha_pinning",
@@ -22,6 +23,34 @@
     "observed_at": { "$ref": "#/$defs/date" },
     "continuous_audit": { "const": false },
     "owner_reference": { "$ref": "#/$defs/githubReference" },
+    "last_live_audit_attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempted_at",
+        "status",
+        "http_status",
+        "endpoints",
+        "result_authoritative",
+        "required_credential"
+      ],
+      "properties": {
+        "attempted_at": { "$ref": "#/$defs/date" },
+        "status": { "const": "unavailable_missing_read_only_org_scope" },
+        "http_status": { "const": 403 },
+        "endpoints": {
+          "type": "array",
+          "prefixItems": [
+            { "const": "https://api.github.com/orgs/agent-teams-ai/actions/permissions" },
+            { "const": "https://api.github.com/orgs/agent-teams-ai/actions/permissions/workflow" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "result_authoritative": { "const": false },
+        "required_credential": { "const": "dedicated_read_only_org_inventory_credential" }
+      }
+    },
     "organization_workflow_permissions": {
       "type": "object",
       "additionalProperties": false,

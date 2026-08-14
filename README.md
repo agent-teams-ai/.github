@@ -14,8 +14,12 @@ the owning repository.
 - `SECURITY.md` - private vulnerability reporting policy.
 - `GOVERNANCE.md` - ownership and decision boundaries.
 - `governance/` - machine-readable qualification and security-policy records.
+- `governance/docs-protocol-policy.json` - strict documentation-protocol
+  inventory, admission status, evidence, and exceptions.
 - `docs/organization-security-baseline.md` - live-default snapshot, transfer
   handling, and plan-tier exceptions.
+- `docs/repository-admission.md` - reviewed onboarding for new owned
+  repositories.
 - `SUPPORT.md` - support routing.
 - `CODE_OF_CONDUCT.md` - community conduct policy.
 - `.github/ISSUE_TEMPLATE/` - default issue forms.
@@ -23,6 +27,8 @@ the owning repository.
 - `renovate-config.json` - organization Renovate preset.
 - `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter review and
   interaction workflows.
+- `.github/workflows/docs-protocol-check.yml` - fixed reusable documentation
+  protocol gate with no inputs or secrets.
 
 Repositories consume the Renovate policy explicitly:
 

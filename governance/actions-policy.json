@@ -1,10 +1,21 @@
 {
   "$schema": "./actions-policy.schema.json",
   "schema_version": 4,
-  "snapshot_revision": "2026-08-11.1",
+  "snapshot_revision": "2026-08-14.1",
   "observed_at": "2026-08-10",
   "continuous_audit": false,
   "owner_reference": "https://github.com/777genius",
+  "last_live_audit_attempt": {
+    "attempted_at": "2026-08-14",
+    "status": "unavailable_missing_read_only_org_scope",
+    "http_status": 403,
+    "endpoints": [
+      "https://api.github.com/orgs/agent-teams-ai/actions/permissions",
+      "https://api.github.com/orgs/agent-teams-ai/actions/permissions/workflow"
+    ],
+    "result_authoritative": false,
+    "required_credential": "dedicated_read_only_org_inventory_credential"
+  },
   "organization_workflow_permissions": {
     "verification": "observed_api_snapshot",
     "default_workflow_permissions": "read",
