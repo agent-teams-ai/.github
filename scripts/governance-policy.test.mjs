@@ -7,6 +7,7 @@ import {
   loadJson,
   validateActionsPolicy,
   validateCodeSecurityDefaults,
+  validateDocsProtocolPolicy,
   validateExecutableSpecLedger,
   validateGovernanceReferences,
   validateOrganizationRepositoryInventory,
@@ -20,7 +21,31 @@ const security = await loadJson("governance/code-security-defaults.json");
 const securitySchema = await loadJson("governance/code-security-defaults.schema.json");
 const actions = await loadJson("governance/actions-policy.json");
 const actionsSchema = await loadJson("governance/actions-policy.schema.json");
+const docsProtocol = await loadJson("governance/docs-protocol-policy.json");
+const docsProtocolSchema = await loadJson("governance/docs-protocol-policy.schema.json");
 const clone = (value) => structuredClone(value);
+const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime") => {
+  const record = policy.repositories.find((candidate) => candidate.repository === repository);
+  const revision = "a".repeat(40);
+  policy.protocol.qualified_package_version = "0.1.0-rc.0";
+  record.admission_status = "admitted";
+  record.exact_package_version = policy.protocol.qualified_package_version;
+  record.profile_path = "docs/document-authoring.yaml";
+  record.caller_workflow_path = ".github/workflows/docs-protocol.yml";
+  record.reusable_workflow_revision = "b".repeat(40);
+  record.qualification_evidence_path = "docs/docs-protocol-qualification.json";
+  record.qualification = {
+    status: "qualified",
+    observed_revision: revision,
+    evidence_paths: [
+      "package.json",
+      record.profile_path,
+      record.caller_workflow_path,
+      record.qualification_evidence_path,
+    ],
+  };
+  return record;
+};
 const coordinateChecksum = (entries) => {
   const canonical = [...entries]
     .sort(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
@@ -41,6 +66,211 @@ test("rejects an internally inconsistent organization inventory entry", () => {
     () => validateOrganizationRepositoryInventory(changed, inventorySchema),
     /Inventory internal checksum/u,
   );
+});
+
+test("accepts the authoritative documentation protocol admission policy", () => {
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(clone(docsProtocol), docsProtocolSchema));
+});
+
+test("rejects an omitted new owned repository even when policy self-counts are changed", () => {
+  const changed = clone(docsProtocol);
+  const index = changed.repositories.findIndex(
+    ({ repository }) => repository === "agent-teams-ai/extension-foundation",
+  );
+  changed.repositories.splice(index, 1);
+  changed.admission.expected_repository_count -= 1;
+  changed.admission.owned_repository_count -= 1;
+  assert.throws(
+    () => validateGovernanceReferences(
+      clone(ledger), clone(security), clone(actions), clone(inventory), changed,
+    ),
+    /documentation protocol identity must match/u,
+  );
+});
+
+test("rejects fake documentation protocol qualification without complete evidence", () => {
+  const changed = clone(docsProtocol);
+  const runtime = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  runtime.admission_status = "admitted";
+  runtime.qualification.status = "qualified";
+  runtime.exact_package_version = "1.0.0";
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /qualified admission requires bound package/u,
+  );
+});
+
+test("accepts a fully bound documentation protocol consumer qualification", () => {
+  const changed = clone(docsProtocol);
+  qualifyDocsConsumer(changed);
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+});
+
+test("rejects a consumer qualification with a fake package version", () => {
+  const changed = clone(docsProtocol);
+  const runtime = qualifyDocsConsumer(changed);
+  runtime.exact_package_version = "9.9.9";
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /qualified admission requires bound package/u,
+  );
+});
+
+test("rejects zero consumer and reusable-workflow revisions independently", () => {
+  for (const axis of ["consumer", "reusable"]) {
+    const changed = clone(docsProtocol);
+    const runtime = qualifyDocsConsumer(changed);
+    if (axis === "consumer") {
+      runtime.qualification.observed_revision = "0".repeat(40);
+    } else {
+      runtime.reusable_workflow_revision = "0".repeat(40);
+    }
+    assert.throws(
+      () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+      /qualified admission requires bound package/u,
+    );
+  }
+});
+
+test("keeps the consumer revision separate from the reusable workflow target revision", () => {
+  const changed = clone(docsProtocol);
+  const runtime = qualifyDocsConsumer(changed);
+  assert.notEqual(runtime.qualification.observed_revision, runtime.reusable_workflow_revision);
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+});
+
+test("rejects overlapping documentation admission paths", () => {
+  const changed = clone(docsProtocol);
+  const runtime = qualifyDocsConsumer(changed);
+  runtime.profile_path = runtime.caller_workflow_path;
+  runtime.qualification.evidence_paths = [
+    "package.json",
+    runtime.profile_path,
+    runtime.qualification_evidence_path,
+  ];
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /qualified admission requires bound package/u,
+  );
+});
+
+test("rejects profile, caller, and qualification paths with the wrong artifact type", () => {
+  for (const [field, value] of [
+    ["profile_path", "docs/document-authoring.json"],
+    ["caller_workflow_path", "docs/docs-protocol.yml"],
+    ["qualification_evidence_path", "docs/docs-protocol-qualification.yaml"],
+  ]) {
+    const changed = clone(docsProtocol);
+    const runtime = qualifyDocsConsumer(changed);
+    const previous = runtime[field];
+    runtime[field] = value;
+    runtime.qualification.evidence_paths = runtime.qualification.evidence_paths.map(
+      (path) => path === previous ? value : path,
+    );
+    assert.throws(
+      () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+      /qualified admission requires bound package/u,
+    );
+  }
+});
+
+test("rejects non-canonical documentation repository paths", () => {
+  const cases = [
+    ["profile_path", "https://example.com/document-authoring.yaml"],
+    ["caller_workflow_path", ".github\\workflows\\docs-protocol.yml"],
+    ["qualification_evidence_path", "docs/../docs-protocol-qualification.json"],
+    ["profile_path", "docs/./document-authoring.yaml"],
+    ["profile_path", "/docs/document-authoring.yaml"],
+    ["profile_path", "docs/cafe\u0301.yaml"],
+  ];
+  for (const [field, value] of cases) {
+    const changed = clone(docsProtocol);
+    const runtime = qualifyDocsConsumer(changed);
+    const previous = runtime[field];
+    runtime[field] = value;
+    runtime.qualification.evidence_paths = runtime.qualification.evidence_paths.map(
+      (path) => path === previous ? value : path,
+    );
+    assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+  }
+
+  const changed = clone(docsProtocol);
+  const runtime = qualifyDocsConsumer(changed);
+  runtime.qualification.evidence_paths.push("docs//extra.md");
+  assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+});
+
+test("rejects qualification evidence that omits the caller or qualification record", () => {
+  for (const omitted of [
+    ".github/workflows/docs-protocol.yml",
+    "docs/docs-protocol-qualification.json",
+  ]) {
+    const changed = clone(docsProtocol);
+    const runtime = qualifyDocsConsumer(changed);
+    runtime.qualification.evidence_paths = runtime.qualification.evidence_paths.filter(
+      (path) => path !== omitted,
+    );
+    assert.throws(
+      () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+      /qualified admission requires bound package/u,
+    );
+  }
+});
+
+test("rejects documentation protocol exemption on an owned repository", () => {
+  const changed = clone(docsProtocol);
+  const runtime = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  runtime.exemption = clone(
+    changed.repositories.find(({ ownership }) => ownership === "external_fork").exemption,
+  );
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /consumer admission contract is incomplete/u,
+  );
+});
+
+test("rejects Foundation as both protocol producer and consumer", () => {
+  const changed = clone(docsProtocol);
+  const foundation = changed.repositories.find(
+    ({ role }) => role === "protocol_producer",
+  );
+  foundation.protocol_required = true;
+  foundation.fixed_gate_command = changed.protocol.fixed_gate_command;
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /producer is not a consumer/u,
+  );
+});
+
+test("rejects a governance controller other than the organization-owned .github repository", () => {
+  const changed = clone(docsProtocol);
+  const controller = changed.repositories.find(({ role }) => role === "governance_controller");
+  const runtime = changed.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-runtime");
+  controller.role = "consumer";
+  runtime.role = "governance_controller";
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /governance controller must be exactly/u,
+  );
+});
+
+test("rejects an external fork without the exempt role or exemption", () => {
+  for (const mutation of [
+    (craig) => { craig.role = "consumer"; },
+    (craig) => { craig.exemption = null; },
+  ]) {
+    const changed = clone(docsProtocol);
+    const craig = changed.repositories.find(({ ownership }) => ownership === "external_fork");
+    mutation(craig);
+    assert.throws(
+      () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+      /Craig gateway must remain an explicit external-fork/u,
+    );
+  }
 });
 
 test("accepts the authoritative executable-spec qualification ledger", () => {
@@ -273,20 +503,44 @@ test("does not describe evidence coordinates as external or offline verification
 
 test("rejects overlap between active scope and archived exclusions", () => {
   const changed = clone(ledger);
-  changed.scope.archived_exclusions[0].repository = changed.repositories[0].repository;
+  changed.scope.archived_exclusions.push({
+    repository: changed.repositories[0].repository,
+    repository_id: 999999998,
+    archived: true,
+    reason: "Synthetic archived overlap.",
+  });
+  changed.scope.observed_repository_count += 1;
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /both active and excluded/u);
 });
 
 test("rejects duplicate archived repository IDs", () => {
   const changed = clone(ledger);
-  changed.scope.archived_exclusions[1].repository_id =
-    changed.scope.archived_exclusions[0].repository_id;
+  changed.scope.archived_exclusions.push(
+    {
+      repository: "agent-teams-ai/archived-one",
+      repository_id: 999999998,
+      archived: true,
+      reason: "Synthetic archived repository.",
+    },
+    {
+      repository: "agent-teams-ai/archived-two",
+      repository_id: 999999998,
+      archived: true,
+      reason: "Synthetic archived repository.",
+    },
+  );
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /IDs must be unique/u);
 });
 
 test("rejects an archived repository ID reused by an active repository", () => {
   const changed = clone(ledger);
-  changed.scope.archived_exclusions[0].repository_id = changed.repositories[0].repository_id;
+  changed.scope.archived_exclusions.push({
+    repository: "agent-teams-ai/archived-one",
+    repository_id: changed.repositories[0].repository_id,
+    archived: true,
+    reason: "Synthetic archived repository.",
+  });
+  changed.scope.observed_repository_count += 1;
   assert.throws(() => validateExecutableSpecLedger(changed, ledgerSchema), /ID cannot be both active and excluded/u);
 });
 
@@ -398,12 +652,16 @@ test("rejects ruleset evidence outside the root observation date", () => {
 test("rejects an unqueried ruleset under the dated full snapshot", () => {
   const changed = clone(ledger);
   const remote = changed.repositories.find(
-    ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_absent",
+    ({ gate_contract }) => gate_contract.remote_required_checks.status === "observed_active",
   ).gate_contract.remote_required_checks;
   remote.status = "not_observed";
   remote.observed_at = null;
   remote.evidence_endpoint = null;
   remote.http_status = null;
+  remote.ruleset_id = null;
+  remote.required_approving_review_count = null;
+  remote.require_code_owner_review = null;
+  remote.checks = [];
   remote.reason = "Rulesets were not queried.";
   assert.throws(
     () => validateExecutableSpecLedger(changed, ledgerSchema),
@@ -513,9 +771,8 @@ test("rejects a repository attachment to an unknown security configuration", () 
 
 test("rejects a public attachment using the private security default", () => {
   const changed = clone(security);
-  const publicAttachment = changed.repository_attachments.find(
-    ({ visibility }) => visibility === "public",
-  );
+  const publicAttachment = changed.repository_attachments[0];
+  publicAttachment.visibility = "public";
   publicAttachment.evidence_records.find(
     ({ claim }) => claim === "configuration_attachment",
   ).configuration_id = 266048;
@@ -642,7 +899,7 @@ test("requires the canonical GitHub SHA-pinning API field", () => {
 });
 
 test("accepts cross-policy required-check exception references", () => {
-  assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory)));
+  assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory), clone(docsProtocol)));
 });
 
 test("rejects ledger removal hidden by decremented self-counts", () => {
@@ -651,7 +908,7 @@ test("rejects ledger removal hidden by decremented self-counts", () => {
   changed.scope.active_repository_count -= 1;
   changed.scope.observed_repository_count -= 1;
   assert.throws(
-    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory), clone(docsProtocol)),
     /scope counts must match/u,
   );
 });
@@ -660,22 +917,20 @@ test("rejects a security attachment with the wrong inventory ID", () => {
   const changed = clone(security);
   changed.repository_attachments[0].repository_id += 1;
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory), clone(docsProtocol)),
     /attachment identity must match/u,
   );
 });
 
 test("rejects a security attachment with the wrong inventory visibility", () => {
   const changed = clone(security);
-  const publicAttachment = changed.repository_attachments.find(
-    ({ visibility }) => visibility === "public",
-  );
-  publicAttachment.visibility = "private";
+  const publicAttachment = changed.repository_attachments[0];
+  publicAttachment.visibility = "public";
   publicAttachment.evidence_records.find(
     ({ claim }) => claim === "configuration_attachment",
-  ).configuration_id = 266048;
+  ).configuration_id = 266049;
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory), clone(docsProtocol)),
     /attachment identity must match/u,
   );
 });
@@ -694,7 +949,7 @@ test("rejects private-plan ruleset unavailability on a public repository", () =>
   publicRecord.gate_contract.remote_required_checks.evidence_endpoint =
     `https://api.github.com/repos/${publicRecord.repository}/rulesets`;
   assert.throws(
-    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory), clone(docsProtocol)),
     /requires private inventory visibility/u,
   );
 });
@@ -712,7 +967,7 @@ test("rejects a security snapshot rebound to another organization", () => {
   }
   assert.doesNotThrow(() => validateCodeSecurityDefaults(changed, securitySchema));
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory), clone(docsProtocol)),
     /organization evidence must match/u,
   );
 });
@@ -721,7 +976,7 @@ test("rejects a dangling Actions required-check exception reference", () => {
   const changed = clone(actions);
   changed.required_check_exception_ids = ["missing-policy-exception"];
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), clone(security), changed, clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), clone(security), changed, clone(inventory), clone(docsProtocol)),
     /references unknown required-check exception/u,
   );
 });
@@ -733,7 +988,7 @@ test("rejects duplicate authority exception IDs before building lookup maps", ()
     repository: "agent-teams-ai/engineering-foundation",
   });
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory), clone(docsProtocol)),
     /authority IDs must be unique/u,
   );
 });
@@ -742,7 +997,7 @@ test("rejects duplicate Actions exception references", () => {
   const changed = clone(actions);
   changed.required_check_exception_ids.push(changed.required_check_exception_ids[0]);
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), clone(security), changed, clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), clone(security), changed, clone(inventory), clone(docsProtocol)),
     /Actions exception references must be unique/u,
   );
 });
@@ -763,7 +1018,7 @@ test("rejects one exception referenced by multiple ledger repositories", () => {
     ({ repository }) => repository === foundation.repository,
   ).visibility = "private";
   assert.throws(
-    () => validateGovernanceReferences(changed, clone(security), clone(actions), changedInventory),
+    () => validateGovernanceReferences(changed, clone(security), clone(actions), changedInventory, clone(docsProtocol)),
     /Ledger exception references must be one-to-one/u,
   );
 });
@@ -772,7 +1027,7 @@ test("rejects an exception referenced outside its repository scope", () => {
   const changed = clone(security);
   changed.required_check_exceptions[0].repository = "agent-teams-ai/engineering-foundation";
   assert.throws(
-    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory)),
+    () => validateGovernanceReferences(clone(ledger), changed, clone(actions), clone(inventory), clone(docsProtocol)),
     /exception owned by another repository/u,
   );
 });

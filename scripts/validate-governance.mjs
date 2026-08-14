@@ -2,6 +2,7 @@ import {
   loadJson,
   validateActionsPolicy,
   validateCodeSecurityDefaults,
+  validateDocsProtocolPolicy,
   validateExecutableSpecLedger,
   validateGovernanceReferences,
   validateOrganizationRepositoryInventory,
@@ -15,11 +16,14 @@ const security = await loadJson("governance/code-security-defaults.json");
 const securitySchema = await loadJson("governance/code-security-defaults.schema.json");
 const actions = await loadJson("governance/actions-policy.json");
 const actionsSchema = await loadJson("governance/actions-policy.schema.json");
+const docsProtocol = await loadJson("governance/docs-protocol-policy.json");
+const docsProtocolSchema = await loadJson("governance/docs-protocol-policy.schema.json");
 
 validateOrganizationRepositoryInventory(inventory, inventorySchema);
 validateExecutableSpecLedger(ledger, ledgerSchema);
 validateCodeSecurityDefaults(security, securitySchema);
 validateActionsPolicy(actions, actionsSchema);
-validateGovernanceReferences(ledger, security, actions, inventory);
+validateDocsProtocolPolicy(docsProtocol, docsProtocolSchema);
+validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol);
 
-console.log("Governance verified: organization inventory, active-repository ledger, security defaults, and Actions policy.");
+console.log("Governance verified: inventory, ledgers, security defaults, Actions, and documentation protocol admission.");

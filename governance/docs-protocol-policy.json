@@ -1,0 +1,191 @@
+{
+  "$schema": "./docs-protocol-policy.schema.json",
+  "schema_version": 1,
+  "snapshot_revision": "2026-08-14.1",
+  "observed_at": "2026-08-14",
+  "organization": "agent-teams-ai",
+  "inventory_snapshot_revision": "2026-08-14.1",
+  "continuous_audit": false,
+  "protocol": {
+    "package": "@agent-teams/docs-protocol",
+    "producer_repository": "agent-teams-ai/engineering-foundation",
+    "producer_is_consumer": false,
+    "version_policy": "exact_registry_version",
+    "fixed_gate_command": "pnpm docs:protocol:check",
+    "reusable_workflow": ".github/workflows/docs-protocol-check.yml",
+    "qualified_package_version": null
+  },
+  "admission": {
+    "expected_repository_count": 7,
+    "owned_repository_count": 6,
+    "external_fork_count": 1,
+    "new_owned_repository_status": "unqualified_until_admitted",
+    "qualification_evidence_required": true,
+    "live_drift_audit": {
+      "status": "unavailable_without_dedicated_read_only_org_credential",
+      "required_credential": "dedicated_read_only_org_inventory_credential",
+      "forbidden_credentials": [
+        "CODEX_AUTH_JSON",
+        "REVIEWROUTER_CODEX_AUTH_JSON",
+        "interactive_user_gh_token"
+      ]
+    }
+  },
+  "repositories": [
+    {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "ownership": "organization_owned",
+      "role": "governance_controller",
+      "protocol_required": false,
+      "admission_status": "not_applicable",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-runtime",
+      "repository_id": 1314129620,
+      "ownership": "organization_owned",
+      "role": "consumer",
+      "protocol_required": true,
+      "admission_status": "pending_admission",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "qualification": {
+        "status": "not_qualified",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-orchestrator",
+      "repository_id": 1310245598,
+      "ownership": "organization_owned",
+      "role": "consumer",
+      "protocol_required": true,
+      "admission_status": "pending_admission",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "qualification": {
+        "status": "not_qualified",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "repository_id": 1319378484,
+      "ownership": "organization_owned",
+      "role": "consumer",
+      "protocol_required": true,
+      "admission_status": "pending_admission",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "qualification": {
+        "status": "not_qualified",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": "platform-private-required-checks-github-free"
+    },
+    {
+      "repository": "agent-teams-ai/craig-meeting-gateway",
+      "repository_id": 1319652670,
+      "ownership": "external_fork",
+      "role": "exempt_external_fork",
+      "protocol_required": false,
+      "admission_status": "not_applicable",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": {
+        "id": "external-fork-docs-protocol",
+        "reason": "Upstream fork is not an Agent Teams-owned product and must not receive organization-specific documentation machinery.",
+        "review_triggers": [
+          "fork_detached",
+          "ownership_changed",
+          "organization_specific_docs_added"
+        ]
+      },
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/engineering-foundation",
+      "repository_id": 1316243988,
+      "ownership": "organization_owned",
+      "role": "protocol_producer",
+      "protocol_required": false,
+      "admission_status": "not_applicable",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/extension-foundation",
+      "repository_id": 1333298097,
+      "ownership": "organization_owned",
+      "role": "consumer",
+      "protocol_required": true,
+      "admission_status": "pending_admission",
+      "exact_package_version": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "qualification": {
+        "status": "not_qualified",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    }
+  ]
+}

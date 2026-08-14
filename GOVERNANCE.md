@@ -85,6 +85,32 @@ defaults, but they begin architecturally unqualified. A repository must receive
 an owned ledger record, scoped evidence, and deterministic gates before any
 implementation or deployment qualification is claimed.
 
+## Documentation Protocol Admission
+
+The strict
+[`governance/docs-protocol-policy.json`](governance/docs-protocol-policy.json)
+record is the admission authority for the unified documentation protocol. It
+must reconcile exactly with the dated active repository inventory. Foundation
+produces `@agent-teams/docs-protocol` but is not a protocol consumer. Product
+consumers own their profiles and cannot claim admission without an exact package
+version, pairwise-distinct profile/caller/qualification paths, the nonzero
+consumer revision containing those artifacts, a separate nonzero immutable SHA
+for the central reusable-workflow target, evidence paths, and the fixed
+`pnpm docs:protocol:check` gate.
+
+The reusable workflow accepts no command input and no secret. It runs only the
+fixed gate after a frozen install. This repository does not claim that GitHub
+automatically applies reusable workflows, packages, profiles, or required checks
+to new repositories. Follow [repository admission](docs/repository-admission.md)
+for the reviewed consumer change and governance update.
+
+The external Craig fork remains explicitly exempt with review triggers. The
+Platform GitHub Free required-check exception remains separately authoritative;
+it does not waive the local or CI documentation gate. Continuous live inventory
+drift audit is unavailable until a dedicated read-only organization credential
+exists. ReviewRouter, Codex authentication, and interactive user credentials
+must not be repurposed for it.
+
 The internal checksum hashes lexically sorted `path`, NUL, Git blob SHA, and LF
 records with SHA-256. It detects inconsistent edits inside the ledger; it does
 not prove that remote Git objects exist or that a revision contains those blobs.

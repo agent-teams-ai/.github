@@ -18,6 +18,15 @@ function validateSchema(value, schema, label) {
   }
 }
 
+function isCanonicalRepositoryPath(path) {
+  if (typeof path !== "string" || path !== path.normalize("NFC")) return false;
+  if (path.startsWith("/") || path.includes("\\") || path.includes(":") || /[\u0000-\u001F\u007F]/u.test(path)) {
+    return false;
+  }
+  const segments = path.split("/");
+  return segments.every((segment) => segment.length > 0 && segment !== "." && segment !== "..");
+}
+
 function coordinateChecksum(entries) {
   const canonical = [...entries]
     .sort(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
@@ -440,8 +449,8 @@ function inventoryChecksum(entries) {
   const canonical = [...entries]
     .sort(({ repository: left }, { repository: right }) =>
       left < right ? -1 : left > right ? 1 : 0)
-    .map(({ repository, id, archived, visibility, default_branch: branch }) =>
-      `${repository}\0${id}\0${archived}\0${visibility}\0${branch}\n`)
+    .map(({ repository, id, archived, visibility, default_branch: branch, is_fork: fork, fork_parent: parent }) =>
+      `${repository}\0${id}\0${archived}\0${visibility}\0${branch}\0${fork}\0${JSON.stringify(parent)}\n`)
     .join("");
   return createHash("sha256").update(canonical).digest("hex");
 }
@@ -456,14 +465,171 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
   const ids = inventory.repositories.map(({ id }) => id);
   assert(new Set(repositories).size === repositories.length, "Inventory repositories must be unique.");
   assert(new Set(ids).size === ids.length, "Inventory repository IDs must be unique.");
+  for (const record of inventory.repositories) {
+    assert(
+      record.is_fork === (record.fork_parent !== null),
+      `${record.repository} fork identity and parent must agree.`,
+    );
+  }
   assert(
     inventory.checksum_sha256 === inventoryChecksum(inventory.repositories),
     "Inventory internal checksum does not match its structural entries.",
   );
 }
 
+export function validateDocsProtocolPolicy(policy, schema) {
+  validateSchema(policy, schema, "Documentation protocol policy");
+  assert(
+    policy.snapshot_revision.startsWith(`${policy.observed_at}.`),
+    "Documentation protocol revision date must match its observation date.",
+  );
+  const repositories = policy.repositories.map(({ repository }) => repository);
+  const ids = policy.repositories.map(({ repository_id: id }) => id);
+  assert(new Set(repositories).size === repositories.length, "Documentation protocol repositories must be unique.");
+  assert(new Set(ids).size === ids.length, "Documentation protocol repository IDs must be unique.");
+
+  const owned = policy.repositories.filter(({ ownership }) => ownership === "organization_owned");
+  const forks = policy.repositories.filter(({ ownership }) => ownership === "external_fork");
+  assert(
+    policy.repositories.length === policy.admission.expected_repository_count &&
+      owned.length === policy.admission.owned_repository_count &&
+      forks.length === policy.admission.external_fork_count,
+    "Documentation protocol admission counts must match its repository records.",
+  );
+
+  const producer = policy.repositories.filter(({ role }) => role === "protocol_producer");
+  const controllers = policy.repositories.filter(({ role }) => role === "governance_controller");
+  assert(
+    producer.length === 1 && producer[0].repository === policy.protocol.producer_repository,
+    "Documentation protocol must have exactly one declared producer.",
+  );
+  assert(
+    producer[0].protocol_required === false &&
+      producer[0].admission_status === "not_applicable" &&
+      producer[0].qualification.status === "not_applicable",
+    "Documentation protocol producer is not a consumer and must not claim consumer qualification.",
+  );
+  assert(
+    controllers.length === 1 &&
+      controllers[0].repository === "agent-teams-ai/.github" &&
+      controllers[0].ownership === "organization_owned",
+    "Documentation protocol governance controller must be exactly the organization-owned .github repository.",
+  );
+  const craig = policy.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/craig-meeting-gateway",
+  );
+  assert(
+    craig?.ownership === "external_fork" &&
+      craig.role === "exempt_external_fork" &&
+      craig.exemption !== null,
+    "Craig gateway must remain an explicit external-fork documentation protocol exemption.",
+  );
+
+  for (const record of policy.repositories) {
+    const repositoryPaths = [
+      record.profile_path,
+      record.caller_workflow_path,
+      record.qualification_evidence_path,
+      ...record.qualification.evidence_paths,
+    ].filter((path) => path !== null);
+    assert(
+      repositoryPaths.every(isCanonicalRepositoryPath),
+      `${record.repository} documentation protocol paths must be canonical NFC repository-relative POSIX paths.`,
+    );
+    const consumer = record.role === "consumer";
+    const admitted = record.admission_status === "admitted";
+    const qualified = record.qualification.status === "qualified";
+    if (consumer) {
+      assert(
+        record.ownership === "organization_owned" &&
+          record.protocol_required &&
+          record.fixed_gate_command === policy.protocol.fixed_gate_command &&
+          record.exemption === null,
+        `${record.repository} consumer admission contract is incomplete.`,
+      );
+      assert(admitted === qualified, `${record.repository} admission and qualification status must agree.`);
+      if (qualified) {
+        assert(
+          policy.protocol.qualified_package_version !== null &&
+            record.exact_package_version === policy.protocol.qualified_package_version &&
+            record.profile_path !== null &&
+            !/^(?:\.github|node_modules)(?:\/|$)/u.test(record.profile_path) &&
+            /\.ya?ml$/u.test(record.profile_path) &&
+            record.caller_workflow_path !== null &&
+            /^\.github\/workflows\/[^/]+\.ya?ml$/u.test(record.caller_workflow_path) &&
+            record.reusable_workflow_revision !== null &&
+            !/^0{40}$/u.test(record.reusable_workflow_revision) &&
+            record.qualification_evidence_path !== null &&
+            !/^(?:\.github|node_modules)(?:\/|$)/u.test(record.qualification_evidence_path) &&
+            /qualification\.json$/u.test(record.qualification_evidence_path) &&
+            record.qualification.observed_revision !== null &&
+            !/^0{40}$/u.test(record.qualification.observed_revision) &&
+            new Set([
+              record.profile_path,
+              record.caller_workflow_path,
+              record.qualification_evidence_path,
+            ]).size === 3 &&
+            record.qualification.evidence_paths.length >= 4 &&
+            record.qualification.evidence_paths.includes("package.json") &&
+            record.qualification.evidence_paths.includes(record.profile_path) &&
+            record.qualification.evidence_paths.includes(record.caller_workflow_path) &&
+            record.qualification.evidence_paths.includes(record.qualification_evidence_path),
+          `${record.repository} qualified admission requires bound package, distinct typed paths, nonzero consumer and reusable-workflow revisions, and complete evidence.`,
+        );
+      } else {
+        assert(
+          record.admission_status === "pending_admission" &&
+            record.exact_package_version === null &&
+            record.profile_path === null &&
+            record.caller_workflow_path === null &&
+            record.reusable_workflow_revision === null &&
+            record.qualification_evidence_path === null &&
+            record.qualification.observed_revision === null &&
+            record.qualification.evidence_paths.length === 0,
+          `${record.repository} pending admission must not imply qualification evidence.`,
+        );
+      }
+    } else {
+      assert(
+        !record.protocol_required &&
+          record.fixed_gate_command === null &&
+          record.exact_package_version === null &&
+          record.profile_path === null &&
+          record.caller_workflow_path === null &&
+          record.reusable_workflow_revision === null &&
+          record.qualification_evidence_path === null &&
+          record.admission_status === "not_applicable" &&
+          record.qualification.status === "not_applicable" &&
+          record.qualification.observed_revision === null &&
+          record.qualification.evidence_paths.length === 0,
+        `${record.repository} non-consumer must not imply documentation protocol adoption.`,
+      );
+    }
+
+    const exemptFork = record.role === "exempt_external_fork";
+    assert(
+      (record.ownership === "external_fork") === exemptFork &&
+        exemptFork === (record.exemption !== null),
+      `${record.repository} fork exemption shape is invalid.`,
+    );
+    assert(
+      (record.repository === "agent-teams-ai/agent-teams-platform") ===
+        (record.required_check_exception_id === "platform-private-required-checks-github-free"),
+      `${record.repository} required-check exception reference is invalid.`,
+    );
+  }
+}
+
 export function validateActionsPolicy(policy, schema) {
   validateSchema(policy, schema, "Actions policy snapshot");
+  assert(
+    policy.snapshot_revision.startsWith(`${policy.last_live_audit_attempt.attempted_at}.`),
+    "Actions snapshot revision must match its last live audit attempt.",
+  );
+  assert(
+    policy.last_live_audit_attempt.attempted_at >= policy.observed_at,
+    "Actions live audit attempt must not predate the authoritative observation.",
+  );
   const pinning = policy.action_sha_pinning;
   if (pinning.fully_enforced) {
     assert(
@@ -484,7 +650,7 @@ export function validateActionsPolicy(policy, schema) {
   assert(new Set(pending).size === pending.length, "Pending Actions repositories must be unique.");
 }
 
-export function validateGovernanceReferences(ledger, security, actions, inventory) {
+export function validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol) {
   const organizationApi = `https://api.github.com/orgs/${inventory.organization}`;
   assert(
     security.organization === inventory.organization &&
@@ -495,6 +661,12 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       actions.action_sha_pinning.evidence_endpoint ===
         `${organizationApi}/actions/permissions`,
     "Governance policy organization evidence must match the organization inventory authority.",
+  );
+  assert(
+    docsProtocol.organization === inventory.organization &&
+      docsProtocol.inventory_snapshot_revision === inventory.snapshot_revision &&
+      docsProtocol.observed_at === inventory.observed_at,
+    "Documentation protocol policy must reference the exact organization inventory snapshot.",
   );
   const inventoryByRepository = new Map(
     inventory.repositories.map((record) => [record.repository, record]),
@@ -536,6 +708,24 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     activeLedger.size === activeInventory.length && archivedLedger.size === archivedInventory.length,
     "Ledger repository sets must exactly match the organization inventory split.",
   );
+  const docsProtocolByRepository = new Map(
+    docsProtocol.repositories.map((record) => [record.repository, record]),
+  );
+  for (const record of activeInventory) {
+    const protocolRecord = docsProtocolByRepository.get(record.repository);
+    assert(
+      protocolRecord?.repository_id === record.id,
+      `${record.repository} documentation protocol identity must match the active inventory.`,
+    );
+    assert(
+      (protocolRecord.ownership === "external_fork") === record.is_fork,
+      `${record.repository} documentation protocol ownership must match fork evidence.`,
+    );
+  }
+  assert(
+    docsProtocolByRepository.size === activeInventory.length,
+    "Documentation protocol repository set must exactly match the active organization inventory.",
+  );
   for (const attachment of security.repository_attachments) {
     const inventoryRecord = inventoryByRepository.get(attachment.repository);
     assert(
@@ -575,6 +765,16 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   for (const exception of exceptions.values()) {
     assert(actionReferences.has(exception.id), `Actions policy must reference required-check exception: ${exception.id}`);
     assert(ledgerReferences.has(exception.id), `Executable-spec ledger must reference required-check exception: ${exception.id}`);
+  }
+  const protocolExceptionRecords = docsProtocol.repositories.filter(
+    ({ required_check_exception_id: id }) => id !== null,
+  );
+  for (const record of protocolExceptionRecords) {
+    const exception = exceptions.get(record.required_check_exception_id);
+    assert(
+      exception?.repository === record.repository,
+      `${record.repository} documentation protocol references an invalid required-check exception.`,
+    );
   }
 }
 
