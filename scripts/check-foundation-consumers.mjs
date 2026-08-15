@@ -150,10 +150,40 @@ function parseJson(source, label) {
   }
 }
 
-function normalizedLockedVersion(value) {
-  if (typeof value !== "string") return null;
-  const match = value.match(/^([^()]+)(?:\(.*\))?$/);
-  return match?.[1] ?? null;
+function splitSuffixGroups(suffix) {
+  const groups = [];
+  let index = 0;
+  while (index < suffix.length) {
+    if (suffix[index] !== "(") return null;
+    const start = ++index;
+    let depth = 1;
+    while (index < suffix.length && depth > 0) {
+      if (suffix[index] === "(") depth += 1;
+      else if (suffix[index] === ")") depth -= 1;
+      index += 1;
+    }
+    if (depth !== 0) return null;
+    groups.push(suffix.slice(start, index - 1));
+  }
+  return groups;
+}
+
+function isAllowedPeerReference(reference) {
+  if (reference.includes("patch_hash") || reference.includes("=") || reference.includes(":")) return false;
+  const nestedAt = reference.indexOf("(");
+  const head = nestedAt === -1 ? reference : reference.slice(0, nestedAt);
+  const nested = nestedAt === -1 ? "" : reference.slice(nestedAt);
+  const peerPattern = /^(?:@[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+|[A-Za-z0-9_.-]+)@[0-9][0-9A-Za-z.+_-]*$/;
+  if (!peerPattern.test(head)) return false;
+  const groups = splitSuffixGroups(nested);
+  return groups !== null && groups.every(isAllowedPeerReference);
+}
+
+function isAllowedLockedVersion(value, requiredVersion) {
+  if (value === requiredVersion) return true;
+  if (typeof value !== "string" || !value.startsWith(`${requiredVersion}(`)) return false;
+  const groups = splitSuffixGroups(value.slice(requiredVersion.length));
+  return groups !== null && groups.length > 0 && groups.every(isAllowedPeerReference);
 }
 
 export function validateConsumerFiles({ inventory, consumer, manifestSource, lockfileSource }) {
@@ -179,12 +209,18 @@ export function validateConsumerFiles({ inventory, consumer, manifestSource, loc
   const locked = lockfile?.importers?.["."]?.devDependencies?.[inventory.package];
   assert(locked && typeof locked === "object", `${consumer.repository}/${consumer.lockfilePath} has no matching importer devDependency.`);
   assert(locked.specifier === inventory.requiredVersion, `${consumer.repository}/${consumer.lockfilePath} specifier does not match ${inventory.requiredVersion}.`);
-  assert(normalizedLockedVersion(locked.version) === inventory.requiredVersion, `${consumer.repository}/${consumer.lockfilePath} resolved version does not match ${inventory.requiredVersion}.`);
+  assert(isAllowedLockedVersion(locked.version, inventory.requiredVersion), `${consumer.repository}/${consumer.lockfilePath} resolved version has a disallowed source or suffix.`);
 
   const packageEntry = lockfile?.packages?.[`${inventory.package}@${inventory.requiredVersion}`];
   assert(packageEntry && typeof packageEntry === "object", `${consumer.repository}/${consumer.lockfilePath} has no package snapshot for ${inventory.package}@${inventory.requiredVersion}.`);
   assert(!Object.hasOwn(packageEntry.resolution ?? {}, "tarball"), `${consumer.repository}/${consumer.lockfilePath} must not use an alternate tarball for ${inventory.package}.`);
   assert(packageEntry.resolution?.integrity === inventory.requiredIntegrity, `${consumer.repository}/${consumer.lockfilePath} integrity does not match the canonical registry SRI.`);
+
+  const snapshotPrefix = `${inventory.package}@${inventory.requiredVersion}`;
+  const matchingSnapshotKeys = Object.keys(lockfile?.snapshots ?? {}).filter((key) => key === snapshotPrefix || key.startsWith(`${snapshotPrefix}(`));
+  assert(matchingSnapshotKeys.length > 0, `${consumer.repository}/${consumer.lockfilePath} has no matching package snapshot.`);
+  assert(matchingSnapshotKeys.every((key) => isAllowedLockedVersion(key.slice(`${inventory.package}@`.length), inventory.requiredVersion)), `${consumer.repository}/${consumer.lockfilePath} contains a snapshot with a disallowed source or suffix.`);
+  assert(matchingSnapshotKeys.includes(`${inventory.package}@${locked.version}`), `${consumer.repository}/${consumer.lockfilePath} importer version has no exact matching snapshot.`);
 }
 
 function targetsPackage(value, packageName) {

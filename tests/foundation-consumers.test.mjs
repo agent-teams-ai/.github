@@ -34,8 +34,8 @@ function manifest(version = "0.16.1") {
   return JSON.stringify({ devDependencies: { "@agent-teams/engineering-foundation": version } });
 }
 
-function lockfile({ version = "0.16.1", lockedVersion = version, integrity = TEST_INTEGRITY, tarball, patched = false, overridden = false } = {}) {
-  return `lockfileVersion: '9.0'\n${patched ? "patchedDependencies:\n  '@agent-teams/engineering-foundation@0.16.1': patches/foundation.patch\n" : ""}${overridden ? "overrides:\n  '@agent-teams/engineering-foundation': 0.16.0\n" : ""}importers:\n  .:\n    devDependencies:\n      '@agent-teams/engineering-foundation':\n        specifier: ${version}\n        version: ${lockedVersion}\npackages:\n  '@agent-teams/engineering-foundation@${version}':\n    resolution:\n      integrity: ${integrity}\n${tarball ? `      tarball: ${tarball}\n` : ""}`;
+function lockfile({ version = "0.16.1", lockedVersion = version, integrity = TEST_INTEGRITY, tarball, patched = false, overridden = false, extraSnapshot } = {}) {
+  return `lockfileVersion: '9.0'\n${patched ? "patchedDependencies:\n  '@agent-teams/engineering-foundation@0.16.1': patches/foundation.patch\n" : ""}${overridden ? "overrides:\n  '@agent-teams/engineering-foundation': 0.16.0\n" : ""}importers:\n  .:\n    devDependencies:\n      '@agent-teams/engineering-foundation':\n        specifier: ${version}\n        version: ${lockedVersion}\npackages:\n  '@agent-teams/engineering-foundation@${version}':\n    resolution:\n      integrity: ${integrity}\n${tarball ? `      tarball: ${tarball}\n` : ""}snapshots:\n  '@agent-teams/engineering-foundation@${lockedVersion}': {}\n${extraSnapshot ? `  '@agent-teams/engineering-foundation@${extraSnapshot}': {}\n` : ""}`;
 }
 
 function response(body, { status = 200, headers = {} } = {}) {
@@ -115,6 +115,7 @@ test("consumer files require exact devDependency and lock integrity", () => {
   const data = inventory();
   const consumer = data.consumers[0];
   assert.doesNotThrow(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile() }));
+  assert.doesNotThrow(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ lockedVersion: "0.16.1(supports-color@7.2.0)" }) }));
   assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest("^0.16.1"), lockfileSource: lockfile() }), /exact devDependency/);
   assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ integrity: `sha512-${Buffer.alloc(64, 8).toString("base64")}` }) }), /canonical registry SRI/);
 });
@@ -129,7 +130,25 @@ test("consumer files reject patches, overrides, and alternate tarballs", () => {
   assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ patched: true }) }), /must not patch/);
   assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ overridden: true }) }), /must not override/);
   assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ tarball: "https://evil.example/foundation.tgz" }) }), /alternate tarball/);
-  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ lockedVersion: "https://evil.example/foundation.tgz" }) }), /resolved version does not match/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ lockedVersion: "https://evil.example/foundation.tgz" }) }), /disallowed source or suffix/);
+});
+
+test("consumer files reject hidden patch suffixes without patch metadata", () => {
+  const data = inventory();
+  const consumer = data.consumers[0];
+  const patchedVersion = "0.16.1(patch_hash=attacker)(supports-color@7.2.0)";
+  assert.throws(
+    () => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ lockedVersion: patchedVersion }) }),
+    /resolved version has a disallowed source or suffix/
+  );
+  assert.throws(
+    () => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ extraSnapshot: "0.16.1(patch_hash=attacker)" }) }),
+    /snapshot with a disallowed source or suffix/
+  );
+  assert.throws(
+    () => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ lockedVersion: "0.16.1(attacker)" }) }),
+    /resolved version has a disallowed source or suffix/
+  );
 });
 
 test("pending publication integrity disables live audit before API access", async () => {
