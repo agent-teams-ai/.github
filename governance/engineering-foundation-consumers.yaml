@@ -1,0 +1,19 @@
+schemaVersion: 1
+organization: agent-teams-ai
+package: "@agent-teams/engineering-foundation"
+requiredVersion: 0.16.1
+sourceRepository: engineering-foundation
+consumers:
+  - repository: agent-runtime
+    manifestPath: package.json
+    lockfilePath: pnpm-lock.yaml
+  - repository: agent-teams-orchestrator
+    manifestPath: package.json
+    lockfilePath: pnpm-lock.yaml
+  - repository: agent-teams-platform
+    manifestPath: package.json
+    lockfilePath: pnpm-lock.yaml
+  - repository: extension-foundation
+    manifestPath: package.json
+    lockfilePath: pnpm-lock.yaml
+exceptions: []

@@ -11,7 +11,9 @@
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
-    "check": "pnpm renovate:validate && pnpm governance:validate && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "check": "pnpm renovate:validate && pnpm governance:validate && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test && pnpm foundation:check",
+    "foundation:audit": "node scripts/check-foundation-consumers.mjs --output foundation-consumer-audit.json",
+    "foundation:check": "node scripts/check-foundation-consumers.mjs --validate-only && node --test tests/foundation-consumers.test.mjs",
     "governance:validate": "node scripts/validate-governance.mjs",
     "test": "node --test scripts/*.test.mjs",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json"

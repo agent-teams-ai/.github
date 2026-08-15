@@ -1,0 +1,93 @@
+name: Engineering Foundation consumer audit
+
+on:
+  pull_request:
+    paths:
+      - governance/engineering-foundation-consumers.yaml
+      - scripts/check-foundation-consumers.mjs
+      - tests/foundation-consumers.test.mjs
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/foundation-consumer-audit.yml
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-consumer-audit-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: schema and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm foundation:check
+
+  audit:
+    name: live organization audit
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create read-only organization token
+        id: app-token
+        continue-on-error: true
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.FOUNDATION_AUDIT_APP_ID }}
+          private-key: ${{ secrets.FOUNDATION_AUDIT_APP_PRIVATE_KEY }}
+          owner: agent-teams-ai
+          permission-contents: read
+      - name: Audit consumers
+        id: audit
+        continue-on-error: true
+        run: pnpm foundation:audit
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Publish job summary
+        if: always()
+        run: |
+          node -e 'const fs=require("node:fs"); const p="foundation-consumer-audit.json"; const r=fs.existsSync(p)?JSON.parse(fs.readFileSync(p,"utf8")):{status:"failed",error:"Audit report was not produced."}; fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Engineering Foundation consumer audit\n\n- Status: **${r.status}**\n- Required version: ${r.requiredVersion ?? "unknown"}\n- Repositories checked: ${r.repositories?.length ?? 0}\n${r.error ? `- Error: ${r.error}\n` : ""}`);'
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: foundation-consumer-audit-${{ github.run_id }}
+          path: foundation-consumer-audit.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce audit result
+        if: always()
+        run: |
+          test '${{ steps.app-token.outcome }}' = success
+          test '${{ steps.audit.outcome }}' = success

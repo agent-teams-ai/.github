@@ -148,3 +148,17 @@ commit is authored by `github-actions[bot]`; automatic or broader workflow
 approval is forbidden. Only a failed Release run may be rerun. The release pull
 request may merge only after its required checks, ReviewRouter result, and
 release attestation have all passed for the verified head.
+
+## Engineering Foundation consumer inventory
+
+`governance/engineering-foundation-consumers.yaml` is the canonical, exhaustive
+consumer inventory. Each entry identifies one exact manifest and lockfile path;
+the `engineering-foundation` source repository is excluded. A temporary
+exception must identify one exact repository-relative `package.json` path and a
+specific reason. Wildcards, repository-wide exclusions, duplicate exceptions,
+and stale exceptions are rejected.
+
+Changing the required version is a coordinated rollout decision. The inventory
+must continue to list exactly `agent-runtime`, `agent-teams-orchestrator`,
+`agent-teams-platform`, and `extension-foundation`; discovery by Code Search is
+not an acceptable substitute for the API audit.

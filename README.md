@@ -29,6 +29,8 @@ the owning repository.
   interaction workflows.
 - `.github/workflows/docs-protocol-check.yml` - fixed reusable documentation
   protocol gate with no inputs or secrets.
+- `governance/engineering-foundation-consumers.yaml` - complete inventory and
+  required version for Engineering Foundation consumers.
 
 Repositories consume the Renovate policy explicitly:
 
@@ -54,4 +56,20 @@ configuration. `reviewrouter-interaction.yml` is a thin caller of the upstream
 interaction workflow and pins both `uses` and `runtime_ref` to the same immutable
 release commit. It preserves organization event filters, discussion variables,
 and secret mappings without copying checkout, setup, or runtime steps.
+
+## Engineering Foundation rollout guard
+
+`pnpm foundation:check` validates the inventory schema and guard tests without
+network access. On pushes to `main`, on schedule, or by manual dispatch,
+`pnpm foundation:audit` reads every organization repository through GitHub's
+REST API at its exact default-branch commit SHA. It fails on inaccessible or
+unregistered consumers, nested package consumers, truncated API responses,
+dependency or lockfile drift, and missing package integrity. GitHub Code Search
+is deliberately not used as evidence of completeness.
+
+The live workflow requires a read-only GitHub App installed for **all
+repositories**, including private repositories. Configure
+`FOUNDATION_AUDIT_APP_ID` and `FOUNDATION_AUDIT_APP_PRIVATE_KEY`; selected-repo
+installations fail closed. Do not replace this with the workflow token because
+it cannot prove visibility of private consumers.
 Organization-wide community health, repository policy, and dependency automation configuration.
