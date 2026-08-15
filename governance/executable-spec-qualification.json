@@ -1,8 +1,8 @@
 {
   "$schema": "./executable-spec-qualification.schema.json",
   "schema_version": 4,
-  "ledger_revision": "2026-08-14.1",
-  "snapshot_date": "2026-08-14",
+  "ledger_revision": "2026-08-15.1",
+  "snapshot_date": "2026-08-15",
   "authority": "this-ledger",
   "coordinate_checksum_algorithm": "sha256-internal-consistency(sorted(path + NUL + git_blob_sha + LF))",
   "scope": {
@@ -20,7 +20,7 @@
   },
   "remote_enforcement": {
     "verification": "dated_api_observation",
-    "observed_at": "2026-08-14",
+    "observed_at": "2026-08-15",
     "continuous_audit": false,
     "source": "GitHub repository rulesets API",
     "statement": "Required-check records below are a dated observation, not a claim of continuous live enforcement."
@@ -81,7 +81,7 @@
           "status": "observed_active",
           "exception_id": null,
           "default_branch": "main",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/engineering-foundation/rulesets/19979782",
           "http_status": 200,
           "ruleset_id": 19979782,
@@ -148,7 +148,7 @@
           "status": "observed_active",
           "exception_id": null,
           "default_branch": "main",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/agent-runtime/rulesets/19979781",
           "http_status": 200,
           "ruleset_id": 19979781,
@@ -157,7 +157,8 @@
           "reason": null,
           "checks": [
             { "context": "check", "integration_id": 15368 },
-            { "context": "ReviewRouter", "integration_id": 3599233 }
+            { "context": "ReviewRouter", "integration_id": 3599233 },
+            { "context": "docs-protocol / docs-protocol-check", "integration_id": 15368 }
           ]
         }
       }
@@ -225,7 +226,7 @@
           "status": "unavailable_free_private_repository",
           "exception_id": "platform-private-required-checks-github-free",
           "default_branch": "main",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-platform/rulesets",
           "http_status": 403,
           "ruleset_id": null,
@@ -287,7 +288,7 @@
           "status": "observed_active",
           "exception_id": null,
           "default_branch": "main",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/agent-teams-orchestrator/rulesets/19979784",
           "http_status": 200,
           "ruleset_id": 19979784,
@@ -297,7 +298,8 @@
           "checks": [
             { "context": "architecture", "integration_id": 15368 },
             { "context": "Review dependency changes", "integration_id": 15368 },
-            { "context": "ReviewRouter", "integration_id": 3599233 }
+            { "context": "ReviewRouter", "integration_id": 3599233 },
+            { "context": "docs-protocol / docs-protocol-check", "integration_id": 15368 }
           ]
         }
       }
@@ -345,7 +347,7 @@
           "status": "observed_active",
           "exception_id": null,
           "default_branch": "main",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/.github/rulesets/19979783",
           "http_status": 200,
           "ruleset_id": 19979783,
@@ -402,7 +404,7 @@
           "status": "observed_active",
           "exception_id": null,
           "default_branch": "master",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/craig-meeting-gateway/rulesets/20231582",
           "http_status": 200,
           "ruleset_id": 20231582,
@@ -461,7 +463,7 @@
           "status": "observed_active",
           "exception_id": null,
           "default_branch": "main",
-          "observed_at": "2026-08-14",
+          "observed_at": "2026-08-15",
           "evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/extension-foundation/rulesets/20807525",
           "http_status": 200,
           "ruleset_id": 20807525,
@@ -469,7 +471,8 @@
           "require_code_owner_review": false,
           "reason": null,
           "checks": [
-            { "context": "check", "integration_id": 15368 }
+            { "context": "check", "integration_id": 15368 },
+            { "context": "docs-protocol-check / docs-protocol-check", "integration_id": 15368 }
           ]
         }
       }
