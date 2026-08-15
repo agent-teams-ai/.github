@@ -4,8 +4,11 @@ import { parse } from "yaml";
 
 const reviewPath = ".github/workflows/reviewrouter-codex.yml";
 const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
-const reviewCommit = "08f6bc1481fd284fa82adfa47cda05c76b161b00";
+const reviewCommit = "8a0a31ae1d92c89466c8a939272a1e333e88c5a0";
 const interactionCommit = "6b35091c824b1d4d5ee6bf8316121ed08d3e4861";
+const reviewSecret =
+  "REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E1_02653f7c7d934ea66dfcc1592b4376e2";
+const reviewNamespace = "02653f7c7d934ea66dfcc1592b4376e2";
 const expectedReviewUses =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${reviewCommit}`;
 const expectedInteractionUses =
@@ -32,18 +35,26 @@ async function loadWorkflow(path) {
 const review = await loadWorkflow(reviewPath);
 const interaction = await loadWorkflow(interactionPath);
 
-assert(review.workflow.on?.pull_request, `${reviewPath} must use pull_request.`);
+assert(
+  review.workflow.on?.pull_request_target,
+  `${reviewPath} must use pull_request_target for the versioned V4 secret namespace.`,
+);
+assert(
+  review.workflow.on?.pull_request === undefined,
+  `${reviewPath} must not retain the legacy pull_request trigger.`,
+);
 assert(
   review.workflow.on?.workflow_dispatch === undefined,
   `${reviewPath} must not enable workflow_dispatch for the client-triggered schema.`,
 );
 assert(
-  !review.source.includes("pull_request_target"),
-  `${reviewPath} must not use pull_request_target.`,
-);
-assert(
   samePermissions(review.workflow.permissions, {}),
   `${reviewPath} must deny root token permissions.`,
+);
+assert(
+  review.workflow.name ===
+    `ReviewRouter Codex OAuth [namespace=sns_${reviewNamespace};epoch=1;secret=${reviewSecret}]`,
+  `${reviewPath} must attest the exact versioned namespace in its name.`,
 );
 
 const reviewJob = review.workflow.jobs?.["codex-review"];
@@ -60,15 +71,20 @@ assert(
   }),
   "codex-review must keep the Actions token read-only and grant only OIDC write.",
 );
-assert(reviewJob.with?.workflow_schema_version === 2, "codex-review must use workflow schema 2.");
+assert(reviewJob.with?.workflow_schema_version === 4, "codex-review must use workflow schema 4.");
+assert(
+  reviewJob.if ===
+    "${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && (github.event.pull_request.draft == false || vars.REVIEW_ROUTER_REVIEW_DRAFTS == 'true') }}",
+  "codex-review must preserve the same-repository, non-bot V4 event filter.",
+);
 assert(
   reviewJob.with?.provider_instance_id === "codex-rotating:1316243981",
   "codex-review must bind the .github repository provider identity.",
 );
 assert(
   reviewJob.secrets?.CODEX_AUTH_JSON ===
-    "${{ secrets.REVIEWROUTER_CODEX_AUTH_JSON }}",
-  "codex-review must use the dedicated rotating provider secret.",
+    `\${{ secrets.${reviewSecret} }}`,
+  "codex-review must use the exact versioned rotating provider secret.",
 );
 
 const refreshJob = review.workflow.jobs?.["codex-refresh"];
@@ -82,12 +98,16 @@ assert(
   "codex-refresh must pin the same immutable ReviewRouter runtime commit.",
 );
 assert(
-  refreshStep?.with?.["workflow-schema-version"] === "2",
-  "codex-refresh must use workflow schema 2.",
+  refreshStep?.with?.["workflow-schema-version"] === "4",
+  "codex-refresh must use workflow schema 4.",
 );
 assert(
   refreshStep?.with?.["provider-instance-id"] === "codex-rotating:1316243981",
   "codex-refresh must bind the .github repository provider identity.",
+);
+assert(
+  refreshStep?.with?.["auth-json"] === `\${{ secrets.${reviewSecret} }}`,
+  "codex-refresh must use the exact versioned rotating provider secret.",
 );
 
 assert(
@@ -162,7 +182,6 @@ assert(
 );
 
 for (const legacyMarker of [
-  "pull_request_target",
   "mode: codex-oauth-rotating",
   "REVIEWROUTER_COMMENT_TOKEN_MODE: github-token",
   "actions/checkout@",
