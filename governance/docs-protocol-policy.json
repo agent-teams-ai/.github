@@ -1,10 +1,10 @@
 {
   "$schema": "./docs-protocol-policy.schema.json",
   "schema_version": 1,
-  "snapshot_revision": "2026-08-14.1",
-  "observed_at": "2026-08-14",
+  "snapshot_revision": "2026-08-15.1",
+  "observed_at": "2026-08-15",
   "organization": "agent-teams-ai",
-  "inventory_snapshot_revision": "2026-08-14.1",
+  "inventory_snapshot_revision": "2026-08-15.1",
   "continuous_audit": false,
   "protocol": {
     "package": "@agent-teams/docs-protocol",
@@ -13,7 +13,7 @@
     "version_policy": "exact_registry_version",
     "fixed_gate_command": "pnpm docs:protocol:check",
     "reusable_workflow": ".github/workflows/docs-protocol-check.yml",
-    "qualified_package_version": null
+    "qualified_package_version": "0.1.0-rc.1"
   },
   "admission": {
     "expected_repository_count": 7,
@@ -59,17 +59,22 @@
       "ownership": "organization_owned",
       "role": "consumer",
       "protocol_required": true,
-      "admission_status": "pending_admission",
-      "exact_package_version": null,
-      "profile_path": null,
-      "caller_workflow_path": null,
-      "reusable_workflow_revision": null,
-      "qualification_evidence_path": null,
+      "admission_status": "admitted",
+      "exact_package_version": "0.1.0-rc.1",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "2679c8bc1e432091271d2f68ef904694e4d5838e",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
       "fixed_gate_command": "pnpm docs:protocol:check",
       "qualification": {
-        "status": "not_qualified",
-        "observed_revision": null,
-        "evidence_paths": []
+        "status": "qualified",
+        "observed_revision": "91d1e6687dc94801c5d2de8cd4939865615c990f",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json"
+        ]
       },
       "exemption": null,
       "required_check_exception_id": null
@@ -80,17 +85,22 @@
       "ownership": "organization_owned",
       "role": "consumer",
       "protocol_required": true,
-      "admission_status": "pending_admission",
-      "exact_package_version": null,
-      "profile_path": null,
-      "caller_workflow_path": null,
-      "reusable_workflow_revision": null,
-      "qualification_evidence_path": null,
+      "admission_status": "admitted",
+      "exact_package_version": "0.1.0-rc.1",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "2679c8bc1e432091271d2f68ef904694e4d5838e",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
       "fixed_gate_command": "pnpm docs:protocol:check",
       "qualification": {
-        "status": "not_qualified",
-        "observed_revision": null,
-        "evidence_paths": []
+        "status": "qualified",
+        "observed_revision": "fdd47cbc0bc1a2177060200db00bb435e0d79f76",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json"
+        ]
       },
       "exemption": null,
       "required_check_exception_id": null
@@ -101,17 +111,22 @@
       "ownership": "organization_owned",
       "role": "consumer",
       "protocol_required": true,
-      "admission_status": "pending_admission",
-      "exact_package_version": null,
-      "profile_path": null,
-      "caller_workflow_path": null,
-      "reusable_workflow_revision": null,
-      "qualification_evidence_path": null,
+      "admission_status": "admitted",
+      "exact_package_version": "0.1.0-rc.1",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "2679c8bc1e432091271d2f68ef904694e4d5838e",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
       "fixed_gate_command": "pnpm docs:protocol:check",
       "qualification": {
-        "status": "not_qualified",
-        "observed_revision": null,
-        "evidence_paths": []
+        "status": "qualified",
+        "observed_revision": "001dcdc39067be55b93b7faf7b432f901d1d85b5",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json"
+        ]
       },
       "exemption": null,
       "required_check_exception_id": "platform-private-required-checks-github-free"
@@ -172,17 +187,22 @@
       "ownership": "organization_owned",
       "role": "consumer",
       "protocol_required": true,
-      "admission_status": "pending_admission",
-      "exact_package_version": null,
-      "profile_path": null,
-      "caller_workflow_path": null,
-      "reusable_workflow_revision": null,
-      "qualification_evidence_path": null,
+      "admission_status": "admitted",
+      "exact_package_version": "0.1.0-rc.1",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/ci.yml",
+      "reusable_workflow_revision": "2679c8bc1e432091271d2f68ef904694e4d5838e",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
       "fixed_gate_command": "pnpm docs:protocol:check",
       "qualification": {
-        "status": "not_qualified",
-        "observed_revision": null,
-        "evidence_paths": []
+        "status": "qualified",
+        "observed_revision": "ec1da47a31b31e5ea355756c0265c84da8517bc2",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/ci.yml",
+          "architecture/foundation/docs-protocol-qualification.json"
+        ]
       },
       "exemption": null,
       "required_check_exception_id": null

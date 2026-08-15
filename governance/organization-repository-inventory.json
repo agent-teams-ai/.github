@@ -1,8 +1,8 @@
 {
   "$schema": "./organization-repository-inventory.schema.json",
   "schema_version": 2,
-  "snapshot_revision": "2026-08-14.1",
-  "observed_at": "2026-08-14",
+  "snapshot_revision": "2026-08-15.1",
+  "observed_at": "2026-08-15",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
   "verification": "human_reviewed_dated_api_snapshot",

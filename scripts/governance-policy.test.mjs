@@ -27,7 +27,6 @@ const clone = (value) => structuredClone(value);
 const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime") => {
   const record = policy.repositories.find((candidate) => candidate.repository === repository);
   const revision = "a".repeat(40);
-  policy.protocol.qualified_package_version = "0.1.0-rc.0";
   record.admission_status = "admitted";
   record.exact_package_version = policy.protocol.qualified_package_version;
   record.profile_path = "docs/document-authoring.yaml";
