@@ -3,7 +3,7 @@ organization: agent-teams-ai
 package: "@agent-teams/engineering-foundation"
 requiredVersion: 0.16.1
 registry: https://registry.npmjs.org/
-requiredIntegrity: pending-publication
+requiredIntegrity: sha512-DqWWmjxXxpgy9hkvNQ9glkOX3tAobFIthYmyni7dKS/5j3+oHZlJNdHF36eiIHmLNJVeySr2hMIzIZX+KCHBiA==
 sourceRepository: engineering-foundation
 consumers:
   - repository: agent-runtime

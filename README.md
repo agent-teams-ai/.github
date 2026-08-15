@@ -81,10 +81,9 @@ out the exact event SHA. A manual dispatch from any other ref cannot reach the
 environment or execute secret-bearing steps. Until both protections and the App
 credentials exist, live audit is intentionally unavailable.
 
-Version `0.16.1` is not yet published, so `requiredIntegrity` is explicitly
-`pending-publication` and every live audit fails before calling GitHub. After
-publication and before pushing or opening this rollout change, replace it with
-the exact canonical `dist.integrity` from `registry.npmjs.org`. The guard rejects
-patches, overrides, alternate tarballs, and any lockfile SRI that differs from
-that pinned sha512 value.
+Version `0.16.1` is pinned to its exact canonical `dist.integrity` from
+`registry.npmjs.org`. The guard rejects patches, overrides, alternate tarballs,
+and any lockfile SRI that differs from that pinned sha512 value. A future rollout
+may use `pending-publication` only while a stable artifact does not exist; that
+state blocks live audit before any GitHub API request.
 Organization-wide community health, repository policy, and dependency automation configuration.
