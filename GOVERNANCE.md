@@ -155,10 +155,22 @@ release attestation have all passed for the verified head.
 consumer inventory. Each entry identifies one exact manifest and lockfile path;
 the `engineering-foundation` source repository is excluded. A temporary
 exception must identify one exact repository-relative `package.json` path and a
-specific reason. Wildcards, repository-wide exclusions, duplicate exceptions,
-and stale exceptions are rejected.
+specific reason, expiration date, and accountable GitHub user or team. Wildcards,
+repository-wide exclusions, duplicate, expired, and stale exceptions are
+rejected. Consumer manifests and lockfiles must remain at repository root;
+nested lockfiles are prohibited.
 
 Changing the required version is a coordinated rollout decision. The inventory
 must continue to list exactly `agent-runtime`, `agent-teams-orchestrator`,
 `agent-teams-platform`, and `extension-foundation`; discovery by Code Search is
 not an acceptable substitute for the API audit.
+
+The canonical npm sha512 SRI is part of the rollout decision. It must be copied
+from the stable registry publication into the inventory before live audit is
+enabled. Patched dependencies, package-manager overrides, resolution aliases,
+and alternate tarballs cannot substitute for the pinned registry artifact.
+
+Live credentials are available only through the protected
+`foundation-consumer-audit` environment, restricted to protected `main`.
+Branch protection and the environment deployment policy are required controls,
+not optional workflow setup.

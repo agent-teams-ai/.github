@@ -72,4 +72,19 @@ repositories**, including private repositories. Configure
 `FOUNDATION_AUDIT_APP_ID` and `FOUNDATION_AUDIT_APP_PRIVATE_KEY`; selected-repo
 installations fail closed. Do not replace this with the workflow token because
 it cannot prove visibility of private consumers.
+
+The credential secrets must belong to the protected GitHub Environment
+`foundation-consumer-audit`. Configure that environment to allow deployments
+only from protected `main`, and protect `main` with required pull-request and
+status checks. The live job independently verifies branch protection and checks
+out the exact event SHA. A manual dispatch from any other ref cannot reach the
+environment or execute secret-bearing steps. Until both protections and the App
+credentials exist, live audit is intentionally unavailable.
+
+Version `0.16.1` is not yet published, so `requiredIntegrity` is explicitly
+`pending-publication` and every live audit fails before calling GitHub. After
+publication and before pushing or opening this rollout change, replace it with
+the exact canonical `dist.integrity` from `registry.npmjs.org`. The guard rejects
+patches, overrides, alternate tarballs, and any lockfile SRI that differs from
+that pinned sha512 value.
 Organization-wide community health, repository policy, and dependency automation configuration.

@@ -1,13 +1,19 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import {
   EXPECTED_CONSUMERS,
   auditConsumers,
   createGitHubClient,
+  runCli,
   validateConsumerFiles,
   validateInventory
 } from "../scripts/check-foundation-consumers.mjs";
+
+const TEST_INTEGRITY = `sha512-${Buffer.alloc(64, 7).toString("base64")}`;
 
 function inventory(overrides = {}) {
   return {
@@ -15,6 +21,8 @@ function inventory(overrides = {}) {
     organization: "agent-teams-ai",
     package: "@agent-teams/engineering-foundation",
     requiredVersion: "0.16.1",
+    registry: "https://registry.npmjs.org/",
+    requiredIntegrity: TEST_INTEGRITY,
     sourceRepository: "engineering-foundation",
     consumers: EXPECTED_CONSUMERS.map((repository) => ({ repository, manifestPath: "package.json", lockfilePath: "pnpm-lock.yaml" })),
     exceptions: [],
@@ -26,8 +34,8 @@ function manifest(version = "0.16.1") {
   return JSON.stringify({ devDependencies: { "@agent-teams/engineering-foundation": version } });
 }
 
-function lockfile({ version = "0.16.1", integrity = "sha512-abcdefghijklmnopqrstuvwxyz0123456789" } = {}) {
-  return `lockfileVersion: '9.0'\nimporters:\n  .:\n    devDependencies:\n      '@agent-teams/engineering-foundation':\n        specifier: ${version}\n        version: ${version}\npackages:\n  '@agent-teams/engineering-foundation@${version}':\n    resolution:\n      integrity: ${integrity}\n`;
+function lockfile({ version = "0.16.1", lockedVersion = version, integrity = TEST_INTEGRITY, tarball, patched = false, overridden = false } = {}) {
+  return `lockfileVersion: '9.0'\n${patched ? "patchedDependencies:\n  '@agent-teams/engineering-foundation@0.16.1': patches/foundation.patch\n" : ""}${overridden ? "overrides:\n  '@agent-teams/engineering-foundation': 0.16.0\n" : ""}importers:\n  .:\n    devDependencies:\n      '@agent-teams/engineering-foundation':\n        specifier: ${version}\n        version: ${lockedVersion}\npackages:\n  '@agent-teams/engineering-foundation@${version}':\n    resolution:\n      integrity: ${integrity}\n${tarball ? `      tarball: ${tarball}\n` : ""}`;
 }
 
 function response(body, { status = 200, headers = {} } = {}) {
@@ -73,6 +81,7 @@ function mockGitHub({ repositorySelection = "all", truncatedRepository, nestedRe
 
 test("inventory accepts exactly the four governed consumers", () => {
   assert.equal(validateInventory(inventory()).consumers.length, 4);
+  assert.throws(() => validateInventory(inventory({ requiredIntegrity: "sha512-not-canonical" })), /canonical sha512 SRI/);
 });
 
 test("inventory rejects duplicate and replacement consumers", () => {
@@ -86,8 +95,20 @@ test("inventory rejects duplicate and replacement consumers", () => {
 });
 
 test("inventory rejects inexact or unexplained exceptions", () => {
-  assert.throws(() => validateInventory(inventory({ exceptions: [{ repository: "repo", path: "../package.json", reason: "a sufficiently long reason" }] })), /exact repository-relative path/);
-  assert.throws(() => validateInventory(inventory({ exceptions: [{ repository: "repo", path: "package.json", reason: "short" }] })), /must explain/);
+  const base = { repository: "repo", path: "package.json", reason: "a sufficiently long reason", expiresOn: "2099-01-01", approvalOwner: "@agent-teams-ai/foundation-owners" };
+  assert.throws(() => validateInventory(inventory({ exceptions: [{ ...base, path: "../package.json" }] })), /exact repository-relative path/);
+  assert.throws(() => validateInventory(inventory({ exceptions: [{ ...base, reason: "short" }] })), /must explain/);
+  assert.throws(() => validateInventory(inventory({ exceptions: [{ ...base, approvalOwner: "nobody" }] })), /accountable GitHub user or team/);
+  assert.throws(() => validateInventory(inventory({ exceptions: [{ ...base, expiresOn: "2026-01-01" }] }), { now: new Date("2026-08-15T00:00:00Z") }), /expired/);
+});
+
+test("inventory prohibits nested manifests and lockfiles", () => {
+  const nestedManifest = inventory();
+  nestedManifest.consumers[0] = { ...nestedManifest.consumers[0], manifestPath: "packages/app/package.json" };
+  assert.throws(() => validateInventory(nestedManifest), /nested manifests are prohibited/);
+  const nestedLock = inventory();
+  nestedLock.consumers[0] = { ...nestedLock.consumers[0], lockfilePath: "packages/app/pnpm-lock.yaml" };
+  assert.throws(() => validateInventory(nestedLock), /nested lockfiles are prohibited/);
 });
 
 test("consumer files require exact devDependency and lock integrity", () => {
@@ -95,7 +116,26 @@ test("consumer files require exact devDependency and lock integrity", () => {
   const consumer = data.consumers[0];
   assert.doesNotThrow(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile() }));
   assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest("^0.16.1"), lockfileSource: lockfile() }), /exact devDependency/);
-  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ integrity: "missing" }) }), /missing package integrity/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ integrity: `sha512-${Buffer.alloc(64, 8).toString("base64")}` }) }), /canonical registry SRI/);
+});
+
+test("consumer files reject patches, overrides, and alternate tarballs", () => {
+  const data = inventory();
+  const consumer = data.consumers[0];
+  const patchedManifest = JSON.stringify({ devDependencies: { [data.package]: data.requiredVersion }, pnpm: { patchedDependencies: { [`${data.package}@${data.requiredVersion}`]: "patches/f.patch" } } });
+  const overriddenManifest = JSON.stringify({ devDependencies: { [data.package]: data.requiredVersion }, pnpm: { overrides: { [`other>${data.package}`]: "0.16.0" } } });
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: patchedManifest, lockfileSource: lockfile() }), /must not patch/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: overriddenManifest, lockfileSource: lockfile() }), /must not override/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ patched: true }) }), /must not patch/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ overridden: true }) }), /must not override/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ tarball: "https://evil.example/foundation.tgz" }) }), /alternate tarball/);
+  assert.throws(() => validateConsumerFiles({ inventory: data, consumer, manifestSource: manifest(), lockfileSource: lockfile({ lockedVersion: "https://evil.example/foundation.tgz" }) }), /resolved version does not match/);
+});
+
+test("pending publication integrity disables live audit before API access", async () => {
+  let called = false;
+  await assert.rejects(auditConsumers({ inventory: inventory({ requiredIntegrity: "pending-publication" }), token: "test", fetchImpl: async () => { called = true; throw new Error("unexpected"); } }), /disabled until the stable registry SRI is pinned/);
+  assert.equal(called, false);
 });
 
 test("GitHub client fails closed on rate limits", async () => {
@@ -120,7 +160,40 @@ test("live audit rejects inaccessible, nested, and truncated repositories", asyn
   await assert.rejects(auditConsumers({ inventory: inventory(), token: "test", fetchImpl: mockGitHub({ truncatedRepository: "unrelated" }) }), /recursive tree is missing or truncated/);
 });
 
+test("live audit reports safe partial progress before a later failure", async () => {
+  let checked = 0;
+  await assert.rejects(auditConsumers({
+    inventory: inventory(),
+    token: "test",
+    fetchImpl: mockGitHub({ nestedRepository: "extension-foundation" }),
+    onProgress: () => { checked += 1; }
+  }), /Nested or unexpected/);
+  assert.equal(checked, 3);
+});
+
 test("live audit rejects stale path exceptions", async () => {
-  const data = inventory({ exceptions: [{ repository: "unrelated", path: "package.json", reason: "Temporary exact path exception" }] });
+  const data = inventory({ exceptions: [{ repository: "unrelated", path: "package.json", reason: "Temporary exact path exception", expiresOn: "2099-01-01", approvalOwner: "@agent-teams-ai/foundation-owners" }] });
   await assert.rejects(auditConsumers({ inventory: data, token: "test", fetchImpl: mockGitHub() }), /Stale or unverifiable exception/);
+});
+
+test("public failure report contains no repository, path, branch, or SHA", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "foundation-audit-"));
+  const output = join(directory, "report.json");
+  try {
+    assert.equal(await runCli(["--output", output], {}), 1);
+    const report = await readFile(output, "utf8");
+    assert.doesNotMatch(report, /agent-teams-platform|package\.json|main|[a-f0-9]{40}/);
+    assert.deepEqual(JSON.parse(report), {
+      status: "failed",
+      startedAt: JSON.parse(report).startedAt,
+      completedAt: JSON.parse(report).completedAt,
+      requiredVersion: "0.16.1",
+      registeredConsumerCount: 4,
+      checkedRepositoryCount: 0,
+      verifiedConsumerCount: 0,
+      errorCode: "FOUNDATION_CONSUMER_AUDIT_FAILED"
+    });
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });

@@ -2,6 +2,8 @@ schemaVersion: 1
 organization: agent-teams-ai
 package: "@agent-teams/engineering-foundation"
 requiredVersion: 0.16.1
+registry: https://registry.npmjs.org/
+requiredIntegrity: pending-publication
 sourceRepository: engineering-foundation
 consumers:
   - repository: agent-runtime
