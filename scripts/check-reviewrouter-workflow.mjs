@@ -7,8 +7,13 @@ const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
 const reviewCommit = "8a0a31ae1d92c89466c8a939272a1e333e88c5a0";
 const interactionCommit = "6b35091c824b1d4d5ee6bf8316121ed08d3e4861";
 const reviewSecret =
-  "REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E1_02653f7c7d934ea66dfcc1592b4376e2";
-const reviewNamespace = "02653f7c7d934ea66dfcc1592b4376e2";
+  "REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E3_805e1404efa0ee03613cabc31b18f2a3";
+const reviewSecretMatch =
+  /_E([1-9][0-9]*)_([a-f0-9]{32})$/.exec(reviewSecret);
+if (!reviewSecretMatch) {
+  throw new Error("reviewSecret must use the versioned namespace format.");
+}
+const [, reviewEpoch, reviewNamespace] = reviewSecretMatch;
 const expectedReviewUses =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${reviewCommit}`;
 const expectedInteractionUses =
@@ -53,7 +58,7 @@ assert(
 );
 assert(
   review.workflow.name ===
-    `ReviewRouter Codex OAuth [namespace=sns_${reviewNamespace};epoch=1;secret=${reviewSecret}]`,
+    `ReviewRouter Codex OAuth [namespace=sns_${reviewNamespace};epoch=${reviewEpoch};secret=${reviewSecret}]`,
   `${reviewPath} must attest the exact versioned namespace in its name.`,
 );
 
