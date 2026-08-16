@@ -11,7 +11,10 @@
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
-    "check": "pnpm renovate:validate && pnpm governance:validate && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "check": "pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
+    "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
+    "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
     "governance:validate": "node scripts/validate-governance.mjs",
     "test": "node --test scripts/*.test.mjs",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json"

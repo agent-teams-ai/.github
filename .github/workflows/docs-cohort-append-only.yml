@@ -1,0 +1,230 @@
+name: Qualified Docs Cohort Trusted Validation
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-validation:
+    name: trusted-validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - id: materialize
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require("node:fs/promises");
+            const path = require("node:path");
+            const pull = context.payload.pull_request;
+            const registryPath = "governance/docs-qualified-cohorts.json";
+            const allowedRegistryPath = "governance/docs-qualified-cohorts.json";
+            const allowedEvidence = /^governance\/evidence\/docs-cohorts\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
+            const allowedRuntimeClosure = /^governance\/docs-runtime-closures\/sha256-[0-9a-f]{64}\.json$/;
+            const authorityPaths = new Set([
+              ".github/workflows/docs-cohort-append-only.yml",
+              ".github/workflows/docs-admission-evidence.yml",
+              ".github/workflows/docs-protocol-check.yml",
+              ".node-version",
+              ".npmrc",
+              "governance/docs-protocol-exceptions.schema.json",
+              "governance/docs-protocol-policy.schema.json",
+              "governance/docs-qualified-cohorts.schema.json",
+              "package.json",
+              "pnpm-lock.yaml",
+              "pnpm-workspace.yaml",
+              "renovate-config.json",
+              "renovate.json",
+              "scripts/check-cohort-append-only.mjs",
+              "scripts/check-cohort-emergency-append.mjs",
+              "scripts/check-community-files.mjs",
+              "scripts/docs-cohort-policy.mjs",
+              "scripts/governance-policy.mjs",
+              "scripts/validate-governance.mjs",
+              "scripts/verify-docs-cohort-evidence.mjs",
+              "scripts/verify-docs-admission-change.mjs",
+              "scripts/verify-docs-consumer-gate.mjs"
+            ]);
+            const installAuthorityNames = new Set([
+              ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"
+            ]);
+            const isInstallAuthority = (entry) =>
+              installAuthorityNames.has(entry.split("/").at(-1));
+            const changedFileCap = 3000;
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1 ||
+                pull.changed_files > changedFileCap) {
+              core.setFailed(`PR changed_files must be within 1..${changedFileCap}.`);
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated PR file evidence is incomplete or contains duplicate filenames.");
+              return;
+            }
+            const changedAuthority = changed.filter(({ filename, previous_filename: prior }) =>
+              [filename, prior].filter(Boolean).some((entry) =>
+                authorityPaths.has(entry) || isInstallAuthority(entry)));
+            if (changedAuthority.length > 0) {
+              core.setFailed(`Authority files require a separately staged successor check and ruleset cutover; they cannot pass or bypass this base-owned check: ${changedAuthority.map(({ filename, previous_filename: prior }) => prior ? prior + " -> " + filename : filename).join(", ")}`);
+              return;
+            }
+            const changesRegistry = changed.some(({ filename, previous_filename: prior }) =>
+              filename === registryPath || prior === registryPath);
+            if (!changesRegistry) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Cohort lifecycle PR base must be the live controller default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("PR base is stale; update it before appending lifecycle history.");
+              return;
+            }
+            const forbidden = changed.filter((file) => {
+              const paths = [file.filename, file.previous_filename].filter(Boolean);
+              if (paths.some((entry) => entry !== allowedRegistryPath &&
+                  !allowedEvidence.test(entry) && !allowedRuntimeClosure.test(entry))) return true;
+              if (file.filename === allowedRegistryPath) return !["added", "modified"].includes(file.status);
+              return file.status !== "added" || file.previous_filename !== undefined;
+            });
+            if (forbidden.length > 0) {
+              core.setFailed(`Lifecycle PRs may change only the registry and new inert Cohort evidence. Renames, deletes, executable authority, dependencies, schemas, policy, workflows, and scripts require a separate PR: ${forbidden.map(({ filename, previous_filename: prior }) => prior ? prior + " -> " + filename : filename).join(", ")}`);
+              return;
+            }
+            async function load(ref, allowMissing = false) {
+              try {
+                const response = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: registryPath,
+                  ref
+                });
+                if (Array.isArray(response.data) || response.data.type !== "file" ||
+                    response.data.encoding !== "base64") {
+                  throw new Error("Qualified Docs Cohort registry is not one base64-encoded file.");
+                }
+                return Buffer.from(response.data.content, "base64").toString("utf8");
+              } catch (error) {
+                if (allowMissing && error.status === 404) return undefined;
+                throw error;
+              }
+            }
+            const head = await load(pull.head.sha);
+            const baseSource = await load(pull.base.sha, true);
+            const base = baseSource ?? (() => {
+              const bootstrap = JSON.parse(head);
+              return JSON.stringify({ ...bootstrap, cohorts: [], events: [] });
+            })();
+            let mode = "full";
+            try {
+              const baseValue = JSON.parse(base);
+              const headValue = JSON.parse(head);
+              const baseCohorts = Array.isArray(baseValue.cohorts) ? baseValue.cohorts : [];
+              const headCohorts = Array.isArray(headValue.cohorts) ? headValue.cohorts : [];
+              const baseClosurePaths = new Set(baseCohorts.map((entry) =>
+                entry.runtime_closure?.projection_path).filter(Boolean));
+              const requiredNewClosures = new Set(headCohorts.slice(baseCohorts.length)
+                .map((entry) => entry.runtime_closure?.projection_path).filter((entry) =>
+                  typeof entry === "string" && !baseClosurePaths.has(entry)));
+              const addedClosures = new Set(changed.filter(({ filename, status, previous_filename: prior }) =>
+                allowedRuntimeClosure.test(filename) && status === "added" && prior === undefined)
+                .map(({ filename }) => filename));
+              if (JSON.stringify([...requiredNewClosures].sort()) !==
+                  JSON.stringify([...addedClosures].sort())) {
+                core.setFailed("New runtime closure evidence must be create-only and referenced exactly by an appended Cohort record.");
+                return;
+              }
+              const { events: baseEvents, ...baseAuthority } = baseValue;
+              const { events: headEvents, ...headAuthority } = headValue;
+              const appended = Array.isArray(baseEvents) && Array.isArray(headEvents)
+                ? headEvents.slice(baseEvents.length)
+                : [];
+              if (JSON.stringify(baseAuthority) === JSON.stringify(headAuthority) &&
+                  headEvents.length > baseEvents.length &&
+                  JSON.stringify(headEvents.slice(0, baseEvents.length)) === JSON.stringify(baseEvents) &&
+                  appended.every(({ state }) => ["SUPPORT_ENDED", "SUSPENDED", "WITHDRAWN"].includes(state))) {
+                mode = "emergency";
+              }
+            } catch {
+              mode = "full";
+            }
+            const basePath = path.join(process.env.RUNNER_TEMP, "docs-cohort-base.json");
+            const headPath = path.join(process.env.RUNNER_TEMP, "docs-cohort-head.json");
+            const changedFilesPath = path.join(process.env.RUNNER_TEMP, "docs-cohort-changed-files.json");
+            await Promise.all([
+              fs.writeFile(basePath, base, { flag: "wx" }),
+              fs.writeFile(headPath, head, { flag: "wx" }),
+              fs.writeFile(changedFilesPath, JSON.stringify(changed), { flag: "wx" })
+            ]);
+            core.setOutput("base-path", basePath);
+            core.setOutput("head-path", headPath);
+            core.setOutput("mode", mode);
+            core.setOutput("changed-files-path", changedFilesPath);
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.materialize.outputs.mode != 'noop'
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        if: steps.materialize.outputs.mode == 'full'
+        with:
+          version: 11.18.0
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.materialize.outputs.mode == 'full'
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - if: steps.materialize.outputs.mode == 'full'
+        run: >-
+          pnpm install --frozen-lockfile --ignore-scripts
+          --ignore-pnpmfile --ignore-workspace
+      - name: Validate negative emergency append without network dependencies
+        if: steps.materialize.outputs.mode == 'emergency'
+        env:
+          DOCS_COHORT_BASE_PATH: ${{ steps.materialize.outputs.base-path }}
+          DOCS_COHORT_CURRENT_PATH: ${{ steps.materialize.outputs.head-path }}
+          DOCS_COHORT_EVIDENCE_REF: ${{ github.event.pull_request.head.sha }}
+          DOCS_COHORT_CHANGED_FILES_PATH: ${{ steps.materialize.outputs.changed-files-path }}
+        run: node scripts/check-cohort-emergency-append.mjs
+      - name: Validate untrusted head with trusted base code
+        if: steps.materialize.outputs.mode == 'full'
+        env:
+          DOCS_COHORT_BASE_PATH: ${{ steps.materialize.outputs.base-path }}
+          DOCS_COHORT_CURRENT_PATH: ${{ steps.materialize.outputs.head-path }}
+        run: node scripts/check-cohort-append-only.mjs
+      - name: Verify live evidence for every appended Cohort record or event
+        if: steps.materialize.outputs.mode == 'full'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCS_COHORT_BASE_PATH: ${{ steps.materialize.outputs.base-path }}
+          DOCS_COHORT_CURRENT_PATH: ${{ steps.materialize.outputs.head-path }}
+          DOCS_COHORT_EVIDENCE_REF: ${{ github.event.pull_request.head.sha }}
+        run: >-
+          node scripts/verify-docs-cohort-evidence.mjs
+          --registry "$DOCS_COHORT_CURRENT_PATH"
+          --schema governance/docs-qualified-cohorts.schema.json
+          --changed-from "$DOCS_COHORT_BASE_PATH"

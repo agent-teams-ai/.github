@@ -483,22 +483,40 @@ export function validateDocsProtocolPolicy(policy, schema) {
     policy.snapshot_revision.startsWith(`${policy.observed_at}.`),
     "Documentation protocol revision date must match its observation date.",
   );
-  const repositories = policy.repositories.map(({ repository }) => repository);
   const ids = policy.repositories.map(({ repository_id: id }) => id);
-  assert(new Set(repositories).size === repositories.length, "Documentation protocol repositories must be unique.");
   assert(new Set(ids).size === ids.length, "Documentation protocol repository IDs must be unique.");
+  const activeRecords = policy.repositories.filter(
+    ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
+  );
+  const activeNames = activeRecords.map(({ repository }) => repository);
+  assert(new Set(activeNames).size === activeNames.length,
+    "Active documentation protocol repository names must be unique.");
 
-  const owned = policy.repositories.filter(({ ownership }) => ownership === "organization_owned");
-  const forks = policy.repositories.filter(({ ownership }) => ownership === "external_fork");
+  const owned = activeRecords.filter(
+    ({ governance_ownership: ownership }) => ownership === "organization_owned",
+  );
+  const external = activeRecords.filter(
+    ({ governance_ownership: ownership }) => ownership === "external",
+  );
+  const forkSources = activeRecords.filter(
+    ({ source_provenance: source }) => source.kind === "fork",
+  );
   assert(
-    policy.repositories.length === policy.admission.expected_repository_count &&
+    activeRecords.length === policy.admission.expected_repository_count &&
       owned.length === policy.admission.owned_repository_count &&
-      forks.length === policy.admission.external_fork_count,
+      external.length === policy.admission.external_repository_count &&
+      forkSources.length === policy.admission.fork_source_count,
     "Documentation protocol admission counts must match its repository records.",
   );
+  const activeOwnedRollouts = owned.filter(
+    ({ docs_role: role, cohort_binding_status: binding }) =>
+      role === "consumer" && binding === "rollout_pending",
+  );
+  assert(activeOwnedRollouts.length <= 1,
+    "At most one organization-owned consumer may be rollout_pending at a time.");
 
-  const producer = policy.repositories.filter(({ role }) => role === "protocol_producer");
-  const controllers = policy.repositories.filter(({ role }) => role === "governance_controller");
+  const producer = activeRecords.filter(({ docs_role: role }) => role === "protocol_producer");
+  const controllers = activeRecords.filter(({ docs_role: role }) => role === "governance_controller");
   assert(
     producer.length === 1 && producer[0].repository === policy.protocol.producer_repository,
     "Documentation protocol must have exactly one declared producer.",
@@ -512,15 +530,18 @@ export function validateDocsProtocolPolicy(policy, schema) {
   assert(
     controllers.length === 1 &&
       controllers[0].repository === "agent-teams-ai/.github" &&
-      controllers[0].ownership === "organization_owned",
+      controllers[0].governance_ownership === "organization_owned",
     "Documentation protocol governance controller must be exactly the organization-owned .github repository.",
   );
   const craig = policy.repositories.find(
     ({ repository }) => repository === "agent-teams-ai/craig-meeting-gateway",
   );
   assert(
-    craig?.ownership === "external_fork" &&
-      craig.role === "exempt_external_fork" &&
+    craig?.governance_ownership === "external" &&
+      craig.source_provenance.kind === "fork" &&
+      craig.source_provenance.parent_repository === "CraigChat/craig" &&
+      craig.docs_role === "not_applicable" &&
+      craig.admission_status === "exception" &&
       craig.exemption !== null,
     "Craig gateway must remain an explicit external-fork documentation protocol exemption.",
   );
@@ -536,12 +557,17 @@ export function validateDocsProtocolPolicy(policy, schema) {
       repositoryPaths.every(isCanonicalRepositoryPath),
       `${record.repository} documentation protocol paths must be canonical NFC repository-relative POSIX paths.`,
     );
-    const consumer = record.role === "consumer";
+    assert(
+      (record.source_provenance.kind === "fork") ===
+        (record.source_provenance.parent_repository !== null),
+      `${record.repository} source provenance kind and parent must agree.`,
+    );
+    const consumer = record.docs_role === "consumer";
     const admitted = record.admission_status === "admitted";
     const qualified = record.qualification.status === "qualified";
     if (consumer) {
       assert(
-        record.ownership === "organization_owned" &&
+        record.governance_ownership === "organization_owned" &&
           record.protocol_required &&
           record.fixed_gate_command === policy.protocol.fixed_gate_command &&
           record.exemption === null,
@@ -549,9 +575,14 @@ export function validateDocsProtocolPolicy(policy, schema) {
       );
       assert(admitted === qualified, `${record.repository} admission and qualification status must agree.`);
       if (qualified) {
+        const legacy = record.cohort_binding_status === "legacy_pre_cohort";
+        const hosted = record.observed_default_branch_evidence;
         assert(
-          policy.protocol.qualified_package_version !== null &&
-            record.exact_package_version === policy.protocol.qualified_package_version &&
+          record.exact_package_version !== null &&
+            record.exact_foundation_version !== null &&
+            ["legacy_pre_cohort", "rollout_pending", "bound"].includes(
+              record.cohort_binding_status,
+            ) &&
             record.profile_path !== null &&
             !/^(?:\.github|node_modules)(?:\/|$)/u.test(record.profile_path) &&
             /\.ya?ml$/u.test(record.profile_path) &&
@@ -573,13 +604,50 @@ export function validateDocsProtocolPolicy(policy, schema) {
             record.qualification.evidence_paths.includes("package.json") &&
             record.qualification.evidence_paths.includes(record.profile_path) &&
             record.qualification.evidence_paths.includes(record.caller_workflow_path) &&
-            record.qualification.evidence_paths.includes(record.qualification_evidence_path),
+            record.qualification.evidence_paths.includes(record.qualification_evidence_path) &&
+            (legacy
+              ? hosted === null
+              : hosted !== null &&
+                hosted.revision === record.qualification.observed_revision &&
+                hosted.required_context === record.required_check_context &&
+                hosted.caller_workflow_path === record.caller_workflow_path &&
+                hosted.check_run_url.startsWith(`https://github.com/${record.repository}/actions/runs/`) &&
+                hosted.check_run_url.includes(`/actions/runs/${hosted.workflow_run_id}`) &&
+                record.required_check_context !== null),
           `${record.repository} qualified admission requires bound package, distinct typed paths, nonzero consumer and reusable-workflow revisions, and complete evidence.`,
+        );
+      } else if (record.admission_status === "admission_candidate") {
+        assert(
+          record.cohort_binding_status === "bootstrap_pending" &&
+            record.desired_cohort_id !== null &&
+            record.observed_cohort_id === null &&
+            record.observed_cohort_record_digest === null &&
+            record.observed_cohort_event_digest === null &&
+            record.exact_package_version === null &&
+            record.exact_foundation_version === null &&
+            record.profile_path !== null &&
+            record.caller_workflow_path !== null &&
+            record.qualification_evidence_path !== null &&
+            record.required_check_context !== null &&
+            record.reusable_workflow_revision === null &&
+            record.observed_default_branch_evidence === null &&
+            record.qualification.status === "not_qualified" &&
+            record.qualification.observed_revision === null &&
+            record.qualification.evidence_paths.length === 0,
+          `${record.repository} admission candidate must bind only a desired bootstrap Cohort and planned paths.`,
         );
       } else {
         assert(
           record.admission_status === "pending_admission" &&
             record.exact_package_version === null &&
+            record.exact_foundation_version === null &&
+            record.cohort_binding_status === "not_applicable" &&
+            record.desired_cohort_id === null &&
+            record.observed_cohort_id === null &&
+            record.observed_cohort_record_digest === null &&
+            record.observed_cohort_event_digest === null &&
+            record.required_check_context === null &&
+            record.observed_default_branch_evidence === null &&
             record.profile_path === null &&
             record.caller_workflow_path === null &&
             record.reusable_workflow_revision === null &&
@@ -590,15 +658,28 @@ export function validateDocsProtocolPolicy(policy, schema) {
         );
       }
     } else {
+      const classifiedNotApplicable = record.docs_role === "not_applicable" &&
+        ["not_applicable", "exception"].includes(record.admission_status);
+      const pendingClassification = record.docs_role === "pending_classification" &&
+        record.admission_status === "pending_classification";
       assert(
         !record.protocol_required &&
           record.fixed_gate_command === null &&
           record.exact_package_version === null &&
+          record.exact_foundation_version === null &&
+          record.cohort_binding_status === "not_applicable" &&
+          record.desired_cohort_id === null &&
+          record.observed_cohort_id === null &&
+          record.observed_cohort_record_digest === null &&
+          record.observed_cohort_event_digest === null &&
           record.profile_path === null &&
           record.caller_workflow_path === null &&
           record.reusable_workflow_revision === null &&
           record.qualification_evidence_path === null &&
-          record.admission_status === "not_applicable" &&
+          record.required_check_context === null &&
+          record.observed_default_branch_evidence === null &&
+          (classifiedNotApplicable || pendingClassification ||
+            ["governance_controller", "protocol_producer"].includes(record.docs_role)) &&
           record.qualification.status === "not_applicable" &&
           record.qualification.observed_revision === null &&
           record.qualification.evidence_paths.length === 0,
@@ -606,14 +687,14 @@ export function validateDocsProtocolPolicy(policy, schema) {
       );
     }
 
-    const exemptFork = record.role === "exempt_external_fork";
+    const exemptFork = record.governance_ownership === "external";
     assert(
-      (record.ownership === "external_fork") === exemptFork &&
-        exemptFork === (record.exemption !== null),
+      exemptFork === (record.exemption !== null) &&
+        (!exemptFork || record.docs_role === "not_applicable"),
       `${record.repository} fork exemption shape is invalid.`,
     );
     assert(
-      (record.repository === "agent-teams-ai/agent-teams-platform") ===
+      (record.repository_id === 1319378484) ===
         (record.required_check_exception_id === "platform-private-required-checks-github-free"),
       `${record.repository} required-check exception reference is invalid.`,
     );
@@ -708,24 +789,35 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     activeLedger.size === activeInventory.length && archivedLedger.size === archivedInventory.length,
     "Ledger repository sets must exactly match the organization inventory split.",
   );
-  const docsProtocolByRepository = new Map(
-    docsProtocol.repositories.map((record) => [record.repository, record]),
+  const activeDocsProtocol = docsProtocol.repositories.filter(
+    ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
+  );
+  const docsProtocolById = new Map(
+    activeDocsProtocol.map((record) => [record.repository_id, record]),
   );
   for (const record of activeInventory) {
-    const protocolRecord = docsProtocolByRepository.get(record.repository);
+    const protocolRecord = docsProtocolById.get(record.id);
     assert(
-      protocolRecord?.repository_id === record.id,
+      protocolRecord?.repository === record.repository,
       `${record.repository} documentation protocol identity must match the active inventory.`,
     );
     assert(
-      (protocolRecord.ownership === "external_fork") === record.is_fork,
-      `${record.repository} documentation protocol ownership must match fork evidence.`,
+      (protocolRecord.source_provenance.kind === "fork") === record.is_fork &&
+        protocolRecord.source_provenance.parent_repository === record.fork_parent,
+      `${record.repository} documentation protocol source provenance must match fork evidence.`,
     );
   }
   assert(
-    docsProtocolByRepository.size === activeInventory.length,
+    docsProtocolById.size === activeInventory.length,
     "Documentation protocol repository set must exactly match the active organization inventory.",
   );
+  for (const record of archivedInventory) {
+    const protocolRecord = docsProtocol.repositories.find(
+      ({ repository_id: id }) => id === record.id,
+    );
+    assert(protocolRecord?.repository_lifecycle === "archived",
+      `${record.repository} documentation protocol tombstone must match archived inventory.`);
+  }
   for (const attachment of security.repository_attachments) {
     const inventoryRecord = inventoryByRepository.get(attachment.repository);
     assert(

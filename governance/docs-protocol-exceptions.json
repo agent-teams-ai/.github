@@ -1,0 +1,22 @@
+{
+  "$schema": "./docs-protocol-exceptions.schema.json",
+  "schema_version": 1,
+  "organization": "agent-teams-ai",
+  "exceptions": [
+    {
+      "id": "platform-private-required-checks-github-free",
+      "repository_id": 1319378484,
+      "owner": "agent-teams-ai/organization-maintainers",
+      "reason": "GitHub Free does not expose the required ruleset enforcement used by public repositories for this private repository.",
+      "scope": "required_docs_check",
+      "authority_source": "governance/code-security-defaults.json",
+      "authority_exception_id": "platform-private-required-checks-github-free",
+      "tracking_reference": "governance/docs-protocol-policy.json",
+      "status": "active",
+      "last_reviewed_at": "2026-08-16",
+      "review_after": "2026-09-16",
+      "expires_at": "2026-11-16",
+      "review_triggers": ["billing_plan_changed", "repository_visibility_changed", "ruleset_capability_changed"]
+    }
+  ]
+}
