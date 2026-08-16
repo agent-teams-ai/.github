@@ -35,10 +35,27 @@ async function loadPrevious(reference, current) {
     });
     return JSON.parse(stdout);
   } catch (error) {
-    if (error?.code !== 128 || !String(error.stderr).includes("does not exist")) {
+    if (error?.code !== 128) {
       throw error;
     }
-    return { ...current, cohorts: [], events: [] };
+    await execFileAsync("git", ["cat-file", "-e", `${reference}^{commit}`], {
+      encoding: "utf8",
+      maxBuffer: 4 * 1024 * 1024,
+      timeout: 30_000,
+    });
+    try {
+      await execFileAsync("git", ["cat-file", "-e", `${reference}:${path}`], {
+        encoding: "utf8",
+        maxBuffer: 4 * 1024 * 1024,
+        timeout: 30_000,
+      });
+    } catch (pathError) {
+      if ([1, 128].includes(pathError?.code)) {
+        return { ...current, cohorts: [], events: [] };
+      }
+      throw pathError;
+    }
+    throw error;
   }
 }
 
