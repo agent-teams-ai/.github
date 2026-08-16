@@ -645,8 +645,8 @@ test("later controller main changes only mutable lifecycle data, never pinned va
   const checkout = workflow.jobs["docs-protocol-check"].steps.find(
     ({ name }) => name === "Check out exact Cohort-bound validator implementation"
   );
-  assert.equal(checkout.with.repository, "${{ job.workflow_repository }}");
-  assert.equal(checkout.with.ref, "${{ job.workflow_sha }}");
+  assert.equal(checkout.with.repository, "${{ steps.authority.outputs.workflow-repository }}");
+  assert.equal(checkout.with.ref, "${{ steps.authority.outputs.workflow-sha }}");
   assert.notEqual(checkout.with.ref, "${{ steps.authority.outputs.controller-sha }}");
 
   const before = fixture();

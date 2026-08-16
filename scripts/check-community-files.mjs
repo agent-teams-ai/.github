@@ -182,8 +182,11 @@ export function validateDocsProtocolWorkflow(workflow, source) {
       (![null, undefined].includes(workflowCall) && !exactKeys(workflowCall, []))) {
     throw new Error("Documentation protocol workflow_call must be inputless.");
   }
-  if (JSON.stringify(workflow.permissions) !== JSON.stringify({ contents: "read" })) {
-    throw new Error("Documentation protocol reusable workflow must have read-only contents permission.");
+  if (JSON.stringify(workflow.permissions) !== JSON.stringify({
+    contents: "read",
+    "id-token": "write",
+  })) {
+    throw new Error("Documentation protocol reusable workflow must have read-only contents and OIDC identity permission.");
   }
   if (!exactKeys(workflow.jobs, ["docs-protocol-check"])) {
     throw new Error("Documentation protocol reusable workflow must contain exactly one allowlisted job.");
@@ -197,8 +200,8 @@ export function validateDocsProtocolWorkflow(workflow, source) {
       canonicalJson(job.env) !== canonicalJson({
         TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance",
         CONSUMER_CHECKOUT: "${{ github.workspace }}/.trusted/consumer",
-        AUTHORIZATION_PATH: "${{ runner.temp }}/docs-gate-authorization.json",
-        TRUSTED_INSTALL_ROOT: "${{ runner.temp }}/docs-trusted-install",
+        AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json",
+        TRUSTED_INSTALL_ROOT: "${{ github.workspace }}/.trusted/install",
       })) {
     throw new Error("Documentation protocol job shape, runner, and timeout must match the allowlist.");
   }
@@ -208,13 +211,12 @@ export function validateDocsProtocolWorkflow(workflow, source) {
     { name: "Resolve trusted controller snapshot and called-workflow identity", id: "authority",
       uses: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd",
       env: {
-        JOB_WORKFLOW_SHA: "${{ job.workflow_sha }}", JOB_WORKFLOW_REF: "${{ job.workflow_ref }}",
-        JOB_WORKFLOW_REPOSITORY: "${{ job.workflow_repository }}",
-        JOB_WORKFLOW_FILE_PATH: "${{ job.workflow_file_path }}",
+        CALLER_REPOSITORY_ID: "${{ github.repository_id }}",
       }, with: { script: authorityScript } },
     { name: "Check out exact Cohort-bound validator implementation",
       uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
-      with: { repository: "${{ job.workflow_repository }}", ref: "${{ job.workflow_sha }}",
+      with: { repository: "${{ steps.authority.outputs.workflow-repository }}",
+        ref: "${{ steps.authority.outputs.workflow-sha }}",
         path: ".trusted/governance", "persist-credentials": false } },
     { name: "Set up pnpm for trusted tooling",
       uses: "pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9",
@@ -230,9 +232,10 @@ export function validateDocsProtocolWorkflow(workflow, source) {
       env: { GITHUB_TOKEN: "${{ github.token }}", GITHUB_REPOSITORY: "${{ github.repository }}",
         CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}",
         CONTROLLER_SNAPSHOT_SHA: "${{ steps.authority.outputs.controller-sha }}",
-        JOB_WORKFLOW_SHA: "${{ job.workflow_sha }}", JOB_WORKFLOW_REF: "${{ job.workflow_ref }}",
-        JOB_WORKFLOW_REPOSITORY: "${{ job.workflow_repository }}",
-        JOB_WORKFLOW_FILE_PATH: "${{ job.workflow_file_path }}" } },
+        JOB_WORKFLOW_SHA: "${{ steps.authority.outputs.workflow-sha }}",
+        JOB_WORKFLOW_REF: "${{ steps.authority.outputs.workflow-ref }}",
+        JOB_WORKFLOW_REPOSITORY: "${{ steps.authority.outputs.workflow-repository }}",
+        JOB_WORKFLOW_FILE_PATH: "${{ steps.authority.outputs.workflow-file-path }}" } },
     { name: "Check out authorized immutable consumer snapshot",
       uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
       with: { repository: "${{ github.repository }}", ref: "${{ github.sha }}",
@@ -263,14 +266,15 @@ export function validateDocsProtocolWorkflow(workflow, source) {
   if (!Array.isArray(steps) || canonicalJson(steps) !== canonicalJson(expectedSteps) ||
       typeof authorityScript !== "string" ||
       createHash("sha256").update(authorityScript).digest("hex") !==
-        "160146ef9487bf553b5dbb839e83fd20f3a8bfb3bc0ce50d7e37cfc3f238adc9") {
+        "ce4429a953c765e037bb8cfbb90c6c615beb24d5b831678823ea7abda90e6f2c") {
     throw new Error("Documentation protocol reusable workflow must preserve trusted authorization, immutable checkout, preinstall lock validation, isolated install, and absolute trusted CLI ordering.");
   }
   for (const requiredSource of [
-    "JOB_WORKFLOW_SHA",
-    "JOB_WORKFLOW_REF",
-    "JOB_WORKFLOW_REPOSITORY",
-    "JOB_WORKFLOW_FILE_PATH",
+    "core.getIDToken(audience)",
+    "claims.job_workflow_sha",
+    "claims.job_workflow_ref",
+    "claims.repository_id",
+    "steps.authority.outputs.workflow-sha",
     "controller.data.id !== 1316243981",
     "controller.data.default_branch",
     "CONTROLLER_SNAPSHOT_SHA",

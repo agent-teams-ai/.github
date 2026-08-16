@@ -87,6 +87,12 @@ later CI observations.
     resolves exact default-branch HEAD, check/workflow runs, caller bytes, and the
     committed managed projection. Fleet remediation is serialized to one owned
     `rollout_pending` consumer, while suspension remains immediately appendable.
+19. The reusable gate obtains a GitHub OIDC token with a dedicated audience and
+    binds `job_workflow_ref` plus `job_workflow_sha` to the exact Cohort-pinned
+    controller workflow before checking out validator code. The token is also
+    bound to caller repository ID, repository name, event SHA, and ref. The job
+    grants only Contents read and OIDC identity minting; it receives no secrets
+    and no repository write permission.
 
 ## Consequences
 
