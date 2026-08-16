@@ -618,7 +618,7 @@ test("runs on PR, merge queue, and actual default branch but skips feature push"
 test("current integration cannot hide invalid daily documentation", async () => {
   const source = await readFile(new URL("../.github/workflows/docs-protocol-check.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source, { strict: true, uniqueKeys: true }).toJS();
-  assert.deepEqual(workflow.on, { workflow_call: null });
+  assert.deepEqual(workflow.on, { workflow_call: {} });
   const job = workflow.jobs["docs-protocol-check"];
   assert.equal(job.if,
     "github.event_name != 'push' || github.ref_name == github.event.repository.default_branch");
