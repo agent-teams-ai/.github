@@ -1,10 +1,10 @@
 {
   "$schema": "./docs-protocol-policy.schema.json",
   "schema_version": 3,
-  "snapshot_revision": "2026-08-15.1",
-  "observed_at": "2026-08-15",
+  "snapshot_revision": "2026-08-17.1",
+  "observed_at": "2026-08-17",
   "organization": "agent-teams-ai",
-  "inventory_snapshot_revision": "2026-08-15.1",
+  "inventory_snapshot_revision": "2026-08-17.1",
   "continuous_audit": false,
   "protocol": {
     "package": "@agent-teams/docs-protocol",
@@ -15,8 +15,8 @@
     "reusable_workflow": ".github/workflows/docs-protocol-check.yml"
   },
   "admission": {
-    "expected_repository_count": 7,
-    "owned_repository_count": 6,
+    "expected_repository_count": 8,
+    "owned_repository_count": 7,
     "external_repository_count": 1,
     "fork_source_count": 1,
     "new_owned_repository_status": "pending_classification",
@@ -208,6 +208,40 @@
           "organization_specific_docs_added"
         ]
       },
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+      "repository_id": 1336577313,
+      "source_provenance": {
+        "kind": "original",
+        "parent_repository": null
+      },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "pending_classification",
+      "protocol_required": false,
+      "admission_status": "pending_classification",
+      "exact_package_version": null,
+      "exact_foundation_version": null,
+      "cohort_binding_status": "not_applicable",
+      "desired_cohort_id": null,
+      "observed_cohort_id": null,
+      "observed_cohort_record_digest": null,
+      "observed_cohort_event_digest": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "required_check_context": null,
+      "observed_default_branch_evidence": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
       "required_check_exception_id": null
     },
     {
