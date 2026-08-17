@@ -1,15 +1,15 @@
 {
   "$schema": "./organization-repository-inventory.schema.json",
   "schema_version": 2,
-  "snapshot_revision": "2026-08-15.1",
-  "observed_at": "2026-08-15",
+  "snapshot_revision": "2026-08-17.1",
+  "observed_at": "2026-08-17",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
   "verification": "human_reviewed_dated_api_snapshot",
   "endpoint": "https://api.github.com/orgs/agent-teams-ai/repos?type=all&per_page=100",
   "fork_evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/craig-meeting-gateway",
   "checksum_algorithm": "sha256-internal-consistency(sorted(repository + NUL + id + NUL + archived + NUL + visibility + NUL + default_branch + NUL + is_fork + NUL + json(fork_parent) + LF))",
-  "checksum_sha256": "b068440a85dfbdfd9155edea5fc1e5300d2b61937f74e449b295fe8ad7eb6475",
+  "checksum_sha256": "7630a5307c6cde4d8bce88da7f1b2a4e2b2e7ab31c96afbf201af41c329543b0",
   "repositories": [
     {
       "repository": "agent-teams-ai/.github",
@@ -55,6 +55,15 @@
       "default_branch": "master",
       "is_fork": true,
       "fork_parent": "CraigChat/craig"
+    },
+    {
+      "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+      "id": 1336577313,
+      "archived": false,
+      "visibility": "public",
+      "default_branch": "main",
+      "is_fork": false,
+      "fork_parent": null
     },
     {
       "repository": "agent-teams-ai/engineering-foundation",
