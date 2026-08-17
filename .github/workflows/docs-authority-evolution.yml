@@ -1,0 +1,90 @@
+name: Trusted Docs Authority Evolution
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-authority-evolution:
+    name: trusted-authority-evolution
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pull = context.payload.pull_request;
+            const evolvableAuthority = "scripts/verify-docs-consumer-gate.mjs";
+            const allowed = new Set([
+              evolvableAuthority,
+              "scripts/verify-docs-consumer-gate.test.mjs",
+              "docs/decisions/0001-qualified-docs-cohorts.md"
+            ]);
+            const protectedPaths = new Set([
+              ".github/workflows/docs-authority-evolution.yml",
+              ".github/workflows/docs-cohort-append-only.yml",
+              ".github/workflows/docs-admission-evidence.yml",
+              ".github/workflows/docs-protocol-check.yml",
+              "package.json",
+              "pnpm-lock.yaml",
+              "pnpm-workspace.yaml",
+              "governance/docs-qualified-cohorts.json",
+              "governance/docs-qualified-cohorts.schema.json",
+              "governance/docs-protocol-policy.json",
+              "governance/docs-protocol-policy.schema.json"
+            ]);
+            const cap = 32;
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1 || pull.changed_files > cap) {
+              core.setFailed(`Authority PR changed_files must be within 1..${cap}.`);
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated authority PR file evidence is incomplete or contains duplicates.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            const changesAuthority = changed.some((file) => allPaths(file).includes(evolvableAuthority));
+            if (!changesAuthority) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            if (pull.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Controller authority changes from forks are not eligible.");
+              return;
+            }
+            const forbidden = changed.filter((file) =>
+              file.status !== "modified" || file.previous_filename !== undefined ||
+              !allowed.has(file.filename) || allPaths(file).some((entry) => protectedPaths.has(entry)));
+            if (forbidden.length > 0) {
+              core.setFailed("Controller authority evolution may modify only the staged validator, its test, and its ADR.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Controller authority PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("Controller authority PR base is stale; update it before merge.");
+              return;
+            }
+            core.setOutput("mode", "authority");
