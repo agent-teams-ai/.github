@@ -429,7 +429,7 @@ function assertNoForbiddenLockPolicy(value, path = "pnpm-lock.yaml") {
   }
 }
 
-export function validateExactPnpmLock(manifest, lock, expectedPackages, expectedRuntimeClosure) {
+export function validateExactPnpmLock(manifest, lock, expectedPackages) {
   assertNoForbiddenLockPolicy(lock);
   assert(exactObject(lock.importers) && exactObject(lock.importers["."]) && exactObject(lock.packages),
     "Consumer pnpm lockfile is missing its root importer or packages map.");
@@ -466,11 +466,6 @@ export function validateExactPnpmLock(manifest, lock, expectedPackages, expected
   assert(docsSnapshot?.dependencies?.["@agent-teams/engineering-foundation"] === foundationRaw,
     "Docs Protocol lock snapshot has the wrong exact Foundation dependency.");
   assertManifest(manifest, expectedPackages);
-  if (expectedRuntimeClosure !== undefined) {
-    assert(canonicalJson(docsRuntimeClosureAuthority(lock, expectedPackages)) ===
-      canonicalJson(expectedRuntimeClosure),
-    "Runtime dependency closure differs from the exact qualified Cohort authority.");
-  }
 }
 
 function assertRepositoryTree(paths) {
@@ -610,7 +605,7 @@ export function authorizeConsumerGate(input) {
     policyEntry.caller_workflow_path === profile.callerWorkflowPath,
   "Consumer profile/caller paths differ from central repository authority.");
   assertCallerWorkflow(caller, callerSource, expected);
-  validateExactPnpmLock(manifest, lock, expectedPackages, record.runtime_closure);
+  validateExactPnpmLock(manifest, lock, expectedPackages);
   const runtimeClosureSource = input.runtimeClosureSources?.[record.runtime_closure.projection_path];
   assert(typeof runtimeClosureSource === "string" &&
     sha256(runtimeClosureSource) === record.runtime_closure.digest,
@@ -881,8 +876,10 @@ async function verifyInstallCommand() {
     "trusted install package.json", JSON_LIMITS["package.json"]);
   const lock = parseYamlStrict(await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
     "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
-  validateExactPnpmLock(manifest, lock, authorization.expectedPackages,
-    authorization.expectedRuntimeClosure);
+  validateExactPnpmLock(manifest, lock, authorization.expectedPackages);
+  assert(canonicalJson(docsRuntimeClosureAuthority(lock, authorization.expectedPackages)) ===
+    canonicalJson(authorization.expectedRuntimeClosure),
+  "Trusted install runtime closure differs from the qualified Cohort authority.");
   for (const expected of authorization.expectedPackages) {
     const installed = parseJsonStrict(await readFile(join(directory, "node_modules", expected.name, "package.json"), "utf8"),
       `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);

@@ -97,6 +97,13 @@ later CI observations.
     bound to caller repository ID, repository name, event SHA, and ref. The job
     grants only Contents read and OIDC identity minting; it receives no secrets
     and no repository write permission.
+20. A Cohort runtime closure is immutable producer qualification evidence and
+    the lock for the gate's isolated trusted install. It is not a canonical
+    consumer lockfile. Consumer lockfiles must bind the exact managed package
+    versions, SRI, and Docs Protocol to Foundation edge, but package-manager-owned
+    transitive versions and peer contexts may differ by an existing consumer
+    graph. Hosted checks still execute the Cohort-qualified packages, while
+    consumer CI and lockfile review cover the consumer's resolved graph.
 
 ## Consequences
 
@@ -105,3 +112,5 @@ later CI observations.
 - Release, rollout, suspension, rollback, and fleet evidence remain distinct.
 - Historical Cohort facts stay reviewable without granting cross-repository
   write authority.
+- Existing consumers can retain compatible package-manager-owned transitive and
+  peer resolutions without failing an unrelated documentation admission gate.
