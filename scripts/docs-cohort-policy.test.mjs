@@ -24,6 +24,7 @@ import {
 } from "./docs-cohort-policy.mjs";
 import { loadJson } from "./governance-policy.mjs";
 import {
+  defaultIsDefaultBranchAncestor,
   renderCallerWorkflowTemplate,
   resolvePublishedRuntimeClosure,
   verifyChangedDocsCohortEvidence,
@@ -636,6 +637,24 @@ test("resolves fork parent from individual repository metadata, not the org list
     id: 42, full_name: "agent-teams-ai/craig-meeting-gateway", fork: true,
   }], async () => ({ id: 42, full_name: "agent-teams-ai/craig-meeting-gateway", fork: true })),
   /fork metadata is incomplete/u);
+});
+
+test("accepts the exact protected default-branch head without an identical compare call", async () => {
+  const head = "a".repeat(40);
+  const calls = [];
+  const result = await defaultIsDefaultBranchAncestor(
+    "agent-teams-ai/engineering-foundation",
+    "main",
+    head,
+    async (program, args) => {
+      calls.push([program, args]);
+      assert.equal(program, "gh");
+      assert.match(args[1], /\/branches\/main$/u);
+      return { stdout: `${head}\n`, stderr: "" };
+    },
+  );
+  assert.equal(result, true);
+  assert.equal(calls.length, 1);
 });
 
 test("installs exact packages before npm cryptographic signature audit", async () => {
