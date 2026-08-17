@@ -226,7 +226,7 @@ export function validateDocsProtocolWorkflow(workflow, source) {
       with: { "node-version": "24.18.0", cache: "pnpm",
         "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
     { name: "Install only base-owned validator dependencies",
-      run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile --ignore-workspace" },
+      run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
     { name: "Authorize exact consumer snapshot without executing consumer code",
       run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize",
       env: { GITHUB_TOKEN: "${{ github.token }}", GITHUB_REPOSITORY: "${{ github.repository }}",

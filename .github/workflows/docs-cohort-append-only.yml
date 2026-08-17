@@ -201,7 +201,7 @@ jobs:
       - if: steps.materialize.outputs.mode == 'full'
         run: >-
           pnpm install --frozen-lockfile --ignore-scripts
-          --ignore-pnpmfile --ignore-workspace
+          --ignore-pnpmfile
       - name: Validate negative emergency append without network dependencies
         if: steps.materialize.outputs.mode == 'emergency'
         env:

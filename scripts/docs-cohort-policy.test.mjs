@@ -38,7 +38,8 @@ import {
 import { resolveForkParents } from "./observe-org-repository-inventory.mjs";
 
 const registrySchema = await loadJson("governance/docs-qualified-cohorts.schema.json");
-const emptyRegistry = await loadJson("governance/docs-qualified-cohorts.json");
+const authoritativeRegistry = await loadJson("governance/docs-qualified-cohorts.json");
+const emptyRegistry = { ...structuredClone(authoritativeRegistry), cohorts: [], events: [] };
 const exceptionsSchema = await loadJson("governance/docs-protocol-exceptions.schema.json");
 const exceptions = await loadJson("governance/docs-protocol-exceptions.json");
 const docsPolicy = await loadJson("governance/docs-protocol-policy.json");
@@ -254,6 +255,10 @@ function defaultBranchEvidence(repository, revision) {
 }
 
 test("accepts the empty bootstrap registry and one complete qualification chain", () => {
+  assert.doesNotThrow(() => validateDocsQualifiedCohorts(
+    structuredClone(authoritativeRegistry),
+    registrySchema,
+  ));
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(structuredClone(emptyRegistry), registrySchema));
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(
     registry(),
@@ -300,7 +305,8 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow, /\[filename, prior\][\s\S]*authorityPaths\.has/u);
   assert.match(appendOnlyWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(appendOnlyWorkflow, /authorityPaths\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
-  assert.match(appendOnlyWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile --ignore-workspace/u);
+  assert.match(appendOnlyWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile/u);
+  assert.doesNotMatch(appendOnlyWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile --ignore-workspace/u);
   assert.match(appendOnlyWorkflow, /"package\.json"/u);
   assert.match(appendOnlyWorkflow, /"pnpm-lock\.yaml"/u);
   assert.match(appendOnlyWorkflow, /"governance\/docs-qualified-cohorts\.schema\.json"/u);
@@ -318,7 +324,8 @@ test("keeps admission credentials out of PR-head execution", () => {
   assert.match(admissionWorkflow, /verify-docs-admission-change\.mjs/u);
   assert.match(admissionWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(admissionWorkflow, /hardAuthority\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
-  assert.match(admissionWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile --ignore-workspace/u);
+  assert.match(admissionWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile/u);
+  assert.doesNotMatch(admissionWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile --ignore-workspace/u);
   assert.doesNotMatch(admissionWorkflow, /pull_request\.head\.repo[\s\S]*actions\/checkout/u);
 });
 

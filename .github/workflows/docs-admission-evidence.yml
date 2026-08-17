@@ -136,7 +136,7 @@ jobs:
       - if: steps.materialize.outputs.mode == 'admission'
         run: >-
           pnpm install --frozen-lockfile --ignore-scripts
-          --ignore-pnpmfile --ignore-workspace
+          --ignore-pnpmfile
       - name: Verify materialized admission data with trusted base code
         if: steps.materialize.outputs.mode == 'admission'
         env:
