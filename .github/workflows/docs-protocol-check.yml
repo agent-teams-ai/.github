@@ -100,7 +100,7 @@ jobs:
       - name: Install only base-owned validator dependencies
         run: >-
           pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile
-          --ignore-scripts --ignore-pnpmfile --ignore-workspace
+          --ignore-scripts --ignore-pnpmfile
 
       - name: Authorize exact consumer snapshot without executing consumer code
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" authorize
