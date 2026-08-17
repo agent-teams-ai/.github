@@ -141,7 +141,7 @@ jobs:
       - name: Verify materialized admission data with trusted base code
         if: steps.materialize.outputs.mode == 'admission'
         env:
-          GH_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN }}
+          GH_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN || github.token }}
           DOCS_GOVERNANCE_READ_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN }}
           DOCS_ADMISSION_POLICY_PATH: ${{ steps.materialize.outputs.policy-path }}
           DOCS_ADMISSION_EXCEPTIONS_PATH: ${{ steps.materialize.outputs.exceptions-path }}

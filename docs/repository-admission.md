@@ -87,13 +87,13 @@ executes PR-head code. A separate base-owned `pull_request_target` admission
 check fetches only the exact allowlisted policy/exception JSON from the head SHA,
 then validates it with default-branch code and schemas. It rejects forks,
 renames, deletes, mixed executable/schema/dependency/Cohort changes, and missing
-credentials before any credentialed verification. That trusted check alone
-receives `DOCS_GOVERNANCE_READ_TOKEN`: a dedicated GitHub App
-installation token or fine-grained token covering every admitted consumer,
-including private Platform, with repository metadata, Contents read, Actions
-read, and Checks read permissions only. The repository-scoped `github.token` is
-not accepted as cross-repository admission evidence authority. Missing or
-inaccessible private-repository scope fails closed; no secret value is committed.
+credentials before any credentialed verification. Public consumers use the
+base-owned workflow's short-lived, read-only `github.token`; public GitHub API
+data does not require a durable organization credential. Private consumers
+require `DOCS_GOVERNANCE_READ_TOKEN`: a dedicated GitHub App installation token
+or fine-grained token with repository metadata, Contents read, Actions read,
+and Checks read permissions only. Missing or inaccessible private-repository
+scope fails closed; no secret value is committed.
 
 Only one organization-owned consumer may be `rollout_pending` at a time. A
 central suspension may temporarily coexist with fleet rows still observing that

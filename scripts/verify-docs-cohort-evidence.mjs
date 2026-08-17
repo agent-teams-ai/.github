@@ -410,9 +410,8 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     entry.repository_lifecycle === "active" && entry.docs_role === "consumer" &&
     ["bound", "rollout_pending"].includes(entry.cohort_binding_status));
   if (overrides.requireCredential === true && candidates.length > 0) {
-    assert(typeof process.env.DOCS_GOVERNANCE_READ_TOKEN === "string" &&
-      process.env.DOCS_GOVERNANCE_READ_TOKEN.length > 0,
-    "Live admission verification requires DOCS_GOVERNANCE_READ_TOKEN for public and private consumers.");
+    assert(typeof process.env.GH_TOKEN === "string" && process.env.GH_TOKEN.length > 0,
+      "Live admission verification requires a job-scoped GH_TOKEN.");
   }
   for (const entry of candidates) {
     const evidence = entry.observed_default_branch_evidence;
@@ -423,6 +422,16 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     assert(record !== undefined && qualification !== undefined,
       `${entry.repository} observed Cohort is not qualified.`);
     const repository = await adapters.getRepository(entry.repository);
+    if (overrides.requireCredential === true) {
+      assert(typeof repository.private === "boolean",
+        `${entry.repository} live visibility is missing from admission evidence.`);
+      if (repository.private) {
+        assert(typeof process.env.DOCS_GOVERNANCE_READ_TOKEN === "string" &&
+          process.env.DOCS_GOVERNANCE_READ_TOKEN.length > 0 &&
+          process.env.GH_TOKEN === process.env.DOCS_GOVERNANCE_READ_TOKEN,
+        `${entry.repository} private live admission requires DOCS_GOVERNANCE_READ_TOKEN.`);
+      }
+    }
     assert(repository.id === entry.repository_id && repository.full_name === entry.repository &&
       repository.default_branch === evidence.default_branch,
     `${entry.repository} live identity/default branch differs from admission evidence.`);
