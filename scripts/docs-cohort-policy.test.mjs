@@ -333,6 +333,8 @@ test("keeps admission credentials out of PR-head execution", () => {
   assert.match(admissionWorkflow, /pull\.head\.repo\.full_name !==/u);
   assert.match(admissionWorkflow, /Admission changes from forks are not eligible/u);
   assert.match(admissionWorkflow, /getContent[\s\S]*ref: pull\.head\.sha/u);
+  assert.match(admissionWorkflow,
+    /GH_TOKEN: \$\{\{ secrets\.DOCS_GOVERNANCE_READ_TOKEN \|\| github\.token \}\}/u);
   assert.match(admissionWorkflow, /DOCS_GOVERNANCE_READ_TOKEN: \$\{\{ secrets\.DOCS_GOVERNANCE_READ_TOKEN \}\}/u);
   assert.match(admissionWorkflow, /verify-docs-admission-change\.mjs/u);
   assert.match(admissionWorkflow, /\.pnpmfile\.cjs/u);
@@ -1371,6 +1373,7 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
       id: consumer.repository_id,
       full_name: consumer.repository,
       default_branch: evidence.default_branch,
+      private: false,
     }),
     getDefaultBranchHead: async () => evidence.revision,
     getCheckRuns: async () => [{
@@ -1400,15 +1403,43 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
   assert.deepEqual(await verifyDocsAdmissionEvidence(
     policy, candidateRegistry, registrySchema, adapters,
   ), [consumer.repository_id]);
+  const priorJobToken = process.env.GH_TOKEN;
   const priorCredential = process.env.DOCS_GOVERNANCE_READ_TOKEN;
+  delete process.env.GH_TOKEN;
   delete process.env.DOCS_GOVERNANCE_READ_TOKEN;
   try {
     await assert.rejects(verifyDocsAdmissionEvidence(
       policy, candidateRegistry, registrySchema, { ...adapters, requireCredential: true },
-    ), /requires DOCS_GOVERNANCE_READ_TOKEN/u);
+    ), /requires a job-scoped GH_TOKEN/u);
+    process.env.GH_TOKEN = "job-token";
+    assert.deepEqual(await verifyDocsAdmissionEvidence(
+      policy, candidateRegistry, registrySchema, { ...adapters, requireCredential: true },
+    ), [consumer.repository_id]);
+    const privateAdapters = {
+      ...adapters,
+      requireCredential: true,
+      getRepository: async () => ({
+        id: consumer.repository_id,
+        full_name: consumer.repository,
+        default_branch: evidence.default_branch,
+        private: true,
+      }),
+    };
+    await assert.rejects(verifyDocsAdmissionEvidence(
+      policy, candidateRegistry, registrySchema, privateAdapters,
+    ), /private live admission requires DOCS_GOVERNANCE_READ_TOKEN/u);
+    process.env.GH_TOKEN = "dedicated-token";
+    process.env.DOCS_GOVERNANCE_READ_TOKEN = "dedicated-token";
+    assert.deepEqual(await verifyDocsAdmissionEvidence(
+      policy, candidateRegistry, registrySchema, privateAdapters,
+    ), [consumer.repository_id]);
   } finally {
+    if (priorJobToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = priorJobToken;
     if (priorCredential !== undefined) {
       process.env.DOCS_GOVERNANCE_READ_TOKEN = priorCredential;
+    } else {
+      delete process.env.DOCS_GOVERNANCE_READ_TOKEN;
     }
   }
   await assert.rejects(verifyDocsAdmissionEvidence(
