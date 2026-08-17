@@ -550,15 +550,16 @@ test("rejects a forged physical lock integrity", () => {
   assert.throws(() => authorizeConsumerGate(changed), /integrity differs/iu);
 });
 
-test("rejects drift in a transitive executable dependency before package execution", () => {
+test("allows package-manager-owned transitive resolution without changing trusted Cohort install evidence", () => {
   const changed = fixture();
-  changed.files["pnpm-lock.yaml"] = lock().replace(
+  changed.files["pnpm-lock.yaml"] = lock()
+    .replaceAll("transitive-package@1.0.0", "transitive-package@1.0.1")
+    .replace("transitive-package: 1.0.0", "transitive-package: 1.0.1")
+    .replace(TRANSITIVE_INTEGRITY, `sha512-${"U".repeat(86)}==`);
+  const authorization = authorizeConsumerGate(changed);
+  assert.equal(
+    authorization.expectedRuntimeClosureLock.packages["transitive-package@1.0.0"].resolution.integrity,
     TRANSITIVE_INTEGRITY,
-    `sha512-${"U".repeat(86)}==`,
-  );
-  assert.throws(
-    () => authorizeConsumerGate(changed),
-    /Runtime dependency closure differs from the exact qualified Cohort authority/iu,
   );
 });
 
