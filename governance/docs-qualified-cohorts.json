@@ -368,6 +368,20 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:1ba6c67ca79fa89ff3ee0d37c37ec6845756ec3ee798601ae5fe79e16eb1a2c0",
       "event_digest": "sha256:f9c8b959ae0192d58406b07b76322f8831674978f0e83b25508948e8c6cbc21c"
+    },
+    {
+      "sequence": 9,
+      "cohort_id": "docs-2026-08-17-rc2",
+      "state": "WITHDRAWN",
+      "effective_at": "2026-08-17T12:56:26Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/pull/149",
+        "https://github.com/agent-teams-ai/engineering-foundation/commit/3017eca668093a4eb7a3c4e4d1a3e75c0743ee8c"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:f9c8b959ae0192d58406b07b76322f8831674978f0e83b25508948e8c6cbc21c",
+      "event_digest": "sha256:398f703a5a7582858db1c6554c0c8560a281c6c6ef506848b5dba91d6d45b63a"
     }
   ]
 }
