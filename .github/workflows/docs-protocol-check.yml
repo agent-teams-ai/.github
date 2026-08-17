@@ -156,6 +156,8 @@ jobs:
           --consumer "$CONSUMER_CHECKOUT" --json
 
       - name: Run trusted absolute documentation structural check
+        env:
+          NODE_PATH: ${{ env.TRUSTED_INSTALL_ROOT }}/node_modules
         run: >-
           node "${{ steps.trusted-install.outputs.cli }}" check
           --consumer "$CONSUMER_CHECKOUT"

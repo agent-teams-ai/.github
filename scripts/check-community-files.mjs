@@ -258,6 +258,7 @@ export function validateDocsProtocolWorkflow(workflow, source) {
     { name: "Run trusted absolute Consumer Integration CLI",
       run: "node \"${{ steps.trusted-install.outputs.cli }}\" consumer check --consumer \"$CONSUMER_CHECKOUT\" --json" },
     { name: "Run trusted absolute documentation structural check",
+      env: { NODE_PATH: "${{ env.TRUSTED_INSTALL_ROOT }}/node_modules" },
       run: "node \"${{ steps.trusted-install.outputs.cli }}\" check --consumer \"$CONSUMER_CHECKOUT\" --profile \"${{ steps.trusted-install.outputs.profile_path }}\" --json" },
     { name: "Confirm current controller authority stayed stable through checks",
       run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot",
