@@ -621,7 +621,14 @@ test("installs exact packages before npm cryptographic signature audit", async (
     await verifyInstalledPackageSignatures(cohort().packages, async (program, args, options) => {
       calls.push([program, args, options]);
       assert.equal(options.env.NPM_CONFIG_REGISTRY, undefined);
-      assert.equal(options.env.NPM_CONFIG_USERCONFIG, "/dev/null");
+      assert.match(options.env.NPM_CONFIG_USERCONFIG, /\/user\.npmrc$/u);
+      assert.match(options.env.NPM_CONFIG_GLOBALCONFIG, /\/global\.npmrc$/u);
+      assert.notEqual(
+        options.env.NPM_CONFIG_USERCONFIG,
+        options.env.NPM_CONFIG_GLOBALCONFIG,
+      );
+      assert.equal(await readFile(options.env.NPM_CONFIG_USERCONFIG, "utf8"), "");
+      assert.equal(await readFile(options.env.NPM_CONFIG_GLOBALCONFIG, "utf8"), "");
       assert.ok(args.includes("--registry=https://registry.npmjs.org/"));
       return { stdout: args[0] === "audit" ? JSON.stringify({
         invalid: [],
@@ -651,6 +658,8 @@ test("derives the qualified runtime closure with the fixed isolated pnpm resolve
   const observed = await resolvePublishedRuntimeClosure(cohort().packages,
     async (program, args, options) => {
       calls.push([program, args, options]);
+      assert.equal(await readFile(options.env.NPM_CONFIG_USERCONFIG, "utf8"), "");
+      assert.equal(await readFile(options.env.NPM_CONFIG_GLOBALCONFIG, "utf8"), "");
       const root = args[args.indexOf("--dir") + 1];
       await writeFile(join(root, "pnpm-lock.yaml"), YAML.stringify(runtimeLock()));
       return { stdout: "", stderr: "" };
@@ -662,7 +671,12 @@ test("derives the qualified runtime closure with the fixed isolated pnpm resolve
   assert.ok(calls[0][1].includes("--ignore-scripts"));
   assert.ok(calls[0][1].includes("--ignore-pnpmfile"));
   assert.ok(calls[0][1].includes("--ignore-workspace"));
-  assert.equal(calls[0][2].env.NPM_CONFIG_USERCONFIG, "/dev/null");
+  assert.match(calls[0][2].env.NPM_CONFIG_USERCONFIG, /\/user\.npmrc$/u);
+  assert.match(calls[0][2].env.NPM_CONFIG_GLOBALCONFIG, /\/global\.npmrc$/u);
+  assert.notEqual(
+    calls[0][2].env.NPM_CONFIG_USERCONFIG,
+    calls[0][2].env.NPM_CONFIG_GLOBALCONFIG,
+  );
 });
 
 function verifierAdapters(record, overrides = {}) {
