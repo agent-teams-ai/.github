@@ -1,7 +1,7 @@
 {
   "$schema": "./docs-protocol-policy.schema.json",
   "schema_version": 3,
-  "snapshot_revision": "2026-08-17.3",
+  "snapshot_revision": "2026-08-17.4",
   "observed_at": "2026-08-17",
   "organization": "agent-teams-ai",
   "inventory_snapshot_revision": "2026-08-17.1",
@@ -225,7 +225,7 @@
       "exact_package_version": null,
       "exact_foundation_version": null,
       "cohort_binding_status": "bootstrap_pending",
-      "desired_cohort_id": "docs-2026-08-17-rc5",
+      "desired_cohort_id": "docs-2026-08-17-rc6",
       "observed_cohort_id": null,
       "observed_cohort_record_digest": null,
       "observed_cohort_event_digest": null,
