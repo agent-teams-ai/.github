@@ -653,6 +653,9 @@ test("current integration cannot hide invalid daily documentation", async () => 
   assert.ok(integration >= 0 && documentation > integration);
   assert.match(job.steps[integration].run, /steps\.trusted-install\.outputs\.cli.*consumer check/su);
   assert.match(job.steps[documentation].run, /steps\.trusted-install\.outputs\.cli.* check.*profile_path/su);
+  assert.equal(job.steps[documentation].env.NODE_PATH,
+    "${{ env.TRUSTED_INSTALL_ROOT }}/node_modules");
+  assert.doesNotMatch(job.steps[documentation].env.NODE_PATH, /CONSUMER_CHECKOUT/u);
   assert.doesNotMatch(job.steps[documentation].run, /pnpm|docs:check/u);
 });
 
