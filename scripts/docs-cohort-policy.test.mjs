@@ -657,6 +657,46 @@ test("accepts the exact protected default-branch head without an identical compa
   assert.equal(calls.length, 1);
 });
 
+test("proves ancestry from commit history when GitHub compare returns 404", async () => {
+  const head = "a".repeat(40);
+  const revision = "b".repeat(40);
+  const calls = [];
+  const result = await defaultIsDefaultBranchAncestor(
+    "agent-teams-ai/.github",
+    "main",
+    revision,
+    async (program, args) => {
+      calls.push([program, args]);
+      assert.equal(program, "gh");
+      if (calls.length === 1) {return { stdout: `${head}\n`, stderr: "" };}
+      if (calls.length === 2) {
+        const error = new Error("GitHub compare failed");
+        error.stderr = "gh: Not Found (HTTP 404)\n";
+        throw error;
+      }
+      assert.match(args[1], /\/commits\?sha=a{40}&per_page=100&page=1$/u);
+      return { stdout: `${head}\n${revision}\n`, stderr: "" };
+    },
+  );
+  assert.equal(result, true);
+  assert.equal(calls.length, 3);
+});
+
+test("does not hide non-404 GitHub compare failures", async () => {
+  const head = "a".repeat(40);
+  const expected = new Error("GitHub compare unavailable");
+  expected.stderr = "gh: Service Unavailable (HTTP 503)\n";
+  await assert.rejects(defaultIsDefaultBranchAncestor(
+    "agent-teams-ai/.github",
+    "main",
+    "b".repeat(40),
+    async (_program, args) => {
+      if (args[1].includes("/branches/")) {return { stdout: `${head}\n`, stderr: "" };}
+      throw expected;
+    },
+  ), (error) => error === expected);
+});
+
 test("installs exact packages before npm cryptographic signature audit", async () => {
   const calls = [];
   const priorRegistry = process.env.NPM_CONFIG_REGISTRY;

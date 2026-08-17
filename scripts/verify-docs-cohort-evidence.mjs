@@ -221,10 +221,30 @@ export async function defaultIsDefaultBranchAncestor(
   ]);
   const head = branchOutput.trim();
   if (revision === head) {return true;}
-  const { stdout: comparisonOutput } = await run("gh", [
-    "api", `repos/${repository}/compare/${revision}...${head}`, "--jq", ".status",
-  ]);
-  return ["ahead", "identical"].includes(comparisonOutput.trim());
+  try {
+    const { stdout: comparisonOutput } = await run("gh", [
+      "api", `repos/${repository}/compare/${revision}...${head}`, "--jq", ".status",
+    ]);
+    return ["ahead", "identical"].includes(comparisonOutput.trim());
+  } catch (error) {
+    if (!/\bHTTP 404\b/u.test(error?.stderr ?? "")) {throw error;}
+  }
+
+  const commitsPerPage = 100;
+  const maxPages = 20;
+  for (let page = 1; page <= maxPages; page += 1) {
+    const { stdout: historyOutput } = await run("gh", [
+      "api",
+      `repos/${repository}/commits?sha=${head}&per_page=${commitsPerPage}&page=${page}`,
+      "--jq", ".[].sha",
+    ]);
+    const history = historyOutput.trim().split("\n").filter(Boolean);
+    if (history.includes(revision)) {return true;}
+    if (history.length < commitsPerPage) {return false;}
+  }
+  throw new Error(
+    `${repository} ancestry fallback exceeded ${maxPages * commitsPerPage} commits.`,
+  );
 }
 
 async function defaultReadPublishedPackage(packageEntry, paths) {
