@@ -335,6 +335,21 @@ export function canonicalManagedProjection(profile, cohort, repositoryIdentity) 
   });
 }
 
+export function trustedInstallWorkspaceConfig(expectedPackages) {
+  assert(Array.isArray(expectedPackages) && expectedPackages.length === MANAGED_PACKAGES.length,
+    "Trusted install must select exactly the managed Cohort packages.");
+  const exactVersions = new Map(expectedPackages.map(({ name, version }) => [name, version]));
+  assert(exactVersions.size === MANAGED_PACKAGES.length && MANAGED_PACKAGES.every((name) =>
+    EXACT_VERSION.test(exactVersions.get(name) ?? "")),
+  "Trusted install package exclusions must be exact managed package versions.");
+  return [
+    "packages: []",
+    "minimumReleaseAgeExclude:",
+    ...MANAGED_PACKAGES.map((name) => `  - '${name}@${exactVersions.get(name)}'`),
+    "",
+  ].join("\n");
+}
+
 function assertProjection(projection, profile, expected, repository) {
   const repositoryIdentity = {
     provider: "github",
@@ -852,6 +867,8 @@ async function prepareInstallCommand() {
       "strict-peer-dependencies=true",
       "",
     ].join("\n"), { mode: 0o600 }),
+    writeFile(join(directory, "pnpm-workspace.yaml"),
+      trustedInstallWorkspaceConfig(authorization.expectedPackages), { mode: 0o600 }),
     writeFile(join(directory, "pnpm-lock.yaml"),
       `${canonicalJson(authorization.expectedRuntimeClosureLock)}\n`, { mode: 0o600 }),
   ]);

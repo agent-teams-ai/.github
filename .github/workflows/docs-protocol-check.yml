@@ -139,7 +139,7 @@ jobs:
       - name: Install isolated exact packages without lifecycle scripts
         run: >-
           pnpm install --dir "$TRUSTED_INSTALL_ROOT" --frozen-lockfile
-          --ignore-scripts --ignore-pnpmfile --ignore-workspace
+          --ignore-scripts --ignore-pnpmfile
 
       - name: Verify isolated package identities
         id: trusted-install

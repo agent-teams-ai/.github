@@ -21,6 +21,7 @@ import {
   parseJsonStrict,
   parseYamlStrict,
   shouldRunDocsGate,
+  trustedInstallWorkspaceConfig,
 } from "./verify-docs-consumer-gate.mjs";
 
 const SHA = "1".repeat(40);
@@ -363,6 +364,30 @@ test("authorizes an inputless exact caller from central desired/observed authori
   assert.equal(result.repositoryId, REPOSITORY_ID);
   assert.equal(result.cohortId, COHORT_ID);
   assert.equal(result.expectedPackages.length, 2);
+});
+
+test("isolated install bypasses release age only for the exact authorized package pair", () => {
+  const source = trustedInstallWorkspaceConfig([
+    { name: "@agent-teams/docs-protocol", version: "0.2.0-rc.0" },
+    { name: "@agent-teams/engineering-foundation", version: "0.18.0-rc.0" },
+  ]);
+  const config = parseYamlStrict(source, "trusted pnpm workspace", 4096);
+  assert.deepEqual(config, {
+    packages: [],
+    minimumReleaseAgeExclude: [
+      "@agent-teams/engineering-foundation@0.18.0-rc.0",
+      "@agent-teams/docs-protocol@0.2.0-rc.0",
+    ],
+  });
+  assert.doesNotMatch(source, /@agent-teams\/\*/u);
+  assert.doesNotMatch(source, /minimumReleaseAge:\s*0|trustLockfile/iu);
+  assert.throws(
+    () => trustedInstallWorkspaceConfig([
+      { name: "@agent-teams/docs-protocol", version: "0.2.0-rc.0" },
+      { name: "@agent-teams/other", version: "1.0.0" },
+    ]),
+    /exact managed package versions/iu,
+  );
 });
 
 test("rejects every mutated field of the exact central Cohort profile projection", async (t) => {

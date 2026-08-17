@@ -249,7 +249,7 @@ export function validateDocsProtocolWorkflow(workflow, source) {
     { name: "Verify isolated lock before package installation",
       run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install-lock" },
     { name: "Install isolated exact packages without lifecycle scripts",
-      run: "pnpm install --dir \"$TRUSTED_INSTALL_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile --ignore-workspace" },
+      run: "pnpm install --dir \"$TRUSTED_INSTALL_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
     { name: "Verify isolated package identities", id: "trusted-install",
       run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install" },
     { name: "Confirm current controller authority stayed stable before checks",
