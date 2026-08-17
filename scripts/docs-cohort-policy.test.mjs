@@ -72,10 +72,12 @@ const renderedCallerDigest = () => `sha256:${createHash("sha256").update(
   "uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@" + "2".repeat(40) + "\n",
 ).digest("hex")}`;
 
-function policyWithoutLiveBootstrapCandidates() {
+function policyWithoutLiveCohortBindings() {
   const policy = structuredClone(docsPolicy);
   for (const repository of policy.repositories) {
-    if (repository.cohort_binding_status === "bootstrap_pending") {
+    if (["bootstrap_pending", "rollout_pending", "bound"].includes(
+      repository.cohort_binding_status,
+    )) {
       repository.repository_lifecycle = "archived";
     }
   }
@@ -1336,7 +1338,7 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
   const candidateRegistry = registry();
   const record = candidateRegistry.cohorts[0];
   const qualification = candidateRegistry.events.find(({ state }) => state === "QUALIFIED");
-  const policy = policyWithoutLiveBootstrapCandidates();
+  const policy = policyWithoutLiveCohortBindings();
   const consumer = policy.repositories.find(
     ({ repository }) => repository === "agent-teams-ai/agent-runtime",
   );
@@ -1516,7 +1518,7 @@ test("records a suspended observed binding while consumer gates fail closed", ()
   };
   terminal.event_digest = cohortEventDigest(terminal);
   suspended.events.push(terminal);
-  const policy = policyWithoutLiveBootstrapCandidates();
+  const policy = policyWithoutLiveCohortBindings();
   const consumer = policy.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-runtime");
   const record = suspended.cohorts[0];
   consumer.cohort_binding_status = "bound";
@@ -1596,7 +1598,7 @@ test("keeps immutable historical canary identity independent from current active
   assert.doesNotThrow(() => validateDocsGovernanceReferences(
     candidate,
     exceptions,
-    policyWithoutLiveBootstrapCandidates(),
+    policyWithoutLiveCohortBindings(),
     securityPolicy,
     { asOf: "2026-08-18T00:00:00Z" },
   ));
@@ -1604,7 +1606,7 @@ test("keeps immutable historical canary identity independent from current active
 
 test("breaks the bootstrap cycle with a desired-only admission candidate", () => {
   const candidateRegistry = registry();
-  const policy = policyWithoutLiveBootstrapCandidates();
+  const policy = policyWithoutLiveCohortBindings();
   const consumer = policy.repositories.find(
     ({ repository }) => repository === "agent-teams-ai/agent-runtime",
   );
@@ -1672,7 +1674,7 @@ test("permits desired/observed staging only across an explicit migration edge", 
   appendEvent(successor.cohort_id, "VERIFIED", "2026-08-18T05:00:00Z");
   appendEvent(successor.cohort_id, "COOLDOWN", "2026-08-18T06:00:00Z");
   appendEvent(successor.cohort_id, "QUALIFIED", "2026-08-19T04:00:00Z");
-  const policy = policyWithoutLiveBootstrapCandidates();
+  const policy = policyWithoutLiveCohortBindings();
   const consumer = policy.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-runtime");
   const observed = staged.cohorts[0];
   consumer.cohort_binding_status = "rollout_pending";
