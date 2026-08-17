@@ -30,10 +30,17 @@ const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime"
   record.admission_status = "admitted";
   record.exact_package_version = "0.1.0-rc.1";
   record.exact_foundation_version = "0.16.1";
+  record.cohort_binding_status = "legacy_pre_cohort";
+  record.desired_cohort_id = null;
+  record.observed_cohort_id = null;
+  record.observed_cohort_record_digest = null;
+  record.observed_cohort_event_digest = null;
   record.profile_path = "docs/document-authoring.yaml";
   record.caller_workflow_path = ".github/workflows/docs-protocol.yml";
   record.reusable_workflow_revision = "b".repeat(40);
   record.qualification_evidence_path = "docs/docs-protocol-qualification.json";
+  record.required_check_context = null;
+  record.observed_default_branch_evidence = null;
   record.qualification = {
     status: "qualified",
     observed_revision: revision,
@@ -204,11 +211,7 @@ test("rejects an omitted new owned repository even when policy self-counts are c
 
 test("does not impose one global package version across independently observed repositories", () => {
   const changed = clone(docsProtocol);
-  const runtime = changed.repositories.find(
-    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
-  );
-  runtime.admission_status = "admitted";
-  runtime.qualification.status = "qualified";
+  const runtime = qualifyDocsConsumer(changed);
   runtime.exact_package_version = "1.0.0";
   assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
 });

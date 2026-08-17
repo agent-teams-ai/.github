@@ -81,6 +81,33 @@ function policyWithoutLiveCohortBindings() {
       repository.repository_lifecycle = "archived";
     }
   }
+  const consumer = policy.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  Object.assign(consumer, {
+    repository_lifecycle: "active",
+    admission_status: "admitted",
+    exact_package_version: "0.1.0-rc.1",
+    exact_foundation_version: "0.16.1",
+    cohort_binding_status: "legacy_pre_cohort",
+    desired_cohort_id: null,
+    observed_cohort_id: null,
+    observed_cohort_record_digest: null,
+    observed_cohort_event_digest: null,
+    reusable_workflow_revision: "a".repeat(40),
+    required_check_context: null,
+    observed_default_branch_evidence: null,
+    qualification: {
+      status: "qualified",
+      observed_revision: "b".repeat(40),
+      evidence_paths: [
+        "package.json",
+        consumer.profile_path,
+        consumer.caller_workflow_path,
+        consumer.qualification_evidence_path,
+      ],
+    },
+  });
   return policy;
 }
 
