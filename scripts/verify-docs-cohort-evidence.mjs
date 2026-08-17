@@ -210,6 +210,23 @@ export async function resolvePublishedRuntimeClosure(packages, run = command) {
   }
 }
 
+export async function defaultIsDefaultBranchAncestor(
+  repository,
+  defaultBranch,
+  revision,
+  run = command,
+) {
+  const { stdout: branchOutput } = await run("gh", [
+    "api", `repos/${repository}/branches/${defaultBranch}`, "--jq", ".commit.sha",
+  ]);
+  const head = branchOutput.trim();
+  if (revision === head) {return true;}
+  const { stdout: comparisonOutput } = await run("gh", [
+    "api", `repos/${repository}/compare/${revision}...${head}`, "--jq", ".status",
+  ]);
+  return ["ahead", "identical"].includes(comparisonOutput.trim());
+}
+
 async function defaultReadPublishedPackage(packageEntry, paths) {
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-package-"));
   try {
@@ -480,16 +497,7 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
       ]);
       return JSON.parse(stdout);
     },
-    isDefaultBranchAncestor: async (repository, defaultBranch, revision) => {
-      const { stdout: branchOutput } = await command("gh", [
-        "api", `repos/${repository}/branches/${defaultBranch}`, "--jq", ".commit.sha",
-      ]);
-      const head = branchOutput.trim();
-      const { stdout: comparisonOutput } = await command("gh", [
-        "api", `repos/${repository}/compare/${revision}...${head}`, "--jq", ".status",
-      ]);
-      return ["ahead", "identical"].includes(comparisonOutput.trim());
-    },
+    isDefaultBranchAncestor: defaultIsDefaultBranchAncestor,
     getCheckRuns: async (repository, revision) => {
       const { stdout } = await command("gh", [
         "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100`,
