@@ -367,7 +367,7 @@ function assertCallerWorkflow(workflow, source, expected) {
     "Caller workflow bytes differ from the Cohort-qualified rendered asset.");
   assert(exactKeys(workflow, ["name", "on", "permissions", "jobs"]) &&
     workflow.name === "Documentation Protocol" &&
-    canonicalJson(workflow.permissions) === canonicalJson({ contents: "read" }) &&
+    canonicalJson(workflow.permissions) === canonicalJson({ contents: "read", "id-token": "write" }) &&
     exactKeys(workflow.jobs, ["docs-protocol"]),
   "Caller workflow root is not the canonical inputless shape.");
   assert(exactKeys(workflow.on, ["merge_group", "pull_request", "push"]) &&
