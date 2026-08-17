@@ -19,7 +19,7 @@ later CI observations.
 2. A Cohort binds exact package versions, real npm publication timestamps and
    SRI, cryptographically checked npm provenance, the reusable
    workflow commit and blob, schema versions, asset hashes, runtime bounds,
-   release age, migration edges, and evidence references.
+   compatibility timing metadata, migration edges, and evidence references.
 3. Lifecycle is an append-only hash-chained event stream. A trusted
    `pull_request_target` check reads base and head through the GitHub API without
    executing pull-request code, validates the untrusted head with base-owned
@@ -45,9 +45,13 @@ later CI observations.
 8. A manual read-only observer paginates and replays the entire GitHub inventory
    to reject truncation and mid-read drift. Continuous fleet observation remains
    out of scope until a dedicated read-only GitHub App exists.
-9. The 24-hour boundary is anchored to the latest real npm package publication,
-   not an authored lifecycle event. Static validation never substitutes for the
-   explicit live npm/provenance/workflow evidence verifier.
+9. Qualification is evidence-gated, not calendar-gated. During MVP development,
+   passive waiting or ceremony without a measurable risk signal must not block
+   delivery. `eligible_after` and `minimum_release_age_hours` remain legacy V1
+   compatibility metadata only; they do not authorize or delay promotion.
+   Strong architecture and deterministic validation remain mandatory. Prefer
+   explicit live npm/provenance/workflow verification, isolated canaries,
+   suspension, and rollback because each produces or acts on observable evidence.
 10. The live verifier also reads the published Docs tarball, proves its exact
     Foundation dependency and asset bytes. Caller workflow authority records
     both the raw published template digest and the digest rendered from the
@@ -97,6 +101,7 @@ later CI observations.
 ## Consequences
 
 - A partial package pair cannot be called current.
+- Elapsed wall-clock time alone cannot qualify or block a Cohort.
 - Release, rollout, suspension, rollback, and fleet evidence remain distinct.
 - Historical Cohort facts stay reviewable without granting cross-repository
   write authority.

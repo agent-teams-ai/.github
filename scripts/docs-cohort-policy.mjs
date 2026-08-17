@@ -13,7 +13,7 @@ const REGISTRY_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za
 const SHA512_SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const NEXT_STATES = new Map([
   ["PUBLISHED_UNQUALIFIED", new Set(["VERIFIED", "WITHDRAWN"])],
-  ["VERIFIED", new Set(["COOLDOWN", "WITHDRAWN"])],
+  ["VERIFIED", new Set(["COOLDOWN", "QUALIFIED", "WITHDRAWN"])],
   ["COOLDOWN", new Set(["QUALIFIED", "WITHDRAWN"])],
   ["QUALIFIED", new Set(["CANARY", "SUSPENDED", "WITHDRAWN"])],
   ["CANARY", new Set(["RECOMMENDED", "SUSPENDED", "WITHDRAWN"])],
@@ -261,8 +261,8 @@ function validateCohortRecord(record) {
   assert(record.reusable_workflow.repository_id === 1316243981,
     `${record.cohort_id} reusable workflow repository ID is not the immutable controller.`);
   const latestPublication = Math.max(...publishedTimes);
-  const eligible = timestampMilliseconds(record.eligible_after, `${record.cohort_id} eligible_after`);
-  return { eligible, latestPublication };
+  timestampMilliseconds(record.eligible_after, `${record.cohort_id} eligible_after`);
+  return { latestPublication };
 }
 
 export function validateDocsConsumerLock(manifest, lock, expectedPackages) {
@@ -356,25 +356,11 @@ function validateEventChain(registry, cohortById, asOf) {
       const publication = validateCohortRecord(record);
       assert(eventTime === publication.latestPublication,
         `${event.cohort_id} first event must equal the latest real package publication time.`);
-      const minimumEligibleTime = publication.latestPublication +
-        registry.policy.minimum_release_age_hours * 60 * 60 * 1000;
-      assert(
-        timestampMilliseconds(
-          cohortById.get(event.cohort_id).eligible_after,
-          `${event.cohort_id} eligible_after`
-        ) >= minimumEligibleTime,
-        `${event.cohort_id} eligible_after violates minimum release age.`
-      );
     } else {
       assert(!TERMINAL_STATES.has(prior), `${event.cohort_id} has an event after terminal state ${prior}.`);
       assert(NEXT_STATES.get(prior)?.has(event.state), `${event.cohort_id} transition ${prior} -> ${event.state} is invalid.`);
     }
     if (event.state === "QUALIFIED") {
-      assert(eventTime >= timestampMilliseconds(
-        cohortById.get(event.cohort_id).eligible_after,
-        `${event.cohort_id} eligible_after`,
-      ),
-        `${event.cohort_id} qualified before its eligible_after boundary.`);
       qualifiedEventById.set(event.cohort_id, event);
     }
     if (event.state === "CANARY") {
