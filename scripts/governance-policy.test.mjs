@@ -28,7 +28,8 @@ const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime"
   const record = policy.repositories.find((candidate) => candidate.repository === repository);
   const revision = "a".repeat(40);
   record.admission_status = "admitted";
-  record.exact_package_version = policy.protocol.qualified_package_version;
+  record.exact_package_version = "0.1.0-rc.1";
+  record.exact_foundation_version = "0.16.1";
   record.profile_path = "docs/document-authoring.yaml";
   record.caller_workflow_path = ".github/workflows/docs-protocol.yml";
   record.reusable_workflow_revision = "b".repeat(40);
@@ -71,6 +72,120 @@ test("accepts the authoritative documentation protocol admission policy", () => 
   assert.doesNotThrow(() => validateDocsProtocolPolicy(clone(docsProtocol), docsProtocolSchema));
 });
 
+test("accepts a bootstrap candidate but rejects a premature qualified admission", () => {
+  const changed = clone(docsProtocol);
+  const runtime = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  Object.assign(runtime, {
+    admission_status: "admission_candidate",
+    exact_package_version: null,
+    exact_foundation_version: null,
+    cohort_binding_status: "bootstrap_pending",
+    desired_cohort_id: "docs-2026-08-18-rc1",
+    observed_cohort_id: null,
+    observed_cohort_record_digest: null,
+    observed_cohort_event_digest: null,
+    reusable_workflow_revision: null,
+    required_check_context: "docs-protocol / docs-protocol-check",
+    observed_default_branch_evidence: null,
+    qualification: { status: "not_qualified", observed_revision: null, evidence_paths: [] },
+  });
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+
+  Object.assign(runtime, {
+    admission_status: "admitted",
+    cohort_binding_status: "bound",
+    exact_package_version: "0.2.0-rc.0",
+    exact_foundation_version: "0.18.0-rc.0",
+    observed_cohort_id: runtime.desired_cohort_id,
+    observed_cohort_record_digest: `sha256:${"1".repeat(64)}`,
+    observed_cohort_event_digest: `sha256:${"2".repeat(64)}`,
+    reusable_workflow_revision: "3".repeat(40),
+    qualification: {
+      status: "qualified",
+      observed_revision: "4".repeat(40),
+      evidence_paths: [
+        "package.json", runtime.profile_path, runtime.caller_workflow_path,
+        runtime.qualification_evidence_path,
+      ],
+    },
+  });
+  assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /qualified admission requires/u);
+});
+
+test("allows only one organization-owned consumer rollout at a time", () => {
+  const changed = clone(docsProtocol);
+  const consumers = changed.repositories.filter(
+    ({ docs_role: role }) => role === "consumer",
+  ).slice(0, 2);
+  for (const consumer of consumers) {
+    consumer.cohort_binding_status = "rollout_pending";
+  }
+  assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /At most one organization-owned consumer/u);
+});
+
+test("accepts a new owned repository only as pending_classification", () => {
+  const changed = clone(docsProtocol);
+  const pending = clone(changed.repositories.find(
+    ({ docs_role: role }) => role === "governance_controller",
+  ));
+  Object.assign(pending, {
+    repository: "agent-teams-ai/new-product",
+    repository_id: 2000000001,
+    docs_role: "pending_classification",
+    admission_status: "pending_classification",
+  });
+  changed.repositories.push(pending);
+  changed.admission.expected_repository_count += 1;
+  changed.admission.owned_repository_count += 1;
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+  pending.admission_status = "not_applicable";
+  assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /non-consumer must not imply/u);
+});
+
+test("separates fork provenance from governance ownership and explicit N-A", () => {
+  const changed = clone(docsProtocol);
+  const forkProduct = clone(changed.repositories.find(
+    ({ docs_role: role }) => role === "governance_controller",
+  ));
+  Object.assign(forkProduct, {
+    repository: "agent-teams-ai/owned-fork-product",
+    repository_id: 2000000002,
+    source_provenance: { kind: "fork", parent_repository: "upstream/project" },
+    governance_ownership: "organization_owned",
+    docs_role: "not_applicable",
+    admission_status: "not_applicable",
+  });
+  changed.repositories.push(forkProduct);
+  changed.admission.expected_repository_count += 1;
+  changed.admission.owned_repository_count += 1;
+  changed.admission.fork_source_count += 1;
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+});
+
+test("preserves deleted repository tombstones across same-name recreation", () => {
+  const changed = clone(docsProtocol);
+  const historical = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  historical.repository_lifecycle = "deleted";
+  const recreated = clone(changed.repositories.find(
+    ({ docs_role: role }) => role === "governance_controller",
+  ));
+  Object.assign(recreated, {
+    repository: historical.repository,
+    repository_id: 2000000003,
+    docs_role: "pending_classification",
+    admission_status: "pending_classification",
+  });
+  changed.repositories.push(recreated);
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+});
+
 test("rejects an omitted new owned repository even when policy self-counts are changed", () => {
   const changed = clone(docsProtocol);
   const index = changed.repositories.findIndex(
@@ -87,7 +202,7 @@ test("rejects an omitted new owned repository even when policy self-counts are c
   );
 });
 
-test("rejects fake documentation protocol qualification without complete evidence", () => {
+test("does not impose one global package version across independently observed repositories", () => {
   const changed = clone(docsProtocol);
   const runtime = changed.repositories.find(
     ({ repository }) => repository === "agent-teams-ai/agent-runtime",
@@ -95,10 +210,7 @@ test("rejects fake documentation protocol qualification without complete evidenc
   runtime.admission_status = "admitted";
   runtime.qualification.status = "qualified";
   runtime.exact_package_version = "1.0.0";
-  assert.throws(
-    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
-    /qualified admission requires bound package/u,
-  );
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
 });
 
 test("accepts a fully bound documentation protocol consumer qualification", () => {
@@ -107,14 +219,11 @@ test("accepts a fully bound documentation protocol consumer qualification", () =
   assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
 });
 
-test("rejects a consumer qualification with a fake package version", () => {
+test("keeps package version authority per repository until Cohort cross-validation", () => {
   const changed = clone(docsProtocol);
   const runtime = qualifyDocsConsumer(changed);
   runtime.exact_package_version = "9.9.9";
-  assert.throws(
-    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
-    /qualified admission requires bound package/u,
-  );
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
 });
 
 test("rejects zero consumer and reusable-workflow revisions independently", () => {
@@ -224,7 +333,9 @@ test("rejects documentation protocol exemption on an owned repository", () => {
     ({ repository }) => repository === "agent-teams-ai/agent-runtime",
   );
   runtime.exemption = clone(
-    changed.repositories.find(({ ownership }) => ownership === "external_fork").exemption,
+    changed.repositories.find(
+      ({ governance_ownership: ownership }) => ownership === "external",
+    ).exemption,
   );
   assert.throws(
     () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
@@ -235,7 +346,7 @@ test("rejects documentation protocol exemption on an owned repository", () => {
 test("rejects Foundation as both protocol producer and consumer", () => {
   const changed = clone(docsProtocol);
   const foundation = changed.repositories.find(
-    ({ role }) => role === "protocol_producer",
+    ({ docs_role: role }) => role === "protocol_producer",
   );
   foundation.protocol_required = true;
   foundation.fixed_gate_command = changed.protocol.fixed_gate_command;
@@ -247,10 +358,10 @@ test("rejects Foundation as both protocol producer and consumer", () => {
 
 test("rejects a governance controller other than the organization-owned .github repository", () => {
   const changed = clone(docsProtocol);
-  const controller = changed.repositories.find(({ role }) => role === "governance_controller");
+  const controller = changed.repositories.find(({ docs_role: role }) => role === "governance_controller");
   const runtime = changed.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-runtime");
-  controller.role = "consumer";
-  runtime.role = "governance_controller";
+  controller.docs_role = "consumer";
+  runtime.docs_role = "governance_controller";
   assert.throws(
     () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
     /governance controller must be exactly/u,
@@ -259,11 +370,11 @@ test("rejects a governance controller other than the organization-owned .github 
 
 test("rejects an external fork without the exempt role or exemption", () => {
   for (const mutation of [
-    (craig) => { craig.role = "consumer"; },
+    (craig) => { craig.docs_role = "consumer"; },
     (craig) => { craig.exemption = null; },
   ]) {
     const changed = clone(docsProtocol);
-    const craig = changed.repositories.find(({ ownership }) => ownership === "external_fork");
+    const craig = changed.repositories.find(({ governance_ownership: ownership }) => ownership === "external");
     mutation(craig);
     assert.throws(
       () => validateDocsProtocolPolicy(changed, docsProtocolSchema),

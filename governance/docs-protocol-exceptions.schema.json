@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agent-teams-ai/.github/governance/docs-protocol-exceptions.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "organization", "exceptions"],
+  "properties": {
+    "$schema": { "const": "./docs-protocol-exceptions.schema.json" },
+    "schema_version": { "const": 1 },
+    "organization": { "const": "agent-teams-ai" },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "repository_id", "owner", "reason", "scope", "authority_source", "authority_exception_id", "tracking_reference", "status", "last_reviewed_at", "review_after", "expires_at", "review_triggers"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+          "repository_id": { "type": "integer", "minimum": 1 },
+          "owner": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "scope": { "enum": ["required_docs_check", "cohort_upgrade", "consumer_admission"] },
+          "authority_source": { "const": "governance/code-security-defaults.json" },
+          "authority_exception_id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+          "tracking_reference": { "type": "string", "minLength": 1, "maxLength": 1024 },
+          "status": { "const": "active" },
+          "last_reviewed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "review_after": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "expires_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "review_triggers": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }, "uniqueItems": true }
+        }
+      }
+    }
+  }
+}

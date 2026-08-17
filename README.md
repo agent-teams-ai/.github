@@ -16,6 +16,15 @@ the owning repository.
 - `governance/` - machine-readable qualification and security-policy records.
 - `governance/docs-protocol-policy.json` - strict documentation-protocol
   inventory, admission status, evidence, and exceptions.
+- `governance/docs-qualified-cohorts.json` - immutable package, workflow,
+  schema, and asset Cohorts with append-only lifecycle evidence.
+- `governance/docs-protocol-exceptions.json` - owned, scoped, reviewed, and
+  expiring temporary exceptions.
+- `pnpm governance:cohorts:verify -- --cohort <id>` - live npm, provenance, and
+  reusable-workflow evidence verification before lifecycle promotion.
+- `pnpm governance:inventory:observe` - read-only, paginated, two-pass org
+  inventory observation without policy mutation.
+- `docs/decisions/` - accepted organization governance decisions.
 - `docs/organization-security-baseline.md` - live-default snapshot, transfer
   handling, and plan-tier exceptions.
 - `docs/repository-admission.md` - reviewed onboarding for new owned
@@ -28,7 +37,7 @@ the owning repository.
 - `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter review and
   interaction workflows.
 - `.github/workflows/docs-protocol-check.yml` - fixed reusable documentation
-  protocol gate with no inputs or secrets.
+  protocol gate with required exact Cohort assertions and no secrets.
 
 Repositories consume the Renovate policy explicitly:
 

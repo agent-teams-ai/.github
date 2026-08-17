@@ -1,0 +1,14 @@
+{
+  "$schema": "./docs-qualified-cohorts.schema.json",
+  "schema_version": 1,
+  "organization": "agent-teams-ai",
+  "policy": {
+    "minimum_release_age_hours": 24,
+    "inventory_page_size": 100,
+    "inventory_max_pages": 100,
+    "inventory_termination": "first_empty_page",
+    "authority": "recommended_cohort_only"
+  },
+  "cohorts": [],
+  "events": []
+}

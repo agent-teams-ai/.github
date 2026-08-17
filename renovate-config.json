@@ -27,18 +27,6 @@
   },
   "packageRules": [
     {
-      "description": "Foundation upgrades require an explicit reviewed migration.",
-      "matchPackageNames": [
-        "@agent-teams/engineering-foundation"
-      ],
-      "rangeStrategy": "pin",
-      "automerge": false,
-      "labels": [
-        "dependencies",
-        "engineering-foundation"
-      ]
-    },
-    {
       "description": "Keep Node.js type declarations on the Node 24 line.",
       "matchPackageNames": [
         "@types/node"
@@ -57,6 +45,19 @@
       ],
       "groupName": "Oxc toolchain",
       "automerge": false
+    },
+    {
+      "description": "Docs Cohort packages are updated only by qualified Cohort proposals.",
+      "matchPackageNames": [
+        "@agent-teams/engineering-foundation",
+        "@agent-teams/docs-protocol"
+      ],
+      "enabled": false,
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "docs-cohort"
+      ]
     }
   ]
 }
