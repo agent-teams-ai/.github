@@ -538,15 +538,15 @@ test("requires exact canary evidence and never falls back after suspension", () 
   ), undefined);
 });
 
-test("enforces release age and rejects future-dated lifecycle evidence", () => {
+test("treats eligible_after as informational and rejects future-dated lifecycle evidence", () => {
   const tooYoung = registry();
   tooYoung.cohorts[0].eligible_after = "2026-08-16T12:00:00Z";
   tooYoung.cohorts[0].record_digest = cohortRecordDigest(tooYoung.cohorts[0]);
-  assert.throws(() => validateDocsQualifiedCohorts(
+  assert.doesNotThrow(() => validateDocsQualifiedCohorts(
     tooYoung,
     registrySchema,
     { asOf: "2026-08-18T00:00:00Z" },
-  ), /minimum release age/u);
+  ));
   assert.throws(() => validateDocsQualifiedCohorts(
     registry(),
     registrySchema,
@@ -775,26 +775,32 @@ function verifierAdapters(record, overrides = {}) {
   };
 }
 
-test("accepts the exact 24-hour release boundary and rejects one second early", () => {
-  const exact = registry();
-  exact.cohorts[0].eligible_after = "2026-08-17T00:00:00Z";
-  exact.cohorts[0].record_digest = cohortRecordDigest(exact.cohorts[0]);
-  exact.events[3].effective_at = "2026-08-17T00:00:00Z";
+test("allows qualification before the informational eligible_after timestamp", () => {
+  const candidate = registry();
+  candidate.events[3].effective_at = "2026-08-16T02:00:01Z";
   let previous = null;
-  for (const event of exact.events) {
+  for (const event of candidate.events) {
     event.previous_event_digest = previous;
     event.event_digest = cohortEventDigest(event);
     previous = event.event_digest;
   }
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(
-    exact, registrySchema, { asOf: "2026-08-17T00:00:00Z" },
+    candidate, registrySchema, { asOf: "2026-08-16T02:00:01Z" },
   ));
-  const early = structuredClone(exact);
-  early.events[3].effective_at = "2026-08-16T23:59:59Z";
-  early.events[3].event_digest = cohortEventDigest(early.events[3]);
-  assert.throws(() => validateDocsQualifiedCohorts(
-    early, registrySchema, { asOf: "2026-08-17T00:00:00Z" },
-  ), /qualified before/u);
+});
+
+test("allows verified evidence to qualify without a calendar cooldown event", () => {
+  const candidate = registry(["PUBLISHED_UNQUALIFIED", "VERIFIED", "QUALIFIED"]);
+  candidate.events[2].effective_at = "2026-08-16T01:00:01Z";
+  let previous = null;
+  for (const event of candidate.events) {
+    event.previous_event_digest = previous;
+    event.event_digest = cohortEventDigest(event);
+    previous = event.event_digest;
+  }
+  assert.doesNotThrow(() => validateDocsQualifiedCohorts(
+    candidate, registrySchema, { asOf: "2026-08-16T01:00:01Z" },
+  ));
 });
 
 test("orders mixed-precision lifecycle timestamps by instant, not text", () => {
