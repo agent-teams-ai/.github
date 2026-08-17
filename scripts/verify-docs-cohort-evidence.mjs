@@ -29,24 +29,37 @@ async function command(program, args, options = {}) {
   });
 }
 
-function isolatedNpmOptions(options = {}) {
+async function withIsolatedNpmOptions(options, execute) {
   const env = Object.fromEntries(Object.entries(process.env).filter(
     ([name]) => !name.toLowerCase().startsWith("npm_config_"),
   ));
-  return {
-    ...options,
-    env: {
-      ...env,
-      NPM_CONFIG_USERCONFIG: "/dev/null",
-      NPM_CONFIG_GLOBALCONFIG: "/dev/null",
-    },
-  };
+  const configRoot = await mkdtemp(join(tmpdir(), "docs-cohort-npm-config-"));
+  try {
+    const userConfig = join(configRoot, "user.npmrc");
+    const globalConfig = join(configRoot, "global.npmrc");
+    await Promise.all([
+      writeFile(userConfig, "", { flag: "wx" }),
+      writeFile(globalConfig, "", { flag: "wx" }),
+    ]);
+    return await execute({
+      ...options,
+      env: {
+        ...env,
+        NPM_CONFIG_USERCONFIG: userConfig,
+        NPM_CONFIG_GLOBALCONFIG: globalConfig,
+      },
+    });
+  } finally {
+    await rm(configRoot, { force: true, recursive: true });
+  }
 }
 
 async function npmJson(args) {
-  const { stdout } = await command("npm", [
-    ...args, "--registry=https://registry.npmjs.org/", "--json",
-  ], isolatedNpmOptions());
+  const { stdout } = await withIsolatedNpmOptions({}, (options) => command(
+    "npm",
+    [...args, "--registry=https://registry.npmjs.org/", "--json"],
+    options,
+  ));
   return JSON.parse(stdout);
 }
 
@@ -139,15 +152,18 @@ export async function verifyInstalledPackageSignatures(packages, run = command) 
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-signatures-"));
   try {
     await writeFile(join(root, "package.json"), "{\"name\":\"docs-cohort-signature-check\",\"private\":true}\n");
-    await run("npm", [
-      "install", "--ignore-scripts", "--fund=false", "--audit=false", "--save-exact",
-      "--registry=https://registry.npmjs.org/",
-      ...packages.map(({ name, version }) => `${name}@${version}`),
-    ], isolatedNpmOptions({ cwd: root }));
-    const { stdout } = await run("npm", [
-      "audit", "signatures", "--json", "--include-attestations",
-      "--registry=https://registry.npmjs.org/",
-    ], isolatedNpmOptions({ cwd: root }));
+    await withIsolatedNpmOptions({ cwd: root }, (options) => run("npm", [
+        "install", "--ignore-scripts", "--fund=false", "--audit=false", "--save-exact",
+        "--registry=https://registry.npmjs.org/",
+        ...packages.map(({ name, version }) => `${name}@${version}`),
+      ], options));
+    const { stdout } = await withIsolatedNpmOptions(
+      { cwd: root },
+      (options) => run("npm", [
+        "audit", "signatures", "--json", "--include-attestations",
+        "--registry=https://registry.npmjs.org/",
+      ], options),
+    );
     const result = JSON.parse(stdout);
     assert(Array.isArray(result.invalid) && result.invalid.length === 0 &&
       Array.isArray(result.missing) && result.missing.length === 0 &&
@@ -183,10 +199,10 @@ export async function resolvePublishedRuntimeClosure(packages, run = command) {
         "",
       ].join("\n")),
     ]);
-    await run("pnpm", [
-      "install", "--dir", root, "--lockfile-only", "--ignore-scripts",
-      "--ignore-pnpmfile", "--ignore-workspace",
-    ], isolatedNpmOptions());
+    await withIsolatedNpmOptions({}, (options) => run("pnpm", [
+        "install", "--dir", root, "--lockfile-only", "--ignore-scripts",
+        "--ignore-pnpmfile", "--ignore-workspace",
+      ], options));
     const lock = YAML.parse(await readFile(join(root, "pnpm-lock.yaml"), "utf8"));
     return docsRuntimeClosureEvidence(lock, packages);
   } finally {
@@ -197,10 +213,13 @@ export async function resolvePublishedRuntimeClosure(packages, run = command) {
 async function defaultReadPublishedPackage(packageEntry, paths) {
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-package-"));
   try {
-    const { stdout } = await command("npm", [
-      "pack", `${packageEntry.name}@${packageEntry.version}`, "--ignore-scripts",
-      "--registry=https://registry.npmjs.org/", "--json",
-    ], isolatedNpmOptions({ cwd: root }));
+    const { stdout } = await withIsolatedNpmOptions(
+      { cwd: root },
+      (options) => command("npm", [
+        "pack", `${packageEntry.name}@${packageEntry.version}`, "--ignore-scripts",
+        "--registry=https://registry.npmjs.org/", "--json",
+      ], options),
+    );
     const packed = JSON.parse(stdout);
     const filename = packed[0]?.filename;
     assert(typeof filename === "string", `${packageEntry.name} npm pack did not return a tarball.`);
