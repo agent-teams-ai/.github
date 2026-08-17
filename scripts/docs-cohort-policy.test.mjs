@@ -324,6 +324,12 @@ test("keeps admission credentials out of PR-head execution", () => {
   assert.match(admissionWorkflow, /verify-docs-admission-change\.mjs/u);
   assert.match(admissionWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(admissionWorkflow, /hardAuthority\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
+  const admissionScope = admissionWorkflow.indexOf("const changesAdmission");
+  const unrelatedNoop = admissionWorkflow.indexOf("if (!changesAdmission)");
+  const authorityClassifier = admissionWorkflow.indexOf("const authority");
+  assert.ok(admissionScope >= 0 && admissionScope < unrelatedNoop &&
+    unrelatedNoop < authorityClassifier,
+  "unrelated Cohort PRs must no-op before admission-only authority classification");
   assert.match(admissionWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile/u);
   assert.doesNotMatch(admissionWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile --ignore-workspace/u);
   assert.doesNotMatch(admissionWorkflow, /pull_request\.head\.repo[\s\S]*actions\/checkout/u);
@@ -373,6 +379,25 @@ test("validates a negative emergency append without npm or third-party modules",
   assert.throws(() => validateEmergencyCohortAppend(
     previous, current, Date.parse("2026-08-18T03:00:00Z"),
   ), /cannot change Cohort policy/u);
+
+  const cooldownFree = registry(["PUBLISHED_UNQUALIFIED", "VERIFIED", "QUALIFIED"]);
+  const withdrawn = structuredClone(cooldownFree);
+  const withdrawal = {
+    sequence: withdrawn.events.length + 1,
+    cohort_id: withdrawn.cohorts[0].cohort_id,
+    state: "WITHDRAWN",
+    effective_at: "2026-08-18T03:00:00Z",
+    support_until: null,
+    evidence_references: ["governance/evidence/docs-cohorts/withdrawal.json"],
+    canary_evidence: [],
+    previous_event_digest: withdrawn.events.at(-1).event_digest,
+    event_digest: `sha256:${"0".repeat(64)}`,
+  };
+  withdrawal.event_digest = cohortEventDigest(withdrawal);
+  withdrawn.events.push(withdrawal);
+  assert.equal(validateEmergencyCohortAppend(
+    cooldownFree, withdrawn, Date.parse("2026-08-18T03:00:00Z"),
+  ), 1);
 });
 
 test("rejects malformed or backdated dependency-free emergency events", () => {

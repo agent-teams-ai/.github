@@ -62,15 +62,16 @@ jobs:
               return;
             }
             const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            const changesAdmission = changed.some((file) =>
+              allPaths(file).some((entry) => allowedData.has(entry)));
+            if (!changesAdmission) {
+              core.setOutput("mode", "noop");
+              return;
+            }
             const authority = changed.filter((file) => allPaths(file).some((entry) =>
               hardAuthority.has(entry) || isInstallAuthority(entry)));
             if (authority.length > 0) {
               core.setFailed("Admission data cannot be mixed with executable, schema, dependency, Cohort, or workflow authority.");
-              return;
-            }
-            const changesAdmission = changed.some((file) => allPaths(file).some((entry) => allowedData.has(entry)));
-            if (!changesAdmission) {
-              core.setOutput("mode", "noop");
               return;
             }
             if (pull.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
