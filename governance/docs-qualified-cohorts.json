@@ -1618,6 +1618,21 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:b9492e543968ccebd70894f329e1e66dce1b93407c0c95d17641ad095e2ff1ca",
       "event_digest": "sha256:09bc9f036e94c6dee0a8c95d57d755bfa1bb50daac804ae669228e2837f2b17c"
+    },
+    {
+      "sequence": 33,
+      "cohort_id": "docs-2026-08-17-rc9",
+      "state": "QUALIFIED",
+      "effective_at": "2026-08-17T19:11:47Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32057641031",
+        "https://github.com/agent-teams-ai/.github/actions/runs/32058743603",
+        "https://github.com/agent-teams-ai/.github/commit/6aa23e85bb7b1655fca794b4c59e0b1c23cc3761"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:09bc9f036e94c6dee0a8c95d57d755bfa1bb50daac804ae669228e2837f2b17c",
+      "event_digest": "sha256:a7e7434cf91808ab77d0529c1268011f70d824b15fe4b9ecf0dcc28c5f264912"
     }
   ]
 }
