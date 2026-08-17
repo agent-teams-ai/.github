@@ -53,6 +53,10 @@ const admissionWorkflow = await readFile(
   ".github/workflows/docs-admission-evidence.yml",
   "utf8",
 );
+const authorityEvolutionWorkflow = await readFile(
+  ".github/workflows/docs-authority-evolution.yml",
+  "utf8",
+);
 const ciWorkflow = await readFile(".github/workflows/ci.yml", "utf8");
 const qualifiedWorkflowSource = await readFile(
   ".github/workflows/docs-protocol-check.yml",
@@ -351,6 +355,23 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow, /"pnpm-lock\.yaml"/u);
   assert.match(appendOnlyWorkflow, /"governance\/docs-qualified-cohorts\.schema\.json"/u);
   assert.doesNotMatch(appendOnlyWorkflow, /authorityPaths[\s\S]{0,500}"README\.md"/u);
+});
+
+test("stages authority evolution without executing pull-request code", () => {
+  assert.match(authorityEvolutionWorkflow, /pull_request_target:/u);
+  assert.match(authorityEvolutionWorkflow, /actions\/github-script@[0-9a-f]{40}/u);
+  assert.match(authorityEvolutionWorkflow, /contents: read/u);
+  assert.match(authorityEvolutionWorkflow, /pull-requests: read/u);
+  assert.match(authorityEvolutionWorkflow, /github\.paginate/u);
+  assert.match(authorityEvolutionWorkflow, /changed\.length !== pull\.changed_files/u);
+  assert.match(authorityEvolutionWorkflow, /pull\.head\.repo\.full_name !==/u);
+  assert.match(authorityEvolutionWorkflow, /branch\.data\.commit\.sha !== pull\.base\.sha/u);
+  assert.match(authorityEvolutionWorkflow, /scripts\/verify-docs-consumer-gate\.mjs/u);
+  assert.match(authorityEvolutionWorkflow, /scripts\/verify-docs-consumer-gate\.test\.mjs/u);
+  assert.match(authorityEvolutionWorkflow, /docs\/decisions\/0001-qualified-docs-cohorts\.md/u);
+  assert.match(authorityEvolutionWorkflow, /\.github\/workflows\/docs-authority-evolution\.yml/u);
+  assert.doesNotMatch(authorityEvolutionWorkflow, /actions\/checkout|\brun:/u);
+  assert.doesNotMatch(authorityEvolutionWorkflow, /secrets\.|pull_request\.head\.sha/u);
 });
 
 test("keeps admission credentials out of PR-head execution", () => {
