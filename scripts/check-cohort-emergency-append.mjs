@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 const NEGATIVE_STATES = new Set(["SUPPORT_ENDED", "SUSPENDED", "WITHDRAWN"]);
 const NEXT_STATES = new Map([
   ["PUBLISHED_UNQUALIFIED", new Set(["VERIFIED", "WITHDRAWN"])],
-  ["VERIFIED", new Set(["COOLDOWN", "WITHDRAWN"])],
+  ["VERIFIED", new Set(["COOLDOWN", "QUALIFIED", "WITHDRAWN"])],
   ["COOLDOWN", new Set(["QUALIFIED", "WITHDRAWN"])],
   ["QUALIFIED", new Set(["CANARY", "SUSPENDED", "WITHDRAWN"])],
   ["CANARY", new Set(["RECOMMENDED", "SUSPENDED", "WITHDRAWN"])],
