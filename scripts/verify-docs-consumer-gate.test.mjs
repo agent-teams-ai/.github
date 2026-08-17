@@ -40,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   docs-protocol:
