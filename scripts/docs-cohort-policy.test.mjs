@@ -1783,6 +1783,7 @@ test("permits desired/observed staging only across an explicit migration edge", 
     ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
   );
   Object.assign(platform, {
+    repository_lifecycle: "active",
     cohort_binding_status: "rollout_pending",
     desired_cohort_id: successor.cohort_id,
     observed_cohort_id: observed.cohort_id,
