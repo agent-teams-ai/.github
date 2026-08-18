@@ -2113,6 +2113,39 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:413f6dc7211599072daa110def6612002c4a0332e21913ac0ac33c0ee0b5b7bf",
       "event_digest": "sha256:5166d2df2cc6abfcabb7784d094668a309283d6d73d60ddbd0239ea162f6f502"
+    },
+    {
+      "sequence": 46,
+      "cohort_id": "docs-2026-08-18-rc2",
+      "state": "CANARY",
+      "effective_at": "2026-08-18T03:56:46Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/32097245806",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/pull/6",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/1d6995620b2feebdb00124b0b1de4f17d3e7e046"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1336577313,
+          "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+          "merge_revision": "1d6995620b2feebdb00124b0b1de4f17d3e7e046",
+          "observed_cohort_id": "docs-2026-08-18-rc2",
+          "observed_record_digest": "sha256:02bc526540933e6ad1a1a648fa4398db199317a8de9dfa480adcf821c702bfd4",
+          "observed_event_digest": "sha256:5166d2df2cc6abfcabb7784d094668a309283d6d73d60ddbd0239ea162f6f502",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 95590871607,
+          "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/32097245806/job/95590871607",
+          "workflow_run_id": 32097245806,
+          "workflow_id": 336150203,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:51d3f02a352ce2c3b0a4068a86b6899a57ab54b0a876c468e3fb3e536519caca"
+        }
+      ],
+      "previous_event_digest": "sha256:5166d2df2cc6abfcabb7784d094668a309283d6d73d60ddbd0239ea162f6f502",
+      "event_digest": "sha256:2479624f6ccb933d09a739bcc20d44967159f9c944915242d78d5ec899c0a1be"
     }
   ]
 }
