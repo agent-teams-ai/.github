@@ -1779,10 +1779,11 @@ test("permits desired/observed staging only across an explicit migration edge", 
   ), /no longer supported/u);
 
   const unauthorized = structuredClone(policy);
-  const platform = unauthorized.repositories.find(
-    ({ repository }) => repository === "agent-teams-ai/agent-teams-platform",
+  const secondConsumer = unauthorized.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-teams-orchestrator",
   );
-  Object.assign(platform, {
+  Object.assign(secondConsumer, {
+    repository_lifecycle: "active",
     cohort_binding_status: "rollout_pending",
     desired_cohort_id: successor.cohort_id,
     observed_cohort_id: observed.cohort_id,
@@ -1793,8 +1794,8 @@ test("permits desired/observed staging only across an explicit migration edge", 
     reusable_workflow_revision: observed.reusable_workflow.revision,
     required_check_context: "docs-protocol / docs-protocol-check",
     observed_default_branch_evidence: defaultBranchEvidence(
-      platform.repository,
-      platform.qualification.observed_revision,
+      secondConsumer.repository,
+      secondConsumer.qualification.observed_revision,
     ),
   });
   assert.throws(() => validateDocsGovernanceReferences(
