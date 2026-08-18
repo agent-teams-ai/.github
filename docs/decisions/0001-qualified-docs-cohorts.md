@@ -104,6 +104,14 @@ later CI observations.
     transitive versions and peer contexts may differ by an existing consumer
     graph. Hosted checks still execute the Cohort-qualified packages, while
     consumer CI and lockfile review cover the consumer's resolved graph.
+21. A consumer may retain declarative security overrides and narrow peer-only
+    package extensions in its root pnpm workspace policy. The trusted gate
+    requires an identical lockfile projection, exact registry versions, bounded
+    entries, no managed-package replacement, and no change to a package version
+    already fixed by the Cohort runtime closure. Package patches, hooks, aliases,
+    links, URLs, and package extensions targeting the qualified Docs runtime
+    remain forbidden. Trusted Docs execution still uses the isolated Cohort
+    closure, never the consumer dependency graph.
 
 ## Consequences
 
@@ -112,5 +120,7 @@ later CI observations.
 - Release, rollout, suspension, rollback, and fleet evidence remain distinct.
 - Historical Cohort facts stay reviewable without granting cross-repository
   write authority.
+- Consumer security remediation can coexist with the protocol without turning
+  consumer package policy into executable trusted-gate input.
 - Existing consumers can retain compatible package-manager-owned transitive and
   peer resolutions without failing an unrelated documentation admission gate.

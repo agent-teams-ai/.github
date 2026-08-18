@@ -293,6 +293,16 @@ snapshots:
 `;
 }
 
+function addWorkspacePolicy(changed, workspaceSource, lockPolicySource) {
+  changed.files["pnpm-workspace.yaml"] = workspaceSource;
+  changed.files["pnpm-lock.yaml"] = changed.files["pnpm-lock.yaml"].replace(
+    "importers:\n",
+    `${lockPolicySource}importers:\n`,
+  );
+  changed.tree.push({ path: "pnpm-workspace.yaml", type: "blob", mode: "100644" });
+  return changed;
+}
+
 function runtimeClosure() {
   return docsRuntimeClosureAuthority(
     parseDocument(lock(), { strict: true, uniqueKeys: true }).toJS(),
@@ -582,6 +592,80 @@ test("rejects package patches before consumer package execution", () => {
   value.pnpm = { patchedDependencies: { "x@1.0.0": "patches/x.patch" } };
   changed.files["package.json"] = JSON.stringify(value);
   assert.throws(() => authorizeConsumerGate(changed), /forbidden pnpm mutation policy/iu);
+});
+
+test("allows bounded exact security overlays outside managed package authority", () => {
+  const changed = addWorkspacePolicy(
+    fixture(),
+    `packages: []
+overrides:
+  transitive-package: 1.0.0
+  js-yaml: 5.2.2
+packageExtensions:
+  dependency-cruiser@18.1.0:
+    peerDependencies:
+      typescript: ">=2.0.0 <7.0.0"
+`,
+    `overrides:
+  transitive-package: 1.0.0
+  js-yaml: 5.2.2
+packageExtensionsChecksum: sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+`,
+  );
+  assert.doesNotThrow(() => authorizeConsumerGate(changed));
+});
+
+test("rejects pnpm policy overlays that can replace qualified runtime authority", async (t) => {
+  const cases = [
+    {
+      name: "managed package override",
+      workspace: `overrides:\n  '@agent-teams/docs-protocol': 0.2.0-rc.0\n`,
+      lockPolicy: `overrides:\n  '@agent-teams/docs-protocol': 0.2.0-rc.0\n`,
+      pattern: /must not target a managed Cohort package/iu,
+    },
+    {
+      name: "qualified transitive replacement",
+      workspace: `overrides:\n  transitive-package: 1.0.1\n`,
+      lockPolicy: `overrides:\n  transitive-package: 1.0.1\n`,
+      pattern: /changes a Cohort-qualified runtime package/iu,
+    },
+    {
+      name: "registry alias",
+      workspace: `overrides:\n  js-yaml: npm:other@5.2.2\n`,
+      lockPolicy: `overrides:\n  js-yaml: npm:other@5.2.2\n`,
+      pattern: /must select one exact registry version/iu,
+    },
+    {
+      name: "workspace and lock mismatch",
+      workspace: `overrides:\n  js-yaml: 5.2.2\n`,
+      lockPolicy: `overrides:\n  js-yaml: 5.2.1\n`,
+      pattern: /exact root policy projection/iu,
+    },
+    {
+      name: "qualified package extension",
+      workspace: `packageExtensions:\n  transitive-package@1.0.0:\n    peerDependencies:\n      typescript: ">=5"\n`,
+      lockPolicy: `packageExtensionsChecksum: sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n`,
+      pattern: /must not target the qualified Docs runtime/iu,
+    },
+    {
+      name: "managed peer injection",
+      workspace: `packageExtensions:\n  dependency-cruiser@18.1.0:\n    peerDependencies:\n      '@agent-teams/docs-protocol': 0.2.0-rc.0\n`,
+      lockPolicy: `packageExtensionsChecksum: sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n`,
+      pattern: /unsafe peer dependency/iu,
+    },
+    {
+      name: "workspace patch",
+      workspace: `patchedDependencies:\n  x@1.0.0: patches/x.patch\n`,
+      lockPolicy: "",
+      pattern: /forbidden patches or hooks/iu,
+    },
+  ];
+  for (const entry of cases) {
+    await t.test(entry.name, () => {
+      const changed = addWorkspacePolicy(fixture(), entry.workspace, entry.lockPolicy);
+      assert.throws(() => authorizeConsumerGate(changed), entry.pattern);
+    });
+  }
 });
 
 test("rejects a live repository ID that differs from central admission", () => {

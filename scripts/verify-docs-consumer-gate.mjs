@@ -23,6 +23,7 @@ const REUSABLE_WORKFLOW_PATH = ".github/workflows/docs-protocol-check.yml";
 const INTEGRATION_PROFILE_PATH = "architecture/foundation/docs-consumer-integration.json";
 const MANAGED_PROJECTION_PATH = "architecture/foundation/docs-protocol-managed-state.json";
 const CALLER_WORKFLOW_PATH = ".github/workflows/docs-protocol.yml";
+const PNPM_WORKSPACE_PATH = "pnpm-workspace.yaml";
 const MANAGED_PACKAGES = Object.freeze([
   "@agent-teams/engineering-foundation",
   "@agent-teams/docs-protocol",
@@ -38,17 +39,19 @@ const JSON_LIMITS = Object.freeze({
   "package.json": 512 * 1024,
 });
 const LOCKFILE_LIMIT = 8 * 1024 * 1024;
+const WORKSPACE_LIMIT = 512 * 1024;
 const CALLER_LIMIT = 32 * 1024;
 const SHA = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const EXACT_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
-const FORBIDDEN_LOCK_KEYS = new Set([
-  "overrides",
+const ALWAYS_FORBIDDEN_LOCK_KEYS = new Set([
   "packageExtensions",
-  "packageExtensionsChecksum",
   "patchedDependencies",
   "patchedDependenciesMeta",
 ]);
+const ROOT_LOCK_POLICY_KEYS = new Set(["overrides", "packageExtensionsChecksum"]);
+const PACKAGE_NAME = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
+const PACKAGE_EXTENSION_CHECKSUM = /^sha256-[A-Za-z0-9+/]{43}=$/u;
 
 export class GatePolicyError extends Error {
   constructor(message) {
@@ -424,12 +427,117 @@ function assertNoForbiddenLockPolicy(value, path = "pnpm-lock.yaml") {
   }
   if (!exactObject(value)) {return;}
   for (const [key, entry] of Object.entries(value)) {
-    assert(!FORBIDDEN_LOCK_KEYS.has(key), `${path} contains forbidden lock policy ${key}.`);
+    assert(!ALWAYS_FORBIDDEN_LOCK_KEYS.has(key), `${path} contains forbidden lock policy ${key}.`);
+    assert(!ROOT_LOCK_POLICY_KEYS.has(key) || path === "pnpm-lock.yaml",
+      `${path} contains nested lock policy ${key}.`);
     assertNoForbiddenLockPolicy(entry, `${path}/${key}`);
   }
 }
 
-export function validateExactPnpmLock(manifest, lock, expectedPackages) {
+function packageSelectorPart(value, label) {
+  assert(typeof value === "string" && value.length > 0 && value.length <= 214,
+    `${label} is not a bounded package selector.`);
+  const separator = value.startsWith("@")
+    ? value.indexOf("@", value.indexOf("/") + 1)
+    : value.indexOf("@");
+  const name = separator === -1 ? value : value.slice(0, separator);
+  const range = separator === -1 ? null : value.slice(separator + 1);
+  assert(PACKAGE_NAME.test(name) && (range === null || (range.length > 0 && !/[>\s]/u.test(range))),
+    `${label} is not a supported package selector.`);
+  return { name, range };
+}
+
+function overrideSelector(value) {
+  assert(typeof value === "string" && value.split(">").length <= 2,
+    `pnpm override selector ${String(value)} is not a supported single-edge selector.`);
+  const parts = value.split(">");
+  const child = packageSelectorPart(parts.at(-1), `pnpm override selector ${value}`);
+  const parent = parts.length === 2
+    ? packageSelectorPart(parts[0], `pnpm override parent ${value}`)
+    : null;
+  return { child, parent };
+}
+
+function locatorPackage(locator) {
+  const separator = locator.startsWith("@")
+    ? locator.indexOf("@", locator.indexOf("/") + 1)
+    : locator.indexOf("@");
+  assert(separator > 0, `Qualified runtime closure locator ${locator} is malformed.`);
+  return {
+    name: locator.slice(0, separator),
+    version: locator.slice(separator + 1).split("(", 1)[0],
+  };
+}
+
+function qualifiedVersionsByName(qualifiedRuntimeClosureLock) {
+  const result = new Map();
+  for (const locator of Object.keys(qualifiedRuntimeClosureLock?.packages ?? {})) {
+    const { name, version } = locatorPackage(locator);
+    const versions = result.get(name) ?? new Set();
+    versions.add(version);
+    result.set(name, versions);
+  }
+  return result;
+}
+
+function assertExactSecurityOverrides(workspace, lock, qualifiedRuntimeClosureLock) {
+  const workspaceOverrides = workspace?.overrides;
+  const lockOverrides = lock.overrides;
+  assert((workspaceOverrides === undefined) === (lockOverrides === undefined),
+    "pnpm overrides must be present identically in root workspace policy and lockfile metadata.");
+  if (workspaceOverrides === undefined) {return;}
+  assert(exactObject(workspaceOverrides) && exactObject(lockOverrides) &&
+    Object.keys(workspaceOverrides).length <= 64 &&
+    canonicalJson(workspaceOverrides) === canonicalJson(lockOverrides),
+  "pnpm overrides must be one bounded exact root policy projection.");
+  const qualifiedVersions = qualifiedVersionsByName(qualifiedRuntimeClosureLock);
+  for (const [selector, target] of Object.entries(workspaceOverrides)) {
+    const { child } = overrideSelector(selector);
+    assert(!MANAGED_PACKAGES.includes(child.name),
+      `pnpm override ${selector} must not target a managed Cohort package.`);
+    assert(typeof target === "string" && EXACT_VERSION.test(target),
+      `pnpm override ${selector} must select one exact registry version.`);
+    const qualified = qualifiedVersions.get(child.name);
+    assert(qualified === undefined || (qualified.size === 1 && qualified.has(target)),
+      `pnpm override ${selector} changes a Cohort-qualified runtime package.`);
+  }
+}
+
+function assertSafePackageExtensions(workspace, lock, qualifiedRuntimeClosureLock) {
+  const extensions = workspace?.packageExtensions;
+  const checksum = lock.packageExtensionsChecksum;
+  assert((extensions === undefined) === (checksum === undefined),
+    "pnpm package extensions must have one lockfile checksum projection.");
+  if (extensions === undefined) {return;}
+  assert(exactObject(extensions) && Object.keys(extensions).length <= 32 &&
+    typeof checksum === "string" && PACKAGE_EXTENSION_CHECKSUM.test(checksum),
+  "pnpm package extensions or their checksum exceed the safe policy shape.");
+  const qualifiedNames = qualifiedVersionsByName(qualifiedRuntimeClosureLock);
+  for (const [selector, extension] of Object.entries(extensions)) {
+    const selected = packageSelectorPart(selector, `pnpm package extension selector ${selector}`);
+    assert(!MANAGED_PACKAGES.includes(selected.name) && !qualifiedNames.has(selected.name),
+      `pnpm package extension ${selector} must not target the qualified Docs runtime.`);
+    assert(exactKeys(extension, ["peerDependencies"]) && exactObject(extension.peerDependencies) &&
+      Object.keys(extension.peerDependencies).length <= 32,
+    `pnpm package extension ${selector} may declare only bounded peerDependencies.`);
+    for (const [name, range] of Object.entries(extension.peerDependencies)) {
+      assert(PACKAGE_NAME.test(name) && !MANAGED_PACKAGES.includes(name) &&
+        typeof range === "string" && range.length > 0 && range.length <= 128 &&
+        !/[:/\\$]/u.test(range),
+      `pnpm package extension ${selector} contains an unsafe peer dependency.`);
+    }
+  }
+}
+
+function assertSafeWorkspacePolicy(workspace, lock, qualifiedRuntimeClosureLock) {
+  assert(workspace === undefined || exactObject(workspace), "pnpm-workspace.yaml must be one mapping.");
+  assert(workspace?.patchedDependencies === undefined && workspace?.hooks === undefined,
+    "pnpm workspace contains forbidden patches or hooks.");
+  assertExactSecurityOverrides(workspace, lock, qualifiedRuntimeClosureLock);
+  assertSafePackageExtensions(workspace, lock, qualifiedRuntimeClosureLock);
+}
+
+export function validateExactPnpmLock(manifest, lock, expectedPackages, options = {}) {
   assertNoForbiddenLockPolicy(lock);
   assert(exactObject(lock.importers) && exactObject(lock.importers["."]) && exactObject(lock.packages),
     "Consumer pnpm lockfile is missing its root importer or packages map.");
@@ -466,6 +574,7 @@ export function validateExactPnpmLock(manifest, lock, expectedPackages) {
   assert(docsSnapshot?.dependencies?.["@agent-teams/engineering-foundation"] === foundationRaw,
     "Docs Protocol lock snapshot has the wrong exact Foundation dependency.");
   assertManifest(manifest, expectedPackages);
+  assertSafeWorkspacePolicy(options.workspace, lock, options.qualifiedRuntimeClosureLock);
 }
 
 function assertRepositoryTree(paths) {
@@ -477,11 +586,16 @@ function assertRepositoryTree(paths) {
     const entry = files.get(required);
     assert(entry?.type === "blob" && entry.mode !== "120000", `${required} must be one regular committed file.`);
   }
+  const workspace = files.get(PNPM_WORKSPACE_PATH);
+  assert(workspace === undefined || (workspace.type === "blob" && workspace.mode !== "120000"),
+    `${PNPM_WORKSPACE_PATH} must be one regular committed file when present.`);
   for (const { path } of normalized) {
     assert(path !== ".pnpmfile.cjs" && !path.endsWith("/.pnpmfile.cjs"),
       "Consumer tree contains forbidden .pnpmfile.cjs.");
     assert(path === "pnpm-lock.yaml" || !path.endsWith("/pnpm-lock.yaml"),
       `Consumer tree contains unsupported nested lockfile ${path}.`);
+    assert(path === PNPM_WORKSPACE_PATH || !path.endsWith(`/${PNPM_WORKSPACE_PATH}`),
+      `Consumer tree contains unsupported nested workspace policy ${path}.`);
   }
 }
 
@@ -516,6 +630,9 @@ export function authorizeConsumerGate(input) {
     JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
   const manifest = parseJsonStrict(input.files["package.json"], "package.json", JSON_LIMITS["package.json"]);
   const lock = parseYamlStrict(input.files["pnpm-lock.yaml"], "pnpm-lock.yaml", LOCKFILE_LIMIT);
+  const workspace = input.files[PNPM_WORKSPACE_PATH] === undefined
+    ? undefined
+    : parseYamlStrict(input.files[PNPM_WORKSPACE_PATH], PNPM_WORKSPACE_PATH, WORKSPACE_LIMIT);
   const callerSource = input.files[CALLER_WORKFLOW_PATH];
   const caller = parseYamlStrict(callerSource, CALLER_WORKFLOW_PATH, CALLER_LIMIT);
   const record = lifecycle.cohortById.get(managed.cohortId);
@@ -605,7 +722,6 @@ export function authorizeConsumerGate(input) {
     policyEntry.caller_workflow_path === profile.callerWorkflowPath,
   "Consumer profile/caller paths differ from central repository authority.");
   assertCallerWorkflow(caller, callerSource, expected);
-  validateExactPnpmLock(manifest, lock, expectedPackages);
   const runtimeClosureSource = input.runtimeClosureSources?.[record.runtime_closure.projection_path];
   assert(typeof runtimeClosureSource === "string" &&
     sha256(runtimeClosureSource) === record.runtime_closure.digest,
@@ -622,6 +738,10 @@ export function authorizeConsumerGate(input) {
   assert(regeneratedRuntimeClosure.source === runtimeClosureSource &&
     canonicalJson(regeneratedRuntimeClosure.authority) === canonicalJson(record.runtime_closure),
   "Qualified runtime closure evidence is not the canonical exact Cohort projection.");
+  validateExactPnpmLock(manifest, lock, expectedPackages, {
+    workspace,
+    qualifiedRuntimeClosureLock: runtimeClosureEvidence.pnpmLock,
+  });
   return Object.freeze({
     schemaVersion: 1,
     repositoryId: input.repository.id,
@@ -714,6 +834,9 @@ async function authorizeCommand() {
     [CALLER_WORKFLOW_PATH]: CALLER_LIMIT,
     "pnpm-lock.yaml": LOCKFILE_LIMIT,
   };
+  if (entryByPath.has(PNPM_WORKSPACE_PATH)) {
+    limits[PNPM_WORKSPACE_PATH] = WORKSPACE_LIMIT;
+  }
   const files = {};
   for (const [path, limit] of Object.entries(limits)) {
     const entry = entryByPath.get(path);
