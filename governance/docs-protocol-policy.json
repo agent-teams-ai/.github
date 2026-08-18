@@ -126,7 +126,7 @@
       "exact_package_version": null,
       "exact_foundation_version": null,
       "cohort_binding_status": "bootstrap_pending",
-      "desired_cohort_id": "docs-2026-08-18-rc1",
+      "desired_cohort_id": "docs-2026-08-18-rc3",
       "observed_cohort_id": null,
       "observed_cohort_record_digest": null,
       "observed_cohort_event_digest": null,
