@@ -1780,7 +1780,7 @@ test("permits desired/observed staging only across an explicit migration edge", 
 
   const unauthorized = structuredClone(policy);
   const secondConsumer = unauthorized.repositories.find(
-    ({ repository }) => repository === "agent-teams-ai/agent-teams-orchestrator",
+    ({ repository }) => repository === "agent-teams-ai/extension-foundation",
   );
   Object.assign(secondConsumer, {
     repository_lifecycle: "active",
