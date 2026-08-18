@@ -1397,6 +1397,140 @@
         "https://github.com/agent-teams-ai/.github/pull/75"
       ],
       "record_digest": "sha256:02bc526540933e6ad1a1a648fa4398db199317a8de9dfa480adcf821c702bfd4"
+    },
+    {
+      "cohort_id": "docs-2026-08-18-rc3",
+      "channel": "rc",
+      "packages": [
+        {
+          "name": "@agent-teams/engineering-foundation",
+          "version": "0.17.0-rc.8",
+          "integrity": "sha512-srrROkDs3GfHmx8L74AKq3sgl8zf1fYKGnUq8mtvhI09ZcosGZvqgQ5tXyDIrLUlWcGsIn1Yv8lOt8G1QFnuEA==",
+          "published_at": "2026-08-18T03:38:17.036Z",
+          "registry": "https://registry.npmjs.org/",
+          "provenance": {
+            "source_repository": "agent-teams-ai/engineering-foundation",
+            "source_repository_id": 1316243988,
+            "source_workflow": ".github/workflows/release.yml",
+            "source_commit": "edfaee28c65eb6ce034ddb6036166da1eafeb15a",
+            "workflow_run_id": 32095956509,
+            "workflow_run_attempt": 1,
+            "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@0.17.0-rc.8",
+            "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095956509",
+            "signature_verified": true
+          }
+        },
+        {
+          "name": "@agent-teams/docs-protocol",
+          "version": "0.1.0-rc.12",
+          "integrity": "sha512-ZxrhOFbc8iKn167sIszuFpzyPksrPExPRRpXBXtjZ85Bvf4iNyNgxcOk3NkStl0Jsm+8J67lI12bQK/Xs/mlDQ==",
+          "published_at": "2026-08-18T03:39:36.904Z",
+          "registry": "https://registry.npmjs.org/",
+          "provenance": {
+            "source_repository": "agent-teams-ai/engineering-foundation",
+            "source_repository_id": 1316243988,
+            "source_workflow": ".github/workflows/release.yml",
+            "source_commit": "edfaee28c65eb6ce034ddb6036166da1eafeb15a",
+            "workflow_run_id": 32095956509,
+            "workflow_run_attempt": 1,
+            "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.1.0-rc.12",
+            "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095956509",
+            "signature_verified": true
+          }
+        }
+      ],
+      "reusable_workflow": {
+        "repository": "agent-teams-ai/.github",
+        "repository_id": 1316243981,
+        "path": ".github/workflows/docs-protocol-check.yml",
+        "revision": "2375b0451a54b4889addef676b4788e14ad914c5",
+        "blob_sha": "d452902e36bb144f9cb2816ced77cdd8ae629cd9"
+      },
+      "schemas": {
+        "consumer_integration": 1,
+        "consumer_plan": 1,
+        "managed_state": 1,
+        "foundation_plan": 1,
+        "foundation_journal": 1,
+        "foundation_receipt": 1,
+        "foundation_envelope": 5,
+        "docs_protocol": 1
+      },
+      "assets": {
+        "skill": {
+          "package": "@agent-teams/docs-protocol",
+          "path": "skills/docs/SKILL.md",
+          "digest": "sha256:7b31cd257532247f64c55a014dc926c601e4d742176cfb8513b6b0d8ab48213e"
+        },
+        "caller_workflow": {
+          "package": "@agent-teams/docs-protocol",
+          "path": "assets/docs-protocol.yml",
+          "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac",
+          "rendered_digest": "sha256:51d3f02a352ce2c3b0a4068a86b6899a57ab54b0a876c468e3fb3e536519caca"
+        },
+        "asset_catalog": {
+          "package": "@agent-teams/docs-protocol",
+          "path": "assets/catalog.json",
+          "digest": "sha256:b156dba1b2b88aa53bd9196dd49e93c0a153f6fb155ed2ce89c5dc1a0bf8eeb6"
+        },
+        "transition_catalog": {
+          "package": "@agent-teams/docs-protocol",
+          "path": "assets/transition-catalog.json",
+          "digest": "sha256:e9055f32a78bfba55e16c829383ec87fe2626da0ad8ee79b958753b574c441a1"
+        }
+      },
+      "runtime": {
+        "node": ">=24.18.0 <25",
+        "pnpm": ">=11.17.0 <12",
+        "apply_platforms": [
+          "linux",
+          "macos"
+        ],
+        "check_plan_platforms": [
+          "linux",
+          "macos",
+          "windows"
+        ]
+      },
+      "runtime_closure": {
+        "schema_version": 1,
+        "package_manager": "pnpm@11.18.0",
+        "lockfile_version": "9.0",
+        "package_count": 152,
+        "projection_path": "governance/docs-runtime-closures/sha256-031f8f0e946dfb8dbe17683b226bf79aeb6d0d379a37eb0124498667e0518cd8.json",
+        "digest": "sha256:031f8f0e946dfb8dbe17683b226bf79aeb6d0d379a37eb0124498667e0518cd8"
+      },
+      "eligible_after": "2026-08-19T03:39:37Z",
+      "upgrade_from": [
+        "docs-2026-08-18-rc1"
+      ],
+      "rollback_to": [
+        "docs-2026-08-18-rc1"
+      ],
+      "canary_repositories": [
+        {
+          "repository_id": 1310245598,
+          "repository": "agent-teams-ai/agent-teams-orchestrator"
+        }
+      ],
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095956509",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095455933",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@0.17.0-rc.8",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.1.0-rc.12",
+        "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/engineering-foundation%400.17.0-rc.8",
+        "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/docs-protocol%400.1.0-rc.12",
+        "https://github.com/agent-teams-ai/engineering-foundation/pull/162",
+        "https://github.com/agent-teams-ai/engineering-foundation/pull/164",
+        "https://github.com/agent-teams-ai/engineering-foundation/pull/165",
+        "https://github.com/agent-teams-ai/engineering-foundation/pull/166",
+        "https://github.com/agent-teams-ai/engineering-foundation/pull/167",
+        "https://github.com/agent-teams-ai/.github/commit/2375b0451a54b4889addef676b4788e14ad914c5",
+        "https://github.com/agent-teams-ai/.github/pull/75",
+        "https://github.com/agent-teams-ai/.github/pull/76",
+        "https://github.com/agent-teams-ai/.github/pull/78"
+      ],
+      "record_digest": "sha256:cc4585d73976aa9edae4a685bc907da010ce05752da37973932153ba0e57ef85"
     }
   ],
   "events": [
@@ -2146,6 +2280,58 @@
       ],
       "previous_event_digest": "sha256:5166d2df2cc6abfcabb7784d094668a309283d6d73d60ddbd0239ea162f6f502",
       "event_digest": "sha256:2479624f6ccb933d09a739bcc20d44967159f9c944915242d78d5ec899c0a1be"
+    },
+    {
+      "sequence": 47,
+      "cohort_id": "docs-2026-08-18-rc3",
+      "state": "PUBLISHED_UNQUALIFIED",
+      "effective_at": "2026-08-18T03:39:36.904Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095956509",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@0.17.0-rc.8",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.1.0-rc.12",
+        "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/engineering-foundation%400.17.0-rc.8",
+        "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/docs-protocol%400.1.0-rc.12"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:2479624f6ccb933d09a739bcc20d44967159f9c944915242d78d5ec899c0a1be",
+      "event_digest": "sha256:ecbcefaf7ec52aa98740ad118812a08ce4cd60f5d28d9d42ecf962a35f352737"
+    },
+    {
+      "sequence": 48,
+      "cohort_id": "docs-2026-08-18-rc3",
+      "state": "VERIFIED",
+      "effective_at": "2026-08-18T04:11:21Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095956509",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095455933",
+        "https://github.com/agent-teams-ai/.github/commit/2375b0451a54b4889addef676b4788e14ad914c5",
+        "https://github.com/agent-teams-ai/.github/pull/75",
+        "https://github.com/agent-teams-ai/.github/pull/76",
+        "https://github.com/agent-teams-ai/.github/pull/78"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:ecbcefaf7ec52aa98740ad118812a08ce4cd60f5d28d9d42ecf962a35f352737",
+      "event_digest": "sha256:59193f0be26dfa9408366ec9c1932144392dbe485c7b818e66d343cddc9d1f5d"
+    },
+    {
+      "sequence": 49,
+      "cohort_id": "docs-2026-08-18-rc3",
+      "state": "QUALIFIED",
+      "effective_at": "2026-08-18T04:11:22Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095956509",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/32095455933",
+        "https://github.com/agent-teams-ai/.github/commit/2375b0451a54b4889addef676b4788e14ad914c5",
+        "https://github.com/agent-teams-ai/.github/pull/76",
+        "https://github.com/agent-teams-ai/.github/pull/78"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:59193f0be26dfa9408366ec9c1932144392dbe485c7b818e66d343cddc9d1f5d",
+      "event_digest": "sha256:6f734db2339220d23db616ff9c5c7bd7d040c5dfb66a3b3da8b3f70bfa6ae790"
     }
   ]
 }
