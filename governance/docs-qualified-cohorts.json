@@ -2332,6 +2332,39 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:59193f0be26dfa9408366ec9c1932144392dbe485c7b818e66d343cddc9d1f5d",
       "event_digest": "sha256:6f734db2339220d23db616ff9c5c7bd7d040c5dfb66a3b3da8b3f70bfa6ae790"
+    },
+    {
+      "sequence": 50,
+      "cohort_id": "docs-2026-08-18-rc3",
+      "state": "CANARY",
+      "effective_at": "2026-08-18T04:26:03Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/32099083346",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/pull/46",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/767f7174dc9532277ceabad4a4ceccf6ffe82394"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1310245598,
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "merge_revision": "767f7174dc9532277ceabad4a4ceccf6ffe82394",
+          "observed_cohort_id": "docs-2026-08-18-rc3",
+          "observed_record_digest": "sha256:cc4585d73976aa9edae4a685bc907da010ce05752da37973932153ba0e57ef85",
+          "observed_event_digest": "sha256:6f734db2339220d23db616ff9c5c7bd7d040c5dfb66a3b3da8b3f70bfa6ae790",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 95595985123,
+          "check_run_url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/32099083346/job/95595985123",
+          "workflow_run_id": 32099083346,
+          "workflow_id": 335216818,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:51d3f02a352ce2c3b0a4068a86b6899a57ab54b0a876c468e3fb3e536519caca"
+        }
+      ],
+      "previous_event_digest": "sha256:6f734db2339220d23db616ff9c5c7bd7d040c5dfb66a3b3da8b3f70bfa6ae790",
+      "event_digest": "sha256:0adae6cc616c71f7086da1a7de2b7bc18704923eac465c7116b8f9dd975c105e"
     }
   ]
 }
