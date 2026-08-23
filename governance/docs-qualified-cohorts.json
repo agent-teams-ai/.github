@@ -2579,6 +2579,39 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:101a59dc50c2341cdb51249a5bfb6ee1714663ba3301723e0b911c09c26b33cf",
       "event_digest": "sha256:1e3a7faaf9fcbed32534536914d67fecafe35e3fb5d109c531c24d935320e55c"
+    },
+    {
+      "sequence": 56,
+      "cohort_id": "docs-2026-08-23-stable1",
+      "state": "CANARY",
+      "effective_at": "2026-08-23T14:48:49Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/32646542464",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/pull/47",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/bc99599ef67733fb9445688cfe130483ebaffb4c"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1310245598,
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "merge_revision": "bc99599ef67733fb9445688cfe130483ebaffb4c",
+          "observed_cohort_id": "docs-2026-08-23-stable1",
+          "observed_record_digest": "sha256:a35177e6ff340a475440b7f38bf099962ad3b39f2c50af56d43ba3cd08e0905f",
+          "observed_event_digest": "sha256:1e3a7faaf9fcbed32534536914d67fecafe35e3fb5d109c531c24d935320e55c",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 97211557669,
+          "check_run_url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/32646542464/job/97211557669",
+          "workflow_run_id": 32646542464,
+          "workflow_id": 335216818,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:f21dc19277a4ba24bcef90a7071c9cf50adf144769f42d6f74ff4eac9ef117cf"
+        }
+      ],
+      "previous_event_digest": "sha256:1e3a7faaf9fcbed32534536914d67fecafe35e3fb5d109c531c24d935320e55c",
+      "event_digest": "sha256:280fe06187818e730f7dc6bd680c2233e2e1d8150c5d986b607c47e7304f08f9"
     }
   ]
 }
