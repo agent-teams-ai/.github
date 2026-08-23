@@ -2612,6 +2612,36 @@
       ],
       "previous_event_digest": "sha256:1e3a7faaf9fcbed32534536914d67fecafe35e3fb5d109c531c24d935320e55c",
       "event_digest": "sha256:280fe06187818e730f7dc6bd680c2233e2e1d8150c5d986b607c47e7304f08f9"
+    },
+    {
+      "sequence": 57,
+      "cohort_id": "docs-2026-08-18-rc3",
+      "state": "SUPERSEDED",
+      "effective_at": "2026-08-23T15:07:02Z",
+      "support_until": "2026-09-22T15:07:02Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/32646542464",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/bc99599ef67733fb9445688cfe130483ebaffb4c",
+        "https://github.com/agent-teams-ai/.github/pull/94"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:280fe06187818e730f7dc6bd680c2233e2e1d8150c5d986b607c47e7304f08f9",
+      "event_digest": "sha256:9825a4869d0b1641010489ad5663089000b0bfe800bdcb68ff8849bce09d09fc"
+    },
+    {
+      "sequence": 58,
+      "cohort_id": "docs-2026-08-23-stable1",
+      "state": "RECOMMENDED",
+      "effective_at": "2026-08-23T15:07:03Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/32646542464",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/bc99599ef67733fb9445688cfe130483ebaffb4c",
+        "https://github.com/agent-teams-ai/.github/pull/94"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:9825a4869d0b1641010489ad5663089000b0bfe800bdcb68ff8849bce09d09fc",
+      "event_digest": "sha256:819dfa043f2a1c0c67db90fdc259ff2d9d8566caf21cc4f1fdd15b1ae917cb59"
     }
   ]
 }
