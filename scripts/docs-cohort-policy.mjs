@@ -9,6 +9,8 @@ const RUNTIME_CLOSURE_LOCKFILE_VERSION = "9.0";
 const RUNTIME_CLOSURE_MAX_PACKAGES = 2048;
 const RUNTIME_CLOSURE_MAX_DEPTH = 64;
 const RUNTIME_CLOSURE_MAX_BYTES = 2 * 1024 * 1024;
+export const QUALIFIED_DOCS_PROFILE_PATH = "architecture/foundation/docs-protocol.yaml";
+export const QUALIFIED_DOCS_SKILL_PATH = ".agents/skills/docs-authoring/SKILL.md";
 const REGISTRY_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?(?:\+[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
 const SHA512_SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const NEXT_STATES = new Map([
@@ -57,6 +59,21 @@ function digest(domain, body) {
   return `sha256:${createHash("sha256")
     .update(canonicalJson({ domain, body }))
     .digest("hex")}`;
+}
+
+export function canonicalDocsManagedAssetDigests(profile) {
+  const sha256 = (source) => `sha256:${createHash("sha256").update(source).digest("hex")}`;
+  return {
+    agentsRouteDigest: sha256(
+      `<!-- agent-teams-docs:route/v1 begin -->\nUse [${profile.skillPath}](${profile.skillPath}) for documentation.\n<!-- agent-teams-docs:route/v1 end -->`,
+    ),
+    docsScriptsDigest: sha256(canonicalJson(Object.fromEntries(
+      ["check", "doctor", "find", "info", "new", "recover"].map((command) => [
+        `docs:${command}`,
+        `agent-teams-docs ${command} --consumer . --profile ${profile.profilePath}`,
+      ]),
+    ))),
+  };
 }
 
 function dependencyBinding(container, name) {
@@ -416,8 +433,8 @@ export function validateDocsQualifiedCohorts(registry, schema, options = {}) {
       assert(record.upgrade_from.length === 0 && record.rollback_to.length === 0,
         `${record.cohort_id} initial Cohort cannot declare migration edges.`);
     } else {
-      assert(record.upgrade_from.length > 0 && record.rollback_to.length > 0,
-        `${record.cohort_id} successor requires explicit upgrade and rollback edges.`);
+      assert(record.upgrade_from.length > 0,
+        `${record.cohort_id} successor requires at least one explicit upgrade origin.`);
       assert(record.rollback_to.every((id) => record.upgrade_from.includes(id)),
         `${record.cohort_id} rollback targets must be declared upgrade origins.`);
     }
@@ -460,7 +477,6 @@ export function isDocsCohortSupportedForExistingBinding(
 
 export function docsCohortTransitionKind(observed, desired) {
   if (desired?.upgrade_from.includes(observed?.cohort_id)) {return "upgrade";}
-  if (observed?.rollback_to.includes(desired?.cohort_id)) {return "rollback";}
   return undefined;
 }
 
@@ -574,23 +590,15 @@ function assertBoundRepository(
     assert(repository.cohort_binding_status === "rollout_pending" &&
       transitionKind !== undefined,
     `${repository.repository} staged rollout lacks an explicit migration edge.`);
-    assert(observedSupported || (transitionKind === "rollback" && observedState === "SUSPENDED"),
-      `${repository.repository} rollout source is no longer supported and is not a suspended rollback source.`);
-    const targetAllowed = transitionKind === "upgrade"
-      ? isDocsCohortSelectableForRepository(
-        desired,
-        stateById.get(desired.cohort_id),
-        repository.repository_id,
-      )
-      : isDocsCohortSupportedForExistingBinding(
-        stateById.get(desired.cohort_id),
-        supportUntilById.get(desired.cohort_id),
-        asOf,
-        desired,
-        repository.repository_id,
-      );
+    assert(observedSupported || observedState === "SUSPENDED",
+      `${repository.repository} rollout source is no longer supported and is not suspended for fix-forward.`);
+    const targetAllowed = isDocsCohortSelectableForRepository(
+      desired,
+      stateById.get(desired.cohort_id),
+      repository.repository_id,
+    );
     assert(targetAllowed,
-      `${repository.repository} rollout target is not currently selectable or supported for rollback.`);
+      `${repository.repository} rollout target is not currently selectable.`);
   }
   const packageByName = new Map(observed.packages.map((entry) => [entry.name, entry]));
   assert(repository.exact_package_version === packageByName.get("@agent-teams/docs-protocol")?.version,

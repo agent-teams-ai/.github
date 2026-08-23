@@ -9,11 +9,14 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { isAlias, isNode, parseDocument, visit } from "yaml";
 
 import {
+  canonicalDocsManagedAssetDigests,
   docsRuntimeClosureAuthority,
   docsRuntimeClosureEvidence,
   docsCohortTransitionKind,
   isDocsCohortSelectableForRepository,
   isDocsCohortSupportedForExistingBinding,
+  QUALIFIED_DOCS_PROFILE_PATH,
+  QUALIFIED_DOCS_SKILL_PATH,
   validateDocsProtocolExceptions,
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
@@ -303,13 +306,7 @@ export function managedStateDigest(body) {
 export function canonicalManagedProjection(profile, cohort, repositoryIdentity) {
   const derivedAssets = {
     ...cohort.assets,
-    agentsRouteDigest: sha256(`<!-- agent-teams-docs:route/v1 begin -->\nUse [${profile.skillPath}](${profile.skillPath}) for documentation.\n<!-- agent-teams-docs:route/v1 end -->`),
-    docsScriptsDigest: sha256(canonicalJson(Object.fromEntries(
-      ["check", "doctor", "find", "info", "new", "recover"].map((command) => [
-        `docs:${command}`,
-        `agent-teams-docs ${command} --consumer . --profile ${profile.profilePath}`,
-      ]),
-    ))),
+    ...canonicalDocsManagedAssetDigests(profile),
   };
   const body = {
     schemaVersion: 1,
@@ -361,8 +358,8 @@ function assertProjection(projection, profile, expected, repository) {
   };
 
   assert(profile.schemaVersion === 1 && profile.integrationRoot === "." &&
-    profile.packageManager === "pnpm" && profile.profilePath === "architecture/foundation/docs-protocol.yaml" &&
-    profile.skillPath === ".agents/skills/docs-authoring/SKILL.md" &&
+    profile.packageManager === "pnpm" && profile.profilePath === QUALIFIED_DOCS_PROFILE_PATH &&
+    profile.skillPath === QUALIFIED_DOCS_SKILL_PATH &&
     profile.callerWorkflowPath === CALLER_WORKFLOW_PATH &&
     profile.managedStatePath === MANAGED_PROJECTION_PATH,
   "Consumer integration profile has a non-canonical managed topology.");

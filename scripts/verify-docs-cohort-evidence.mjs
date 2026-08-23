@@ -9,12 +9,18 @@ import YAML from "yaml";
 
 import { validateDocsProtocolWorkflow } from "./check-community-files.mjs";
 import {
+  canonicalDocsManagedAssetDigests,
   docsRuntimeClosureEvidence,
+  QUALIFIED_DOCS_PROFILE_PATH,
+  QUALIFIED_DOCS_SKILL_PATH,
+  qualifiedCohortProjection,
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
 import { loadJson } from "./governance-policy.mjs";
 
 const execFileAsync = promisify(execFile);
+const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/u;
+const TRANSITION_CATALOG_MAX_BYTES = 1024 * 1024;
 
 function assert(condition, message) {
   if (!condition) {throw new Error(message);}
@@ -278,6 +284,94 @@ function sha256(content) {
   return `sha256:${createHash("sha256").update(content).digest("hex")}`;
 }
 
+function plainRecord(value, label) {
+  assert(value !== null && typeof value === "object" && !Array.isArray(value),
+    `${label} must be a plain JSON object.`);
+  return value;
+}
+
+function hasExactKeys(value, keys) {
+  const observed = Object.keys(value).sort();
+  return observed.length === keys.length && keys.toSorted().every(
+    (key, index) => observed[index] === key,
+  );
+}
+
+function parseTransitionCatalog(bytes) {
+  assert(bytes.byteLength <= TRANSITION_CATALOG_MAX_BYTES,
+    "Published transition catalog exceeds its trusted size bound.");
+  let source;
+  try {source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);} catch {
+    throw new Error("Published transition catalog must be valid UTF-8.");
+  }
+  let parsed;
+  try {parsed = JSON.parse(source);} catch {
+    throw new Error("Published transition catalog must be valid JSON.");
+  }
+  const catalog = plainRecord(parsed, "Published transition catalog");
+  assert(hasExactKeys(catalog, ["schemaVersion", "currentSourceExecutors", "directTargetBundles"]) &&
+    catalog.schemaVersion === 1,
+  "Published transition catalog fields are invalid.");
+  assert(Array.isArray(catalog.currentSourceExecutors) &&
+    catalog.currentSourceExecutors.length <= 32 &&
+    Array.isArray(catalog.directTargetBundles) && catalog.directTargetBundles.length <= 32,
+  "Published transition catalog lists must be bounded arrays.");
+  return catalog;
+}
+
+function historyPath(digest, filename) {
+  return `assets/history/${digest.replace(":", "-")}/${filename}`;
+}
+
+async function verifyTransitionCatalog(record, registry, asOf, publishedFiles, docs, adapters) {
+  const catalog = parseTransitionCatalog(publishedFiles.get(record.assets.transition_catalog.path));
+  assert(catalog.currentSourceExecutors.length === 0,
+    `${record.cohort_id} fix-forward transition catalog cannot advertise source executors.`);
+  const managedDigests = canonicalDocsManagedAssetDigests({
+    profilePath: QUALIFIED_DOCS_PROFILE_PATH,
+    skillPath: QUALIFIED_DOCS_SKILL_PATH,
+  });
+  const targetById = new Map();
+  const historyAssets = [];
+  for (const rawTarget of catalog.directTargetBundles) {
+    const target = plainRecord(rawTarget, "Published direct target bundle");
+    assert(hasExactKeys(target, [
+      "cohort", "skillPath", "skillDigest", "callerWorkflowPath",
+      "callerWorkflowDigest", "agentsRouteDigest", "docsScriptsDigest",
+    ]), "Published direct target bundle fields are invalid.");
+    const targetCohort = plainRecord(target.cohort, "Published direct target Cohort");
+    const targetId = targetCohort.cohortId;
+    assert(typeof targetId === "string" && !targetById.has(targetId),
+      "Published direct target Cohort identities must be unique strings.");
+    const expected = qualifiedCohortProjection(registry, targetId, { asOf });
+    assert(canonicalJson(targetCohort) === canonicalJson(expected),
+      `${targetId} published transition binding differs from central immutable authority.`);
+    assert(target.skillDigest === expected.assets.skillDigest &&
+      target.callerWorkflowDigest === expected.assets.callerWorkflowDigest &&
+      target.agentsRouteDigest === managedDigests.agentsRouteDigest &&
+      target.docsScriptsDigest === managedDigests.docsScriptsDigest &&
+      SHA256_DIGEST.test(target.agentsRouteDigest) && SHA256_DIGEST.test(target.docsScriptsDigest),
+    `${targetId} published transition asset digests are invalid.`);
+    assert(target.skillPath === historyPath(target.skillDigest, "skill.md") &&
+      target.callerWorkflowPath === historyPath(target.callerWorkflowDigest, "caller.yml"),
+    `${targetId} published transition assets are not content-addressed.`);
+    targetById.set(targetId, target);
+    historyAssets.push([target.skillPath, target.skillDigest],
+      [target.callerWorkflowPath, target.callerWorkflowDigest]);
+  }
+  for (const origin of record.upgrade_from) {
+    assert(targetById.has(origin),
+      `${record.cohort_id} transition catalog does not bundle required upgrade origin ${origin}.`);
+  }
+  if (historyAssets.length === 0) {return;}
+  const paths = [...new Set(historyAssets.map(([path]) => path))];
+  const historicalFiles = await adapters.readPublishedPackage(docs, paths);
+  for (const [path, digest] of historyAssets) {
+    assert(historicalFiles.has(path) && sha256(historicalFiles.get(path)) === digest,
+      `${path} published historical asset differs from its immutable digest.`);
+  }
+}
+
 const CALLER_WORKFLOW_PLACEHOLDERS = [
   ["{{REUSABLE_WORKFLOW_REPOSITORY}}", "repository"],
   ["{{REUSABLE_WORKFLOW_PATH}}", "path"],
@@ -300,7 +394,7 @@ export function renderCallerWorkflowTemplate(content, reusableWorkflow) {
   return Buffer.from(rendered, "utf8");
 }
 
-async function verifyPublishedContents(record, adapters) {
+async function verifyPublishedContents(record, registry, asOf, adapters) {
   const foundation = record.packages[0];
   const docs = record.packages[1];
   const paths = ["package.json", ...Object.values(record.assets).map(({ path }) => path)];
@@ -317,6 +411,7 @@ async function verifyPublishedContents(record, adapters) {
   const renderedCaller = renderCallerWorkflowTemplate(callerTemplate, record.reusable_workflow);
   assert(sha256(renderedCaller) === record.assets.caller_workflow.rendered_digest,
     "caller_workflow rendered digest differs from its exact authority tuple.");
+  await verifyTransitionCatalog(record, registry, asOf, publishedFiles, docs, adapters);
 }
 
 async function verifyCanaryEvidence(record, canaryEvent, adapters) {
@@ -556,7 +651,7 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
     adapters,
     verifiedAttestations.find(({ name, version }) => name === entry.name && version === entry.version),
   )));
-  await verifyPublishedContents(record, adapters);
+  await verifyPublishedContents(record, registry, overrides.asOf, adapters);
   const runtimeClosure = await adapters.resolveRuntimeClosure(record.packages);
   const runtimeClosureSource = await adapters.readRuntimeClosureEvidence(
     record.runtime_closure.projection_path,
@@ -631,6 +726,9 @@ export async function verifyChangedDocsCohortEvidence(
     const isNewRecord = current.cohorts.slice(previousCohortCount).some(
       (record) => record.cohort_id === cohortId,
     );
+    const record = lifecycle.cohortById.get(cohortId);
+    assert(!isNewRecord || record.rollback_to.length === 0,
+      `${cohortId} new V1 Cohort must declare explicit fix-forward rollback policy.`);
     if (!isNewRecord && !appendedEvents.some(({ state }) => positiveStates.has(state))) {
       continue;
     }

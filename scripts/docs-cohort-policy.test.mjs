@@ -8,12 +8,15 @@ import YAML from "yaml";
 
 import {
   assertDocsCohortAppendOnly,
+  canonicalDocsManagedAssetDigests,
   cohortEventDigest,
   cohortRecordDigest,
   collectRepositoryInventoryPages,
   docsRuntimeClosureAuthority,
   docsRuntimeClosureEvidence,
   docsRuntimeClosureProjection,
+  QUALIFIED_DOCS_PROFILE_PATH,
+  QUALIFIED_DOCS_SKILL_PATH,
   observeStableRepositoryInventory,
   qualifiedCohortProjection,
   recommendedDocsCohort,
@@ -69,7 +72,7 @@ const ASSET_CONTENTS = {
   "skills/docs/SKILL.md": "trusted skill\n",
   "assets/docs-protocol.yml": "uses: {{REUSABLE_WORKFLOW_REPOSITORY}}/{{REUSABLE_WORKFLOW_PATH}}@{{REUSABLE_WORKFLOW_REVISION}}\n",
   "assets/catalog.json": "{}\n",
-  "assets/transition-catalog.json": "{\"schemaVersion\":1,\"transitions\":[]}\n",
+  "assets/transition-catalog.json": "{\"currentSourceExecutors\":[],\"directTargetBundles\":[],\"schemaVersion\":1}\n",
 };
 const assetDigest = (path) => `sha256:${createHash("sha256").update(ASSET_CONTENTS[path]).digest("hex")}`;
 const renderedCallerDigest = () => `sha256:${createHash("sha256").update(
@@ -279,6 +282,50 @@ function registry(states = ["PUBLISHED_UNQUALIFIED", "VERIFIED", "COOLDOWN", "QU
     result.events.push(event);
   }
   return result;
+}
+
+function registryWithFixForwardSuccessor() {
+  const result = registry();
+  const prior = result.cohorts[0];
+  const successor = structuredClone(prior);
+  Object.assign(successor, {
+    cohort_id: "docs-2026-08-19-stable1",
+    channel: "stable",
+    eligible_after: "2026-08-18T01:00:00Z",
+    upgrade_from: [prior.cohort_id],
+    rollback_to: [],
+  });
+  successor.record_digest = cohortRecordDigest(successor);
+  result.cohorts.push(successor);
+  const event = {
+    sequence: result.events.length + 1,
+    cohort_id: successor.cohort_id,
+    state: "PUBLISHED_UNQUALIFIED",
+    effective_at: "2026-08-16T00:00:00Z",
+    support_until: null,
+    evidence_references: ["governance/evidence/stable1-publication.json"],
+    canary_evidence: [],
+    previous_event_digest: result.events.at(-1).event_digest,
+    event_digest: `sha256:${"0".repeat(64)}`,
+  };
+  event.event_digest = cohortEventDigest(event);
+  result.events.push(event);
+  return result;
+}
+
+function publishedReader(record, transitionBytes, extraFiles = {}) {
+  const files = {
+    ...ASSET_CONTENTS,
+    "assets/transition-catalog.json": transitionBytes,
+    ...extraFiles,
+  };
+  return async (_entry, paths) => new Map(paths.map((path) => {
+    const value = path === "package.json" ? JSON.stringify({
+      dependencies: { "@agent-teams/engineering-foundation": record.packages[0].version },
+    }) : files[path];
+    assert.notEqual(value, undefined, `Missing published fixture ${path}`);
+    return [path, Buffer.isBuffer(value) ? value : Buffer.from(value)];
+  }));
 }
 
 function defaultBranchEvidence(repository, revision) {
@@ -1221,6 +1268,127 @@ test("live verifier binds tarball dependency/assets and exact hosted canary evid
   ), /live release workflow run does not bind/u);
 });
 
+test("qualifies only deployable fix-forward transition catalogs", async () => {
+  const missing = registryWithFixForwardSuccessor();
+  const missingRecord = missing.cohorts[1];
+  const emptyCatalog = Buffer.from(ASSET_CONTENTS["assets/transition-catalog.json"]);
+  missingRecord.assets.transition_catalog.digest = `sha256:${createHash("sha256")
+    .update(emptyCatalog).digest("hex")}`;
+  missingRecord.record_digest = cohortRecordDigest(missingRecord);
+  assert.doesNotThrow(() => validateDocsQualifiedCohorts(
+    missing, registrySchema, { asOf: "2026-08-18T02:00:00Z" },
+  ));
+  await assert.rejects(verifyDocsCohortEvidence(
+    missing,
+    registrySchema,
+    missingRecord.cohort_id,
+    verifierAdapters(missingRecord, {
+      readPublishedPackage: publishedReader(missingRecord, emptyCatalog),
+    }),
+  ), /does not bundle required upgrade origin/u);
+
+  const candidate = registryWithFixForwardSuccessor();
+  const prior = candidate.cohorts[0];
+  const record = candidate.cohorts[1];
+  const projection = qualifiedCohortProjection(
+    candidate, prior.cohort_id, { asOf: "2026-08-18T02:00:00Z" },
+  );
+  const historicalCaller = Buffer.from(
+    "uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@" +
+      "2".repeat(40) + "\n",
+  );
+  const bundle = {
+    cohort: projection,
+    skillPath: `assets/history/${prior.assets.skill.digest.replace(":", "-")}/skill.md`,
+    skillDigest: prior.assets.skill.digest,
+    callerWorkflowPath: `assets/history/${prior.assets.caller_workflow.rendered_digest
+      .replace(":", "-")}/caller.yml`,
+    callerWorkflowDigest: prior.assets.caller_workflow.rendered_digest,
+    ...canonicalDocsManagedAssetDigests({
+      profilePath: QUALIFIED_DOCS_PROFILE_PATH,
+      skillPath: QUALIFIED_DOCS_SKILL_PATH,
+    }),
+  };
+  const transitionBytes = Buffer.from(`${JSON.stringify({
+    currentSourceExecutors: [], directTargetBundles: [bundle], schemaVersion: 1,
+  })}\n`);
+  record.assets.transition_catalog.digest = `sha256:${createHash("sha256")
+    .update(transitionBytes).digest("hex")}`;
+  record.record_digest = cohortRecordDigest(record);
+  const extraFiles = {
+    [bundle.skillPath]: ASSET_CONTENTS["skills/docs/SKILL.md"],
+    [bundle.callerWorkflowPath]: historicalCaller,
+  };
+  await assert.doesNotReject(verifyDocsCohortEvidence(
+    candidate,
+    registrySchema,
+    record.cohort_id,
+    verifierAdapters(record, {
+      readPublishedPackage: publishedReader(record, transitionBytes, extraFiles),
+    }),
+  ));
+
+  for (const [field, digest] of [
+    ["agentsRouteDigest", `sha256:${"c".repeat(64)}`],
+    ["docsScriptsDigest", `sha256:${"d".repeat(64)}`],
+  ]) {
+    const forgedBytes = Buffer.from(`${JSON.stringify({
+      currentSourceExecutors: [],
+      directTargetBundles: [{ ...bundle, [field]: digest }],
+      schemaVersion: 1,
+    })}\n`);
+    record.assets.transition_catalog.digest = `sha256:${createHash("sha256")
+      .update(forgedBytes).digest("hex")}`;
+    record.record_digest = cohortRecordDigest(record);
+    await assert.rejects(verifyDocsCohortEvidence(
+      candidate,
+      registrySchema,
+      record.cohort_id,
+      verifierAdapters(record, {
+        readPublishedPackage: publishedReader(record, forgedBytes, extraFiles),
+      }),
+    ), /published transition asset digests are invalid/u);
+  }
+
+  record.assets.transition_catalog.digest = `sha256:${createHash("sha256")
+    .update(transitionBytes).digest("hex")}`;
+  record.rollback_to = [prior.cohort_id];
+  record.record_digest = cohortRecordDigest(record);
+  await assert.rejects(verifyChangedDocsCohortEvidence(
+    registry(),
+    candidate,
+    registrySchema,
+    verifierAdapters(record, {
+      readPublishedPackage: publishedReader(record, transitionBytes, extraFiles),
+    }),
+  ), /new V1 Cohort must declare explicit fix-forward/u);
+
+  const previous = structuredClone(candidate);
+  const promoted = structuredClone(candidate);
+  const verifiedEvent = {
+    sequence: promoted.events.length + 1,
+    cohort_id: record.cohort_id,
+    state: "VERIFIED",
+    effective_at: "2026-08-16T01:00:00Z",
+    support_until: null,
+    evidence_references: ["governance/evidence/stable1-verified.json"],
+    canary_evidence: [],
+    previous_event_digest: promoted.events.at(-1).event_digest,
+    event_digest: `sha256:${"0".repeat(64)}`,
+  };
+  verifiedEvent.event_digest = cohortEventDigest(verifiedEvent);
+  promoted.events.push(verifiedEvent);
+  const promotedRecord = promoted.cohorts[1];
+  await assert.doesNotReject(verifyChangedDocsCohortEvidence(
+    previous,
+    promoted,
+    registrySchema,
+    verifierAdapters(promotedRecord, {
+      readPublishedPackage: publishedReader(promotedRecord, transitionBytes, extraFiles),
+    }),
+  ));
+});
+
 test("live append verification covers each Cohort touched by new records or events", async () => {
   const current = registry();
   let signatureVerifications = 0;
@@ -1778,6 +1946,24 @@ test("permits desired/observed staging only across an explicit migration edge", 
     staged, exceptions, policy, securityPolicy, { asOf: "2026-09-18T03:00:00Z" },
   ), /no longer supported/u);
 
+  const suspendedUpgrade = structuredClone(staged);
+  const suspendedUpgradeEvent = {
+    sequence: suspendedUpgrade.events.length + 1,
+    cohort_id: observed.cohort_id,
+    state: "SUSPENDED",
+    effective_at: "2026-08-19T05:00:00Z",
+    support_until: null,
+    evidence_references: ["governance/evidence/observed-suspension.json"],
+    canary_evidence: [],
+    previous_event_digest: suspendedUpgrade.events.at(-1).event_digest,
+    event_digest: `sha256:${"0".repeat(64)}`,
+  };
+  suspendedUpgradeEvent.event_digest = cohortEventDigest(suspendedUpgradeEvent);
+  suspendedUpgrade.events.push(suspendedUpgradeEvent);
+  assert.doesNotThrow(() => validateDocsGovernanceReferences(
+    suspendedUpgrade, exceptions, policy, securityPolicy, { asOf: "2026-08-19T05:00:00Z" },
+  ));
+
   const unauthorized = structuredClone(policy);
   const secondConsumer = unauthorized.repositories.find(
     ({ repository }) => repository === "agent-teams-ai/extension-foundation",
@@ -1824,9 +2010,9 @@ test("permits desired/observed staging only across an explicit migration edge", 
       rollbackConsumer.qualification.observed_revision,
     ),
   });
-  assert.doesNotThrow(() => validateDocsGovernanceReferences(
+  assert.throws(() => validateDocsGovernanceReferences(
     staged, exceptions, rollback, securityPolicy, { asOf: "2026-08-19T04:00:00Z" },
-  ));
+  ), /lacks an explicit migration edge/u);
 
   const suspendedSource = structuredClone(staged);
   const suspension = {
@@ -1842,9 +2028,9 @@ test("permits desired/observed staging only across an explicit migration edge", 
   };
   suspension.event_digest = cohortEventDigest(suspension);
   suspendedSource.events.push(suspension);
-  assert.doesNotThrow(() => validateDocsGovernanceReferences(
+  assert.throws(() => validateDocsGovernanceReferences(
     suspendedSource, exceptions, rollback, securityPolicy, { asOf: "2026-08-19T05:00:00Z" },
-  ));
+  ), /lacks an explicit migration edge/u);
 
   successor.upgrade_from = [];
   successor.record_digest = cohortRecordDigest(successor);
