@@ -2822,6 +2822,39 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:adb0883973d6091042d4f1d59f895e5a4a4db3a25f18ebe93d39889f12eb6cf1",
       "event_digest": "sha256:be018ba57362a06d796386707ab75da7d670c2107c0dc1e582ffe75914cff6bf"
+    },
+    {
+      "sequence": 62,
+      "cohort_id": "docs-2026-08-24-stable2",
+      "state": "CANARY",
+      "effective_at": "2026-08-24T17:40:44Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/32757684490",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/pull/7",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/d9265c3b18aec5cb7a324342aeb95c011ec36abc"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1336577313,
+          "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+          "merge_revision": "d9265c3b18aec5cb7a324342aeb95c011ec36abc",
+          "observed_cohort_id": "docs-2026-08-24-stable2",
+          "observed_record_digest": "sha256:b37736f98967b8727d9f1466f165bb8a6345ec8f4677462cd19a2247372ae003",
+          "observed_event_digest": "sha256:be018ba57362a06d796386707ab75da7d670c2107c0dc1e582ffe75914cff6bf",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 97528889146,
+          "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/32757684490/job/97528889146",
+          "workflow_run_id": 32757684490,
+          "workflow_id": 336150203,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:d697c5c7c9bcfccfc006fcf7e4d4cc8e7c629f9689781b9b0b50f30d82bc019e"
+        }
+      ],
+      "previous_event_digest": "sha256:be018ba57362a06d796386707ab75da7d670c2107c0dc1e582ffe75914cff6bf",
+      "event_digest": "sha256:3a1e729dcb790afdd7a1d1cde4e3e0c7f26b5fc157217a26ac8f30ee3f8fa618"
     }
   ]
 }
