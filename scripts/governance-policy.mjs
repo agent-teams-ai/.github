@@ -570,7 +570,13 @@ export function validateDocsProtocolPolicy(policy, schema) {
       const decision = record.classification_evidence.decision;
       const pending = ["pending_onboarding", "pending_authority_decision"].includes(decision);
       const notApplicable = ["not_applicable_external_fork", "not_applicable_test_fixture"].includes(decision);
+      const candidateEvidencePaths = [
+        "package.json", record.profile_path, record.caller_workflow_path,
+        record.qualification_evidence_path,
+      ];
       assert((decision === "adopted" && record.docs_role === "consumer" && record.admission_status === "admitted" && record.qualification.status === "qualified") ||
+        (decision === "bootstrap_candidate" && record.docs_role === "consumer" && record.admission_status === "admission_candidate" && record.qualification.status === "not_qualified" &&
+          candidateEvidencePaths.every((path) => path !== null && record.classification_evidence.evidence_paths.includes(path))) ||
         (pending && record.docs_role === "pending_classification" && record.admission_status === "pending_classification") ||
         (notApplicable && record.docs_role === "not_applicable" && ["not_applicable", "exception"].includes(record.admission_status)),
       `${record.repository} classification evidence decision is incompatible with its protocol status.`);

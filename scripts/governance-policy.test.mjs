@@ -56,6 +56,44 @@ const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime"
   };
   return record;
 };
+const makeAdmissionCandidate = (policy, repository = "agent-teams-ai/agent-teams-token") => {
+  const record = policy.repositories.find((candidate) => candidate.repository === repository);
+  Object.assign(record, {
+    docs_role: "consumer",
+    protocol_required: true,
+    admission_status: "admission_candidate",
+    exact_package_version: null,
+    exact_foundation_version: null,
+    cohort_binding_status: "bootstrap_pending",
+    desired_cohort_id: "docs-2026-08-25-stable3",
+    observed_cohort_id: null,
+    observed_cohort_record_digest: null,
+    observed_cohort_event_digest: null,
+    profile_path: "architecture/foundation/docs-protocol.yaml",
+    caller_workflow_path: ".github/workflows/docs-protocol.yml",
+    reusable_workflow_revision: null,
+    qualification_evidence_path: "architecture/foundation/docs-protocol-qualification.json",
+    fixed_gate_command: policy.protocol.fixed_gate_command,
+    required_check_context: "docs-protocol / docs-protocol-check",
+    observed_default_branch_evidence: null,
+    qualification: { status: "not_qualified", observed_revision: null, evidence_paths: [] },
+    classification_evidence: {
+      decision: "bootstrap_candidate",
+      observed_revision: "c".repeat(40),
+      evidence_paths: [
+        "package.json",
+        "architecture/foundation/docs-protocol.yaml",
+        ".github/workflows/docs-protocol.yml",
+        "architecture/foundation/docs-protocol-qualification.json",
+      ],
+      rationale: "The managed integration is staged for bootstrap qualification.",
+      v2_qualification_coordinates: null,
+    },
+    exemption: null,
+    required_check_exception_id: null,
+  });
+  return record;
+};
 const coordinateChecksum = (entries) => {
   const canonical = [...entries]
     .sort(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
@@ -220,6 +258,54 @@ test("accepts a bootstrap candidate but rejects a premature qualified admission"
   });
   assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema),
     /qualified admission requires/u);
+});
+
+test("accepts bootstrap_candidate evidence only for an unqualified consumer candidate", () => {
+  const changed = clone(docsProtocol);
+  makeAdmissionCandidate(changed);
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+});
+
+test("rejects bootstrap_candidate evidence on pending, admitted, and not-applicable states", () => {
+  for (const repository of [
+    "agent-teams-ai/agent-teams-token",
+    "agent-teams-ai/agent-runtime",
+    "agent-teams-ai/docs-protocol-canary-20260817",
+  ]) {
+    const changed = clone(docsProtocol);
+    const record = changed.repositories.find((candidate) => candidate.repository === repository);
+    record.classification_evidence = {
+      decision: "bootstrap_candidate",
+      observed_revision: "c".repeat(40),
+      evidence_paths: ["package.json"],
+      rationale: "Invalid candidate-state fixture.",
+      v2_qualification_coordinates: null,
+    };
+    assert.throws(
+      () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+      /classification evidence decision is incompatible/u,
+      repository,
+    );
+  }
+});
+
+test("requires every bootstrap candidate evidence path", () => {
+  for (const omitted of [
+    "package.json",
+    "architecture/foundation/docs-protocol.yaml",
+    ".github/workflows/docs-protocol.yml",
+    "architecture/foundation/docs-protocol-qualification.json",
+  ]) {
+    const changed = clone(docsProtocol);
+    const candidate = makeAdmissionCandidate(changed);
+    candidate.classification_evidence.evidence_paths =
+      candidate.classification_evidence.evidence_paths.filter((path) => path !== omitted);
+    assert.throws(
+      () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+      /classification evidence decision is incompatible/u,
+      omitted,
+    );
+  }
 });
 
 test("allows only one organization-owned consumer rollout at a time", () => {
@@ -1113,6 +1199,19 @@ test("requires the canonical GitHub SHA-pinning API field", () => {
 
 test("accepts cross-policy required-check exception references", () => {
   assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory), clone(docsProtocol)));
+});
+
+test("accepts bootstrap_candidate evidence for a repository created after the ledger snapshot", () => {
+  const changed = clone(docsProtocol);
+  const candidate = makeAdmissionCandidate(changed);
+  const inventoryRecord = inventory.repositories.find(
+    ({ repository }) => repository === candidate.repository,
+  );
+  assert.ok(inventoryRecord.created_at.slice(0, 10) > ledger.snapshot_date);
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+  assert.doesNotThrow(() => validateGovernanceReferences(
+    clone(ledger), clone(security), clone(actions), clone(inventory), changed,
+  ));
 });
 
 test("rejects ledger removal hidden by decremented self-counts", () => {
