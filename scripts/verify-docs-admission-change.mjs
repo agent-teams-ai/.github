@@ -16,7 +16,7 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   const [policy, policySchema, exceptions, exceptionsSchema, registry, registrySchema, security] =
     await Promise.all([
       loadJson(paths.policy),
-      loadJson("governance/docs-protocol-policy.schema.json"),
+      loadJson("governance/docs-protocol-policy-v2.schema.json"),
       loadJson(paths.exceptions),
       loadJson("governance/docs-protocol-exceptions.schema.json"),
       loadJson("governance/docs-qualified-cohorts.json"),

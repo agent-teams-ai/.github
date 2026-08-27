@@ -22,7 +22,7 @@
           "scope": { "enum": ["required_docs_check", "cohort_upgrade", "consumer_admission"] },
           "authority_source": { "const": "governance/code-security-defaults.json" },
           "authority_exception_id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
-          "tracking_reference": { "type": "string", "minLength": 1, "maxLength": 1024 },
+          "tracking_reference": { "const": "governance/docs-protocol-policy-v2.json" },
           "status": { "const": "active" },
           "last_reviewed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
           "review_after": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },

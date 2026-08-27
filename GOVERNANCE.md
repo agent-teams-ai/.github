@@ -87,10 +87,18 @@ implementation or deployment qualification is claimed.
 
 ## Documentation Protocol Admission
 
-The strict
+The frozen stable3-compatible
 [`governance/docs-protocol-policy.json`](governance/docs-protocol-policy.json)
-record is the admission authority for the unified documentation protocol. It
-must reconcile exactly with the dated active repository inventory. Foundation
+is an immutable compatibility snapshot for already-pinned consumers. The current
+[`governance/docs-protocol-policy-v2.json`](governance/docs-protocol-policy-v2.json)
+is the sole evolving admission authority and must reconcile exactly with the dated active
+repository inventory. Validation locks the stable3 bytes and proves that its repository
+identities remain represented in v2, while lifecycle, admission, and Cohort fields evolve
+only in v2. The compatibility copy therefore cannot become a second mutable source of truth
+or block a v2 migration. A consumer pinned to the stable3 schemaVersion 1 projection still
+uses v2 for every current lifecycle and admission decision: pending classification,
+revocation, suspension, ineligibility, or any other non-admitted v2 state fails closed even
+when the frozen compatibility snapshot still says admitted. Foundation
 produces `@agent-teams/docs-protocol` but is not a protocol consumer. Product
 consumers own their profiles and cannot claim admission without an exact package
 version, pairwise-distinct profile/caller/qualification paths, the nonzero
@@ -98,8 +106,15 @@ consumer revision containing those artifacts, a separate nonzero immutable SHA
 for the central reusable-workflow target, evidence paths, and the fixed
 `pnpm docs:protocol:check` gate.
 
-The reusable workflow accepts no command input and no secret. It runs only the
-fixed gate after a frozen install. This repository does not claim that GitHub
+The reusable workflow accepts no command input and no secret. OIDC authorization,
+non-OIDC structural verification, exact Cohort qualification on a fresh runner, and the
+untrusted repository semantic gate are isolated jobs. The required semantic job fails
+closed unless every trusted job succeeds. v2 qualification installs the centrally authorized
+exact Cohort graph only into a fresh trusted temporary root, never consumer-provided
+`node_modules`; lifecycle hooks and pnpmfiles remain disabled. The installed package tree is
+bound before execution to the central expected package versions and SRI values, then the
+receipt verifier rechecks the same isolated bytes after execution.
+This repository does not claim that GitHub
 automatically applies reusable workflows, packages, profiles, or required checks
 to new repositories. Follow [repository admission](docs/repository-admission.md)
 for the reviewed consumer change and governance update.
@@ -107,9 +122,9 @@ for the reviewed consumer change and governance update.
 The external Craig fork remains explicitly exempt with review triggers. The
 Platform GitHub Free required-check exception remains separately authoritative;
 it does not waive the local or CI documentation gate. Continuous live inventory
-drift audit is unavailable until a dedicated read-only organization credential
-exists. ReviewRouter, Codex authentication, and interactive user credentials
-must not be repurposed for it.
+drift audit runs every six hours with a dedicated read-only organization credential
+and fails unless visible private repositories match the organization total. ReviewRouter,
+Codex authentication, and interactive user credentials must not be repurposed for it.
 
 The internal checksum hashes lexically sorted `path`, NUL, Git blob SHA, and LF
 records with SHA-256. It detects inconsistent edits inside the ledger; it does

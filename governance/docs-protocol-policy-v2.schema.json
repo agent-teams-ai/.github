@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agent-teams-ai/.github/governance/docs-protocol-policy-v2.schema.json",
+  "title": "Agent Teams documentation protocol admission policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "snapshot_revision",
+    "observed_at",
+    "organization",
+    "inventory_snapshot_revision",
+    "continuous_audit",
+    "protocol",
+    "admission",
+    "repositories"
+  ],
+  "properties": {
+    "$schema": { "const": "./docs-protocol-policy-v2.schema.json" },
+    "schema_version": { "const": 3 },
+    "snapshot_revision": { "$ref": "#/$defs/snapshotRevision" },
+    "observed_at": { "$ref": "#/$defs/date" },
+    "organization": { "const": "agent-teams-ai" },
+    "inventory_snapshot_revision": { "$ref": "#/$defs/snapshotRevision" },
+    "continuous_audit": { "const": false },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package",
+        "producer_repository",
+        "producer_is_consumer",
+        "version_policy",
+        "fixed_gate_command",
+        "reusable_workflow", "validation_contexts"
+      ],
+      "properties": {
+        "package": { "const": "@agent-teams/docs-protocol" },
+        "producer_repository": { "const": "agent-teams-ai/engineering-foundation" },
+        "producer_is_consumer": { "const": false },
+        "version_policy": { "const": "exact_registry_version" },
+        "fixed_gate_command": { "const": "pnpm docs:protocol:check" },
+        "reusable_workflow": { "const": ".github/workflows/docs-protocol-check.yml" },
+        "validation_contexts": {
+          "type": "object", "additionalProperties": false, "required": ["trusted_authorization", "trusted_structural", "untrusted_repository_qualification"],
+          "properties": {
+            "trusted_authorization": { "type": "object", "additionalProperties": false, "required": ["id_token", "executes_repository_code", "verifies"], "properties": { "id_token": { "const": "write" }, "executes_repository_code": { "const": false }, "verifies": { "type": "array", "prefixItems": [{ "const": "oidc_workflow_identity" }, { "const": "exact_head" }, { "const": "managed_projection_schema" }, { "const": "managed_projection_digests" }, { "const": "authorized_path_existence" }, { "const": "v2_qualification_contract_structure" }], "minItems": 6, "maxItems": 6 } } },
+            "trusted_structural": { "type": "object", "additionalProperties": false, "required": ["id_token", "executes_repository_code", "verifies"], "properties": { "id_token": { "const": "none" }, "executes_repository_code": { "const": false }, "verifies": { "type": "array", "prefixItems": [{ "const": "authorization_digest" }, { "const": "exact_checkout_bytes" }, { "const": "stable_controller_snapshot" }], "minItems": 3, "maxItems": 3 } } },
+            "untrusted_repository_qualification": { "type": "object", "additionalProperties": false, "required": ["id_token", "executes_repository_code", "qualification_cli_owner", "qualification_command", "receipt_verification", "semantic_gate_command"], "properties": { "id_token": { "const": "none" }, "executes_repository_code": { "const": true }, "qualification_cli_owner": { "const": "@agent-teams/docs-protocol" }, "qualification_command": { "const": "agent-teams-docs qualify --consumer . --integration <integration-path> --json" }, "receipt_verification": { "const": "released-cohort receipt digest and evidence bound to exact checkout SHA and Cohort" }, "semantic_gate_command": { "const": "pnpm docs:protocol:check" } } }
+          }
+        }
+      }
+    },
+    "admission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_repository_count",
+        "owned_repository_count",
+        "external_repository_count",
+        "fork_source_count",
+        "new_owned_repository_status",
+        "qualification_evidence_required",
+        "live_drift_audit"
+      ],
+      "properties": {
+        "expected_repository_count": { "type": "integer", "minimum": 1 },
+        "owned_repository_count": { "type": "integer", "minimum": 1 },
+        "external_repository_count": { "type": "integer", "minimum": 0 },
+        "fork_source_count": { "type": "integer", "minimum": 0 },
+        "new_owned_repository_status": { "const": "pending_classification" },
+        "qualification_evidence_required": { "const": true },
+        "live_drift_audit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "required_credential", "workflow", "max_pages", "stable_reads", "forbidden_credentials"],
+          "properties": {
+            "status": { "const": "bounded_ci_observer" },
+            "required_credential": { "const": "dedicated_read_only_org_inventory_credential" },
+            "workflow": { "const": ".github/workflows/organization-inventory-drift.yml" }, "max_pages": { "const": 10 }, "stable_reads": { "const": 2 },
+            "forbidden_credentials": {
+              "type": "array",
+              "prefixItems": [
+                { "const": "CODEX_AUTH_JSON" },
+                { "const": "REVIEWROUTER_CODEX_AUTH_JSON" },
+                { "const": "interactive_user_gh_token" }
+              ],
+              "minItems": 3,
+              "maxItems": 3
+            }
+          }
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/repository" }
+    }
+  },
+  "$defs": {
+    "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "snapshotRevision": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[1-9][0-9]*$"
+    },
+    "repositoryName": { "type": "string", "pattern": "^agent-teams-ai/[^/]+$" },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*:)(?!.*[\\u0000-\\u001F\\u007F])(?!.*(?:^|/)\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$"
+    },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "cohortId": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+    "exactVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$"
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "observed_revision", "evidence_paths"],
+      "properties": {
+        "status": { "enum": ["not_applicable", "not_qualified", "qualified"] },
+        "observed_revision": { "oneOf": [{ "$ref": "#/$defs/sha" }, { "type": "null" }] },
+        "evidence_paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/path" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "classificationEvidence": {
+      "type": "object", "additionalProperties": false, "required": ["decision", "observed_revision", "evidence_paths", "rationale", "v2_qualification_coordinates"],
+      "properties": {
+        "decision": { "enum": ["adopted", "pending_onboarding", "pending_authority_decision", "not_applicable_external_fork", "not_applicable_test_fixture"] },
+        "observed_revision": { "$ref": "#/$defs/sha" }, "evidence_paths": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/path" }, "uniqueItems": true },
+        "rationale": { "type": "string", "minLength": 1, "pattern": "\\S" }, "v2_qualification_coordinates": { "oneOf": [{ "$ref": "#/$defs/v2QualificationCoordinates" }, { "type": "null" }] }
+      },
+      "allOf": [{ "if": { "properties": { "decision": { "const": "adopted" } }, "required": ["decision"] }, "then": { "properties": { "v2_qualification_coordinates": { "$ref": "#/$defs/v2QualificationCoordinates" } } }, "else": { "properties": { "v2_qualification_coordinates": { "type": "null" } } } }]
+    },
+    "v2QualificationCoordinates": {
+      "type": "object", "additionalProperties": false, "required": ["schema_version", "integration_path", "contract_path", "gate_command", "qualification_command", "receipt_schema_version", "receipt_evidence_class", "receipt_transport", "trusted_structural_check_context", "untrusted_semantic_check_context"],
+      "properties": { "schema_version": { "const": 2 }, "integration_path": { "const": "architecture/foundation/docs-consumer-integration.json" }, "contract_path": { "const": "architecture/foundation/docs-protocol-qualification.json" }, "gate_command": { "const": "pnpm docs:protocol:check" }, "qualification_command": { "const": "agent-teams-docs qualify --consumer . --integration architecture/foundation/docs-consumer-integration.json --json" }, "receipt_schema_version": { "const": 2 }, "receipt_evidence_class": { "const": "released-cohort" }, "receipt_transport": { "const": "qualification_cli_json_stdout" }, "trusted_structural_check_context": { "const": "docs-protocol / trusted-structural" }, "untrusted_semantic_check_context": { "const": "docs-protocol / docs-protocol-check" } }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "repository_id",
+        "source_provenance",
+        "governance_ownership",
+        "repository_lifecycle",
+        "docs_role",
+        "protocol_required",
+        "admission_status",
+        "exact_package_version",
+        "exact_foundation_version",
+        "cohort_binding_status",
+        "desired_cohort_id",
+        "observed_cohort_id",
+        "observed_cohort_record_digest",
+        "observed_cohort_event_digest",
+        "profile_path",
+        "caller_workflow_path",
+        "reusable_workflow_revision",
+        "qualification_evidence_path",
+        "fixed_gate_command",
+        "required_check_context",
+        "observed_default_branch_evidence",
+        "qualification",
+        "exemption",
+        "required_check_exception_id"
+      ],
+      "properties": {
+        "repository": { "$ref": "#/$defs/repositoryName" },
+        "repository_id": { "type": "integer", "minimum": 1 },
+        "source_provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "parent_repository"],
+          "properties": {
+            "kind": { "enum": ["original", "fork"] },
+            "parent_repository": {
+              "oneOf": [
+                { "type": "string", "pattern": "^[^/]+/[^/]+$" },
+                { "type": "null" }
+              ]
+            }
+          }
+        },
+        "governance_ownership": { "enum": ["organization_owned", "external"] },
+        "repository_lifecycle": { "enum": ["active", "archived", "transferred", "deleted"] },
+        "docs_role": { "enum": ["pending_classification", "governance_controller", "protocol_producer", "consumer", "not_applicable"] },
+        "protocol_required": { "type": "boolean" },
+        "admission_status": { "enum": ["pending_classification", "not_applicable", "pending_admission", "admission_candidate", "admitted", "exception"] },
+        "exact_package_version": {
+          "oneOf": [
+            { "$ref": "#/$defs/exactVersion" },
+            { "type": "null" }
+          ]
+        },
+        "exact_foundation_version": {
+          "oneOf": [
+            { "$ref": "#/$defs/exactVersion" },
+            { "type": "null" }
+          ]
+        },
+        "cohort_binding_status": { "enum": ["not_applicable", "legacy_pre_cohort", "bootstrap_pending", "rollout_pending", "bound"] },
+        "desired_cohort_id": { "oneOf": [{ "$ref": "#/$defs/cohortId" }, { "type": "null" }] },
+        "observed_cohort_id": { "oneOf": [{ "$ref": "#/$defs/cohortId" }, { "type": "null" }] },
+        "observed_cohort_record_digest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "observed_cohort_event_digest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "profile_path": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "null" }] },
+        "caller_workflow_path": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "null" }] },
+        "reusable_workflow_revision": { "oneOf": [{ "$ref": "#/$defs/sha" }, { "type": "null" }] },
+        "qualification_evidence_path": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "null" }] },
+        "fixed_gate_command": { "oneOf": [{ "const": "pnpm docs:protocol:check" }, { "type": "null" }] },
+        "required_check_context": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 256 }, { "type": "null" }] },
+        "observed_default_branch_evidence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["default_branch", "revision", "required_context", "integration_id", "conclusion", "check_run_id", "check_run_url", "workflow_run_id", "workflow_id", "caller_workflow_path", "caller_workflow_digest", "observed_at"],
+              "properties": {
+                "default_branch": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "\\S" },
+                "revision": { "$ref": "#/$defs/sha" },
+                "required_context": { "type": "string", "minLength": 1, "maxLength": 256 },
+                "integration_id": { "type": "integer", "minimum": 1 },
+                "conclusion": { "const": "success" },
+                "check_run_id": { "type": "integer", "minimum": 1 },
+                "check_run_url": { "type": "string", "pattern": "^https://github\\.com/agent-teams-ai/[A-Za-z0-9_.-]+/actions/runs/[1-9][0-9]+(?:/job/[1-9][0-9]+)?$" },
+                "workflow_run_id": { "type": "integer", "minimum": 1 },
+                "workflow_id": { "type": "integer", "minimum": 1 },
+                "caller_workflow_path": { "$ref": "#/$defs/path" },
+                "caller_workflow_digest": { "$ref": "#/$defs/sha256" },
+                "observed_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{3})?Z$" }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "qualification": { "$ref": "#/$defs/qualification" },
+        "classification_evidence": { "oneOf": [{ "$ref": "#/$defs/classificationEvidence" }, { "type": "null" }] },
+        "exemption": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "reason", "review_triggers"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+                "reason": { "type": "string", "minLength": 1, "pattern": "\\S" },
+                "review_triggers": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+                  "uniqueItems": true
+                }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "required_check_exception_id": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}
