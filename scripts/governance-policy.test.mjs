@@ -1201,6 +1201,25 @@ test("accepts cross-policy required-check exception references", () => {
   assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory), clone(docsProtocol)));
 });
 
+test("rejects an archived repository in the active ledger despite exact historical identity coverage", () => {
+  const changedInventory = clone(inventory);
+  const changedDocsProtocol = clone(docsProtocol);
+  const repository = "agent-teams-ai/.github";
+  const archivedRecord = changedInventory.repositories.find(
+    (record) => record.repository === repository,
+  );
+  archivedRecord.archived = true;
+  changedDocsProtocol.repositories.find(
+    (record) => record.repository === repository,
+  ).repository_lifecycle = "archived";
+  assert.throws(
+    () => validateGovernanceReferences(
+      clone(ledger), clone(security), clone(actions), changedInventory, changedDocsProtocol,
+    ),
+    /active ledger identity must match/u,
+  );
+});
+
 test("accepts bootstrap_candidate evidence for a repository created after the ledger snapshot", () => {
   const changed = clone(docsProtocol);
   const candidate = makeAdmissionCandidate(changed);

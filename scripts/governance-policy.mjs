@@ -824,7 +824,7 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   for (const ledgerRecord of activeLedger.values()) {
     const record = inventoryByRepository.get(ledgerRecord.repository);
     assert(
-      record && ledgerRecord.repository_id === record.id &&
+      record && !record.archived && ledgerRecord.repository_id === record.id &&
         ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch,
       `${ledgerRecord.repository} active ledger identity must match the organization inventory.`,
     );
