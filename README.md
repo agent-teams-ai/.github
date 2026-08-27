@@ -14,7 +14,8 @@ the owning repository.
 - `SECURITY.md` - private vulnerability reporting policy.
 - `GOVERNANCE.md` - ownership and decision boundaries.
 - `governance/` - machine-readable qualification and security-policy records.
-- `governance/docs-protocol-policy.json` - strict documentation-protocol
+- `governance/docs-protocol-policy.json` - byte-locked stable3 compatibility snapshot.
+- `governance/docs-protocol-policy-v2.json` - current qualification-v2 documentation policy
   inventory, admission status, evidence, and exceptions.
 - `governance/docs-qualified-cohorts.json` - immutable package, workflow,
   schema, and asset Cohorts with append-only lifecycle evidence.

@@ -33,30 +33,20 @@ test("accepts the fixed documentation protocol reusable workflow", () => {
   assert.doesNotThrow(() => validateDocsProtocolWorkflow(clone(workflow), source));
 });
 
-test("rejects forbidden documentation protocol job capabilities", () => {
-  for (const field of ["permissions", "env", "container", "defaults"]) {
-    const changed = clone(workflow);
-    changed.jobs["docs-protocol-check"][field] = {};
-    assert.throws(
-      () => validateDocsProtocolWorkflow(changed, YAML.stringify(changed)),
-      /job shape, runner, and timeout/u,
-    );
-  }
+test("keeps OIDC only in the trusted authorization job", () => {
+  const root = clone(workflow); root.permissions["id-token"] = "write";
+  assert.throws(() => validateDocsProtocolWorkflow(root, YAML.stringify(root)), /exact trusted|allowlist/u);
+  const semantic = clone(workflow); semantic.jobs["docs-protocol-check"].permissions["id-token"] = "write";
+  assert.throws(() => validateDocsProtocolWorkflow(semantic, YAML.stringify(semantic)), /exact trusted|allowlist/u);
 });
 
-test("rejects a documentation protocol workflow on the wrong runner or timeout", () => {
-  for (const [field, value] of [
-    ["runs-on", "ubuntu-latest"],
-    ["timeout-minutes", 30],
-    ["if", "always()"],
-  ]) {
-    const changed = clone(workflow);
-    changed.jobs["docs-protocol-check"][field] = value;
-    assert.throws(
-      () => validateDocsProtocolWorkflow(changed, YAML.stringify(changed)),
-      /job shape, runner, and timeout/u,
-    );
-  }
+test("rejects wrong split-job runner, timeout, or dependency", () => {
+  for (const mutate of [
+    (changed) => { changed.jobs["trusted-structural"]["runs-on"] = "ubuntu-latest"; },
+    (changed) => { changed.jobs["docs-protocol-check"]["timeout-minutes"] = 30; },
+    (changed) => { changed.jobs["docs-protocol-check"].needs = null; },
+    (changed) => { changed.jobs["trusted-qualification"].needs = ["trusted-authorize"]; },
+  ]) { const changed = clone(workflow); mutate(changed); assert.throws(() => validateDocsProtocolWorkflow(changed, YAML.stringify(changed))); }
 });
 
 test("rejects root defaults, environment, or a second documentation protocol job", () => {
@@ -74,57 +64,46 @@ test("rejects root defaults, environment, or a second documentation protocol job
 test("rejects caller-controlled workflow inputs and secret capability", () => {
   const withInput = clone(workflow);
   withInput.on.workflow_call = { inputs: { cohort: { required: true, type: "string" } } };
-  assert.throws(() => validateDocsProtocolWorkflow(withInput, YAML.stringify(withInput)),
-    /inputless/u);
+  assert.throws(() => validateDocsProtocolWorkflow(withInput, YAML.stringify(withInput)));
 
   const withSecret = clone(workflow);
-  withSecret.jobs["docs-protocol-check"].steps[5].env.EXTRA = "${{ secrets.TOKEN }}";
+  withSecret.jobs["trusted-structural"].steps[5].env = { EXTRA: "${{ secrets.TOKEN }}" };
   assert.throws(() => validateDocsProtocolWorkflow(withSecret, YAML.stringify(withSecret)));
 });
 
-test("rejects bypass of preinstall verification or immutable checkout", () => {
-  const noLockVerification = clone(workflow);
-  noLockVerification.jobs["docs-protocol-check"].steps[9].run = "true";
-  assert.throws(() => validateDocsProtocolWorkflow(
-    noLockVerification,
-    YAML.stringify(noLockVerification),
-  ), /preinstall lock validation/u);
-
-  const credentialedCheckout = clone(workflow);
-  credentialedCheckout.jobs["docs-protocol-check"].steps[6].with["persist-credentials"] = true;
-  assert.throws(() => validateDocsProtocolWorkflow(
-    credentialedCheckout,
-    YAML.stringify(credentialedCheckout),
-  ), /immutable checkout/u);
-
-  const lockfileOnlyResolver = clone(workflow);
-  lockfileOnlyResolver.jobs["docs-protocol-check"].steps[8].run += " --lockfile-only";
-  assert.throws(() => validateDocsProtocolWorkflow(
-    lockfileOnlyResolver,
-    YAML.stringify(lockfileOnlyResolver),
-  ), /preinstall lock validation/u);
-});
-
-test("rejects appended commands and every extra step capability", () => {
-  const appended = clone(workflow);
-  appended.jobs["docs-protocol-check"].steps[13].run += " && node consumer-controlled.mjs";
-  assert.throws(() => validateDocsProtocolWorkflow(appended, YAML.stringify(appended)),
-    /trusted authorization/u);
-
-  const extraEnv = clone(workflow);
-  extraEnv.jobs["docs-protocol-check"].steps[13].env = { EXTRA: "value" };
-  assert.throws(() => validateDocsProtocolWorkflow(extraEnv, YAML.stringify(extraEnv)),
-    /trusted authorization/u);
-
-  const extraKey = clone(workflow);
-  extraKey.jobs["docs-protocol-check"].steps[13]["continue-on-error"] = true;
-  assert.throws(() => validateDocsProtocolWorkflow(extraKey, YAML.stringify(extraKey)),
-    /trusted authorization/u);
-
+test("rejects semantic commands in OIDC and changed authority", () => {
+  const trustedGate = clone(workflow);
+  trustedGate.jobs["trusted-authorize"].steps.push({ name: "bad", run: "pnpm docs:protocol:check" });
+  assert.throws(() => validateDocsProtocolWorkflow(trustedGate, YAML.stringify(trustedGate)), /allowlist/u);
   const changedAuthorityScript = clone(workflow);
-  changedAuthorityScript.jobs["docs-protocol-check"].steps[0].with.script += "\ncore.info('extra');\n";
+  changedAuthorityScript.jobs["trusted-authorize"].steps[0].with.script = "core.info('extra');\n";
   assert.throws(() => validateDocsProtocolWorkflow(
     changedAuthorityScript,
     YAML.stringify(changedAuthorityScript),
-  ), /trusted authorization/u);
+  ), /authority script/u);
+});
+
+test("rejects run/comment bypasses despite preserved step names", () => {
+  for (const mutate of [
+    (changed) => { changed.jobs["trusted-qualification"].steps[4].run = "true # base verifier install"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[9].run = "true # prepare-install"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[11].run = "true # pnpm install --ignore-scripts --ignore-pnpmfile"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[13].run = "true # agent-teams-docs qualify"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[14].run = "true # verify-docs-qualification-receipt.mjs"; },
+    (changed) => { changed.jobs["docs-protocol-check"].steps[5].run = "true # pnpm docs:protocol:check"; },
+  ]) {
+    const changed = clone(workflow);
+    mutate(changed);
+    assert.throws(() => validateDocsProtocolWorkflow(changed, YAML.stringify(changed)), /allowlist/u);
+  }
+});
+
+test("keeps schemaVersion 1 as a trusted qualification no-op", () => {
+  const qualification = workflow.jobs["trusted-qualification"];
+  assert.equal(qualification.steps[8].name, "Detect exact qualification contract version");
+  for (const step of qualification.steps.slice(9, 15)) {
+    assert.equal(step.if, "steps.qualification.outputs.enabled == 'true'");
+  }
+  assert.equal(qualification.steps.at(-1).if, undefined);
+  assert.equal(workflow.jobs["docs-protocol-check"].needs, "trusted-qualification");
 });

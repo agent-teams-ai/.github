@@ -11,7 +11,7 @@
       "scope": "required_docs_check",
       "authority_source": "governance/code-security-defaults.json",
       "authority_exception_id": "platform-private-required-checks-github-free",
-      "tracking_reference": "governance/docs-protocol-policy.json",
+      "tracking_reference": "governance/docs-protocol-policy-v2.json",
       "status": "active",
       "last_reviewed_at": "2026-08-16",
       "review_after": "2026-09-16",

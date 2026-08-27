@@ -1,19 +1,23 @@
 {
   "$schema": "./organization-repository-inventory.schema.json",
   "schema_version": 2,
-  "snapshot_revision": "2026-08-17.1",
-  "observed_at": "2026-08-17",
+  "snapshot_revision": "2026-08-27.1",
+  "observed_at": "2026-08-27",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
   "verification": "human_reviewed_dated_api_snapshot",
   "endpoint": "https://api.github.com/orgs/agent-teams-ai/repos?type=all&per_page=100",
-  "fork_evidence_endpoint": "https://api.github.com/repos/agent-teams-ai/craig-meeting-gateway",
-  "checksum_algorithm": "sha256-internal-consistency(sorted(repository + NUL + id + NUL + archived + NUL + visibility + NUL + default_branch + NUL + is_fork + NUL + json(fork_parent) + LF))",
-  "checksum_sha256": "7630a5307c6cde4d8bce88da7f1b2a4e2b2e7ab31c96afbf201af41c329543b0",
+  "fork_evidence_endpoints": [
+    "https://api.github.com/repos/agent-teams-ai/craig-meeting-gateway",
+    "https://api.github.com/repos/agent-teams-ai/universal-agent-plugins"
+  ],
+  "checksum_algorithm": "sha256-internal-consistency(sorted(repository + NUL + id + NUL + created_at + NUL + archived + NUL + visibility + NUL + default_branch + NUL + is_fork + NUL + json(fork_parent) + LF))",
+  "checksum_sha256": "43acbdbd47febf7b2b5f47dfe2eb34b055981dfa60e968770ba5c4c4f016ba13",
   "repositories": [
     {
       "repository": "agent-teams-ai/.github",
       "id": 1316243981,
+      "created_at": "2026-07-29T14:44:56Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "main",
@@ -23,15 +27,19 @@
     {
       "repository": "agent-teams-ai/agent-runtime",
       "id": 1314129620,
+      "created_at": "2026-07-27T17:54:22Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "main",
       "is_fork": false,
       "fork_parent": null
     },
+    { "repository": "agent-teams-ai/agent-architecture-standard", "id": 1347745359, "created_at": "2026-08-26T19:58:03Z", "archived": false, "visibility": "private", "default_branch": "main", "is_fork": false, "fork_parent": null },
+    { "repository": "agent-teams-ai/agent-teams-token", "id": 1348461381, "created_at": "2026-08-27T12:25:49Z", "archived": false, "visibility": "private", "default_branch": "main", "is_fork": false, "fork_parent": null },
     {
       "repository": "agent-teams-ai/agent-teams-orchestrator",
       "id": 1310245598,
+      "created_at": "2026-07-23T18:19:39Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "main",
@@ -41,6 +49,7 @@
     {
       "repository": "agent-teams-ai/agent-teams-platform",
       "id": 1319378484,
+      "created_at": "2026-08-01T14:54:37Z",
       "archived": false,
       "visibility": "private",
       "default_branch": "main",
@@ -50,6 +59,7 @@
     {
       "repository": "agent-teams-ai/craig-meeting-gateway",
       "id": 1319652670,
+      "created_at": "2026-08-01T22:07:42Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "master",
@@ -59,6 +69,7 @@
     {
       "repository": "agent-teams-ai/docs-protocol-canary-20260817",
       "id": 1336577313,
+      "created_at": "2026-08-17T02:35:33Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "main",
@@ -68,6 +79,7 @@
     {
       "repository": "agent-teams-ai/engineering-foundation",
       "id": 1316243988,
+      "created_at": "2026-07-29T14:44:56Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "main",
@@ -77,11 +89,14 @@
     {
       "repository": "agent-teams-ai/extension-foundation",
       "id": 1333298097,
+      "created_at": "2026-08-13T16:04:33Z",
       "archived": false,
       "visibility": "public",
       "default_branch": "main",
       "is_fork": false,
       "fork_parent": null
-    }
+    },
+    { "repository": "agent-teams-ai/uap-external-submission-fixture", "id": 1341702691, "created_at": "2026-08-21T10:51:04Z", "archived": false, "visibility": "public", "default_branch": "main", "is_fork": false, "fork_parent": null },
+    { "repository": "agent-teams-ai/universal-agent-plugins", "id": 1341702671, "created_at": "2026-08-21T10:51:03Z", "archived": false, "visibility": "public", "default_branch": "main", "is_fork": true, "fork_parent": "777genius/universal-agent-plugins" }
   ]
 }

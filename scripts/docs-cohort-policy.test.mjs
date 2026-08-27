@@ -46,7 +46,7 @@ const authoritativeRegistry = await loadJson("governance/docs-qualified-cohorts.
 const emptyRegistry = { ...structuredClone(authoritativeRegistry), cohorts: [], events: [] };
 const exceptionsSchema = await loadJson("governance/docs-protocol-exceptions.schema.json");
 const exceptions = await loadJson("governance/docs-protocol-exceptions.json");
-const docsPolicy = await loadJson("governance/docs-protocol-policy.json");
+const docsPolicy = await loadJson("governance/docs-protocol-policy-v2.json");
 const securityPolicy = await loadJson("governance/code-security-defaults.json");
 const appendOnlyWorkflow = await readFile(
   ".github/workflows/docs-cohort-append-only.yml",
@@ -432,6 +432,9 @@ test("keeps admission credentials out of PR-head execution", () => {
     /GH_TOKEN: \$\{\{ secrets\.DOCS_GOVERNANCE_READ_TOKEN \|\| github\.token \}\}/u);
   assert.match(admissionWorkflow, /DOCS_GOVERNANCE_READ_TOKEN: \$\{\{ secrets\.DOCS_GOVERNANCE_READ_TOKEN \}\}/u);
   assert.match(admissionWorkflow, /verify-docs-admission-change\.mjs/u);
+  assert.match(admissionWorkflow, /const policyPath = "governance\/docs-protocol-policy-v2\.json"/u);
+  assert.match(admissionWorkflow, /"governance\/docs-protocol-policy\.json"/u);
+  assert.match(admissionWorkflow, /"governance\/docs-protocol-policy-v2\.schema\.json"/u);
   assert.match(admissionWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(admissionWorkflow, /hardAuthority\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
   const admissionScope = admissionWorkflow.indexOf("const changesAdmission");

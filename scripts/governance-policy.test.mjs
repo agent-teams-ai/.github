@@ -7,6 +7,7 @@ import {
   loadJson,
   validateActionsPolicy,
   validateCodeSecurityDefaults,
+  validateDocsProtocolCompatibilitySnapshot,
   validateDocsProtocolPolicy,
   validateExecutableSpecLedger,
   validateGovernanceReferences,
@@ -21,8 +22,10 @@ const security = await loadJson("governance/code-security-defaults.json");
 const securitySchema = await loadJson("governance/code-security-defaults.schema.json");
 const actions = await loadJson("governance/actions-policy.json");
 const actionsSchema = await loadJson("governance/actions-policy.schema.json");
-const docsProtocol = await loadJson("governance/docs-protocol-policy.json");
-const docsProtocolSchema = await loadJson("governance/docs-protocol-policy.schema.json");
+const docsProtocol = await loadJson("governance/docs-protocol-policy-v2.json");
+const docsProtocolSchema = await loadJson("governance/docs-protocol-policy-v2.schema.json");
+const stableDocsProtocolSource = await readFile("governance/docs-protocol-policy.json", "utf8");
+const stableDocsProtocolSchemaSource = await readFile("governance/docs-protocol-policy.schema.json", "utf8");
 const clone = (value) => structuredClone(value);
 const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime") => {
   const record = policy.repositories.find((candidate) => candidate.repository === repository);
@@ -75,8 +78,105 @@ test("rejects an internally inconsistent organization inventory entry", () => {
   );
 });
 
+test("requires fork evidence endpoints to cover every current fork", () => {
+  const changed = clone(inventory); changed.fork_evidence_endpoints.pop();
+  assert.throws(() => validateOrganizationRepositoryInventory(changed, inventorySchema), /exactly cover every current fork/u);
+});
+
 test("accepts the authoritative documentation protocol admission policy", () => {
   assert.doesNotThrow(() => validateDocsProtocolPolicy(clone(docsProtocol), docsProtocolSchema));
+});
+
+test("keeps stable3 as an immutable compatibility snapshot represented in v2", () => {
+  assert.doesNotThrow(() => validateDocsProtocolCompatibilitySnapshot(
+    stableDocsProtocolSource,
+    stableDocsProtocolSchemaSource,
+    clone(docsProtocol),
+  ));
+});
+
+test("rejects byte drift in the frozen stable3 compatibility artifacts", () => {
+  assert.throws(
+    () => validateDocsProtocolCompatibilitySnapshot(
+      `${stableDocsProtocolSource} `,
+      stableDocsProtocolSchemaSource,
+      clone(docsProtocol),
+    ),
+    /snapshot bytes must remain immutable/u,
+  );
+  assert.throws(
+    () => validateDocsProtocolCompatibilitySnapshot(
+      stableDocsProtocolSource,
+      `${stableDocsProtocolSchemaSource} `,
+      clone(docsProtocol),
+    ),
+    /schema bytes must remain immutable/u,
+  );
+});
+
+test("rejects removal of a stable3 repository identity from v2", () => {
+  const changed = clone(docsProtocol);
+  changed.repositories = changed.repositories.filter(
+    ({ repository }) => repository !== "agent-teams-ai/agent-runtime",
+  );
+  assert.throws(
+    () => validateDocsProtocolCompatibilitySnapshot(
+      stableDocsProtocolSource,
+      stableDocsProtocolSchemaSource,
+      changed,
+    ),
+    /agent-runtime identity from the stable3 compatibility snapshot/u,
+  );
+});
+
+test("allows v2 consumer migration and v2-only evolution without changing stable3", () => {
+  const changed = clone(docsProtocol);
+  const runtime = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  runtime.exact_package_version = "0.2.0";
+  runtime.exact_foundation_version = "0.20.0";
+  runtime.cohort_binding_status = "rollout_pending";
+  runtime.desired_cohort_id = "docs-v2";
+  changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/agent-teams-token",
+  ).classification_evidence.rationale = "A v2-only classification update.";
+  assert.doesNotThrow(() => validateDocsProtocolCompatibilitySnapshot(
+    stableDocsProtocolSource,
+    stableDocsProtocolSchemaSource,
+    changed,
+  ));
+});
+
+test("requires v2 receipt and contract coordinates before a classification is adopted", () => {
+  const changed = clone(docsProtocol);
+  const token = changed.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-teams-token");
+  token.classification_evidence.decision = "adopted";
+  assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema), /JSON Schema/u);
+});
+
+test("rejects local-development qualification receipts from governance admission", () => {
+  const changed = clone(docsProtocol);
+  const runtime = changed.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-runtime");
+  runtime.classification_evidence = {
+    decision: "adopted",
+    observed_revision: runtime.qualification.observed_revision,
+    evidence_paths: runtime.qualification.evidence_paths,
+    rationale: "Fixture proving that local development output is non-admissible.",
+    v2_qualification_coordinates: {
+      schema_version: 2,
+      integration_path: "architecture/foundation/docs-consumer-integration.json",
+      contract_path: "architecture/foundation/docs-protocol-qualification.json",
+      gate_command: "pnpm docs:protocol:check",
+      qualification_command: "agent-teams-docs qualify --consumer . --integration architecture/foundation/docs-consumer-integration.json --json",
+      receipt_schema_version: 2,
+      receipt_evidence_class: "local-development",
+      receipt_transport: "qualification_cli_json_stdout",
+      trusted_structural_check_context: "docs-protocol / trusted-structural",
+      untrusted_semantic_check_context: "docs-protocol / docs-protocol-check"
+    }
+  };
+  assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema), /JSON Schema/u);
 });
 
 test("accepts a bootstrap candidate but rejects a premature qualified admission", () => {
@@ -1022,7 +1122,7 @@ test("rejects ledger removal hidden by decremented self-counts", () => {
   changed.scope.observed_repository_count -= 1;
   assert.throws(
     () => validateGovernanceReferences(changed, clone(security), clone(actions), clone(inventory), clone(docsProtocol)),
-    /scope counts must match/u,
+    /scope must exactly match repository identities/u,
   );
 });
 

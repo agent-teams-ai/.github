@@ -449,8 +449,8 @@ function inventoryChecksum(entries) {
   const canonical = [...entries]
     .sort(({ repository: left }, { repository: right }) =>
       left < right ? -1 : left > right ? 1 : 0)
-    .map(({ repository, id, archived, visibility, default_branch: branch, is_fork: fork, fork_parent: parent }) =>
-      `${repository}\0${id}\0${archived}\0${visibility}\0${branch}\0${fork}\0${JSON.stringify(parent)}\n`)
+    .map(({ repository, id, created_at: createdAt, archived, visibility, default_branch: branch, is_fork: fork, fork_parent: parent }) =>
+      `${repository}\0${id}\0${createdAt}\0${archived}\0${visibility}\0${branch}\0${fork}\0${JSON.stringify(parent)}\n`)
     .join("");
   return createHash("sha256").update(canonical).digest("hex");
 }
@@ -471,6 +471,10 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
       `${record.repository} fork identity and parent must agree.`,
     );
   }
+  const expectedForkEvidenceEndpoints = inventory.repositories.filter(({ is_fork: fork }) => fork)
+    .map(({ repository }) => `https://api.github.com/repos/${repository}`).sort();
+  assert(JSON.stringify([...inventory.fork_evidence_endpoints].sort()) === JSON.stringify(expectedForkEvidenceEndpoints),
+    "Inventory fork evidence endpoints must exactly cover every current fork.");
   assert(
     inventory.checksum_sha256 === inventoryChecksum(inventory.repositories),
     "Inventory internal checksum does not match its structural entries.",
@@ -562,6 +566,17 @@ export function validateDocsProtocolPolicy(policy, schema) {
         (record.source_provenance.parent_repository !== null),
       `${record.repository} source provenance kind and parent must agree.`,
     );
+    if (record.classification_evidence != null) {
+      const decision = record.classification_evidence.decision;
+      const pending = ["pending_onboarding", "pending_authority_decision"].includes(decision);
+      const notApplicable = ["not_applicable_external_fork", "not_applicable_test_fixture"].includes(decision);
+      assert((decision === "adopted" && record.docs_role === "consumer" && record.admission_status === "admitted" && record.qualification.status === "qualified") ||
+        (pending && record.docs_role === "pending_classification" && record.admission_status === "pending_classification") ||
+        (notApplicable && record.docs_role === "not_applicable" && ["not_applicable", "exception"].includes(record.admission_status)),
+      `${record.repository} classification evidence decision is incompatible with its protocol status.`);
+      assert(record.classification_evidence.evidence_paths.every(isCanonicalRepositoryPath),
+        `${record.repository} classification evidence paths must be canonical.`);
+    }
     const consumer = record.docs_role === "consumer";
     const admitted = record.admission_status === "admitted";
     const qualified = record.qualification.status === "qualified";
@@ -701,6 +716,46 @@ export function validateDocsProtocolPolicy(policy, schema) {
   }
 }
 
+const STABLE3_POLICY_SHA256 = "e609db7a11397866211b5665e03217ad06c9e9356afc8214606b32017bd6d37d";
+const STABLE3_POLICY_SCHEMA_SHA256 = "fd8c377a16fc7141ca60b9011881486475c1a545170f875bcc6a4a19a7295571";
+
+export function validateDocsProtocolCompatibilitySnapshot(
+  stablePolicySource,
+  stableSchemaSource,
+  currentPolicy,
+) {
+  assert(
+    createHash("sha256").update(stablePolicySource).digest("hex") === STABLE3_POLICY_SHA256,
+    "Stable3 documentation policy compatibility snapshot bytes must remain immutable.",
+  );
+  assert(
+    createHash("sha256").update(stableSchemaSource).digest("hex") === STABLE3_POLICY_SCHEMA_SHA256,
+    "Stable3 documentation policy schema bytes must remain immutable.",
+  );
+
+  const stablePolicy = JSON.parse(stablePolicySource);
+  const stableSchema = JSON.parse(stableSchemaSource);
+  validateSchema(stablePolicy, stableSchema, "Stable3 documentation protocol compatibility policy");
+
+  assert(
+    stablePolicy.snapshot_revision === "2026-08-17.6",
+    "Stable3 documentation policy compatibility snapshot revision must remain frozen.",
+  );
+  assert(
+    stablePolicy.organization === currentPolicy.organization,
+    "Stable3 and current documentation policies must govern the same organization.",
+  );
+
+  const currentRepositories = new Set(currentPolicy.repositories.map((record) =>
+    `${record.repository}\0${record.repository_id}`));
+  for (const stableRecord of stablePolicy.repositories) {
+    assert(
+      currentRepositories.has(`${stableRecord.repository}\0${stableRecord.repository_id}`),
+      `${stableRecord.repository} identity from the stable3 compatibility snapshot must remain represented in v2.`,
+    );
+  }
+}
+
 export function validateActionsPolicy(policy, schema) {
   validateSchema(policy, schema, "Actions policy snapshot");
   assert(
@@ -754,41 +809,39 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   );
   const activeInventory = inventory.repositories.filter(({ archived }) => !archived);
   const archivedInventory = inventory.repositories.filter(({ archived }) => archived);
-  assert(
-    ledger.snapshot_date === inventory.observed_at &&
-      ledger.scope.observed_repository_count === inventory.repositories.length &&
-      ledger.scope.active_repository_count === activeInventory.length &&
-      ledger.scope.archived_exclusions.length === archivedInventory.length,
-    "Ledger scope counts must match the dated organization inventory.",
-  );
+  assert(ledger.snapshot_date <= inventory.observed_at,
+    "Executable-spec ledger observation must not postdate the organization inventory.");
   const activeLedger = new Map(ledger.repositories.map((record) => [record.repository, record]));
   const archivedLedger = new Map(
     ledger.scope.archived_exclusions.map((record) => [record.repository, record]),
   );
-  for (const record of activeInventory) {
-    const ledgerRecord = activeLedger.get(record.repository);
+  for (const ledgerRecord of activeLedger.values()) {
+    const record = inventoryByRepository.get(ledgerRecord.repository);
     assert(
-      ledgerRecord?.repository_id === record.id &&
+      record && ledgerRecord.repository_id === record.id &&
         ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch,
-      `${record.repository} active ledger identity must match the organization inventory.`,
+      `${ledgerRecord.repository} active ledger identity must match the organization inventory.`,
     );
     assert(
       ledgerRecord.gate_contract.remote_required_checks.status !==
         "unavailable_free_private_repository" || record.visibility === "private",
-      `${record.repository} private-repository ruleset unavailability requires private inventory visibility.`,
+      `${ledgerRecord.repository} private-repository ruleset unavailability requires private inventory visibility.`,
     );
   }
-  for (const record of archivedInventory) {
-    const exclusion = archivedLedger.get(record.repository);
+  for (const exclusion of archivedLedger.values()) {
+    const record = inventoryByRepository.get(exclusion.repository);
     assert(
-      exclusion?.repository_id === record.id,
-      `${record.repository} archived exclusion must match the organization inventory.`,
+      record?.archived && exclusion.repository_id === record.id,
+      `${exclusion.repository} archived exclusion must match the organization inventory.`,
     );
   }
-  assert(
-    activeLedger.size === activeInventory.length && archivedLedger.size === archivedInventory.length,
-    "Ledger repository sets must exactly match the organization inventory split.",
-  );
+  const known = new Map(inventory.repositories
+    .filter(({ created_at }) => created_at.slice(0, 10) <= ledger.snapshot_date)
+    .map((record) => [record.repository, record]));
+  const historicalLedger = new Map([...activeLedger, ...archivedLedger]);
+  assert(historicalLedger.size === known.size && [...known].every(([repository, record]) =>
+    historicalLedger.get(repository)?.repository_id === record.id),
+  "Ledger scope must exactly match repository identities created by its dated organization snapshot.");
   const activeDocsProtocol = docsProtocol.repositories.filter(
     ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
   );
@@ -806,6 +859,21 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
         protocolRecord.source_provenance.parent_repository === record.fork_parent,
       `${record.repository} documentation protocol source provenance must match fork evidence.`,
     );
+    if (record.created_at.slice(0, 10) > ledger.snapshot_date) {
+      assert(protocolRecord.classification_evidence != null,
+        `${record.repository} created after the prior qualification ledger requires machine-readable classification evidence.`);
+    }
+    const decision = protocolRecord.classification_evidence?.decision;
+    if (decision === "not_applicable_external_fork") {
+      assert(protocolRecord.source_provenance.kind === "fork" &&
+        protocolRecord.governance_ownership === "external",
+      `${record.repository} external-fork classification must match provenance and ownership.`);
+    }
+    if (decision === "not_applicable_test_fixture") {
+      assert(protocolRecord.source_provenance.kind === "original" &&
+        protocolRecord.governance_ownership === "organization_owned",
+      `${record.repository} test-fixture classification must be organization-owned original provenance.`);
+    }
   }
   assert(
     docsProtocolById.size === activeInventory.length,

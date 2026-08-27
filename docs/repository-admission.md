@@ -27,7 +27,7 @@ The repository owner must:
    Cohort projection itself;
 7. prove positive and negative profile/adoption fixtures in a disposable test
    project;
-8. update `governance/docs-protocol-policy.json` with the centrally admitted
+8. update `governance/docs-protocol-policy-v2.json` with the centrally admitted
    exact package version, profile path, caller workflow path, qualification
    evidence path, the nonzero consumer revision at which those three artifacts
    were observed, and the separate nonzero central reusable-workflow revision.

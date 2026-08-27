@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
+import { lstat, mkdir, opendir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,6 +25,7 @@ const CONTROLLER_REPOSITORY = "agent-teams-ai/.github";
 const REUSABLE_WORKFLOW_PATH = ".github/workflows/docs-protocol-check.yml";
 const INTEGRATION_PROFILE_PATH = "architecture/foundation/docs-consumer-integration.json";
 const MANAGED_PROJECTION_PATH = "architecture/foundation/docs-protocol-managed-state.json";
+const QUALIFICATION_CONTRACT_PATH = "architecture/foundation/docs-protocol-qualification.json";
 const CALLER_WORKFLOW_PATH = ".github/workflows/docs-protocol.yml";
 const PNPM_WORKSPACE_PATH = "pnpm-workspace.yaml";
 const MANAGED_PACKAGES = Object.freeze([
@@ -34,11 +35,18 @@ const MANAGED_PACKAGES = Object.freeze([
 export const CURRENT_CONTROLLER_DATA_PATHS = Object.freeze([
   "governance/docs-protocol-exceptions.json",
   "governance/docs-protocol-policy.json",
+  "governance/docs-protocol-policy-v2.json",
   "governance/docs-qualified-cohorts.json",
 ]);
+export function currentDocsAdmissionPolicySource(controllerDataSources) {
+  const source = controllerDataSources?.["governance/docs-protocol-policy-v2.json"];
+  assert(typeof source === "string", "Current v2 Docs admission authority is missing.");
+  return source;
+}
 const JSON_LIMITS = Object.freeze({
   [INTEGRATION_PROFILE_PATH]: 128 * 1024,
   [MANAGED_PROJECTION_PATH]: 64 * 1024,
+  [QUALIFICATION_CONTRACT_PATH]: 512 * 1024,
   "package.json": 512 * 1024,
 });
 const LOCKFILE_LIMIT = 8 * 1024 * 1024;
@@ -357,7 +365,7 @@ function assertProjection(projection, profile, expected, repository) {
     nameWithOwner: repository.fullName,
   };
 
-  assert(profile.schemaVersion === 1 && profile.integrationRoot === "." &&
+  assert((profile.schemaVersion === 1 || profile.schemaVersion === 2) && profile.integrationRoot === "." &&
     profile.packageManager === "pnpm" && profile.profilePath === QUALIFIED_DOCS_PROFILE_PATH &&
     profile.skillPath === QUALIFIED_DOCS_SKILL_PATH &&
     profile.callerWorkflowPath === CALLER_WORKFLOW_PATH &&
@@ -587,6 +595,8 @@ function assertRepositoryTree(paths) {
   assert(workspace === undefined || (workspace.type === "blob" && workspace.mode !== "120000"),
     `${PNPM_WORKSPACE_PATH} must be one regular committed file when present.`);
   for (const { path } of normalized) {
+    assert(!path.split("/").includes("node_modules"),
+      "Consumer tree must not commit or prepopulate node_modules.");
     assert(path !== ".pnpmfile.cjs" && !path.endsWith("/.pnpmfile.cjs"),
       "Consumer tree contains forbidden .pnpmfile.cjs.");
     assert(path === "pnpm-lock.yaml" || !path.endsWith("/pnpm-lock.yaml"),
@@ -594,6 +604,21 @@ function assertRepositoryTree(paths) {
     assert(path === PNPM_WORKSPACE_PATH || !path.endsWith(`/${PNPM_WORKSPACE_PATH}`),
       `Consumer tree contains unsupported nested workspace policy ${path}.`);
   }
+}
+
+export function validateQualificationContractV2Structure(integration, contract) {
+  assert(integration?.schemaVersion === 2 && canonicalJson(integration.qualification) === canonicalJson({ contractPath: QUALIFICATION_CONTRACT_PATH, gateCommand: "pnpm docs:protocol:check" }),
+    "Managed integration v2 must own the exact qualification contract path and semantic gate command.");
+  assert(contract !== null && typeof contract === "object" && !Array.isArray(contract) && canonicalJson(Object.keys(contract).sort()) === canonicalJson(["scenarios", "schemaVersion"]) && contract.schemaVersion === 2 && Array.isArray(contract.scenarios) && contract.scenarios.length >= 1 && contract.scenarios.length <= 32,
+    "Qualification contract must be one bounded schemaVersion 2 scenarios document.");
+  const ids = []; const types = [];
+  for (const scenario of contract.scenarios) {
+    assert(scenario !== null && typeof scenario === "object" && !Array.isArray(scenario) && canonicalJson(Object.keys(scenario).sort()) === canonicalJson(["expected", "id", "intent", "type"]) && typeof scenario.id === "string" && scenario.id.length > 0 && typeof scenario.type === "string" && scenario.type.length > 0 && scenario.intent !== null && typeof scenario.intent === "object" && !Array.isArray(scenario.intent) && scenario.expected !== null && typeof scenario.expected === "object" && !Array.isArray(scenario.expected),
+      "Every qualification scenario must have the exact v2 structural envelope.");
+    ids.push(scenario.id); types.push(scenario.type);
+  }
+  assert(new Set(ids).size === ids.length, "Qualification scenario IDs must be unique.");
+  assert(new Set(types).size === types.length, "Qualification scenarios must contain exactly one scenario per declared type.");
 }
 
 export function authorizeConsumerGate(input) {
@@ -625,6 +650,16 @@ export function authorizeConsumerGate(input) {
     JSON_LIMITS[MANAGED_PROJECTION_PATH]);
   const profile = parseJsonStrict(input.files[INTEGRATION_PROFILE_PATH], INTEGRATION_PROFILE_PATH,
     JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
+  if (profile.schemaVersion === 2) {
+    assert(typeof input.files[QUALIFICATION_CONTRACT_PATH] === "string", "Managed integration v2 qualification contract is missing at the exact authorized path.");
+    const qualificationContract = parseJsonStrict(input.files[QUALIFICATION_CONTRACT_PATH], QUALIFICATION_CONTRACT_PATH, JSON_LIMITS[QUALIFICATION_CONTRACT_PATH]);
+    validateQualificationContractV2Structure(profile, qualificationContract);
+    if (policyEntry.classification_evidence?.decision === "adopted") {
+      const coordinates = policyEntry.classification_evidence.v2_qualification_coordinates;
+      assert(coordinates?.schema_version === 2 && coordinates.integration_path === INTEGRATION_PROFILE_PATH && coordinates.contract_path === QUALIFICATION_CONTRACT_PATH && coordinates.gate_command === profile.qualification.gateCommand && coordinates.receipt_schema_version === 2 && coordinates.receipt_evidence_class === "released-cohort",
+        "Adopted v2 consumer policy lacks exact structural qualification coordinates.");
+    }
+  }
   const manifest = parseJsonStrict(input.files["package.json"], "package.json", JSON_LIMITS["package.json"]);
   const lock = parseYamlStrict(input.files["pnpm-lock.yaml"], "pnpm-lock.yaml", LOCKFILE_LIMIT);
   const workspace = input.files[PNPM_WORKSPACE_PATH] === undefined
@@ -859,15 +894,17 @@ async function authorizeCommand() {
       `current controller data ${path}`,
     )]),
   ));
-  const [registrySchemaSource, policySchemaSource, exceptionsSchemaSource] = await Promise.all([
+  const [registrySchemaSource, policyV2SchemaSource, exceptionsSchemaSource] = await Promise.all([
     readFile(join(root, "governance/docs-qualified-cohorts.schema.json"), "utf8"),
-    readFile(join(root, "governance/docs-protocol-policy.schema.json"), "utf8"),
+    readFile(join(root, "governance/docs-protocol-policy-v2.schema.json"), "utf8"),
     readFile(join(root, "governance/docs-protocol-exceptions.schema.json"), "utf8"),
   ]);
   const registry = parseJsonStrict(controllerDataSources["governance/docs-qualified-cohorts.json"],
     "central Cohort registry", 4 * 1024 * 1024);
   const managedProjection = parseJsonStrict(files[MANAGED_PROJECTION_PATH],
     MANAGED_PROJECTION_PATH, JSON_LIMITS[MANAGED_PROJECTION_PATH]);
+  const integrationProfile = parseJsonStrict(files[INTEGRATION_PROFILE_PATH],
+    INTEGRATION_PROFILE_PATH, JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
   const runtimeClosurePath = registry.cohorts.find(
     ({ cohort_id: cohortId }) => cohortId === managedProjection.cohortId,
   )?.runtime_closure?.projection_path;
@@ -884,9 +921,10 @@ async function authorizeCommand() {
   const authorization = authorizeConsumerGate({
     registry,
     registrySchema: parseJsonStrict(registrySchemaSource, "central Cohort schema", 4 * 1024 * 1024),
-    policy: parseJsonStrict(controllerDataSources["governance/docs-protocol-policy.json"],
+    policy: parseJsonStrict(currentDocsAdmissionPolicySource(controllerDataSources),
       "central Docs policy", 4 * 1024 * 1024),
-    policySchema: parseJsonStrict(policySchemaSource, "central Docs policy schema", 4 * 1024 * 1024),
+    policySchema: parseJsonStrict(policyV2SchemaSource,
+      "central Docs policy schema", 4 * 1024 * 1024),
     exceptions: parseJsonStrict(controllerDataSources["governance/docs-protocol-exceptions.json"],
       "central Docs exceptions", 4 * 1024 * 1024),
     exceptionsSchema: parseJsonStrict(exceptionsSchemaSource,
@@ -1016,6 +1054,39 @@ async function verifyInstallCommand() {
   const packageRoot = await realpath(join(directory, "node_modules", docs.name));
   assert(cli.startsWith(`${packageRoot}${sep}`) && (await lstat(cli)).isFile(),
     "Trusted Docs CLI does not resolve to a regular file inside the exact package.");
+  const installedPackages = [];
+  for (const expected of authorization.expectedPackages) {
+    const root = await realpath(join(directory, "node_modules", expected.name));
+    const entries = [];
+    async function visit(current) {
+      const handle = await opendir(current);
+      for await (const entry of handle) {
+        const path = join(current, entry.name);
+        const repositoryPath = path.slice(root.length + 1).split(sep).join("/");
+        assert(entries.length < 20_000, `${expected.name} installed tree exceeds its entry bound.`);
+        assert(!entry.isSymbolicLink(), `${expected.name} installed tree contains a symlink.`);
+        if (entry.isDirectory()) { entries.push({ kind: "directory", path: repositoryPath }); await visit(path); }
+        else { assert(entry.isFile(), `${expected.name} installed tree contains a non-file entry.`); entries.push({ kind: "file", path: repositoryPath, absolute: path }); }
+      }
+    }
+    await visit(root);
+    entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
+    const hash = createHash("sha256"); let total = 0;
+    for (const entry of entries) {
+      hash.update(entry.kind).update("\0").update(entry.path).update("\0");
+      if (entry.kind === "file") {
+        const metadata = await lstat(entry.absolute);
+        assert(metadata.isFile() && metadata.size <= 16 * 1024 * 1024, `${expected.name} installed artifact exceeds its file bound.`);
+        const bytes = await readFile(entry.absolute); total += bytes.byteLength;
+        assert(total <= 256 * 1024 * 1024, `${expected.name} installed tree exceeds its byte bound.`);
+        hash.update(bytes).update("\0");
+      }
+    }
+    installedPackages.push({ ...expected, treeDigest: `sha256:${hash.digest("hex")}` });
+  }
+  assert(typeof process.env.INSTALL_EVIDENCE_PATH === "string", "Trusted install evidence path is required.");
+  await writeFile(process.env.INSTALL_EVIDENCE_PATH, `${canonicalJson({ schemaVersion: 1,
+    authorizationDigest: authorizationDigest(authorization), packages: installedPackages })}\n`, { mode: 0o600 });
   if (process.env.GITHUB_OUTPUT) {
     await writeFile(process.env.GITHUB_OUTPUT,
       `cli=${cli}\nprofile_path=${authorization.profilePath}\n`, { flag: "a" });

@@ -15,6 +15,7 @@ import {
   authorizeConsumerGate,
   canonicalManagedProjection,
   CURRENT_CONTROLLER_DATA_PATHS,
+  currentDocsAdmissionPolicySource,
   GatePolicyError,
   gateErrorCode,
   managedStateDigest,
@@ -22,6 +23,7 @@ import {
   parseYamlStrict,
   shouldRunDocsGate,
   trustedInstallWorkspaceConfig,
+  validateQualificationContractV2Structure,
 } from "./verify-docs-consumer-gate.mjs";
 
 const SHA = "1".repeat(40);
@@ -376,6 +378,24 @@ test("authorizes an inputless exact caller from central desired/observed authori
   assert.equal(result.expectedPackages.length, 2);
 });
 
+test("authorizes the v2 qualification wrapper without weakening exact Cohort projection", () => {
+  const input = fixture();
+  const path = "architecture/foundation/docs-consumer-integration.json";
+  const profileValue = JSON.parse(input.files[path]);
+  profileValue.schemaVersion = 2;
+  profileValue.qualification = {
+    contractPath: "architecture/foundation/docs-protocol-qualification.json",
+    gateCommand: "pnpm docs:protocol:check",
+  };
+  input.files[path] = `${JSON.stringify(profileValue)}\n`;
+  input.files["architecture/foundation/docs-protocol-qualification.json"] = `${JSON.stringify({
+    schemaVersion: 2,
+    scenarios: [{ id: "adr", type: "adr", intent: {}, expected: {} }],
+  })}\n`;
+  input.tree.push({ path: "architecture/foundation/docs-protocol-qualification.json", type: "blob", mode: "100644" });
+  assert.doesNotThrow(() => authorizeConsumerGate(input));
+});
+
 test("isolated install bypasses release age only for the exact authorized package pair", () => {
   const source = trustedInstallWorkspaceConfig([
     { name: "@agent-teams/docs-protocol", version: "0.2.0-rc.0" },
@@ -703,9 +723,17 @@ test("rejects duplicate JSON and YAML keys", () => {
   assert.throws(() => parseYamlStrict("a: 1\na: 2\n", "fixture.yml", 1024), /duplicate-free YAML/iu);
 });
 
+test("requires one bounded v2 qualification scenario per type", () => {
+  const integration = { schemaVersion: 2, qualification: { contractPath: "architecture/foundation/docs-protocol-qualification.json", gateCommand: "pnpm docs:protocol:check" } };
+  const scenario = { id: "adr", type: "adr", intent: {}, expected: {} };
+  assert.doesNotThrow(() => validateQualificationContractV2Structure(integration, { schemaVersion: 2, scenarios: [scenario] }));
+  assert.throws(() => validateQualificationContractV2Structure(integration, { schemaVersion: 2, scenarios: [scenario, { ...scenario, id: "adr-two" }] }), /exactly one scenario per declared type/u);
+});
+
 test("rejects pnpm hooks, nested lockfiles, and symlinked governed files", () => {
   for (const entry of [
     { path: ".pnpmfile.cjs", type: "blob", mode: "100644" },
+    { path: "packages/app/node_modules/poison/index.js", type: "blob", mode: "100644" },
     { path: "packages/app/pnpm-lock.yaml", type: "blob", mode: "100644" },
     { path: "package.json", type: "blob", mode: "120000", replace: true },
   ]) {
@@ -715,7 +743,27 @@ test("rejects pnpm hooks, nested lockfiles, and symlinked governed files", () =>
     } else {
       changed.tree.push(entry);
     }
-    assert.throws(() => authorizeConsumerGate(changed), /forbidden|nested lockfile|regular committed file/iu);
+    assert.throws(() => authorizeConsumerGate(changed), /forbidden|node_modules|nested lockfile|regular committed file/iu);
+  }
+});
+
+test("uses v2 pending, revocation, and eligibility admission even for a schemaVersion 1 pinned consumer", () => {
+  const stableCompatibility = policy();
+  for (const mutate of [
+    (entry) => { entry.admission_status = "pending_classification"; },
+    (entry) => { entry.repository_lifecycle = "deleted"; },
+    (entry) => { entry.observed_cohort_id = null; },
+  ]) {
+    const currentV2 = clone(stableCompatibility);
+    mutate(currentV2.repositories[0]);
+    const selected = JSON.parse(currentDocsAdmissionPolicySource({
+      "governance/docs-protocol-policy.json": JSON.stringify(stableCompatibility),
+      "governance/docs-protocol-policy-v2.json": JSON.stringify(currentV2),
+    }));
+    const changed = fixture();
+    assert.equal(JSON.parse(changed.files["architecture/foundation/docs-consumer-integration.json"]).schemaVersion, 1);
+    changed.policy = selected;
+    assert.throws(() => authorizeConsumerGate(changed), /not an active admitted/u);
   }
 });
 
@@ -726,28 +774,32 @@ test("runs on PR, merge queue, and actual default branch but skips feature push"
   assert.equal(shouldRunDocsGate("push", "feature", "trunk"), false);
 });
 
-test("current integration cannot hide invalid daily documentation", async () => {
+test("isolates exact Cohort qualification from the untrusted semantic gate", async () => {
   const source = await readFile(new URL("../.github/workflows/docs-protocol-check.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source, { strict: true, uniqueKeys: true }).toJS();
   assert.deepEqual(workflow.on, { workflow_call: {} });
-  const job = workflow.jobs["docs-protocol-check"];
-  assert.equal(job.if,
-    "github.event_name != 'push' || github.ref_name == github.event.repository.default_branch");
-  const integration = job.steps.findIndex(({ name }) => name === "Run trusted absolute Consumer Integration CLI");
-  const documentation = job.steps.findIndex(({ name }) => name === "Run trusted absolute documentation structural check");
-  assert.ok(integration >= 0 && documentation > integration);
-  assert.match(job.steps[integration].run, /steps\.trusted-install\.outputs\.cli.*consumer check/su);
-  assert.match(job.steps[documentation].run, /steps\.trusted-install\.outputs\.cli.* check.*profile_path/su);
-  assert.equal(job.steps[documentation].env.NODE_PATH,
-    "${{ env.TRUSTED_INSTALL_ROOT }}/node_modules");
-  assert.doesNotMatch(job.steps[documentation].env.NODE_PATH, /CONSUMER_CHECKOUT/u);
-  assert.doesNotMatch(job.steps[documentation].run, /pnpm|docs:check/u);
+  const trusted = workflow.jobs["trusted-structural"];
+  const authorize = workflow.jobs["trusted-authorize"];
+  const qualification = workflow.jobs["trusted-qualification"];
+  const semantic = workflow.jobs["docs-protocol-check"];
+  assert.equal(semantic.if,
+    "always() && (github.event_name != 'push' || github.ref_name == github.event.repository.default_branch)");
+  assert.deepEqual(authorize.permissions, { contents: "read", "id-token": "write" });
+  assert.deepEqual(trusted.permissions, { contents: "read" });
+  assert.deepEqual(qualification.permissions, { contents: "read" });
+  assert.deepEqual(semantic.permissions, { contents: "read" });
+  assert.doesNotMatch(JSON.stringify(authorize.steps), /consumer revision|agent-teams-docs qualify|docs:protocol:check/u);
+  assert.match(JSON.stringify(qualification.steps), /agent-teams-docs qualify[\s\S]*verify-docs-qualification-receipt/u);
+  assert.doesNotMatch(JSON.stringify(semantic.steps), /agent-teams-docs qualify|verify-docs-qualification-receipt/u);
+  assert.match(JSON.stringify(semantic.steps), /pnpm docs:protocol:check/u);
+  assert.equal(semantic.needs, "trusted-qualification");
 });
 
 test("later controller main changes only mutable lifecycle data, never pinned validator code", async () => {
   assert.deepEqual(CURRENT_CONTROLLER_DATA_PATHS, [
     "governance/docs-protocol-exceptions.json",
     "governance/docs-protocol-policy.json",
+    "governance/docs-protocol-policy-v2.json",
     "governance/docs-qualified-cohorts.json",
   ]);
   assert.ok(CURRENT_CONTROLLER_DATA_PATHS.every((path) => path.endsWith(".json")));
@@ -756,7 +808,7 @@ test("later controller main changes only mutable lifecycle data, never pinned va
 
   const source = await readFile(new URL("../.github/workflows/docs-protocol-check.yml", import.meta.url), "utf8");
   const workflow = parseDocument(source, { strict: true, uniqueKeys: true }).toJS();
-  const checkout = workflow.jobs["docs-protocol-check"].steps.find(
+  const checkout = workflow.jobs["trusted-authorize"].steps.find(
     ({ name }) => name === "Check out exact Cohort-bound validator implementation"
   );
   assert.equal(checkout.with.repository, "${{ steps.authority.outputs.workflow-repository }}");
@@ -767,6 +819,7 @@ test("later controller main changes only mutable lifecycle data, never pinned va
   before.controllerDataSources = {
     "governance/docs-protocol-exceptions.json": "{}",
     "governance/docs-protocol-policy.json": JSON.stringify(before.policy),
+    "governance/docs-protocol-policy-v2.json": JSON.stringify(before.policy),
     "governance/docs-qualified-cohorts.json": JSON.stringify(before.registry),
   };
   const after = clone(before);

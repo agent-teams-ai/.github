@@ -1,0 +1,33 @@
+name: Organization Inventory Drift
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: bounded-inventory-drift-audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+      - name: Install bounded observer dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+      - name: Require the dedicated inventory credential
+        env:
+          GH_TOKEN: ${{ secrets.ORG_INVENTORY_READ_TOKEN }}
+        run: test -n "$GH_TOKEN" || { echo "ORG_INVENTORY_READ_TOKEN is not configured" >&2; exit 1; }
+      - name: Audit live organization repository inventory
+        env:
+          GH_TOKEN: ${{ secrets.ORG_INVENTORY_READ_TOKEN }}
+        run: node scripts/observe-org-repository-inventory.mjs --audit

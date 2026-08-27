@@ -19,6 +19,7 @@ const requiredFiles = [
   ".github/workflows/docs-protocol-check.yml",
   ".github/workflows/docs-cohort-append-only.yml",
   ".github/workflows/docs-admission-evidence.yml",
+  ".github/workflows/organization-inventory-drift.yml",
   "docs/organization-security-baseline.md",
   "docs/repository-admission.md",
   "governance/actions-policy.json",
@@ -27,6 +28,8 @@ const requiredFiles = [
   "governance/code-security-defaults.schema.json",
   "governance/docs-protocol-policy.json",
   "governance/docs-protocol-policy.schema.json",
+  "governance/docs-protocol-policy-v2.json",
+  "governance/docs-protocol-policy-v2.schema.json",
   "governance/docs-protocol-exceptions.json",
   "governance/docs-protocol-exceptions.schema.json",
   "governance/docs-qualified-cohorts.json",
@@ -172,127 +175,121 @@ function canonicalJson(value) {
   return JSON.stringify(value);
 }
 
-export function validateDocsProtocolWorkflow(workflow, source) {
-  if (!exactKeys(workflow, ["name", "on", "permissions", "jobs"]) ||
-      workflow.name !== "Documentation Protocol Check") {
-    throw new Error("Documentation protocol reusable workflow root shape is not allowlisted.");
+export function validateDocsProtocolWorkflow(workflow) {
+  const guard = "github.event_name != 'push' || github.ref_name == github.event.repository.default_branch";
+  const guarded = `always() && (${guard})`;
+  const checkout = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1";
+  const pnpm = "pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9";
+  const node = "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020";
+  const download = "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c";
+  const authorityScript = workflow.jobs?.["trusted-authorize"]?.steps?.[0]?.with?.script;
+  if (typeof authorityScript !== "string" || createHash("sha256").update(authorityScript).digest("hex") !==
+      "ce4429a953c765e037bb8cfbb90c6c615beb24d5b831678823ea7abda90e6f2c") {
+    throw new Error("Documentation protocol OIDC authority script is not the exact allowlisted implementation.");
   }
-  const workflowCall = workflow.on?.workflow_call;
-  if (!exactKeys(workflow.on, ["workflow_call"]) ||
-      (![null, undefined].includes(workflowCall) && !exactKeys(workflowCall, []))) {
-    throw new Error("Documentation protocol workflow_call must be inputless.");
-  }
-  if (JSON.stringify(workflow.permissions) !== JSON.stringify({
-    contents: "read",
-    "id-token": "write",
-  })) {
-    throw new Error("Documentation protocol reusable workflow must have read-only contents and OIDC identity permission.");
-  }
-  if (!exactKeys(workflow.jobs, ["docs-protocol-check"])) {
-    throw new Error("Documentation protocol reusable workflow must contain exactly one allowlisted job.");
-  }
-  const job = workflow.jobs["docs-protocol-check"];
-  if (!exactKeys(job, ["name", "if", "runs-on", "timeout-minutes", "env", "steps"]) ||
-      job.name !== "docs-protocol-check" ||
-      job.if !== "github.event_name != 'push' || github.ref_name == github.event.repository.default_branch" ||
-      job["runs-on"] !== "ubuntu-24.04" ||
-      job["timeout-minutes"] !== 15 ||
-      canonicalJson(job.env) !== canonicalJson({
-        TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance",
-        CONSUMER_CHECKOUT: "${{ github.workspace }}/.trusted/consumer",
-        AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json",
-        TRUSTED_INSTALL_ROOT: "${{ github.workspace }}/.trusted/install",
-      })) {
-    throw new Error("Documentation protocol job shape, runner, and timeout must match the allowlist.");
-  }
-  const steps = job.steps;
-  const authorityScript = steps?.[0]?.with?.script;
-  const expectedSteps = [
-    { name: "Resolve trusted controller snapshot and called-workflow identity", id: "authority",
-      uses: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd",
-      env: {
-        CALLER_REPOSITORY_ID: "${{ github.repository_id }}",
-      }, with: { script: authorityScript } },
-    { name: "Check out exact Cohort-bound validator implementation",
-      uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
-      with: { repository: "${{ steps.authority.outputs.workflow-repository }}",
-        ref: "${{ steps.authority.outputs.workflow-sha }}",
-        path: ".trusted/governance", "persist-credentials": false } },
-    { name: "Set up pnpm for trusted tooling",
-      uses: "pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9",
-      with: { version: "11.18.0", run_install: false } },
-    { name: "Set up Node for trusted tooling",
-      uses: "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020",
-      with: { "node-version": "24.18.0", cache: "pnpm",
-        "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
-    { name: "Install only base-owned validator dependencies",
-      run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
-    { name: "Authorize exact consumer snapshot without executing consumer code",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize",
-      env: { GITHUB_TOKEN: "${{ github.token }}", GITHUB_REPOSITORY: "${{ github.repository }}",
-        CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}",
-        CONTROLLER_SNAPSHOT_SHA: "${{ steps.authority.outputs.controller-sha }}",
-        JOB_WORKFLOW_SHA: "${{ steps.authority.outputs.workflow-sha }}",
-        JOB_WORKFLOW_REF: "${{ steps.authority.outputs.workflow-ref }}",
-        JOB_WORKFLOW_REPOSITORY: "${{ steps.authority.outputs.workflow-repository }}",
-        JOB_WORKFLOW_FILE_PATH: "${{ steps.authority.outputs.workflow-file-path }}" } },
-    { name: "Check out authorized immutable consumer snapshot",
-      uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
-      with: { repository: "${{ github.repository }}", ref: "${{ github.sha }}",
-        path: ".trusted/consumer", "persist-credentials": false } },
-    { name: "Bind checkout bytes to central authorization",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-checkout",
-      env: { GITHUB_REPOSITORY: "${{ github.repository }}",
-        CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}" } },
-    { name: "Prepare isolated exact package installation",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" prepare-install" },
-    { name: "Verify isolated lock before package installation",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install-lock" },
-    { name: "Install isolated exact packages without lifecycle scripts",
-      run: "pnpm install --dir \"$TRUSTED_INSTALL_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
-    { name: "Verify isolated package identities", id: "trusted-install",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install" },
-    { name: "Confirm current controller authority stayed stable before checks",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot",
-      env: { GITHUB_TOKEN: "${{ github.token }}" } },
-    { name: "Run trusted absolute Consumer Integration CLI",
-      run: "node \"${{ steps.trusted-install.outputs.cli }}\" consumer check --consumer \"$CONSUMER_CHECKOUT\" --json" },
-    { name: "Run trusted absolute documentation structural check",
-      env: { NODE_PATH: "${{ env.TRUSTED_INSTALL_ROOT }}/node_modules" },
-      run: "node \"${{ steps.trusted-install.outputs.cli }}\" check --consumer \"$CONSUMER_CHECKOUT\" --profile \"${{ steps.trusted-install.outputs.profile_path }}\" --json" },
-    { name: "Confirm current controller authority stayed stable through checks",
-      run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot",
-      env: { GITHUB_TOKEN: "${{ github.token }}" } },
-  ];
-  if (!Array.isArray(steps) || canonicalJson(steps) !== canonicalJson(expectedSteps) ||
-      typeof authorityScript !== "string" ||
-      createHash("sha256").update(authorityScript).digest("hex") !==
-        "ce4429a953c765e037bb8cfbb90c6c615beb24d5b831678823ea7abda90e6f2c") {
-    throw new Error("Documentation protocol reusable workflow must preserve trusted authorization, immutable checkout, preinstall lock validation, isolated install, and absolute trusted CLI ordering.");
-  }
-  for (const requiredSource of [
-    "core.getIDToken(audience)",
-    "claims.job_workflow_sha",
-    "claims.job_workflow_ref",
-    "claims.repository_id",
-    "steps.authority.outputs.workflow-sha",
-    "controller.data.id !== 1316243981",
-    "controller.data.default_branch",
-    "CONTROLLER_SNAPSHOT_SHA",
-    "CALLER_REPOSITORY_ID: ${{ github.repository_id }}",
-    "GITHUB_SHA: ${{ github.sha }}",
-    "verify-install-lock",
-    "steps.trusted-install.outputs.cli",
-  ]) {
-    if (!source.includes(requiredSource)) {
-      throw new Error(`Documentation protocol trusted preflight is missing ${requiredSource}.`);
-    }
-  }
-  if (/\bsecrets\s*:|\$\{\{\s*secrets\./u.test(source)) {
-    throw new Error("Documentation protocol reusable workflow must not declare or consume secrets.");
-  }
-  if (source.includes("steps.authority.outputs.controller-sha }}\n          path: .trusted/governance")) {
-    throw new Error("Trusted validator checkout must remain Cohort-bound, not current-main-bound.");
+  const expected = {
+    name: "Documentation Protocol Check",
+    on: { workflow_call: {} },
+    permissions: { contents: "read" },
+    jobs: {
+      "trusted-authorize": {
+        name: "trusted-authorize", permissions: { contents: "read", "id-token": "write" }, if: guard,
+        "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
+        outputs: {
+          "workflow-sha": "${{ steps.authority.outputs.workflow-sha }}", "controller-sha": "${{ steps.authority.outputs.controller-sha }}",
+          "workflow-ref": "${{ steps.authority.outputs.workflow-ref }}", "workflow-repository": "${{ steps.authority.outputs.workflow-repository }}",
+          "workflow-file-path": "${{ steps.authority.outputs.workflow-file-path }}",
+        },
+        env: { TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance", AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json" },
+        steps: [
+          { name: "Resolve trusted controller snapshot and called-workflow identity", id: "authority",
+            uses: "actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd", env: { CALLER_REPOSITORY_ID: "${{ github.repository_id }}" }, with: { script: authorityScript } },
+          { name: "Check out exact Cohort-bound validator implementation", uses: checkout,
+            with: { repository: "${{ steps.authority.outputs.workflow-repository }}", ref: "${{ steps.authority.outputs.workflow-sha }}", path: ".trusted/governance", "persist-credentials": false } },
+          { name: "Set up pnpm for trusted tooling", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up Node for trusted tooling", uses: node, with: { "node-version": "24.18.0", cache: "pnpm", "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
+          { name: "Install only base-owned validator dependencies", run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
+          { name: "Authorize exact consumer snapshot without executing consumer code", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize",
+            env: { GITHUB_TOKEN: "${{ github.token }}", GITHUB_REPOSITORY: "${{ github.repository }}", CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}",
+              CONTROLLER_SNAPSHOT_SHA: "${{ steps.authority.outputs.controller-sha }}", JOB_WORKFLOW_SHA: "${{ steps.authority.outputs.workflow-sha }}",
+              JOB_WORKFLOW_REF: "${{ steps.authority.outputs.workflow-ref }}", JOB_WORKFLOW_REPOSITORY: "${{ steps.authority.outputs.workflow-repository }}",
+              JOB_WORKFLOW_FILE_PATH: "${{ steps.authority.outputs.workflow-file-path }}" } },
+          { name: "Publish bounded structural authorization for the non-OIDC verifier", uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+            with: { name: "docs-gate-authorization-${{ github.run_id }}-${{ github.run_attempt }}", path: "${{ env.AUTHORIZATION_PATH }}", "if-no-files-found": "error", "retention-days": 1 } },
+        ],
+      },
+      "trusted-structural": {
+        name: "trusted-structural", needs: "trusted-authorize", permissions: { contents: "read" }, if: guard,
+        "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
+        env: { TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance", CONSUMER_CHECKOUT: "${{ github.workspace }}/.trusted/consumer", AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json" },
+        steps: [
+          { name: "Check out exact Cohort-bound validator implementation", uses: checkout,
+            with: { repository: "${{ needs.trusted-authorize.outputs.workflow-repository }}", ref: "${{ needs.trusted-authorize.outputs.workflow-sha }}", path: ".trusted/governance", "persist-credentials": false } },
+          { name: "Set up pnpm for trusted tooling", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up Node for trusted tooling", uses: node, with: { "node-version": "24.18.0", cache: "pnpm", "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
+          { name: "Install only base-owned validator dependencies", run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
+          { name: "Download exact authorization from the OIDC-only job", uses: download,
+            with: { name: "docs-gate-authorization-${{ github.run_id }}-${{ github.run_attempt }}", path: "${{ github.workspace }}/.trusted" } },
+          { name: "Check out authorized immutable consumer snapshot", uses: checkout,
+            with: { repository: "${{ github.repository }}", ref: "${{ github.sha }}", path: ".trusted/consumer", "persist-credentials": false } },
+          { name: "Bind checkout bytes to central authorization", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-checkout",
+            env: { GITHUB_REPOSITORY: "${{ github.repository }}", CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}" } },
+          { name: "Confirm current controller authority stayed stable through structural validation", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot", env: { GITHUB_TOKEN: "${{ github.token }}" } },
+        ],
+      },
+      "trusted-qualification": {
+        name: "trusted-qualification", needs: ["trusted-authorize", "trusted-structural"], if: guarded, permissions: { contents: "read" },
+        "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
+        env: { TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance", CONSUMER_CHECKOUT: "${{ github.workspace }}/.trusted/consumer",
+          AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json", TRUSTED_INSTALL_ROOT: "${{ runner.temp }}/docs-qualification-install",
+          INSTALL_EVIDENCE_PATH: "${{ runner.temp }}/docs-qualification-install-evidence.json", QUALIFICATION_RECEIPT: "${{ runner.temp }}/docs-qualification-receipt.json" },
+        steps: [
+          { name: "Require successful trusted structural authorization", if: "needs.trusted-authorize.result != 'success' || needs.trusted-structural.result != 'success'", run: "exit 1" },
+          { name: "Check out exact Cohort-bound validator implementation", uses: checkout,
+            with: { repository: "${{ needs.trusted-authorize.outputs.workflow-repository }}", ref: "${{ needs.trusted-authorize.outputs.workflow-sha }}", path: ".trusted/governance", "persist-credentials": false } },
+          { name: "Set up pnpm for trusted qualification tooling", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up Node for trusted qualification tooling", uses: node,
+            with: { "node-version": "24.18.0", cache: "pnpm", "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
+          { name: "Install only base-owned qualification verifier dependencies",
+            run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
+          { name: "Download exact authorization from the OIDC-only job", uses: download,
+            with: { name: "docs-gate-authorization-${{ github.run_id }}-${{ github.run_attempt }}", path: "${{ github.workspace }}/.trusted" } },
+          { name: "Check out authorized immutable consumer snapshot", uses: checkout,
+            with: { repository: "${{ github.repository }}", ref: "${{ github.sha }}", path: ".trusted/consumer", "persist-credentials": false } },
+          { name: "Bind checkout bytes to central authorization", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-checkout",
+            env: { GITHUB_REPOSITORY: "${{ github.repository }}", CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}" } },
+          { name: "Detect exact qualification contract version", id: "qualification", shell: "bash",
+            run: "node -e 'const integration=require(process.env.CONSUMER_CHECKOUT + \"/architecture/foundation/docs-consumer-integration.json\"); if (integration.schemaVersion !== 1 && integration.schemaVersion !== 2) process.exit(1); process.stdout.write(\"enabled=\" + (integration.schemaVersion === 2 ? \"true\" : \"false\") + \"\\n\")' >> \"$GITHUB_OUTPUT\"" },
+          { name: "Prepare fresh isolated exact Cohort installation", if: "steps.qualification.outputs.enabled == 'true'",
+            run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" prepare-install" },
+          { name: "Verify isolated exact lock before package installation", if: "steps.qualification.outputs.enabled == 'true'",
+            run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install-lock" },
+          { name: "Install isolated exact Cohort graph without lifecycle hooks", if: "steps.qualification.outputs.enabled == 'true'",
+            run: "pnpm install --dir \"$TRUSTED_INSTALL_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
+          { name: "Verify installed Cohort package identities before execution", id: "trusted-install", if: "steps.qualification.outputs.enabled == 'true'",
+            run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install" },
+          { name: "Run only the exact installed agent-teams-docs qualify CLI", if: "steps.qualification.outputs.enabled == 'true'", shell: "bash",
+            run: "set -o pipefail\nnode \"${{ steps.trusted-install.outputs.cli }}\" qualify \\\n  --consumer \"$CONSUMER_CHECKOUT\" \\\n  --integration architecture/foundation/docs-consumer-integration.json --json \\\n  | tee \"$QUALIFICATION_RECEIPT\"\n" },
+          { name: "Bind released-cohort receipt to exact checkout and installed Cohort", if: "steps.qualification.outputs.enabled == 'true'",
+            run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-qualification-receipt.mjs\" --consumer \"$CONSUMER_CHECKOUT\" --install-root \"$TRUSTED_INSTALL_ROOT\" --authorization \"$AUTHORIZATION_PATH\" --install-evidence \"$INSTALL_EVIDENCE_PATH\" --receipt \"$QUALIFICATION_RECEIPT\" --caller-sha \"${{ github.sha }}\"" },
+          { name: "Confirm current controller authority stayed stable through qualification", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot", env: { GITHUB_TOKEN: "${{ github.token }}" } },
+        ],
+      },
+      "docs-protocol-check": {
+        name: "docs-protocol-check", needs: "trusted-qualification", if: guarded, permissions: { contents: "read" }, "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
+        steps: [
+          { name: "Require successful trusted qualification", if: "needs.trusted-qualification.result != 'success'", run: "exit 1" },
+          { name: "Check out consumer revision", uses: checkout, with: { ref: "${{ github.sha }}", "persist-credentials": false } },
+          { name: "Set up pnpm for repository semantic gate", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up Node for repository semantic gate", uses: node, with: { "node-version": "24.18.0", cache: "pnpm" } },
+          { name: "Install consumer dependencies in the untrusted context", run: "pnpm install --frozen-lockfile" },
+          { name: "Run repository semantic documentation gate", run: "pnpm docs:protocol:check" },
+        ],
+      },
+    },
+  };
+  if (canonicalJson(workflow) !== canonicalJson(expected)) {
+    throw new Error("Documentation protocol workflow jobs and steps must match the exact trusted/untrusted allowlist.");
   }
 }
 
