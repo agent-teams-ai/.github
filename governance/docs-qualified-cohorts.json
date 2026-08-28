@@ -4283,6 +4283,42 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471",
       "event_digest": "sha256:d289712dcae23927a6fa500517939fe55efebb0a3b9c074fde92e3a9682c228b"
+    },
+    {
+      "sequence": 89,
+      "cohort_id": "docs-2026-08-28-stable8",
+      "state": "CANARY",
+      "effective_at": "2026-08-28T03:48:11Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-token/pull/1",
+        "https://github.com/agent-teams-ai/agent-teams-token/commit/6174b253be76d2d6af151660050e2f545bb98c50",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/33138605809",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/33138605809/job/98744530072",
+        "https://github.com/agent-teams-ai/.github/pull/150",
+        "https://github.com/agent-teams-ai/.github/commit/b54b7d8bdd26dc766a6afe6402cae51aef3bd4cd"
+      ],
+      "support_until": null,
+      "canary_evidence": [
+        {
+          "repository_id": 1348461381,
+          "repository": "agent-teams-ai/agent-teams-token",
+          "merge_revision": "6174b253be76d2d6af151660050e2f545bb98c50",
+          "observed_cohort_id": "docs-2026-08-28-stable8",
+          "observed_record_digest": "sha256:e1ad7395b51d7b912db2181d263104067c712fc0cd13bac91aa5dccbc2590cc4",
+          "observed_event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 98744530072,
+          "check_run_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/33138605809/job/98744530072",
+          "workflow_run_id": 33138605809,
+          "workflow_id": 344094656,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:7907195753506e4b0f0e89eb3f6e495bacbd79e9b9913c9f60fc4a07dffb22e5"
+        }
+      ],
+      "previous_event_digest": "sha256:d289712dcae23927a6fa500517939fe55efebb0a3b9c074fde92e3a9682c228b",
+      "event_digest": "sha256:159fe5d62f02a72b2e3c9e53a43a494f34e62763ced2a5b9334a2fa1b05b628d"
     }
   ]
 }
