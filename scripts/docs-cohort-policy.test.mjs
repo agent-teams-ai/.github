@@ -64,6 +64,10 @@ const ciWorkflow = await readFile(".github/workflows/ci.yml", "utf8");
 const qualifiedWorkflowSource = await readFile(
   ".github/workflows/docs-protocol-check.yml",
 );
+const cohortEvidenceVerifierSource = await readFile(
+  "scripts/verify-docs-cohort-evidence.mjs",
+  "utf8",
+);
 const producerCallerFixture = await readFile(
   "scripts/fixtures/producer-docs-protocol.yml",
 );
@@ -281,6 +285,18 @@ function registry(states = ["PUBLISHED_UNQUALIFIED", "VERIFIED", "COOLDOWN", "QU
     previous = event.event_digest;
     result.events.push(event);
   }
+  return result;
+}
+
+function reconciledRegistry() {
+  const result = registry();
+  for (const entry of result.cohorts[0].packages) {
+    entry.provenance.reconciliation = {
+      workflow_run_attempt: 2,
+      release_job_id: 777,
+    };
+  }
+  result.cohorts[0].record_digest = cohortRecordDigest(result.cohorts[0]);
   return result;
 }
 
@@ -942,15 +958,18 @@ function verifierAdapters(record, overrides = {}) {
       conclusion: "success",
       html_url: "https://github.com/agent-teams-ai/agent-runtime/actions/runs/123/job/456",
     }],
-    getWorkflowRun: async (repository) => repository === "agent-teams-ai/engineering-foundation"
-      ? {
+    getWorkflowRun: async (repository, _runId, attempt) =>
+      repository === "agent-teams-ai/engineering-foundation" ? {
         id: 123,
-        run_attempt: 1,
+        run_attempt: attempt,
         head_sha: "1".repeat(40),
         head_branch: "main",
         event: "push",
-        conclusion: "success",
+        status: "completed",
+        conclusion: record.packages[0].provenance.reconciliation === undefined || attempt > 1
+          ? "success" : "failure",
         path: ".github/workflows/release.yml",
+        html_url: "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/123",
         repository: { id: 1316243988, full_name: repository },
       }
       : {
@@ -963,6 +982,26 @@ function verifierAdapters(record, overrides = {}) {
         path: ".github/workflows/docs-protocol.yml",
         repository: { id: 1314129620, full_name: "agent-teams-ai/agent-runtime" },
       },
+    getWorkflowAttemptJobs: async (_repository, _runId, attempt) => [{
+      id: attempt === 1 ? 700 : 777,
+      name: "release",
+      run_attempt: attempt,
+      head_sha: "1".repeat(40),
+      status: "completed",
+      conclusion: attempt === 1 ? "failure" : "success",
+      html_url: `https://github.com/agent-teams-ai/engineering-foundation/actions/runs/123/job/${
+        attempt === 1 ? 700 : 777}`,
+    }],
+    getLatestWorkflowRun: async (repository) => ({
+      id: 123,
+      head_sha: "7".repeat(40),
+      head_branch: "main",
+      event: "push",
+      conclusion: "success",
+      workflow_id: 789,
+      path: ".github/workflows/docs-protocol.yml",
+      repository: { id: 1314129620, full_name: repository },
+    }),
     readRepositoryFile: async () => Buffer.from(
       "uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@" +
       "2".repeat(40) + "\n",
@@ -1175,8 +1214,8 @@ test("live verifier binds tarball dependency/assets and exact hosted canary evid
   ), /workflow repository identity/iu);
   const adaptersWithRecreatedRunRepository = verifierAdapters(record);
   const getWorkflowRun = adaptersWithRecreatedRunRepository.getWorkflowRun;
-  adaptersWithRecreatedRunRepository.getWorkflowRun = async (repository, runId) => {
-    const run = await getWorkflowRun(repository, runId);
+  adaptersWithRecreatedRunRepository.getWorkflowRun = async (repository, runId, attempt) => {
+    const run = await getWorkflowRun(repository, runId, attempt);
     return repository === "agent-teams-ai/engineering-foundation"
       ? { ...run, repository: { ...run.repository, id: 999 } }
       : run;
@@ -1239,18 +1278,11 @@ test("live verifier binds tarball dependency/assets and exact hosted canary evid
     candidate,
     registrySchema,
     record.cohort_id,
-    verifierAdapters(record, { getWorkflowRun: async (repository) =>
-      repository === "agent-teams-ai/engineering-foundation"
-        ? {
-          id: 123, run_attempt: 1, head_sha: "1".repeat(40), head_branch: "main",
-          event: "push", conclusion: "success", path: ".github/workflows/release.yml",
-          repository: { id: 1316243988, full_name: repository },
-        }
-        : {
-          id: 123, head_sha: "7".repeat(40), head_branch: "main", event: "push",
-          conclusion: "success", workflow_id: 789, path: ".github/workflows/forged.yml",
-          repository: { id: 1314129620, full_name: "agent-teams-ai/agent-runtime" },
-        } }),
+    verifierAdapters(record, { getLatestWorkflowRun: async () => ({
+      id: 123, head_sha: "7".repeat(40), head_branch: "main", event: "push",
+      conclusion: "success", workflow_id: 789, path: ".github/workflows/forged.yml",
+      repository: { id: 1314129620, full_name: "agent-teams-ai/agent-runtime" },
+    }) }),
   ), /Actions run does not exactly bind/u);
   await assert.rejects(verifyDocsCohortEvidence(
     candidate,
@@ -1269,6 +1301,194 @@ test("live verifier binds tarball dependency/assets and exact hosted canary evid
           repository: { id: 1314129620, full_name: repository },
         } }),
   ), /live release workflow run does not bind/u);
+});
+
+test("binds a recovered package release to immutable failed and successful attempts", async () => {
+  const candidate = reconciledRegistry();
+  const record = candidate.cohorts[0];
+  const calls = [];
+  const adapters = verifierAdapters(record);
+  const getWorkflowRun = adapters.getWorkflowRun;
+  const getWorkflowAttemptJobs = adapters.getWorkflowAttemptJobs;
+  adapters.getWorkflowRun = async (repository, runId, attempt) => {
+    calls.push(["run", runId, attempt]);
+    return getWorkflowRun(repository, runId, attempt);
+  };
+  adapters.getWorkflowAttemptJobs = async (repository, runId, attempt) => {
+    calls.push(["jobs", runId, attempt]);
+    return getWorkflowAttemptJobs(repository, runId, attempt);
+  };
+  await assert.doesNotReject(verifyDocsCohortEvidence(
+    candidate, registrySchema, record.cohort_id, adapters,
+  ));
+  assert.deepEqual(new Set(calls.map(([kind, runId, attempt]) => `${kind}:${runId}:${attempt}`)),
+    new Set(["run:123:1", "jobs:123:1", "run:123:2", "jobs:123:2"]));
+  assert.match(cohortEvidenceVerifierSource,
+    /actions\/runs\/\$\{runId\}\/attempts\/\$\{attempt\}/u);
+  assert.match(cohortEvidenceVerifierSource,
+    /actions\/runs\/\$\{runId\}\/attempts\/\$\{attempt\}\/jobs\?per_page=100/u);
+});
+
+test("fails closed for invalid recovered package release evidence", async (context) => {
+  const cases = [
+    ["successful origin", {
+      run: (run, attempt) => attempt === 1 ? { ...run, conclusion: "success" } : run,
+      message: /origin release attempt.*failure/iu,
+    }],
+    ["cancelled origin", {
+      run: (run, attempt) => attempt === 1 ? { ...run, conclusion: "cancelled" } : run,
+      message: /origin release attempt.*failure/iu,
+    }],
+    ["wrong origin branch", {
+      run: (run, attempt) => attempt === 1 ? { ...run, head_branch: "release" } : run,
+      message: /origin release attempt.*failure/iu,
+    }],
+    ["wrong origin job SHA", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], head_sha: "9".repeat(40) }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["wrong origin job name", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], name: "publish" }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["wrong origin job attempt", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], run_attempt: 2 }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["duplicate origin release job", {
+      jobs: (jobs, attempt) => attempt === 1 ? [...jobs, { ...jobs[0], id: 701 }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["incomplete origin job", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], status: "in_progress" }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["successful origin job", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], conclusion: "success" }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["skipped origin job", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], conclusion: "skipped" }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["wrong origin job URL", {
+      jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], html_url: "https://example.com/job/700" }] : jobs,
+      message: /exactly one failed release job/iu,
+    }],
+    ["mutable latest run", {
+      run: (run, attempt) => attempt === 2 ? { ...run, run_attempt: 3 } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["wrong reconciled source SHA", {
+      run: (run, attempt) => attempt === 2 ? { ...run, head_sha: "9".repeat(40) } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["wrong reconciled branch", {
+      run: (run, attempt) => attempt === 2 ? { ...run, head_branch: "release" } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["wrong reconciled workflow path", {
+      run: (run, attempt) => attempt === 2 ? { ...run, path: ".github/workflows/other.yml" } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["wrong reconciled repository", {
+      run: (run, attempt) => attempt === 2
+        ? { ...run, repository: { ...run.repository, id: 999 } } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["non-terminal reconciled run", {
+      run: (run, attempt) => attempt === 2 ? { ...run, status: "in_progress" } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["wrong reconciled run URL", {
+      run: (run, attempt) => attempt === 2 ? { ...run, html_url: `${run.html_url}/attempts/2` } : run,
+      message: /reconciliation run/iu,
+    }],
+    ["duplicate release job", {
+      jobs: (jobs, attempt) => attempt === 2 ? [...jobs, { ...jobs[0], id: 778 }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+    ["wrong release job id", {
+      jobs: (jobs, attempt) => attempt === 2 ? [{ ...jobs[0], id: 778 }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+    ["wrong release job name", {
+      jobs: (jobs, attempt) => attempt === 2 ? [{ ...jobs[0], name: "publish" }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+    ["skipped release job", {
+      jobs: (jobs, attempt) => attempt === 2 ? [{ ...jobs[0], conclusion: "skipped" }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+    ["wrong release job attempt", {
+      jobs: (jobs, attempt) => attempt === 2 ? [{ ...jobs[0], run_attempt: 3 }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+    ["wrong release job SHA", {
+      jobs: (jobs, attempt) => attempt === 2 ? [{ ...jobs[0], head_sha: "9".repeat(40) }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+    ["wrong release job URL", {
+      jobs: (jobs, attempt) => attempt === 2 ? [{ ...jobs[0], html_url: "https://example.com/job/777" }] : jobs,
+      message: /exactly one successful release job/iu,
+    }],
+  ];
+  for (const [name, mutation] of cases) {
+    await context.test(name, async () => {
+      const candidate = reconciledRegistry();
+      const record = candidate.cohorts[0];
+      const adapters = verifierAdapters(record);
+      const getWorkflowRun = adapters.getWorkflowRun;
+      const getWorkflowAttemptJobs = adapters.getWorkflowAttemptJobs;
+      adapters.getWorkflowRun = async (repository, runId, attempt) =>
+        mutation.run?.(await getWorkflowRun(repository, runId, attempt), attempt) ??
+          getWorkflowRun(repository, runId, attempt);
+      adapters.getWorkflowAttemptJobs = async (repository, runId, attempt) =>
+        mutation.jobs?.(await getWorkflowAttemptJobs(repository, runId, attempt), attempt) ??
+          getWorkflowAttemptJobs(repository, runId, attempt);
+      await assert.rejects(verifyDocsCohortEvidence(
+        candidate, registrySchema, record.cohort_id, adapters,
+      ), mutation.message);
+    });
+  }
+});
+
+test("requires a strictly later reconciliation attempt and complete schema binding", async () => {
+  const sameAttempt = reconciledRegistry();
+  sameAttempt.cohorts[0].packages[0].provenance.reconciliation.workflow_run_attempt = 1;
+  sameAttempt.cohorts[0].record_digest = cohortRecordDigest(sameAttempt.cohorts[0]);
+  await assert.rejects(verifyDocsCohortEvidence(
+    sameAttempt,
+    registrySchema,
+    sameAttempt.cohorts[0].cohort_id,
+    verifierAdapters(sameAttempt.cohorts[0]),
+  ), /strictly later/iu);
+
+  for (const field of ["workflow_run_attempt", "release_job_id"]) {
+    const incomplete = reconciledRegistry();
+    delete incomplete.cohorts[0].packages[0].provenance.reconciliation[field];
+    incomplete.cohorts[0].record_digest = cohortRecordDigest(incomplete.cohorts[0]);
+    assert.throws(() => validateDocsQualifiedCohorts(
+      incomplete, registrySchema, { asOf: "2026-08-18T00:00:00Z" },
+    ), /JSON Schema/u);
+  }
+
+  const invalidReconciliations = [
+    { workflow_run_attempt: 0, release_job_id: 777 },
+    { workflow_run_attempt: 1.5, release_job_id: 777 },
+    { workflow_run_attempt: "2", release_job_id: 777 },
+    { workflow_run_attempt: 2, release_job_id: 0 },
+    { workflow_run_attempt: 2, release_job_id: 1.5 },
+    { workflow_run_attempt: 2, release_job_id: "777" },
+    { workflow_run_attempt: 2, release_job_id: 777, unexpected: true },
+  ];
+  for (const reconciliation of invalidReconciliations) {
+    const invalid = reconciledRegistry();
+    invalid.cohorts[0].packages[0].provenance.reconciliation = reconciliation;
+    assert.throws(() => validateDocsQualifiedCohorts(
+      invalid, registrySchema, { asOf: "2026-08-18T00:00:00Z" },
+    ), /JSON Schema/u);
+  }
 });
 
 test("qualifies only deployable fix-forward transition catalogs", async () => {
@@ -1467,15 +1687,15 @@ test("rejects deleted and recreated provenance repositories with the same name",
         ? { id: 999999999, full_name: repository, default_branch: "main" }
         : adapters.getRepository(repository),
     },
-  ), /provenance source is not on its protected default branch/u);
+  ), /provenance source is not on its protected main branch/u);
   await assert.rejects(verifyDocsCohortEvidence(
     candidate,
     registrySchema,
     record.cohort_id,
     {
       ...adapters,
-      getWorkflowRun: async (repository, runId) => {
-        const run = await adapters.getWorkflowRun(repository, runId);
+      getWorkflowRun: async (repository, runId, attempt) => {
+        const run = await adapters.getWorkflowRun(repository, runId, attempt);
         return repository === "agent-teams-ai/engineering-foundation"
           ? { ...run, repository: { ...run.repository, id: 999999999 } }
           : run;
