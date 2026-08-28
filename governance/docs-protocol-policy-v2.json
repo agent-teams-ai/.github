@@ -3,8 +3,8 @@
   "schema_version": 3,
   "snapshot_revision": "2026-08-27.2",
   "observed_at": "2026-08-27",
-  "organization": "agent-teams-ai",
   "inventory_snapshot_revision": "2026-08-27.1",
+  "organization": "agent-teams-ai",
   "continuous_audit": false,
   "protocol": {
     "package": "@agent-teams/docs-protocol",
