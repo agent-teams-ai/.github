@@ -20,7 +20,9 @@ later CI observations.
    SRI, cryptographically checked npm provenance, the reusable
    workflow commit and blob, schema versions, asset hashes, runtime bounds,
    compatibility timing metadata, migration edges, and evidence references.
-3. Lifecycle is an append-only hash-chained event stream. A trusted
+3. Cohort IDs are opaque unique identifiers. Immutable append position, not
+   lexical sorting, preserves record order; migration direction is declared by
+   explicit edges. Lifecycle is an append-only hash-chained event stream. A trusted
    `pull_request_target` check reads base and head through the GitHub API without
    executing pull-request code, validates the untrusted head with base-owned
    schema and lifecycle code, rejects stale-base concurrent appends, and rejects
@@ -87,10 +89,13 @@ later CI observations.
 17. Global append order is carried by sequence and the digest chain, not domain
     `effective_at`. Each Cohort retains its own publication/lifecycle time, so a
     delayed registration remains possible after an unrelated emergency event.
-18. Admission evidence is live proof, not a self-consistent JSON claim. Hosted CI
-    resolves exact default-branch HEAD, check/workflow runs, caller bytes, and the
-    committed managed projection. Fleet remediation is serialized to one owned
-    `rollout_pending` consumer, while suspension remains immediately appendable.
+18. Admission evidence is live proof, not a self-consistent JSON claim. The
+    committed snapshot remains immutable while hosted CI proves it is an ancestor
+    of a stable current default-branch HEAD and resolves that HEAD's exact
+    check/workflow run, caller bytes, and managed projection. Canary remediation
+    is serialized before recommendation; a `RECOMMENDED` target may roll out as
+    one parallel, single-target wave with explicit source edges. Suspension
+    remains immediately appendable.
 19. The reusable gate obtains a GitHub OIDC token with a dedicated audience and
     binds `job_workflow_ref` plus `job_workflow_sha` to the exact Cohort-pinned
     controller workflow before checking out validator code. The token is also
