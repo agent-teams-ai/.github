@@ -402,6 +402,24 @@ test("authorizes only exact consumer pnpm versions in the qualified runtime rang
   }
 });
 
+test("rejects devEngines packageManager as a competing pnpm identity authority", () => {
+  for (const packageManager of [
+    {},
+    { name: "pnpm" },
+    { version: "11.24.0" },
+    { version: ">=11.17.0 <12" },
+  ]) {
+    const input = fixture();
+    const manifestValue = JSON.parse(input.files["package.json"]);
+    manifestValue.devEngines = { packageManager };
+    input.files["package.json"] = `${JSON.stringify(manifestValue)}\n`;
+    assert.throws(
+      () => authorizeConsumerGate(input),
+      /devEngines\.packageManager is forbidden.*sole pnpm identity authority/u,
+    );
+  }
+});
+
 test("authorizes the v2 qualification wrapper without weakening exact Cohort projection", () => {
   const input = fixture();
   const path = "architecture/foundation/docs-consumer-integration.json";

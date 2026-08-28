@@ -404,6 +404,8 @@ function assertCallerWorkflow(workflow, source, expected) {
 }
 
 function assertManifest(manifest, expectedPackages) {
+  assert(manifest.devEngines?.packageManager === undefined,
+    "Consumer devEngines.packageManager is forbidden; packageManager is the sole pnpm identity authority.");
   const pnpmVersion = SUPPORTED_CONSUMER_PNPM.exec(manifest.packageManager ?? "");
   assert(pnpmVersion !== null && Number(pnpmVersion[1]) >= 17,
     "Consumer packageManager must pin an exact pnpm version in >=11.17.0 <12.");
