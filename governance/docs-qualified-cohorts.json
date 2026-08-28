@@ -4190,6 +4190,43 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:05b27a8b08f427389a02c0e84b23dc3c0262ce960e55f324f15ebcd1654631a7",
       "event_digest": "sha256:26f129300cf4106b1b429fc76675957e4637a0fa0527ac5edc0bdf1137a1bd90"
+    },
+    {
+      "sequence": 86,
+      "cohort_id": "docs-2026-08-28-stable8",
+      "state": "VERIFIED",
+      "effective_at": "2026-08-28T02:52:00Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/33126302368",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/33126302368/job/98707032821",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@0.20.0",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.2.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/engineering-foundation%400.20.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/docs-protocol%400.2.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/commit/775824b32c200663f1076eb9448dafa3f913a4f6",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/pull/10",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33131898706",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33131898706/job/98723248399",
+        "https://github.com/agent-teams-ai/.github/pull/136",
+        "https://github.com/agent-teams-ai/.github/commit/09d453c30c2d0ae8110234aae5f361e5226e9d3e",
+        "https://github.com/agent-teams-ai/agent-teams-token/pull/1",
+        "https://github.com/agent-teams-ai/.github/pull/125",
+        "https://github.com/agent-teams-ai/.github/commit/46a286c7fa47511b60146bdc90eb7a8bad9fab67",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/pull/11",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/c44a51d60b127d5e5af09c6f9e22bd40fdca9c33",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33133421437",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33133421437/job/98728219939",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33133603786",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33133603786/job/98728836212",
+        "https://github.com/agent-teams-ai/.github/pull/140",
+        "https://github.com/agent-teams-ai/.github/commit/1542797c8f2cff558a8d4c002d9e500becf47007",
+        "https://github.com/agent-teams-ai/.github/pull/144",
+        "https://github.com/agent-teams-ai/.github/commit/07d49409cb51f6124ad17673860b812a9d7b5f5b"
+      ],
+      "support_until": null,
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:26f129300cf4106b1b429fc76675957e4637a0fa0527ac5edc0bdf1137a1bd90",
+      "event_digest": "sha256:74e7c0779d154d2dfc58297afd49019f6fb4ae04a430f30b91c3fa49b8b78ac6"
     }
   ]
 }
