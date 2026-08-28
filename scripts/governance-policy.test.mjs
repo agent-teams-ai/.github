@@ -190,6 +190,7 @@ test("requires v2 receipt and contract coordinates before a classification is ad
   const changed = clone(docsProtocol);
   const token = changed.repositories.find(({ repository }) => repository === "agent-teams-ai/agent-teams-token");
   token.classification_evidence.decision = "adopted";
+  delete token.classification_evidence.v2_qualification_coordinates;
   assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema), /JSON Schema/u);
 });
 
