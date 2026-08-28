@@ -4737,6 +4737,42 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:e95f3c77816af17fd8f11a30a28ebc92be99b4fffcbe2de78f8034340e6a9ffe",
       "event_digest": "sha256:7d36cedcacf4483d958a3321132d4387ddb49477f137b12ebd94c77b963e4e3a"
+    },
+    {
+      "sequence": 98,
+      "cohort_id": "docs-2026-08-28-stable9.1",
+      "state": "CANARY",
+      "effective_at": "2026-08-28T16:30:21Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/pull/13",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/d34de95cc7e582cf840af010b2348dda2ddb7fad",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33190116452",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33190116452/job/98913573936",
+        "https://github.com/agent-teams-ai/.github/pull/166",
+        "https://github.com/agent-teams-ai/.github/commit/367bf85da0099dc4be6d0821052eb395e2831dde"
+      ],
+      "support_until": null,
+      "canary_evidence": [
+        {
+          "repository_id": 1336577313,
+          "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+          "merge_revision": "d34de95cc7e582cf840af010b2348dda2ddb7fad",
+          "observed_cohort_id": "docs-2026-08-28-stable9.1",
+          "observed_record_digest": "sha256:2d73696ad48a91b1fc3b52f49e00f44bc08a3df9f29abae3761f9ded94461ae3",
+          "observed_event_digest": "sha256:7d36cedcacf4483d958a3321132d4387ddb49477f137b12ebd94c77b963e4e3a",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 98913573936,
+          "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33190116452/job/98913573936",
+          "workflow_run_id": 33190116452,
+          "workflow_id": 336150203,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:f8da49344c3b0e9f31235de2826b1b9b392afb84515ace6af4fb5fe580e3a714"
+        }
+      ],
+      "previous_event_digest": "sha256:7d36cedcacf4483d958a3321132d4387ddb49477f137b12ebd94c77b963e4e3a",
+      "event_digest": "sha256:f508533c51e06fe378d6194bcdf929e36b6bcbfc21854d33c473bdfb925aaab5"
     }
   ]
 }
