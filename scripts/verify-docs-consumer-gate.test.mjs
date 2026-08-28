@@ -378,6 +378,30 @@ test("authorizes an inputless exact caller from central desired/observed authori
   assert.equal(result.expectedPackages.length, 2);
 });
 
+test("authorizes only exact consumer pnpm versions in the qualified runtime range", () => {
+  for (const packageManager of ["pnpm@11.17.0", "pnpm@11.24.0", "pnpm@11.999999.999999"]) {
+    const input = fixture();
+    const manifestValue = JSON.parse(input.files["package.json"]);
+    manifestValue.packageManager = packageManager;
+    input.files["package.json"] = `${JSON.stringify(manifestValue)}\n`;
+    assert.doesNotThrow(() => authorizeConsumerGate(input), packageManager);
+  }
+
+  for (const packageManager of [
+    "pnpm@11.16.999999",
+    "pnpm@12.0.0",
+    "pnpm@11.024.0",
+    "pnpm@11.24.0-rc.1",
+    "pnpm@11.1000000.0",
+  ]) {
+    const input = fixture();
+    const manifestValue = JSON.parse(input.files["package.json"]);
+    manifestValue.packageManager = packageManager;
+    input.files["package.json"] = `${JSON.stringify(manifestValue)}\n`;
+    assert.throws(() => authorizeConsumerGate(input), />=11\.17\.0 <12/u, packageManager);
+  }
+});
+
 test("authorizes the v2 qualification wrapper without weakening exact Cohort projection", () => {
   const input = fixture();
   const path = "architecture/foundation/docs-consumer-integration.json";

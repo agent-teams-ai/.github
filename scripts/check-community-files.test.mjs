@@ -123,3 +123,21 @@ test("initializes qualification temp paths at runtime instead of job expression 
   ).run = "true";
   assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
 });
+
+test("derives only the untrusted semantic gate pnpm from the validated consumer packageManager", () => {
+  const semanticSetup = workflow.jobs["docs-protocol-check"].steps.find(
+    (step) => step.name === "Set up pnpm for repository semantic gate",
+  );
+  assert.deepEqual(semanticSetup.with, { run_install: false });
+
+  for (const jobName of ["trusted-authorize", "trusted-structural", "trusted-qualification"]) {
+    const trustedSetup = workflow.jobs[jobName].steps.find((step) => step.uses?.startsWith("pnpm/action-setup@"));
+    assert.equal(trustedSetup.with.version, "11.18.0");
+  }
+
+  const changed = clone(workflow);
+  changed.jobs["docs-protocol-check"].steps.find(
+    (step) => step.name === "Set up pnpm for repository semantic gate",
+  ).with.version = "11.18.0";
+  assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
+});

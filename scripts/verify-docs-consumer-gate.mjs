@@ -55,6 +55,7 @@ const CALLER_LIMIT = 32 * 1024;
 const SHA = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
 const EXACT_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
+const SUPPORTED_CONSUMER_PNPM = /^pnpm@11\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,5})$/u;
 const ALWAYS_FORBIDDEN_LOCK_KEYS = new Set([
   "packageExtensions",
   "patchedDependencies",
@@ -403,8 +404,9 @@ function assertCallerWorkflow(workflow, source, expected) {
 }
 
 function assertManifest(manifest, expectedPackages) {
-  assert(/^pnpm@11\.[0-9]+\.[0-9]+$/u.test(manifest.packageManager ?? ""),
-    "Consumer packageManager must pin pnpm 11 exactly.");
+  const pnpmVersion = SUPPORTED_CONSUMER_PNPM.exec(manifest.packageManager ?? "");
+  assert(pnpmVersion !== null && Number(pnpmVersion[1]) >= 17,
+    "Consumer packageManager must pin an exact pnpm version in >=11.17.0 <12.");
   const pnpm = manifest.pnpm;
   assert(!exactObject(pnpm) || !["overrides", "packageExtensions", "patchedDependencies"]
     .some((key) => Object.hasOwn(pnpm, key)),

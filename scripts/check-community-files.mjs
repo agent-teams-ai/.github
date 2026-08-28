@@ -281,7 +281,7 @@ export function validateDocsProtocolWorkflow(workflow) {
         steps: [
           { name: "Require successful trusted qualification", if: "needs.trusted-qualification.result != 'success'", run: "exit 1" },
           { name: "Check out consumer revision", uses: checkout, with: { ref: "${{ github.sha }}", "persist-credentials": false } },
-          { name: "Set up pnpm for repository semantic gate", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up pnpm for repository semantic gate", uses: pnpm, with: { run_install: false } },
           { name: "Set up Node for repository semantic gate", uses: node, with: { "node-version": "24.18.0", cache: "pnpm" } },
           { name: "Install consumer dependencies in the untrusted context", run: "pnpm install --frozen-lockfile" },
           { name: "Run repository semantic documentation gate", run: "pnpm docs:protocol:check" },
