@@ -3739,6 +3739,25 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:5b51fec1197e3fa8ef19e3e3437945a7d77ade45c0c096f720ddf900d11fc28f",
       "event_digest": "sha256:aa6e08d46ba363c9a32de04378b5135712df748549ea47faa86c26da435ac3db"
+    },
+    {
+      "sequence": 81,
+      "cohort_id": "docs-2026-08-28-stable5",
+      "state": "WITHDRAWN",
+      "effective_at": "2026-08-28T01:37:22Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/pull/10",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33131898706",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/33131898706/job/98723248399",
+        "https://github.com/agent-teams-ai/.github/pull/136",
+        "https://github.com/agent-teams-ai/.github/commit/09d453c30c2d0ae8110234aae5f361e5226e9d3e",
+        "https://github.com/agent-teams-ai/.github/pull/137",
+        "https://github.com/agent-teams-ai/.github/commit/8af97f2a18ada4981e1c095bf6fb42bc47219713"
+      ],
+      "support_until": null,
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:aa6e08d46ba363c9a32de04378b5135712df748549ea47faa86c26da435ac3db",
+      "event_digest": "sha256:a6347713807010e0495a7aebbeff31bf569fcf30e14fdc4b0a0a232f04291458"
     }
   ]
 }
