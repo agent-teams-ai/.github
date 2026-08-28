@@ -94,7 +94,7 @@
       "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
       "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
       "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
-      "classification_evidence": { "decision": "pending_authority_decision", "observed_revision": "621ea7016e0a7e441dd40336902d2cac3aefd202", "evidence_paths": ["SOURCE.md", "spec/core.md", "spec/governance.md"], "rationale": "The neutral normative documentation boundary needs an explicit authority decision before organization-specific documentation protocol adoption.", "v2_qualification_coordinates": null },
+      "classification_evidence": { "decision": "pending_authority_decision", "observed_revision": "535ca76726da0db6eaac3c0eee98ff68fe34befe", "evidence_paths": ["SOURCE.md", "spec/core.md", "spec/governance.md"], "rationale": "The neutral normative documentation boundary needs an explicit authority decision before organization-specific documentation protocol adoption.", "v2_qualification_coordinates": null },
       "exemption": null, "required_check_exception_id": null
     },
     {
@@ -121,21 +121,21 @@
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
         "default_branch": "main",
-        "revision": "3c4dcddc70e6b70c8e457a22235843368cc90dd9",
+        "revision": "25b2b7f383347466fa74fdd5586c485f5181d8d9",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 98668608128,
-        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/33115392452/job/98668608128",
-        "workflow_run_id": 33115392452,
+        "check_run_id": 98690685152,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/33121943062/job/98690685152",
+        "workflow_run_id": 33121943062,
         "workflow_id": 335216823,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:d697c5c7c9bcfccfc006fcf7e4d4cc8e7c629f9689781b9b0b50f30d82bc019e",
-        "observed_at": "2026-08-27T20:52:38Z"
+        "observed_at": "2026-08-27T22:18:45Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "3c4dcddc70e6b70c8e457a22235843368cc90dd9",
+        "observed_revision": "25b2b7f383347466fa74fdd5586c485f5181d8d9",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
@@ -314,8 +314,8 @@
       "admission_status": "admitted",
       "exact_package_version": "0.1.4",
       "exact_foundation_version": "0.19.0",
-      "cohort_binding_status": "bound",
-      "desired_cohort_id": "docs-2026-08-25-stable3",
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-08-28-stable5",
       "observed_cohort_id": "docs-2026-08-25-stable3",
       "observed_cohort_record_digest": "sha256:6967adc19c521f085c2772178d170218ac4327d058f120374a87b5ba2f6b8ca5",
       "observed_cohort_event_digest": "sha256:c8879b257ceda0a53e9243e1a69c0baa5aa64ce8c5ee1c9929d659e5e3366a6f",
@@ -409,21 +409,21 @@
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
         "default_branch": "main",
-        "revision": "8d45671025e83dd801a33eef6c2be38b5a677af3",
+        "revision": "0836f62a386e253b156271f0b8f7defc969f3580",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 98666197081,
-        "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/33114690040/job/98666197081",
-        "workflow_run_id": 33114690040,
+        "check_run_id": 98691013581,
+        "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/33122038262/job/98691013581",
+        "workflow_run_id": 33122038262,
         "workflow_id": 336590767,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:d697c5c7c9bcfccfc006fcf7e4d4cc8e7c629f9689781b9b0b50f30d82bc019e",
-        "observed_at": "2026-08-27T20:43:55Z"
+        "observed_at": "2026-08-27T22:20:13Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "8d45671025e83dd801a33eef6c2be38b5a677af3",
+        "observed_revision": "0836f62a386e253b156271f0b8f7defc969f3580",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
