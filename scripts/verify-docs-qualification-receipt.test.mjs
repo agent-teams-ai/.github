@@ -122,10 +122,12 @@ async function fixture(governedDocsRoots = []) {
     [paths.profile]: "schemaVersion: 2\n", [paths.skill]: "# Skill\n", "package.json": "{}\n", "pnpm-lock.yaml": "lockfileVersion: '9.0'\n",
   };
   await Promise.all(Object.entries(sources).map(async ([path, source]) => { await mkdir(join(root, path, ".."), { recursive: true }); await writeFile(join(root, path), source); }));
-  const docsModule = "export const qualification = true;\n";
+  const docsFacade = 'export { runDocsProtocolQualificationV2 } from "./qualification-v2-runner.js";\n';
+  const docsRunner = "export const runDocsProtocolQualificationV2 = async () => true;\n";
   await Promise.all([
     writeFile(join(docsRoot, "package.json"), `${JSON.stringify({ name: "@agent-teams/docs-protocol", version: "0.2.0" })}\n`),
-    writeFile(join(docsRoot, "dist/qualification/index.js"), docsModule),
+    writeFile(join(docsRoot, "dist/qualification/index.js"), docsFacade),
+    writeFile(join(docsRoot, "dist/qualification/qualification-v2-runner.js"), docsRunner),
     writeFile(join(foundationRoot, "package.json"), `${JSON.stringify({ name: "@agent-teams/engineering-foundation", version: "0.20.0" })}\n`),
     writeFile(join(foundationRoot, "dist/index.js"), "export {};\n"), writeFile(join(foundationRoot, "schemas/model.json"), "{}\n"),
     writeFile(join(foundationRoot, "presets/base.json"), "{}\n"),
@@ -144,7 +146,7 @@ async function fixture(governedDocsRoots = []) {
       sourceDigest: await sourceDigest(root, governedDocsRoots), integration: { path: paths.integration, digest: sha(sources[paths.integration]) },
       contract: { path: paths.contract, digest: sha(sources[paths.contract]) }, profile: { path: paths.profile, digest: sha(sources[paths.profile]) },
       skill: { path: paths.skill, digest: sha(sources[paths.skill]) }, packageManifestDigest: sha(sources["package.json"]), lockfileDigest: sha(sources["pnpm-lock.yaml"]),
-      executingDocsProtocol: { version: "0.2.0", buildDigest: sha(docsModule) },
+      executingDocsProtocol: { version: "0.2.0", buildDigest: sha(docsRunner) },
       executingFoundation: { version: "0.20.0", buildIdentity: await foundationIdentity(foundationRoot) }, cohort,
     },
   };
@@ -175,11 +177,22 @@ async function rewriteReceipt(value, mutate) {
   await writeFile(value.receiptPath, `${JSON.stringify(envelope(changed))}\n`);
 }
 
-test("binds a released-cohort receipt to exact checkout, source, contract, and installed packages", async () => {
+test("binds a released-cohort receipt to the exact executing runner rather than its export facade", async () => {
   const value = await fixture();
   try {
+    const qualificationRoot = join(value.installRoot, "node_modules/@agent-teams/docs-protocol/dist/qualification");
+    assert.notEqual(sha(await readFile(join(qualificationRoot, "index.js"))), sha(await readFile(join(qualificationRoot, "qualification-v2-runner.js"))));
     const verified = await verify(value);
     assert.equal(verified.receiptDigest, value.receipt.receiptDigest);
+  } finally { await rm(value.temporary, { recursive: true, force: true }); }
+});
+
+test("rejects a receipt bound to the qualification export facade", async () => {
+  const value = await fixture();
+  try {
+    const facade = await readFile(join(value.installRoot, "node_modules/@agent-teams/docs-protocol/dist/qualification/index.js"));
+    await rewriteReceipt(value, (receipt) => { receipt.evidence.executingDocsProtocol.buildDigest = sha(facade); });
+    await assert.rejects(verify(value), /execution identity/u);
   } finally { await rm(value.temporary, { recursive: true, force: true }); }
 });
 
@@ -273,7 +286,7 @@ test("matches the package source exclusion contract exactly", async () => {
 test("rejects tampered installed bytes even with a forged self-declared build digest", async () => {
   const value = await fixture();
   try {
-    const modulePath = join(value.installRoot, "node_modules/@agent-teams/docs-protocol/dist/qualification/index.js");
+    const modulePath = join(value.installRoot, "node_modules/@agent-teams/docs-protocol/dist/qualification/qualification-v2-runner.js");
     const tampered = "export const qualification = 'tampered';\n";
     await writeFile(modulePath, tampered);
     await rewriteReceipt(value, (receipt) => { receipt.evidence.executingDocsProtocol.buildDigest = sha(tampered); });

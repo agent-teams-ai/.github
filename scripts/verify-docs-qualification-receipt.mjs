@@ -362,7 +362,11 @@ export async function verifyQualificationReceipt({ consumerRoot, installRoot, au
       fail("Installed Cohort package graph differs from central expectedPackages SRI authority.");
     }
   }
-  const executingModuleDigest = digest(await boundedRegularFile(join(docsRoot, "dist/qualification/index.js"), BUILD_FILE_LIMIT, "Executing Docs Protocol qualification module"));
+  const executingModuleDigest = digest(await boundedRegularFile(
+    join(docsRoot, "dist/qualification/qualification-v2-runner.js"),
+    BUILD_FILE_LIMIT,
+    "Executing Docs Protocol qualification v2 runner",
+  ));
   const installedFoundationIdentity = await foundationBuildIdentity(foundationRoot);
   if (receipt.derived.packageVersions.docsProtocol !== packages?.docsProtocol?.version ||
       receipt.derived.packageVersions.engineeringFoundation !== packages?.engineeringFoundation?.version ||
