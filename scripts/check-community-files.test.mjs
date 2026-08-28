@@ -85,11 +85,11 @@ test("rejects semantic commands in OIDC and changed authority", () => {
 
 test("rejects run/comment bypasses despite preserved step names", () => {
   for (const mutate of [
-    (changed) => { changed.jobs["trusted-qualification"].steps[4].run = "true # base verifier install"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[9].run = "true # prepare-install"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[11].run = "true # pnpm install --ignore-scripts --ignore-pnpmfile"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[13].run = "true # agent-teams-docs qualify"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[14].run = "true # verify-docs-qualification-receipt.mjs"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[5].run = "true # base verifier install"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[10].run = "true # prepare-install"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[12].run = "true # pnpm install --ignore-scripts --ignore-pnpmfile"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[14].run = "true # agent-teams-docs qualify"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[15].run = "true # verify-docs-qualification-receipt.mjs"; },
     (changed) => { changed.jobs["docs-protocol-check"].steps[5].run = "true # pnpm docs:protocol:check"; },
   ]) {
     const changed = clone(workflow);
@@ -100,10 +100,26 @@ test("rejects run/comment bypasses despite preserved step names", () => {
 
 test("keeps schemaVersion 1 as a trusted qualification no-op", () => {
   const qualification = workflow.jobs["trusted-qualification"];
-  assert.equal(qualification.steps[8].name, "Detect exact qualification contract version");
-  for (const step of qualification.steps.slice(9, 15)) {
+  assert.equal(qualification.steps[9].name, "Detect exact qualification contract version");
+  for (const step of qualification.steps.slice(10, 16)) {
     assert.equal(step.if, "steps.qualification.outputs.enabled == 'true'");
   }
   assert.equal(qualification.steps.at(-1).if, undefined);
   assert.equal(workflow.jobs["docs-protocol-check"].needs, "trusted-qualification");
+});
+
+test("initializes qualification temp paths at runtime instead of job expression evaluation", () => {
+  const qualification = workflow.jobs["trusted-qualification"];
+  assert.equal(JSON.stringify(qualification.env).includes("runner.temp"), false);
+  const initializer = qualification.steps.find(
+    (step) => step.name === "Initialize isolated qualification paths",
+  );
+  assert.match(initializer.run, /RUNNER_TEMP/u);
+  assert.match(initializer.run, /GITHUB_ENV/u);
+
+  const changed = clone(workflow);
+  changed.jobs["trusted-qualification"].steps.find(
+    (step) => step.name === "Initialize isolated qualification paths",
+  ).run = "true";
+  assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
 });
