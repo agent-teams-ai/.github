@@ -241,10 +241,11 @@ export function validateDocsProtocolWorkflow(workflow) {
         name: "trusted-qualification", needs: ["trusted-authorize", "trusted-structural"], if: guarded, permissions: { contents: "read" },
         "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
         env: { TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance", CONSUMER_CHECKOUT: "${{ github.workspace }}/.trusted/consumer",
-          AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json", TRUSTED_INSTALL_ROOT: "${{ runner.temp }}/docs-qualification-install",
-          INSTALL_EVIDENCE_PATH: "${{ runner.temp }}/docs-qualification-install-evidence.json", QUALIFICATION_RECEIPT: "${{ runner.temp }}/docs-qualification-receipt.json" },
+          AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json" },
         steps: [
           { name: "Require successful trusted structural authorization", if: "needs.trusted-authorize.result != 'success' || needs.trusted-structural.result != 'success'", run: "exit 1" },
+          { name: "Initialize isolated qualification paths", shell: "bash",
+            run: "case \"$RUNNER_TEMP\" in\n  /*) ;;\n  *) echo \"RUNNER_TEMP must be an absolute path\" >&2; exit 1 ;;\nesac\n{\n  printf 'TRUSTED_INSTALL_ROOT=%s/docs-qualification-install\\n' \"$RUNNER_TEMP\"\n  printf 'INSTALL_EVIDENCE_PATH=%s/docs-qualification-install-evidence.json\\n' \"$RUNNER_TEMP\"\n  printf 'QUALIFICATION_RECEIPT=%s/docs-qualification-receipt.json\\n' \"$RUNNER_TEMP\"\n} >> \"$GITHUB_ENV\"\n" },
           { name: "Check out exact Cohort-bound validator implementation", uses: checkout,
             with: { repository: "${{ needs.trusted-authorize.outputs.workflow-repository }}", ref: "${{ needs.trusted-authorize.outputs.workflow-sha }}", path: ".trusted/governance", "persist-credentials": false } },
           { name: "Set up pnpm for trusted qualification tooling", uses: pnpm, with: { version: "11.18.0", run_install: false } },
