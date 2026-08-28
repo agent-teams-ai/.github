@@ -309,16 +309,19 @@ test("requires every bootstrap candidate evidence path", () => {
   }
 });
 
-test("allows only one organization-owned consumer rollout at a time", () => {
+test("keeps organization-owned rollout waves on one desired Cohort", () => {
   const changed = clone(docsProtocol);
   const consumers = changed.repositories.filter(
     ({ docs_role: role }) => role === "consumer",
   ).slice(0, 2);
   for (const consumer of consumers) {
     consumer.cohort_binding_status = "rollout_pending";
+    consumer.desired_cohort_id = "docs-next";
   }
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(changed, docsProtocolSchema));
+  consumers[1].desired_cohort_id = "docs-other";
   assert.throws(() => validateDocsProtocolPolicy(changed, docsProtocolSchema),
-    /At most one organization-owned consumer/u);
+    /one desired-Cohort wave/u);
 });
 
 test("accepts a new owned repository only as pending_classification", () => {

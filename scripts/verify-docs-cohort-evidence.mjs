@@ -262,20 +262,16 @@ export async function resolvePublishedRuntimeClosure(packages, run = command) {
   }
 }
 
-export async function defaultIsDefaultBranchAncestor(
+export async function defaultIsCommitAncestor(
   repository,
-  defaultBranch,
   revision,
+  descendant,
   run = command,
 ) {
-  const { stdout: branchOutput } = await run("gh", [
-    "api", `repos/${repository}/branches/${defaultBranch}`, "--jq", ".commit.sha",
-  ]);
-  const head = branchOutput.trim();
-  if (revision === head) {return true;}
+  if (revision === descendant) {return true;}
   try {
     const { stdout: comparisonOutput } = await run("gh", [
-      "api", `repos/${repository}/compare/${revision}...${head}`, "--jq", ".status",
+      "api", `repos/${repository}/compare/${revision}...${descendant}`, "--jq", ".status",
     ]);
     return ["ahead", "identical"].includes(comparisonOutput.trim());
   } catch (error) {
@@ -287,7 +283,7 @@ export async function defaultIsDefaultBranchAncestor(
   for (let page = 1; page <= maxPages; page += 1) {
     const { stdout: historyOutput } = await run("gh", [
       "api",
-      `repos/${repository}/commits?sha=${head}&per_page=${commitsPerPage}&page=${page}`,
+      `repos/${repository}/commits?sha=${descendant}&per_page=${commitsPerPage}&page=${page}`,
       "--jq", ".[].sha",
     ]);
     const history = historyOutput.trim().split("\n").filter(Boolean);
@@ -297,6 +293,37 @@ export async function defaultIsDefaultBranchAncestor(
   throw new Error(
     `${repository} ancestry fallback exceeded ${maxPages * commitsPerPage} commits.`,
   );
+}
+
+export async function defaultIsDefaultBranchAncestor(
+  repository,
+  defaultBranch,
+  revision,
+  run = command,
+) {
+  const { stdout } = await run("gh", [
+    "api", `repos/${repository}/branches/${defaultBranch}`, "--jq", ".commit.sha",
+  ]);
+  return defaultIsCommitAncestor(repository, revision, stdout.trim(), run);
+}
+
+function workflowRunIdFromCheck(repository, check) {
+  let url;
+  try {url = new URL(check.html_url);} catch {
+    throw new Error(`${repository} current required check URL is invalid.`);
+  }
+  const expectedPrefix = `/${repository}/actions/runs/`;
+  const suffix = url.pathname.startsWith(expectedPrefix)
+    ? url.pathname.slice(expectedPrefix.length)
+    : "";
+  const match = /^(?<runId>[1-9][0-9]*)\/job\/(?<jobId>[1-9][0-9]*)$/u.exec(suffix);
+  const runId = Number(match?.groups?.runId);
+  const jobId = Number(match?.groups?.jobId);
+  assert(url.protocol === "https:" && url.hostname === "github.com" &&
+    url.search === "" && url.hash === "" &&
+    Number.isSafeInteger(runId) && Number.isSafeInteger(jobId) && jobId === check.id,
+  `${repository} current required check URL does not bind its exact Actions run/job.`);
+  return runId;
 }
 
 async function defaultReadPublishedPackage(packageEntry, paths) {
@@ -506,6 +533,58 @@ async function verifyCanaryEvidence(record, canaryEvent, adapters) {
   }
 }
 
+async function verifyAdmissionRevision(
+  entry,
+  evidence,
+  record,
+  qualification,
+  observation,
+  adapters,
+) {
+  const checks = observation.check === undefined
+    ? await adapters.getCheckRuns(entry.repository, observation.revision)
+    : [observation.check];
+  const check = checks.find(({ id }) => id === observation.checkRunId);
+  assert(check?.head_sha === observation.revision &&
+    check.name === evidence.required_context &&
+    check.app?.id === evidence.integration_id && check.conclusion === "success" &&
+    check.html_url === observation.checkRunUrl &&
+    evidence.required_context === entry.required_check_context,
+  `${entry.repository} live required check does not bind the observed head/context/app/success.`);
+  assert(workflowRunIdFromCheck(entry.repository, check) === observation.workflowRunId,
+    `${entry.repository} required check URL does not bind its observed workflow run.`);
+  const run = await adapters.getWorkflowRun(entry.repository, observation.workflowRunId);
+  assert(run.id === observation.workflowRunId && run.workflow_id === evidence.workflow_id &&
+    run.head_sha === observation.revision && run.head_branch === evidence.default_branch &&
+    run.event === "push" && run.conclusion === "success" &&
+    run.path === evidence.caller_workflow_path &&
+    run.repository?.id === entry.repository_id && run.repository?.full_name === entry.repository,
+  `${entry.repository} live workflow run does not bind the observed default-branch push.`);
+  const [caller, projectionBytes] = await Promise.all([
+    adapters.readRepositoryFile(entry.repository, evidence.caller_workflow_path, observation.revision),
+    adapters.readRepositoryFile(
+      entry.repository,
+      "architecture/foundation/docs-protocol-managed-state.json",
+      observation.revision,
+    ),
+  ]);
+  assert(evidence.caller_workflow_path === entry.caller_workflow_path &&
+    evidence.caller_workflow_digest === record.assets.caller_workflow.rendered_digest &&
+    sha256(caller) === evidence.caller_workflow_digest,
+  `${entry.repository} observed caller bytes differ from its Cohort.`);
+  let projection;
+  try {projection = JSON.parse(projectionBytes.toString("utf8"));} catch {
+    throw new Error(`${entry.repository} observed managed projection is not JSON.`);
+  }
+  const authority = projection.cohortAuthority ?? projection;
+  assert(projection.cohortId === record.cohort_id &&
+    authority.recordDigest === record.record_digest &&
+    authority.qualificationEventDigest === qualification.event_digest &&
+    entry.observed_cohort_record_digest === record.record_digest &&
+    entry.observed_cohort_event_digest === qualification.event_digest,
+  `${entry.repository} observed managed projection does not prove the observed Cohort.`);
+}
+
 export async function verifyDocsAdmissionEvidence(policy, registry, schema, overrides = {}) {
   const lifecycle = validateDocsQualifiedCohorts(registry, schema, { asOf: overrides.asOf });
   const adapters = {
@@ -525,6 +604,7 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       ]);
       return stdout.trim();
     },
+    isCommitAncestor: defaultIsCommitAncestor,
     getCheckRuns: async (repository, revision) => {
       const { stdout } = await command("gh", [
         "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100`,
@@ -576,46 +656,39 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     assert(repository.id === entry.repository_id && repository.full_name === entry.repository &&
       repository.default_branch === evidence.default_branch,
     `${entry.repository} live identity/default branch differs from admission evidence.`);
-    assert(await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch) === evidence.revision,
-      `${entry.repository} admission revision is not the exact current default-branch head.`);
-    const check = (await adapters.getCheckRuns(entry.repository, evidence.revision))
-      .find(({ id }) => id === evidence.check_run_id);
-    assert(check?.head_sha === evidence.revision && check.name === evidence.required_context &&
-      check.app?.id === evidence.integration_id && check.conclusion === "success" &&
-      check.html_url === evidence.check_run_url && evidence.required_context === entry.required_check_context,
-    `${entry.repository} live required check does not bind the admitted head/context/app/success.`);
-    assert(evidence.check_run_url.includes(`/actions/runs/${evidence.workflow_run_id}`),
-      `${entry.repository} admission check URL does not bind its workflow run.`);
-    const run = await adapters.getWorkflowRun(entry.repository, evidence.workflow_run_id);
-    assert(run.id === evidence.workflow_run_id && run.workflow_id === evidence.workflow_id &&
-      run.head_sha === evidence.revision && run.head_branch === evidence.default_branch &&
-      run.event === "push" && run.conclusion === "success" &&
-      run.path === evidence.caller_workflow_path &&
-      run.repository?.id === entry.repository_id && run.repository?.full_name === entry.repository,
-    `${entry.repository} live workflow run does not bind the admitted default-branch push.`);
-    const [caller, projectionBytes] = await Promise.all([
-      adapters.readRepositoryFile(entry.repository, evidence.caller_workflow_path, evidence.revision),
-      adapters.readRepositoryFile(
+    await verifyAdmissionRevision(entry, evidence, record, qualification, {
+      revision: evidence.revision,
+      checkRunId: evidence.check_run_id,
+      checkRunUrl: evidence.check_run_url,
+      workflowRunId: evidence.workflow_run_id,
+    }, adapters);
+    let stableHead = false;
+    for (let attempt = 1; attempt <= 2 && !stableHead; attempt += 1) {
+      const head = await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch);
+      assert(await adapters.isCommitAncestor(entry.repository, evidence.revision, head),
+        `${entry.repository} admission revision is not an ancestor of the current default-branch head.`);
+      if (head !== evidence.revision) {
+        const matches = (await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
+          check.head_sha === head && check.name === evidence.required_context &&
+          check.app?.id === evidence.integration_id && check.conclusion === "success");
+        assert(matches.length === 1,
+          `${entry.repository} current default-branch head requires exactly one successful admitted check.`);
+        const [check] = matches;
+        await verifyAdmissionRevision(entry, evidence, record, qualification, {
+          revision: head,
+          checkRunId: check.id,
+          checkRunUrl: check.html_url,
+          workflowRunId: workflowRunIdFromCheck(entry.repository, check),
+          check,
+        }, adapters);
+      }
+      stableHead = await adapters.getDefaultBranchHead(
         entry.repository,
-        "architecture/foundation/docs-protocol-managed-state.json",
-        evidence.revision,
-      ),
-    ]);
-    assert(evidence.caller_workflow_path === entry.caller_workflow_path &&
-      evidence.caller_workflow_digest === record.assets.caller_workflow.rendered_digest &&
-      sha256(caller) === evidence.caller_workflow_digest,
-    `${entry.repository} admitted caller bytes differ from its observed Cohort.`);
-    let projection;
-    try {projection = JSON.parse(projectionBytes.toString("utf8"));} catch {
-      throw new Error(`${entry.repository} admitted managed projection is not JSON.`);
+        evidence.default_branch,
+      ) === head;
     }
-    const authority = projection.cohortAuthority ?? projection;
-    assert(projection.cohortId === record.cohort_id &&
-      authority.recordDigest === record.record_digest &&
-      authority.qualificationEventDigest === qualification.event_digest &&
-      entry.observed_cohort_record_digest === record.record_digest &&
-      entry.observed_cohort_event_digest === qualification.event_digest,
-    `${entry.repository} admitted managed projection does not prove the observed Cohort.`);
+    assert(stableHead,
+      `${entry.repository} default-branch head changed repeatedly during live admission verification.`);
   }
   return candidates.map(({ repository_id: id }) => id);
 }

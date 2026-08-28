@@ -418,8 +418,6 @@ export function validateDocsQualifiedCohorts(registry, schema, options = {}) {
   validateSchema(registry, schema, "Qualified Docs Cohort registry");
   const ids = registry.cohorts.map(({ cohort_id: cohortId }) => cohortId);
   assert(new Set(ids).size === ids.length, "Qualified Docs Cohort IDs must be unique.");
-  assert(ids.every((id, index) => index === 0 || ids[index - 1] < id),
-    "Qualified Docs Cohorts must use stable binary ID order.");
   registry.cohorts.forEach(validateCohortRecord);
   const cohortById = new Map(registry.cohorts.map((record) => [record.cohort_id, record]));
   for (const [index, record] of registry.cohorts.entries()) {
@@ -652,6 +650,21 @@ export function validateDocsGovernanceReferences(
     $schema: "https://json-schema.org/draft/2020-12/schema",
     type: "object",
   }, options);
+  const activeOwnedRollouts = docsPolicy.repositories.filter((repository) =>
+    repository.repository_lifecycle === "active" &&
+    repository.governance_ownership === "organization_owned" &&
+    repository.docs_role === "consumer" &&
+    repository.cohort_binding_status === "rollout_pending");
+  const rolloutTargets = new Set(activeOwnedRollouts.map(
+    ({ desired_cohort_id: cohortId }) => cohortId,
+  ));
+  assert(rolloutTargets.size <= 1,
+    "An organization-owned rollout wave must use one desired Cohort.");
+  if (activeOwnedRollouts.length > 1) {
+    const [targetId] = rolloutTargets;
+    assert(stateById.get(targetId) === "RECOMMENDED",
+      "A parallel organization-owned rollout wave requires a RECOMMENDED Cohort.");
+  }
   for (const repository of docsPolicy.repositories.filter(
     ({ protocol_required: required, repository_lifecycle: lifecycle }) =>
       required && lifecycle === "active",

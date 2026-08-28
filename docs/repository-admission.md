@@ -37,7 +37,10 @@ by the Cohort may consume `QUALIFIED` or `CANARY`, and the `CANARY` event binds 
 revision, record/event digests, exact observed check context, and hosted run.
 The remaining fleet waits for `RECOMMENDED`. During phased rollout, each
 repository has separate `desired_cohort_id` and `observed_cohort_id`; this
-allows fleet N and canary N+1 without a global package-version switch.
+allows fleet N and canary N+1 without a global package-version switch. Cohort
+IDs are opaque unique identifiers: immutable registry append position and
+explicit migration edges define order, so `stable10` may follow `stable9.1`
+without renaming either record.
 
 Before lifecycle promotion, run
 `pnpm governance:cohorts:verify -- --cohort <exact-id>`. It verifies live npm
@@ -95,9 +98,21 @@ or fine-grained token with repository metadata, Contents read, Actions read,
 and Checks read permissions only. Missing or inaccessible private-repository
 scope fails closed; no secret value is committed.
 
-Only one organization-owned consumer may be `rollout_pending` at a time. A
-central suspension may temporarily coexist with fleet rows still observing that
-Cohort; this is explicit remediation state, while consumer gates fail closed.
+Before recommendation, only one organization-owned canary may be
+`rollout_pending`. After the target reaches `RECOMMENDED`, multiple consumers
+may form one parallel rollout wave when every row has the same desired Cohort
+and an explicit upgrade edge from its observed Cohort. Mixed-target waves fail
+closed. A central suspension may temporarily coexist with fleet rows still
+observing that Cohort; this is explicit remediation state, while consumer gates
+fail closed.
+
+`observed_default_branch_evidence` is the immutable admission snapshot, not a
+copy of every later consumer HEAD. On each admission-policy change, trusted CI
+re-verifies that snapshot, proves it is an ancestor of a stable current default
+branch HEAD, and binds that HEAD to exactly one successful required check, the
+same workflow identity, caller bytes, and managed Cohort projection. Unrelated
+consumer commits therefore require no central JSON rewrite; force-pushes,
+missing or ambiguous checks, and managed-state drift fail closed.
 
 ## Existing exceptions
 

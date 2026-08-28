@@ -516,8 +516,10 @@ export function validateDocsProtocolPolicy(policy, schema) {
     ({ docs_role: role, cohort_binding_status: binding }) =>
       role === "consumer" && binding === "rollout_pending",
   );
-  assert(activeOwnedRollouts.length <= 1,
-    "At most one organization-owned consumer may be rollout_pending at a time.");
+  assert(new Set(activeOwnedRollouts.map(
+    ({ desired_cohort_id: cohortId }) => cohortId,
+  )).size <= 1,
+    "Organization-owned rollout_pending consumers must form one desired-Cohort wave.");
 
   const producer = activeRecords.filter(({ docs_role: role }) => role === "protocol_producer");
   const controllers = activeRecords.filter(({ docs_role: role }) => role === "governance_controller");

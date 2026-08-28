@@ -1883,12 +1883,53 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
       delete process.env.DOCS_GOVERNANCE_READ_TOKEN;
     }
   }
+  const currentRevision = "9".repeat(40);
+  const currentCheck = {
+    id: 654,
+    head_sha: currentRevision,
+    name: evidence.required_context,
+    app: { id: evidence.integration_id },
+    conclusion: "success",
+    html_url: `https://github.com/${consumer.repository}/actions/runs/321/job/654`,
+  };
+  const advancedAdapters = {
+    ...adapters,
+    getDefaultBranchHead: async () => currentRevision,
+    isCommitAncestor: async (_repository, ancestor, descendant) =>
+      ancestor === evidence.revision && descendant === currentRevision,
+    getCheckRuns: async (_repository, revision) => revision === evidence.revision
+      ? adapters.getCheckRuns()
+      : [currentCheck],
+    getWorkflowRun: async (_repository, runId) => runId === evidence.workflow_run_id
+      ? adapters.getWorkflowRun()
+      : {
+        id: 321,
+        workflow_id: evidence.workflow_id,
+        head_sha: currentRevision,
+        head_branch: evidence.default_branch,
+        event: "push",
+        conclusion: "success",
+        path: evidence.caller_workflow_path,
+        repository: { id: consumer.repository_id, full_name: consumer.repository },
+      },
+  };
+  assert.deepEqual(await verifyDocsAdmissionEvidence(
+    policy, candidateRegistry, registrySchema, advancedAdapters,
+  ), [consumer.repository_id]);
   await assert.rejects(verifyDocsAdmissionEvidence(
     policy, candidateRegistry, registrySchema, {
-      ...adapters,
-      getDefaultBranchHead: async () => "9".repeat(40),
+      ...advancedAdapters,
+      isCommitAncestor: async () => false,
     },
-  ), /exact current default-branch head/u);
+  ), /not an ancestor/u);
+  await assert.rejects(verifyDocsAdmissionEvidence(
+    policy, candidateRegistry, registrySchema, {
+      ...advancedAdapters,
+      getCheckRuns: async (_repository, revision) => revision === evidence.revision
+        ? adapters.getCheckRuns()
+        : [],
+    },
+  ), /exactly one successful admitted check/u);
 });
 
 test("emergency suspension and withdrawal remain available while npm and GitHub are offline", async () => {
@@ -1971,6 +2012,45 @@ test("rejects a concurrent append made from a stale event prefix", () => {
   const stale = structuredClone(base);
   stale.events.splice(2, 0, structuredClone(stale.events[1]));
   assert.throws(() => assertDocsCohortAppendOnly(base, stale), /immutable/u);
+});
+
+test("treats Cohort IDs as opaque while append position remains immutable", () => {
+  const previous = structuredClone(authoritativeRegistry);
+  const current = structuredClone(previous);
+  const predecessor = current.cohorts.at(-1);
+  const successor = structuredClone(predecessor);
+  Object.assign(successor, {
+    cohort_id: "docs-2026-08-28-stable10",
+    eligible_after: "2026-08-28T16:42:00Z",
+    upgrade_from: [predecessor.cohort_id],
+    rollback_to: [predecessor.cohort_id],
+  });
+  successor.record_digest = cohortRecordDigest(successor);
+  current.cohorts.push(successor);
+  const event = {
+    sequence: current.events.length + 1,
+    cohort_id: successor.cohort_id,
+    state: "PUBLISHED_UNQUALIFIED",
+    effective_at: successor.packages.at(-1).published_at,
+    support_until: null,
+    evidence_references: ["governance/evidence/docs-cohorts/stable10-published.json"],
+    canary_evidence: [],
+    previous_event_digest: current.events.at(-1).event_digest,
+    event_digest: `sha256:${"0".repeat(64)}`,
+  };
+  event.event_digest = cohortEventDigest(event);
+  current.events.push(event);
+  assert.doesNotThrow(() => validateDocsQualifiedCohorts(
+    current,
+    registrySchema,
+    { asOf: "2026-08-28T17:00:00Z" },
+  ));
+  assert.doesNotThrow(() => assertDocsCohortAppendOnly(previous, current));
+
+  const reordered = structuredClone(current);
+  [reordered.cohorts[0], reordered.cohorts[1]] =
+    [reordered.cohorts[1], reordered.cohorts[0]];
+  assert.throws(() => assertDocsCohortAppendOnly(previous, reordered), /immutable/u);
 });
 
 test("records a suspended observed binding while consumer gates fail closed", () => {
@@ -2211,7 +2291,7 @@ test("permits desired/observed staging only across an explicit migration edge", 
   });
   assert.throws(() => validateDocsGovernanceReferences(
     staged, exceptions, unauthorized, securityPolicy, { asOf: "2026-08-19T04:00:00Z" },
-  ), /not currently selectable/u);
+  ), /parallel organization-owned rollout wave requires a RECOMMENDED Cohort/u);
 
   const rollback = structuredClone(policy);
   const rollbackConsumer = rollback.repositories.find(
@@ -2262,4 +2342,36 @@ test("permits desired/observed staging only across an explicit migration edge", 
   assert.throws(() => validateDocsGovernanceReferences(
     staged, exceptions, policy, securityPolicy, { asOf: "2026-08-19T04:00:00Z" },
   ), /explicit (?:migration|upgrade)/u);
+});
+
+test("allows a parallel rollout wave only after the target is RECOMMENDED", () => {
+  const recommended = structuredClone(authoritativeRegistry);
+  const policy = structuredClone(docsPolicy);
+  const rollouts = policy.repositories.filter((repository) =>
+    repository.repository_lifecycle === "active" &&
+    repository.docs_role === "consumer" &&
+    repository.observed_cohort_id === "docs-2026-08-28-stable8",
+  ).slice(0, 2);
+  assert.equal(rollouts.length, 2);
+  for (const repository of rollouts) {
+    repository.cohort_binding_status = "rollout_pending";
+    repository.desired_cohort_id = "docs-2026-08-28-stable9.1";
+  }
+  assert.doesNotThrow(() => validateDocsGovernanceReferences(
+    recommended,
+    exceptions,
+    policy,
+    securityPolicy,
+    { asOf: "2026-08-28T16:42:00Z" },
+  ));
+
+  const canaryOnly = structuredClone(recommended);
+  canaryOnly.events.pop();
+  assert.throws(() => validateDocsGovernanceReferences(
+    canaryOnly,
+    exceptions,
+    policy,
+    securityPolicy,
+    { asOf: "2026-08-28T16:41:06Z" },
+  ), /parallel organization-owned rollout wave requires a RECOMMENDED Cohort/u);
 });
