@@ -152,7 +152,7 @@
       "repository": "agent-teams-ai/agent-teams-token", "repository_id": 1348461381,
       "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
       "docs_role": "consumer", "protocol_required": true, "admission_status": "admission_candidate",
-      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "bootstrap_pending", "desired_cohort_id": "docs-2026-08-28-stable7", "observed_cohort_id": null,
+      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "bootstrap_pending", "desired_cohort_id": "docs-2026-08-28-stable8", "observed_cohort_id": null,
       "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": "architecture/foundation/docs-protocol.yaml", "caller_workflow_path": ".github/workflows/docs-protocol.yml", "reusable_workflow_revision": null,
       "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json", "fixed_gate_command": "pnpm docs:protocol:check", "required_check_context": "docs-protocol / docs-protocol-check", "observed_default_branch_evidence": null,
       "qualification": { "status": "not_qualified", "observed_revision": null, "evidence_paths": [] },
