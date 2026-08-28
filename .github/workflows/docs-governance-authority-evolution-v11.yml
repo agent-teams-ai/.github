@@ -1,0 +1,92 @@
+name: Trusted Docs Governance Authority Evolution V11
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-docs-governance-authority-v11:
+    name: trusted-docs-governance-authority-v11
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pull = context.payload.pull_request;
+            const workflowPath = ".github/workflows/docs-governance-authority-evolution-v11.yml";
+            const testPath = "scripts/docs-governance-authority-evolution-v11.test.mjs";
+            const authorityPrefixes = [".github/workflows/", "scripts/"];
+            const installAuthorityNames = new Set([
+              ".node-version", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            const expected = new Map([
+              ["docs/decisions/0001-qualified-docs-cohorts.md", { status: "modified", sha: "a008dd8f0247d4e34f93e74f6341db43ab32547d" }],
+              ["docs/repository-admission.md", { status: "modified", sha: "36c0df5b89f6c6bacc8bc357028a7ea2b73fdf46" }],
+              ["scripts/docs-cohort-policy.mjs", { status: "modified", sha: "99713591f07e22644bc2708133cc9eb599a5e5a1" }],
+              ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "9dbbe5f7ff4fb7f19fef0631f718b5beea15fb95" }],
+              ["scripts/governance-policy.mjs", { status: "modified", sha: "d2cc7628050f91b638525ac3d95073ed01dde7bd" }],
+              ["scripts/governance-policy.test.mjs", { status: "modified", sha: "b14ad3c00ae9b5b322bccede3b01558555ef779a" }],
+              ["scripts/verify-docs-cohort-evidence.mjs", { status: "modified", sha: "bdccef70895d4f9df6e4510ea80b48e7f46bbe97" }]
+            ]);
+            const isAuthorityPath = (path) => path === workflowPath || path === testPath ||
+              authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1) {
+              core.setFailed("Docs governance authority PR changed_files must be a positive safe integer.");
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated Docs governance authority evidence is incomplete or duplicated.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            if (!changed.some((file) => allPaths(file).some(isAuthorityPath))) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            if (pull.head.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Docs governance authority changes from forks are not eligible.");
+              return;
+            }
+            const invalid = changed.filter((file) => {
+              const identity = expected.get(file.filename);
+              return file.previous_filename !== undefined || identity === undefined ||
+                identity.status !== file.status || identity.sha !== file.sha;
+            });
+            if (changed.length !== expected.size || invalid.length > 0 ||
+                changed.some(({ filename }) => !expected.has(filename))) {
+              core.setFailed("This successor accepts only the exact reviewed Docs governance bottleneck-fix slice.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Docs governance authority PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("Docs governance authority PR base is stale; update it before cutover.");
+              return;
+            }
+            core.setOutput("mode", "authority");
