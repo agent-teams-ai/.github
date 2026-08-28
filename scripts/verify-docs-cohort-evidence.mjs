@@ -130,28 +130,74 @@ async function verifyPackage(packageEntry, adapters, verifiedEntry) {
   const repository = await adapters.getRepository(packageEntry.provenance.source_repository);
   const branch = await adapters.getDefaultBranch(
     packageEntry.provenance.source_repository,
-    repository.default_branch,
+    "main",
   );
   assert(repository.id === packageEntry.provenance.source_repository_id &&
     repository.full_name === packageEntry.provenance.source_repository &&
     branch.protected === true &&
     await adapters.isDefaultBranchAncestor(
       packageEntry.provenance.source_repository,
-      repository.default_branch,
+      "main",
       packageEntry.provenance.source_commit,
-    ), `${specifier} provenance source is not on its protected default branch.`);
+    ), `${specifier} provenance source is not on its protected main branch.`);
   const workflowRun = await adapters.getWorkflowRun(
     packageEntry.provenance.source_repository,
     packageEntry.provenance.workflow_run_id,
+    packageEntry.provenance.workflow_run_attempt,
   );
-  assert(workflowRun.id === packageEntry.provenance.workflow_run_id &&
-    workflowRun.run_attempt === packageEntry.provenance.workflow_run_attempt &&
-    workflowRun.head_sha === packageEntry.provenance.source_commit &&
-    workflowRun.head_branch === repository.default_branch && workflowRun.event === "push" &&
-    workflowRun.conclusion === "success" && workflowRun.path === packageEntry.provenance.source_workflow &&
-    workflowRun.repository?.id === packageEntry.provenance.source_repository_id &&
-    workflowRun.repository?.full_name === packageEntry.provenance.source_repository,
-  `${specifier} live release workflow run does not bind exact attempt/path/SHA/success.`);
+  const bindsReleaseRun = (run, attempt, conclusion) =>
+    run.id === packageEntry.provenance.workflow_run_id &&
+    run.run_attempt === attempt &&
+    run.head_sha === packageEntry.provenance.source_commit &&
+    run.head_branch === "main" && run.event === "push" &&
+    run.status === "completed" && run.conclusion === conclusion &&
+    run.path === packageEntry.provenance.source_workflow &&
+    run.html_url === packageEntry.provenance.workflow_run_url &&
+    run.repository?.id === packageEntry.provenance.source_repository_id &&
+    run.repository?.full_name === packageEntry.provenance.source_repository;
+  const reconciliation = packageEntry.provenance.reconciliation;
+  if (reconciliation === undefined) {
+    assert(bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, "success"),
+      `${specifier} live release workflow run does not bind exact attempt/path/SHA/success.`);
+    return;
+  }
+  assert(bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, "failure"),
+    `${specifier} reconciled origin release attempt must bind an exact terminal failure.`);
+  const originJobs = await adapters.getWorkflowAttemptJobs(
+    packageEntry.provenance.source_repository,
+    packageEntry.provenance.workflow_run_id,
+    packageEntry.provenance.workflow_run_attempt,
+  );
+  const originReleaseJobs = originJobs.filter(({ name }) => name === "release");
+  assert(originReleaseJobs.length === 1 &&
+    Number.isSafeInteger(originReleaseJobs[0].id) && originReleaseJobs[0].id > 0 &&
+    originReleaseJobs[0].run_attempt === packageEntry.provenance.workflow_run_attempt &&
+    originReleaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
+    originReleaseJobs[0].status === "completed" && originReleaseJobs[0].conclusion === "failure" &&
+    originReleaseJobs[0].html_url ===
+      `${packageEntry.provenance.workflow_run_url}/job/${originReleaseJobs[0].id}`,
+  `${specifier} reconciled origin must have exactly one failed release job.`);
+  assert(reconciliation.workflow_run_attempt > packageEntry.provenance.workflow_run_attempt,
+    `${specifier} reconciliation attempt must be strictly later than its failed origin.`);
+  const reconciledRun = await adapters.getWorkflowRun(
+    packageEntry.provenance.source_repository,
+    packageEntry.provenance.workflow_run_id,
+    reconciliation.workflow_run_attempt,
+  );
+  assert(bindsReleaseRun(reconciledRun, reconciliation.workflow_run_attempt, "success"),
+    `${specifier} reconciliation run does not bind exact attempt/path/SHA/success.`);
+  const reconciledJobs = await adapters.getWorkflowAttemptJobs(
+    packageEntry.provenance.source_repository,
+    packageEntry.provenance.workflow_run_id,
+    reconciliation.workflow_run_attempt,
+  );
+  const releaseJobs = reconciledJobs.filter(({ name }) => name === "release");
+  assert(releaseJobs.length === 1 && releaseJobs[0].id === reconciliation.release_job_id &&
+    releaseJobs[0].run_attempt === reconciliation.workflow_run_attempt &&
+    releaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
+    releaseJobs[0].status === "completed" && releaseJobs[0].conclusion === "success" &&
+    releaseJobs[0].html_url === `${packageEntry.provenance.workflow_run_url}/job/${reconciliation.release_job_id}`,
+  `${specifier} reconciliation must bind exactly one successful release job.`);
 }
 
 export async function verifyInstalledPackageSignatures(packages, run = command) {
@@ -435,7 +481,7 @@ async function verifyCanaryEvidence(record, canaryEvent, adapters) {
     `${evidence.repository} hosted canary check does not exactly bind repo/head/context/integration/success.`);
     assert(evidence.check_run_url.includes(`/actions/runs/${evidence.workflow_run_id}`),
       `${evidence.repository} check URL does not bind the recorded workflow run.`);
-    const workflowRun = await adapters.getWorkflowRun(
+    const workflowRun = await adapters.getLatestWorkflowRun(
       evidence.repository,
       evidence.workflow_run_id,
     );
@@ -629,7 +675,25 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
       ]);
       return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
     },
-    getWorkflowRun: async (repository, runId) => {
+    getWorkflowRun: async (repository, runId, attempt) => {
+      assert(Number.isSafeInteger(attempt) && attempt > 0,
+        "Exact workflow run attempt is required.");
+      const { stdout } = await command("gh", [
+        "api", `repos/${repository}/actions/runs/${runId}/attempts/${attempt}`,
+      ]);
+      return JSON.parse(stdout);
+    },
+    getWorkflowAttemptJobs: async (repository, runId, attempt) => {
+      assert(Number.isSafeInteger(attempt) && attempt > 0,
+        "Exact workflow jobs attempt is required.");
+      const { stdout } = await command("gh", [
+        "api", "--paginate",
+        `repos/${repository}/actions/runs/${runId}/attempts/${attempt}/jobs?per_page=100`,
+        "--jq", ".jobs[]",
+      ]);
+      return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
+    },
+    getLatestWorkflowRun: async (repository, runId) => {
       const { stdout } = await command("gh", ["api", `repos/${repository}/actions/runs/${runId}`]);
       return JSON.parse(stdout);
     },
