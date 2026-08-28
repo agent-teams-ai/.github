@@ -387,6 +387,8 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow, /verify-docs-cohort-evidence\.mjs/u);
   assert.match(appendOnlyWorkflow,
     /Verify live evidence[\s\S]*DOCS_COHORT_EVIDENCE_REF: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/u);
+  assert.match(appendOnlyWorkflow,
+    /GH_TOKEN: \$\{\{ secrets\.DOCS_GOVERNANCE_READ_TOKEN \|\| github\.token \}\}/u);
   assert.match(appendOnlyWorkflow, /--changed-from/u);
   assert.match(appendOnlyWorkflow, /writeFile\(headPath, head/u);
   assert.match(appendOnlyWorkflow, /actions: read/u);

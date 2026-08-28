@@ -219,7 +219,7 @@ jobs:
       - name: Verify live evidence for every appended Cohort record or event
         if: steps.materialize.outputs.mode == 'full'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN || github.token }}
           DOCS_COHORT_BASE_PATH: ${{ steps.materialize.outputs.base-path }}
           DOCS_COHORT_CURRENT_PATH: ${{ steps.materialize.outputs.head-path }}
           DOCS_COHORT_EVIDENCE_REF: ${{ github.event.pull_request.head.sha }}
