@@ -324,7 +324,7 @@
       "exact_package_version": "0.2.0",
       "exact_foundation_version": "0.20.0",
       "cohort_binding_status": "rollout_pending",
-      "desired_cohort_id": "docs-2026-08-28-stable9",
+      "desired_cohort_id": "docs-2026-08-28-stable9.1",
       "observed_cohort_id": "docs-2026-08-28-stable8",
       "observed_cohort_record_digest": "sha256:e1ad7395b51d7b912db2181d263104067c712fc0cd13bac91aa5dccbc2590cc4",
       "observed_cohort_event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471",
