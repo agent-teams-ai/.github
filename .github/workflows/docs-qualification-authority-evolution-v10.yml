@@ -1,0 +1,87 @@
+name: Trusted Docs Qualification Authority Evolution V10
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-qualification-authority-evolution-v10:
+    name: trusted-qualification-authority-evolution-v10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pull = context.payload.pull_request;
+            const workflowPath = ".github/workflows/docs-qualification-authority-evolution-v10.yml";
+            const testPath = "scripts/docs-qualification-authority-evolution-v10.test.mjs";
+            const authorityPrefixes = [".github/workflows/", "scripts/"];
+            const installAuthorityNames = new Set([
+              ".node-version", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            const expected = new Map([
+              [".github/workflows/docs-cohort-append-only.yml", { status: "modified", sha: "f31a0e94be08cb023fe88fd01a0c32ba0256ce05" }],
+              ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "d008f02209cdaf51412a046904d27778d7e35699" }]
+            ]);
+            const isAuthorityPath = (path) => path === workflowPath || path === testPath ||
+              authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1) {
+              core.setFailed("Qualification authority PR changed_files must be a positive safe integer.");
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated qualification authority evidence is incomplete or duplicated.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            if (!changed.some((file) => allPaths(file).some(isAuthorityPath))) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            if (pull.head.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Qualification authority changes from forks are not eligible.");
+              return;
+            }
+            const invalid = changed.filter((file) => {
+              const identity = expected.get(file.filename);
+              return file.previous_filename !== undefined || identity === undefined ||
+                identity.status !== file.status || identity.sha !== file.sha;
+            });
+            if (changed.length !== expected.size || invalid.length > 0 ||
+                changed.some(({ filename }) => !expected.has(filename))) {
+              core.setFailed("This successor accepts only the exact reviewed cohort private-evidence authority and regression slice.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Qualification authority PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("Qualification authority PR base is stale; update it before cutover.");
+              return;
+            }
+            core.setOutput("mode", "authority");
