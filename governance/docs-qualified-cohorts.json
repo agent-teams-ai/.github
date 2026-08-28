@@ -4264,6 +4264,25 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:74e7c0779d154d2dfc58297afd49019f6fb4ae04a430f30b91c3fa49b8b78ac6",
       "event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471"
+    },
+    {
+      "sequence": 88,
+      "cohort_id": "docs-2026-08-28-stable7",
+      "state": "WITHDRAWN",
+      "effective_at": "2026-08-28T03:02:19Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-token/pull/1",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/33135944472",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/33135944472/job/98736235844",
+        "https://github.com/agent-teams-ai/.github/pull/144",
+        "https://github.com/agent-teams-ai/.github/commit/07d49409cb51f6124ad17673860b812a9d7b5f5b",
+        "https://github.com/agent-teams-ai/.github/pull/146",
+        "https://github.com/agent-teams-ai/.github/commit/b458e85a17954afc82bbd9ea2b3247334dc9f690"
+      ],
+      "support_until": null,
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471",
+      "event_digest": "sha256:d289712dcae23927a6fa500517939fe55efebb0a3b9c074fde92e3a9682c228b"
     }
   ]
 }
