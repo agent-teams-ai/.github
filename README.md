@@ -20,6 +20,8 @@ release procedures remain in the owning repository.
   repository-local adoption contracts.
 - `governance/feature-module-standard.json` - append-only Feature Module Standard
   version and digest registry.
+- `tools/feature-module-standard/` - standalone registry, digest, and immutable
+  history verifier for maintainers and agents.
 - `governance/` - machine-readable qualification and security-policy records.
 - `governance/docs-protocol-policy.json` - byte-locked stable3 compatibility snapshot.
 - `governance/docs-protocol-policy-v2.json` - current qualification-v2 documentation policy

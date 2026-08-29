@@ -7,7 +7,7 @@ import {
   MANIFEST_PATH,
   validateAppendOnlyStandardHistory,
   validateFeatureModuleStandardManifest,
-} from "./check-feature-module-standard.mjs";
+} from "./check.mjs";
 
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
 const artifacts = new Map(await Promise.all(manifest.versions.map(async (record) => [

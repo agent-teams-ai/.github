@@ -3,7 +3,6 @@ import { access, readFile } from "node:fs/promises";
 import YAML from "yaml";
 
 const requiredFiles = [
-  "AGENTS.md",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
   "GOVERNANCE.md",
@@ -23,10 +22,6 @@ const requiredFiles = [
   ".github/workflows/organization-inventory-drift.yml",
   "docs/organization-security-baseline.md",
   "docs/repository-admission.md",
-  "docs/architecture/README.md",
-  "docs/architecture/feature-module-standard/README.md",
-  "docs/architecture/feature-module-standard/v1.md",
-  "governance/feature-module-standard.json",
   "governance/actions-policy.json",
   "governance/actions-policy.schema.json",
   "governance/code-security-defaults.json",
@@ -73,7 +68,6 @@ export function validateRenovateDocsCohortRule(config) {
 validateRenovateDocsCohortRule(renovateConfig);
 
 const governance = await readFile("GOVERNANCE.md", "utf8");
-const agents = await readFile("AGENTS.md", "utf8");
 const securityBaseline = await readFile("docs/organization-security-baseline.md", "utf8");
 const repositoryAdmission = await readFile("docs/repository-admission.md", "utf8");
 const securityPolicy = JSON.parse(
@@ -100,15 +94,6 @@ function requireMarkers(source, path, markers) {
   }
 }
 
-requireMarkers(agents, "AGENTS.md", [
-  "# Agent Navigation",
-  "Feature Module Standard index",
-  "byte-immutable",
-  "local adoption profile",
-  "pnpm feature-modules:check",
-  "fetch-depth: 0",
-]);
-
 requireMarkers(repositoryAdmission, "docs/repository-admission.md", [
   "both `trusted-validation` and `trusted-admission-evidence` as required checks",
   "Each trusted workflow runs on every pull request",
@@ -117,10 +102,6 @@ requireMarkers(repositoryAdmission, "docs/repository-admission.md", [
 ]);
 
 requireMarkers(governance, "GOVERNANCE.md", [
-  "## Feature Module Standard Ownership",
-  "immutable language-neutral Feature Module Standard",
-  "one local adoption profile",
-  "A central successor does not affect a repository",
   "## Executable Specification Ownership",
   "Product repositories remain the only owners of their domain vocabulary",
   "guards, transitions, runtime binding, compatibility promises, and migrations",

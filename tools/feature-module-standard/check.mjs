@@ -138,5 +138,5 @@ export async function checkFeatureModuleStandard(repositoryRoot = process.cwd())
 
 if (resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await checkFeatureModuleStandard();
-  console.log("Feature Module Standard registry and immutable artifacts are valid.");
+  console.log("Standalone Feature Module Standard registry check passed.");
 }

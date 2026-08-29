@@ -16,6 +16,8 @@ For feature-module architecture:
    to [`governance/feature-module-standard.json`](governance/feature-module-standard.json).
 4. Never apply a central successor silently. Each consumer repository owns its
    local adoption profile, decision, agent route, and deterministic gates.
-5. Run `pnpm feature-modules:check` for focused validation and `pnpm check`
-   before proposing a merge. Append-only validation requires full Git history;
-   the required CI workflow checks out `fetch-depth: 0`.
+5. Run `node tools/feature-module-standard/check.mjs` and
+   `node --test tools/feature-module-standard/check.test.mjs` for focused
+   validation, then run `pnpm check` before proposing a merge. Append-only
+   validation requires full Git history; the required CI workflow checks out
+   `fetch-depth: 0`.
