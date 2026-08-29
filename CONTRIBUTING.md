@@ -8,7 +8,9 @@ Thank you for contributing to Agent Teams projects.
    documentation.
 2. Discuss changes that alter public contracts, bounded-context ownership,
    security boundaries, persistence semantics, or release policy before coding.
-3. Work on a short-lived branch with a conventional prefix such as `feat/`,
+3. If the repository adopts the organization Feature Module Standard, read its
+   local adoption profile for scope, extensions, deviations, and exact gates.
+4. Work on a short-lived branch with a conventional prefix such as `feat/`,
    `fix/`, `refactor/`, `docs/`, or `chore/`.
 
 ## Pull Requests

@@ -1,18 +1,27 @@
 # Agent Teams Organization Defaults
 
-This public repository contains organization-wide community defaults and the
-canonical Renovate preset for repositories under `agent-teams-ai`.
+This public repository contains organization-wide community defaults, versioned
+architecture baselines, and the canonical Renovate preset for repositories under
+`agent-teams-ai`.
 
 GitHub applies supported community files to organization repositories that do
-not provide a repository-specific override. Product architecture, local
-development commands, bounded-context policy, and release procedures remain in
-the owning repository.
+not provide a repository-specific override. Shared architecture standards still
+require explicit repository adoption. Product domain models, local development
+commands, bounded-context policy, accepted decisions, adoption profiles, and
+release procedures remain in the owning repository.
 
 ## Shared Files
 
+- `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.
 - `SECURITY.md` - private vulnerability reporting policy.
 - `GOVERNANCE.md` - ownership and decision boundaries.
+- `docs/architecture/` - immutable organization architecture standards and their
+  repository-local adoption contracts.
+- `governance/feature-module-standard.json` - append-only Feature Module Standard
+  version and digest registry.
+- `tools/feature-module-standard/` - standalone registry, digest, and immutable
+  history verifier for maintainers and agents.
 - `governance/` - machine-readable qualification and security-policy records.
 - `governance/docs-protocol-policy.json` - byte-locked stable3 compatibility snapshot.
 - `governance/docs-protocol-policy-v2.json` - current qualification-v2 documentation policy
