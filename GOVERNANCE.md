@@ -3,8 +3,8 @@
 Agent Teams repositories use explicit ownership and reviewed architectural
 decisions.
 
-- The organization baseline owns community defaults and generic dependency
-  update hygiene.
+- The organization baseline owns community defaults, immutable shared
+  architecture standards, and generic dependency update hygiene.
 - Engineering Foundation owns reusable development tooling and conformance
   engines.
 - Each product repository owns its domain model, bounded contexts, contracts,
@@ -18,6 +18,20 @@ decisions.
 Architecture decisions begin as proposed. They become accepted only after the
 repository's documented approval authority confirms them. Pull request merge is
 not itself proof of product approval unless the repository explicitly says so.
+
+## Feature Module Standard Ownership
+
+The organization owns the immutable language-neutral Feature Module Standard
+baseline and its append-only version registry. Adoption is never automatic.
+Each adopting product repository owns one local adoption profile that declares
+scope, topology mapping, extensions, deviations, and deterministic enforcement.
+
+The organization baseline cannot define a product's domain model, bounded
+contexts, package identities, technology choices, accepted decisions, or
+conformance claim. A local profile may strengthen the standard or record an
+explicit owned deviation, but it cannot silently reinterpret the central
+version. A central successor does not affect a repository until that repository
+explicitly adopts it.
 
 ## Executable Specification Ownership
 
