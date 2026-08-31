@@ -311,6 +311,14 @@ test("requires every bootstrap candidate evidence path", () => {
 
 test("keeps organization-owned rollout waves on one desired Cohort", () => {
   const changed = clone(docsProtocol);
+  for (const repository of changed.repositories) {
+    if (repository.governance_ownership === "organization_owned" &&
+      repository.docs_role === "consumer" &&
+      repository.cohort_binding_status === "rollout_pending") {
+      repository.cohort_binding_status = "bound";
+      repository.desired_cohort_id = repository.observed_cohort_id;
+    }
+  }
   const consumers = changed.repositories.filter(
     ({ docs_role: role }) => role === "consumer",
   ).slice(0, 2);
