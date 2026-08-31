@@ -5011,6 +5011,42 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:ec23f2e7ab53932e79b7591741892b5de55724deb60ac98601567ab71c43176b",
       "event_digest": "sha256:214550ff6bbd5cfb2b134d0a2f3acf569e54d97c8d9c503b706c07c611ba77e5"
+    },
+    {
+      "sequence": 105,
+      "cohort_id": "docs-2026-08-31-stable10",
+      "state": "CANARY",
+      "effective_at": "2026-08-31T16:32:30Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/pull/56",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/972baacc1608bae495c652d04edbdf15398cebee",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185/job/99561822384",
+        "https://github.com/agent-teams-ai/.github/pull/182",
+        "https://github.com/agent-teams-ai/.github/commit/76bcba3f5d5e53401731a4591b004ec3a8574bde"
+      ],
+      "support_until": null,
+      "canary_evidence": [
+        {
+          "repository_id": 1310245598,
+          "repository": "agent-teams-ai/agent-teams-orchestrator",
+          "merge_revision": "972baacc1608bae495c652d04edbdf15398cebee",
+          "observed_cohort_id": "docs-2026-08-31-stable10",
+          "observed_record_digest": "sha256:6eeb5986cf507afd5e0d3751cf3a70e1cb09112b4a7378c6820f37b59c1b3144",
+          "observed_event_digest": "sha256:214550ff6bbd5cfb2b134d0a2f3acf569e54d97c8d9c503b706c07c611ba77e5",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 99561822384,
+          "check_run_url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185/job/99561822384",
+          "workflow_run_id": 33413929185,
+          "workflow_id": 335216818,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:8711dbd6109740857c69462d218071818317a62949f08ecf8abdc6d6b736321f"
+        }
+      ],
+      "previous_event_digest": "sha256:214550ff6bbd5cfb2b134d0a2f3acf569e54d97c8d9c503b706c07c611ba77e5",
+      "event_digest": "sha256:552eea50e6baace3e447d9ea91c12fcf189d2d0b192ce997a33b31bc13b4cc06"
     }
   ]
 }
