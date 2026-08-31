@@ -5047,6 +5047,42 @@
       ],
       "previous_event_digest": "sha256:214550ff6bbd5cfb2b134d0a2f3acf569e54d97c8d9c503b706c07c611ba77e5",
       "event_digest": "sha256:552eea50e6baace3e447d9ea91c12fcf189d2d0b192ce997a33b31bc13b4cc06"
+    },
+    {
+      "sequence": 106,
+      "cohort_id": "docs-2026-08-28-stable9.1",
+      "state": "SUPERSEDED",
+      "effective_at": "2026-08-31T16:59:35Z",
+      "support_until": "2026-09-30T16:59:35Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/pull/56",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/972baacc1608bae495c652d04edbdf15398cebee",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185/job/99561822384",
+        "https://github.com/agent-teams-ai/.github/pull/183",
+        "https://github.com/agent-teams-ai/.github/commit/380648e3d44552af3417b688b78cebf8df6fccc3"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:552eea50e6baace3e447d9ea91c12fcf189d2d0b192ce997a33b31bc13b4cc06",
+      "event_digest": "sha256:ff8bdb3e795d58b64e37a52338c141e6b79f45a5e012b1717891485af79ebe71"
+    },
+    {
+      "sequence": 107,
+      "cohort_id": "docs-2026-08-31-stable10",
+      "state": "RECOMMENDED",
+      "effective_at": "2026-08-31T16:59:36Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/pull/56",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/commit/972baacc1608bae495c652d04edbdf15398cebee",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185",
+        "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33413929185/job/99561822384",
+        "https://github.com/agent-teams-ai/.github/pull/183",
+        "https://github.com/agent-teams-ai/.github/commit/380648e3d44552af3417b688b78cebf8df6fccc3"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:ff8bdb3e795d58b64e37a52338c141e6b79f45a5e012b1717891485af79ebe71",
+      "event_digest": "sha256:add3c7a62c431bbd9a2b21b9f9773efc2f329866b1a0b7726d0476e67419f812"
     }
   ]
 }
