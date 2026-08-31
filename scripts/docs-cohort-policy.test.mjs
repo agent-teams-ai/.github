@@ -329,6 +329,22 @@ function registryWithFixForwardSuccessor() {
   return result;
 }
 
+function authoritativeRegistryThrough(cohortId, state) {
+  const cohortIndex = authoritativeRegistry.cohorts.findIndex(
+    ({ cohort_id: candidateId }) => candidateId === cohortId,
+  );
+  const eventIndex = authoritativeRegistry.events.findIndex(
+    ({ cohort_id: candidateId, state: candidateState }) =>
+      candidateId === cohortId && candidateState === state,
+  );
+  assert.ok(cohortIndex >= 0, `Missing authoritative Cohort fixture ${cohortId}`);
+  assert.ok(eventIndex >= 0, `Missing authoritative ${state} event for ${cohortId}`);
+  const result = structuredClone(authoritativeRegistry);
+  result.cohorts = result.cohorts.slice(0, cohortIndex + 1);
+  result.events = result.events.slice(0, eventIndex + 1);
+  return result;
+}
+
 function publishedReader(record, transitionBytes, extraFiles = {}) {
   const files = {
     ...ASSET_CONTENTS,
@@ -2015,7 +2031,10 @@ test("rejects a concurrent append made from a stale event prefix", () => {
 });
 
 test("treats Cohort IDs as opaque while append position remains immutable", () => {
-  const previous = structuredClone(authoritativeRegistry);
+  const previous = authoritativeRegistryThrough(
+    "docs-2026-08-28-stable9.1",
+    "RECOMMENDED",
+  );
   const current = structuredClone(previous);
   const predecessor = current.cohorts.at(-1);
   const successor = structuredClone(predecessor);
@@ -2043,7 +2062,7 @@ test("treats Cohort IDs as opaque while append position remains immutable", () =
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(
     current,
     registrySchema,
-    { asOf: "2026-08-28T17:00:00Z" },
+    { asOf: successor.eligible_after },
   ));
   assert.doesNotThrow(() => assertDocsCohortAppendOnly(previous, current));
 
@@ -2345,33 +2364,65 @@ test("permits desired/observed staging only across an explicit migration edge", 
 });
 
 test("allows a parallel rollout wave only after the target is RECOMMENDED", () => {
-  const recommended = structuredClone(authoritativeRegistry);
-  const policy = structuredClone(docsPolicy);
-  const rollouts = policy.repositories.filter((repository) =>
-    repository.repository_lifecycle === "active" &&
-    repository.docs_role === "consumer" &&
-    repository.observed_cohort_id === "docs-2026-08-28-stable8",
-  ).slice(0, 2);
-  assert.equal(rollouts.length, 2);
+  const targetCohortId = "docs-2026-08-28-stable9.1";
+  const observedCohortId = "docs-2026-08-28-stable8";
+  const recommended = authoritativeRegistryThrough(targetCohortId, "RECOMMENDED");
+  const observed = recommended.cohorts.find(
+    ({ cohort_id: cohortId }) => cohortId === observedCohortId,
+  );
+  const qualification = recommended.events.find(
+    ({ cohort_id: cohortId, state }) => cohortId === observedCohortId && state === "QUALIFIED",
+  );
+  assert.ok(observed);
+  assert.ok(qualification);
+  const packageByName = new Map(observed.packages.map((entry) => [entry.name, entry]));
+  const policy = policyWithoutLiveCohortBindings();
+  const rollouts = ["agent-runtime", "extension-foundation"].map((name) => {
+    const repository = policy.repositories.find(
+      ({ repository: repositoryName }) => repositoryName === `agent-teams-ai/${name}`,
+    );
+    assert.ok(repository, `Missing synthetic rollout repository ${name}`);
+    return repository;
+  });
   for (const repository of rollouts) {
-    repository.cohort_binding_status = "rollout_pending";
-    repository.desired_cohort_id = "docs-2026-08-28-stable9.1";
+    Object.assign(repository, {
+      repository_lifecycle: "active",
+      admission_status: "admitted",
+      cohort_binding_status: "rollout_pending",
+      desired_cohort_id: targetCohortId,
+      observed_cohort_id: observedCohortId,
+      observed_cohort_record_digest: observed.record_digest,
+      observed_cohort_event_digest: qualification.event_digest,
+      exact_foundation_version: packageByName.get("@agent-teams/engineering-foundation").version,
+      exact_package_version: packageByName.get("@agent-teams/docs-protocol").version,
+      reusable_workflow_revision: observed.reusable_workflow.revision,
+      required_check_context: "docs-protocol / docs-protocol-check",
+      observed_default_branch_evidence: defaultBranchEvidence(
+        repository.repository,
+        repository.qualification.observed_revision,
+      ),
+    });
   }
+  const recommendation = recommended.events.find(
+    ({ cohort_id: cohortId, state }) => cohortId === targetCohortId && state === "RECOMMENDED",
+  );
   assert.doesNotThrow(() => validateDocsGovernanceReferences(
     recommended,
     exceptions,
     policy,
     securityPolicy,
-    { asOf: "2026-08-28T16:42:00Z" },
+    { asOf: recommendation.effective_at },
   ));
 
-  const canaryOnly = structuredClone(recommended);
-  canaryOnly.events.pop();
+  const canaryOnly = authoritativeRegistryThrough(targetCohortId, "CANARY");
+  const canary = canaryOnly.events.find(
+    ({ cohort_id: cohortId, state }) => cohortId === targetCohortId && state === "CANARY",
+  );
   assert.throws(() => validateDocsGovernanceReferences(
     canaryOnly,
     exceptions,
     policy,
     securityPolicy,
-    { asOf: "2026-08-28T16:41:06Z" },
+    { asOf: canary.effective_at },
   ), /parallel organization-owned rollout wave requires a RECOMMENDED Cohort/u);
 });
