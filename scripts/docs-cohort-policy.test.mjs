@@ -2365,17 +2365,43 @@ test("permits desired/observed staging only across an explicit migration edge", 
 
 test("allows a parallel rollout wave only after the target is RECOMMENDED", () => {
   const targetCohortId = "docs-2026-08-28-stable9.1";
+  const observedCohortId = "docs-2026-08-28-stable8";
   const recommended = authoritativeRegistryThrough(targetCohortId, "RECOMMENDED");
-  const policy = structuredClone(docsPolicy);
-  const rollouts = policy.repositories.filter((repository) =>
-    repository.repository_lifecycle === "active" &&
-    repository.docs_role === "consumer" &&
-    repository.observed_cohort_id === "docs-2026-08-28-stable8",
-  ).slice(0, 2);
-  assert.equal(rollouts.length, 2);
+  const observed = recommended.cohorts.find(
+    ({ cohort_id: cohortId }) => cohortId === observedCohortId,
+  );
+  const qualification = recommended.events.find(
+    ({ cohort_id: cohortId, state }) => cohortId === observedCohortId && state === "QUALIFIED",
+  );
+  assert.ok(observed);
+  assert.ok(qualification);
+  const packageByName = new Map(observed.packages.map((entry) => [entry.name, entry]));
+  const policy = policyWithoutLiveCohortBindings();
+  const rollouts = ["agent-runtime", "extension-foundation"].map((name) => {
+    const repository = policy.repositories.find(
+      ({ repository: repositoryName }) => repositoryName === `agent-teams-ai/${name}`,
+    );
+    assert.ok(repository, `Missing synthetic rollout repository ${name}`);
+    return repository;
+  });
   for (const repository of rollouts) {
-    repository.cohort_binding_status = "rollout_pending";
-    repository.desired_cohort_id = targetCohortId;
+    Object.assign(repository, {
+      repository_lifecycle: "active",
+      admission_status: "admitted",
+      cohort_binding_status: "rollout_pending",
+      desired_cohort_id: targetCohortId,
+      observed_cohort_id: observedCohortId,
+      observed_cohort_record_digest: observed.record_digest,
+      observed_cohort_event_digest: qualification.event_digest,
+      exact_foundation_version: packageByName.get("@agent-teams/engineering-foundation").version,
+      exact_package_version: packageByName.get("@agent-teams/docs-protocol").version,
+      reusable_workflow_revision: observed.reusable_workflow.revision,
+      required_check_context: "docs-protocol / docs-protocol-check",
+      observed_default_branch_evidence: defaultBranchEvidence(
+        repository.repository,
+        repository.qualification.observed_revision,
+      ),
+    });
   }
   const recommendation = recommended.events.find(
     ({ cohort_id: cohortId, state }) => cohortId === targetCohortId && state === "RECOMMENDED",
