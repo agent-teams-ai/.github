@@ -329,6 +329,22 @@ function registryWithFixForwardSuccessor() {
   return result;
 }
 
+function authoritativeRegistryThrough(cohortId, state) {
+  const cohortIndex = authoritativeRegistry.cohorts.findIndex(
+    ({ cohort_id: candidateId }) => candidateId === cohortId,
+  );
+  const eventIndex = authoritativeRegistry.events.findIndex(
+    ({ cohort_id: candidateId, state: candidateState }) =>
+      candidateId === cohortId && candidateState === state,
+  );
+  assert.ok(cohortIndex >= 0, `Missing authoritative Cohort fixture ${cohortId}`);
+  assert.ok(eventIndex >= 0, `Missing authoritative ${state} event for ${cohortId}`);
+  const result = structuredClone(authoritativeRegistry);
+  result.cohorts = result.cohorts.slice(0, cohortIndex + 1);
+  result.events = result.events.slice(0, eventIndex + 1);
+  return result;
+}
+
 function publishedReader(record, transitionBytes, extraFiles = {}) {
   const files = {
     ...ASSET_CONTENTS,
@@ -2015,7 +2031,10 @@ test("rejects a concurrent append made from a stale event prefix", () => {
 });
 
 test("treats Cohort IDs as opaque while append position remains immutable", () => {
-  const previous = structuredClone(authoritativeRegistry);
+  const previous = authoritativeRegistryThrough(
+    "docs-2026-08-28-stable9.1",
+    "RECOMMENDED",
+  );
   const current = structuredClone(previous);
   const predecessor = current.cohorts.at(-1);
   const successor = structuredClone(predecessor);
@@ -2043,7 +2062,7 @@ test("treats Cohort IDs as opaque while append position remains immutable", () =
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(
     current,
     registrySchema,
-    { asOf: "2026-08-28T17:00:00Z" },
+    { asOf: successor.eligible_after },
   ));
   assert.doesNotThrow(() => assertDocsCohortAppendOnly(previous, current));
 
@@ -2345,7 +2364,8 @@ test("permits desired/observed staging only across an explicit migration edge", 
 });
 
 test("allows a parallel rollout wave only after the target is RECOMMENDED", () => {
-  const recommended = structuredClone(authoritativeRegistry);
+  const targetCohortId = "docs-2026-08-28-stable9.1";
+  const recommended = authoritativeRegistryThrough(targetCohortId, "RECOMMENDED");
   const policy = structuredClone(docsPolicy);
   const rollouts = policy.repositories.filter((repository) =>
     repository.repository_lifecycle === "active" &&
@@ -2355,23 +2375,28 @@ test("allows a parallel rollout wave only after the target is RECOMMENDED", () =
   assert.equal(rollouts.length, 2);
   for (const repository of rollouts) {
     repository.cohort_binding_status = "rollout_pending";
-    repository.desired_cohort_id = "docs-2026-08-28-stable9.1";
+    repository.desired_cohort_id = targetCohortId;
   }
+  const recommendation = recommended.events.find(
+    ({ cohort_id: cohortId, state }) => cohortId === targetCohortId && state === "RECOMMENDED",
+  );
   assert.doesNotThrow(() => validateDocsGovernanceReferences(
     recommended,
     exceptions,
     policy,
     securityPolicy,
-    { asOf: "2026-08-28T16:42:00Z" },
+    { asOf: recommendation.effective_at },
   ));
 
-  const canaryOnly = structuredClone(recommended);
-  canaryOnly.events.pop();
+  const canaryOnly = authoritativeRegistryThrough(targetCohortId, "CANARY");
+  const canary = canaryOnly.events.find(
+    ({ cohort_id: cohortId, state }) => cohortId === targetCohortId && state === "CANARY",
+  );
   assert.throws(() => validateDocsGovernanceReferences(
     canaryOnly,
     exceptions,
     policy,
     securityPolicy,
-    { asOf: "2026-08-28T16:41:06Z" },
+    { asOf: canary.effective_at },
   ), /parallel organization-owned rollout wave requires a RECOMMENDED Cohort/u);
 });
