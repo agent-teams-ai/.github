@@ -121,21 +121,21 @@
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
         "default_branch": "main",
-        "revision": "d089bfcfbf7dac6699ff3d7f0ff87680a83901dd",
+        "revision": "fbf1dca79bae657d84dea6c2c66fcf08b6ff5a0b",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 100039000916,
-        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/33562423091/job/100039000916",
-        "workflow_run_id": 33562423091,
+        "check_run_id": 100078939523,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/33575375682/job/100078939523",
+        "workflow_run_id": 33575375682,
         "workflow_id": 335216823,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:8711dbd6109740857c69462d218071818317a62949f08ecf8abdc6d6b736321f",
-        "observed_at": "2026-09-01T21:49:41Z"
+        "observed_at": "2026-09-02T00:34:02Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "d089bfcfbf7dac6699ff3d7f0ff87680a83901dd",
+        "observed_revision": "fbf1dca79bae657d84dea6c2c66fcf08b6ff5a0b",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
@@ -192,21 +192,21 @@
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
         "default_branch": "main",
-        "revision": "87c071aae629c9e59938821dc11c8ebba6def024",
+        "revision": "533cec34e5fb5e18815a3f177b568f0209868495",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 99652215908,
-        "check_run_url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33441447474/job/99652215908",
-        "workflow_run_id": 33441447474,
+        "check_run_id": 100079418214,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/33575375903/job/100079418214",
+        "workflow_run_id": 33575375903,
         "workflow_id": 335216818,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:8711dbd6109740857c69462d218071818317a62949f08ecf8abdc6d6b736321f",
-        "observed_at": "2026-08-31T21:35:43Z"
+        "observed_at": "2026-09-02T00:35:10Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "87c071aae629c9e59938821dc11c8ebba6def024",
+        "observed_revision": "533cec34e5fb5e18815a3f177b568f0209868495",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
