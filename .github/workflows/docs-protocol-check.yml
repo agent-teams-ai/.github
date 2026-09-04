@@ -21,6 +21,7 @@ jobs:
       workflow-ref: ${{ steps.authority.outputs.workflow-ref }}
       workflow-repository: ${{ steps.authority.outputs.workflow-repository }}
       workflow-file-path: ${{ steps.authority.outputs.workflow-file-path }}
+      qualification-profile: ${{ steps.authorization.outputs.qualification-profile }}
     env:
       TRUSTED_GOVERNANCE_ROOT: ${{ github.workspace }}/.trusted/governance
       AUTHORIZATION_PATH: ${{ github.workspace }}/.trusted/docs-gate-authorization.json
@@ -109,6 +110,7 @@ jobs:
           --ignore-scripts --ignore-pnpmfile
 
       - name: Authorize exact consumer snapshot without executing consumer code
+        id: authorization
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" authorize
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -224,10 +226,17 @@ jobs:
           ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}
           path: .trusted/governance
           persist-credentials: false
-      - name: Set up pnpm for trusted qualification tooling
+      - name: Set up pnpm for legacy trusted qualification tooling
+        if: needs.trusted-authorize.outputs.qualification-profile != 'cohort-v2'
         uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
           version: 11.18.0
+          run_install: false
+      - name: Set up pnpm for Cohort v2 trusted qualification tooling
+        if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
+        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.20.0
           run_install: false
       - name: Set up Node for trusted qualification tooling
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -257,31 +266,23 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           CALLER_REPOSITORY_ID: ${{ github.repository_id }}
           GITHUB_SHA: ${{ github.sha }}
-      - name: Detect exact qualification contract version
-        id: qualification
-        shell: bash
-        run: >-
-          node -e 'const integration=require(process.env.CONSUMER_CHECKOUT + "/architecture/foundation/docs-consumer-integration.json");
-          if (integration.schemaVersion !== 1 && integration.schemaVersion !== 2) process.exit(1);
-          process.stdout.write("enabled=" + (integration.schemaVersion === 2 ? "true" : "false") + "\n")'
-          >> "$GITHUB_OUTPUT"
       - name: Prepare fresh isolated exact Cohort installation
-        if: steps.qualification.outputs.enabled == 'true'
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" prepare-install
       - name: Verify isolated exact lock before package installation
-        if: steps.qualification.outputs.enabled == 'true'
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-install-lock
       - name: Install isolated exact Cohort graph without lifecycle hooks
-        if: steps.qualification.outputs.enabled == 'true'
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
         run: >-
           pnpm install --dir "$TRUSTED_INSTALL_ROOT" --frozen-lockfile
           --ignore-scripts --ignore-pnpmfile
       - name: Verify installed Cohort package identities before execution
         id: trusted-install
-        if: steps.qualification.outputs.enabled == 'true'
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-install
       - name: Run only the exact installed agent-teams-docs qualify CLI
-        if: steps.qualification.outputs.enabled == 'true'
+        if: needs.trusted-authorize.outputs.qualification-profile == 'legacy'
         shell: bash
         run: |
           set -o pipefail
@@ -289,10 +290,21 @@ jobs:
             --consumer "$CONSUMER_CHECKOUT" \
             --integration architecture/foundation/docs-consumer-integration.json --json \
             | tee "$QUALIFICATION_RECEIPT"
+      - name: Run Cohort v2 qualification through the trusted base-owned runner
+        if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" run-qualification-v3
       - name: Bind released-cohort receipt to exact checkout and installed Cohort
-        if: steps.qualification.outputs.enabled == 'true'
+        if: needs.trusted-authorize.outputs.qualification-profile == 'legacy'
         run: >-
           node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-qualification-receipt.mjs"
+          --consumer "$CONSUMER_CHECKOUT" --install-root "$TRUSTED_INSTALL_ROOT"
+          --authorization "$AUTHORIZATION_PATH" --install-evidence "$INSTALL_EVIDENCE_PATH"
+          --receipt "$QUALIFICATION_RECEIPT"
+          --caller-sha "${{ github.sha }}"
+      - name: Bind Cohort v2 supporting receipt without asserting central CANARY
+        if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
+        run: >-
+          node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-cohort-v2-receipt.mjs"
           --consumer "$CONSUMER_CHECKOUT" --install-root "$TRUSTED_INSTALL_ROOT"
           --authorization "$AUTHORIZATION_PATH" --install-evidence "$INSTALL_EVIDENCE_PATH"
           --receipt "$QUALIFICATION_RECEIPT"
