@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, opendir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 
 import { parseDocument, stringify as stringifyYaml } from "yaml";
 
@@ -522,6 +524,44 @@ function clone(value) {
   return structuredClone(value);
 }
 
+function nonCanaryV2Fixture(state = "RECOMMENDED") {
+  const input = cohortV2Fixture();
+  const record = input.registry.cohorts[0];
+  record.canary_repositories = [{ repository_id: 1336577313,
+    repository: "agent-teams-ai/docs-protocol-canary-20260817" }];
+  record.record_digest = cohortRecordDigest(record);
+  const path = "architecture/foundation/docs-consumer-integration.json";
+  const consumerProfile = JSON.parse(input.files[path]);
+  consumerProfile.cohort.recordDigest = record.record_digest;
+  input.files[path] = `${JSON.stringify(consumerProfile)}\n`;
+  input.files["architecture/foundation/docs-protocol-managed-state.json"] = `${JSON.stringify(
+    canonicalManagedProjection(consumerProfile, consumerProfile.cohort, consumerProfile.repository),
+  )}\n`;
+  const qualification = input.registry.events.at(-1);
+  const states = state === "QUALIFIED" ? [] : state === "CANARY" ? ["CANARY"] : ["CANARY", "RECOMMENDED"];
+  for (const [index, next] of states.entries()) {
+    const event = {
+      sequence: input.registry.events.length + 1, cohort_id: record.cohort_id,
+      state: next, effective_at: `2026-08-18T0${index + 1}:00:00Z`, support_until: null,
+      evidence_references: [`test:${next.toLowerCase()}`],
+      canary_evidence: next !== "CANARY" ? [] : record.canary_repositories.map((repository) => ({
+        ...repository, merge_revision: "a".repeat(40), observed_cohort_id: record.cohort_id,
+        observed_record_digest: record.record_digest, observed_event_digest: qualification.event_digest,
+        required_context: "docs-protocol / docs-protocol-check", integration_id: 15368,
+        conclusion: "success", check_run_id: 1,
+        check_run_url: `https://github.com/${repository.repository}/actions/runs/1/job/1`,
+        workflow_run_id: 1, workflow_id: 1,
+        caller_workflow_path: ".github/workflows/docs-protocol.yml", caller_workflow_digest: digest(CALLER),
+      })),
+      previous_event_digest: input.registry.events.at(-1).event_digest,
+    };
+    event.event_digest = cohortEventDigest(event);
+    input.registry.events.push(event);
+  }
+  input.asOf = "2026-08-18T03:00:00Z";
+  return input;
+}
+
 function setPath(value, path, replacement) {
   const segments = path.split(".");
   const leaf = segments.pop();
@@ -552,6 +592,88 @@ test("authorizes Cohort v2 only through its explicit selected generation authori
   wrongObserved.policy.repositories[0].desired_cohort_id = "other-cohort";
   wrongObserved.policy.repositories[0].observed_cohort_generation = null;
   assert.throws(() => authorizeConsumerGate(wrongObserved), /explicitly match the Cohort generation/u);
+});
+
+test("Cohort v2 authorization keeps non-canaries out before RECOMMENDED", () => {
+  for (const state of ["QUALIFIED", "CANARY"]) {
+    assert.throws(() => authorizeConsumerGate(nonCanaryV2Fixture(state)),
+      /neither selectable nor supported|restricted to its exact canary/iu);
+  }
+  assert.equal(authorizeConsumerGate(nonCanaryV2Fixture()).repositoryId, REPOSITORY_ID);
+});
+
+test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening evidence checks", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "docs-v3-consumer-receipt-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const input = nonCanaryV2Fixture();
+  const authorization = authorizeConsumerGate(input);
+  assert.ok(!authorization.qualificationAuthority.canaryRepositories.some(({ repository_id: id }) => id === REPOSITORY_ID));
+  const consumer = join(root, "consumer");
+  for (const [path, source] of Object.entries(input.files)) {
+    await mkdir(dirname(join(consumer, path)), { recursive: true });
+    await writeFile(join(consumer, path), source);
+  }
+  const install = join(root, "install");
+  const installedPackages = [];
+  for (const expected of authorization.expectedPackages) {
+    const packageRoot = join(install, "node_modules", ...expected.name.split("/"));
+    await mkdir(packageRoot, { recursive: true });
+    await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: expected.name, version: expected.version }));
+    installedPackages.push({ ...expected, treeDigest: await installedTreeDigest(packageRoot) });
+  }
+  const authorizationPath = join(root, "authorization.json");
+  const authorizationDigest = digest(canonical({ domain: "agent-teams.docs-consumer-gate-authorization/v1", body: authorization }));
+  const authorizationSource = canonical({ authorization, authorizationDigest });
+  const evidencePath = join(root, "install-evidence.json");
+  const evidence = { schemaVersion: 1, authorizationDigest, packages: installedPackages };
+  const receiptPath = join(root, "receipt.json");
+  const authority = authorization.qualificationAuthority;
+  const packageByName = new Map(authorization.expectedPackages.map((entry) => [entry.name, entry]));
+  const body = {
+    schemaVersion: 3, cohortAdmissible: true, profileSchemaVersion: 3,
+    cohort: { schemaVersion: 2, cohortId: authority.cohortId, recordDigest: authority.recordDigest,
+      qualificationEventDigest: authority.qualificationEvent.event_digest },
+    packages: ["repositoryMutation", "documentAuthoring", "docsProtocol", "docsProtocolAgentTeams", "engineeringFoundation"]
+      .map((key, index) => {
+        const { name, version, integrity } = packageByName.get(DOCS_COHORT_V2_PACKAGES[index].name);
+        return { key, name, version, integrity };
+      }),
+    schemas: { consumerIntegration: 3, managedState: 2, docsProtocol: 1 },
+    runtime: { runtimeClosureDigest: authorization.expectedRuntimeClosure.digest },
+    checks: ["profile-v3", "cohort-v2", "five-package-closure", "exact-package-versions",
+      "exact-package-integrities", "schema-bindings-3-2-1", "runtime-closure-digest"],
+  };
+  const writeReceipt = (value = body) => writeFile(receiptPath, canonical({ ...value, receiptDigest: digest(canonical(value)) }));
+  await Promise.all([writeFile(authorizationPath, authorizationSource), writeFile(evidencePath, canonical(evidence)), writeReceipt()]);
+  const execute = promisify(execFile);
+  const run = (callerSha = authorization.callerSha) => execute(process.execPath, [
+    new URL("./verify-docs-cohort-v2-receipt.mjs", import.meta.url).pathname,
+    "--consumer", consumer, "--install-root", install, "--authorization", authorizationPath,
+    "--install-evidence", evidencePath, "--receipt", receiptPath, "--caller-sha", callerSha,
+  ], { env: { ...process.env, GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "1" } });
+  const passed = await run();
+  assert.equal(passed.stderr, "");
+  assert.match(passed.stdout, /authorized consumer qualification receipt is bound/u);
+  assert.match(passed.stdout, /central CANARY remains unsatisfied/u);
+  assert.doesNotMatch(passed.stdout, /supporting canary|supporting qualification/u);
+  await assert.rejects(() => run("f".repeat(40)), /central authorization is not exact/u);
+  await writeFile(authorizationPath, "{}");
+  await assert.rejects(() => run(), /central authorization is not exact/u);
+  await writeFile(authorizationPath, authorizationSource);
+  await writeFile(evidencePath, canonical({ ...evidence, authorizationDigest: `sha256:${"f".repeat(64)}` }));
+  await assert.rejects(() => run(), /install evidence differs from central authorization/u);
+  await writeFile(evidencePath, canonical(evidence));
+  const lockPath = join(consumer, "pnpm-lock.yaml");
+  await writeFile(lockPath, `${input.files["pnpm-lock.yaml"]}\n# changed after qualification\n`);
+  await assert.rejects(() => run(), /Authorized checkout file changed after qualification/u);
+  await writeFile(lockPath, input.files["pnpm-lock.yaml"]);
+  const wrongIntegrity = structuredClone(body);
+  wrongIntegrity.packages[0].integrity = TRANSITIVE_INTEGRITY;
+  await writeReceipt(wrongIntegrity);
+  await assert.rejects(() => run(), /coordinate .* is not exact/u);
+  await writeReceipt();
+  await writeFile(join(install, "node_modules", "@agent-teams", "repository-mutation", "drift.txt"), "changed\n");
+  await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
 });
 
 test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes before import", async () => {

@@ -301,7 +301,7 @@ jobs:
           --authorization "$AUTHORIZATION_PATH" --install-evidence "$INSTALL_EVIDENCE_PATH"
           --receipt "$QUALIFICATION_RECEIPT"
           --caller-sha "${{ github.sha }}"
-      - name: Bind Cohort v2 supporting receipt without asserting central CANARY
+      - name: Bind Cohort v2 authorized consumer receipt without asserting central CANARY
         if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
         run: >-
           node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-cohort-v2-receipt.mjs"
