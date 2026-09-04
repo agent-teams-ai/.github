@@ -145,6 +145,29 @@
       "type": "object", "additionalProperties": false, "required": ["schema_version", "integration_path", "contract_path", "gate_command", "qualification_command", "receipt_schema_version", "receipt_evidence_class", "receipt_transport", "trusted_structural_check_context", "untrusted_semantic_check_context"],
       "properties": { "schema_version": { "const": 2 }, "integration_path": { "const": "architecture/foundation/docs-consumer-integration.json" }, "contract_path": { "const": "architecture/foundation/docs-protocol-qualification.json" }, "gate_command": { "const": "pnpm docs:protocol:check" }, "qualification_command": { "const": "agent-teams-docs qualify --consumer . --integration architecture/foundation/docs-consumer-integration.json --json" }, "receipt_schema_version": { "const": 2 }, "receipt_evidence_class": { "const": "released-cohort" }, "receipt_transport": { "const": "qualification_cli_json_stdout" }, "trusted_structural_check_context": { "const": "docs-protocol / trusted-structural" }, "untrusted_semantic_check_context": { "const": "docs-protocol / docs-protocol-check" } }
     },
+    "v3QualificationCoordinates": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_schema_version", "cohort_schema_version", "managed_state_schema_version", "receipt_schema_version", "execution_envelope_schema_version", "evidence_class"],
+      "properties": {
+        "profile_schema_version": { "const": 3 },
+        "cohort_schema_version": { "const": 2 },
+        "managed_state_schema_version": { "const": 2 },
+        "receipt_schema_version": { "const": 3 },
+        "execution_envelope_schema_version": { "const": 1 },
+        "evidence_class": { "const": "cohort-v2-supporting-canary" }
+      }
+    },
+    "cohortV2PackageVersions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository_mutation", "document_authoring", "docs_protocol", "docs_protocol_agent_teams", "engineering_foundation"],
+      "properties": {
+        "repository_mutation": { "$ref": "#/$defs/exactVersion" },
+        "document_authoring": { "$ref": "#/$defs/exactVersion" },
+        "docs_protocol": { "$ref": "#/$defs/exactVersion" },
+        "docs_protocol_agent_teams": { "$ref": "#/$defs/exactVersion" },
+        "engineering_foundation": { "$ref": "#/$defs/exactVersion" }
+      }
+    },
     "repository": {
       "type": "object",
       "additionalProperties": false,
@@ -212,6 +235,10 @@
         "cohort_binding_status": { "enum": ["not_applicable", "legacy_pre_cohort", "bootstrap_pending", "rollout_pending", "bound"] },
         "desired_cohort_id": { "oneOf": [{ "$ref": "#/$defs/cohortId" }, { "type": "null" }] },
         "observed_cohort_id": { "oneOf": [{ "$ref": "#/$defs/cohortId" }, { "type": "null" }] },
+        "desired_cohort_generation": { "const": 2 },
+        "observed_cohort_generation": { "oneOf": [{ "const": 2 }, { "type": "null" }] },
+        "exact_cohort_v2_packages": { "$ref": "#/$defs/cohortV2PackageVersions" },
+        "v3_qualification_coordinates": { "$ref": "#/$defs/v3QualificationCoordinates" },
         "observed_cohort_record_digest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
         "observed_cohort_event_digest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
         "profile_path": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "null" }] },

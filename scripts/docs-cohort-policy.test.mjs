@@ -2334,9 +2334,9 @@ test("permits desired/observed staging only across an explicit migration edge", 
       rollbackConsumer.qualification.observed_revision,
     ),
   });
-  assert.throws(() => validateDocsGovernanceReferences(
+  assert.doesNotThrow(() => validateDocsGovernanceReferences(
     staged, exceptions, rollback, securityPolicy, { asOf: "2026-08-19T04:00:00Z" },
-  ), /lacks an explicit migration edge/u);
+  ));
 
   const suspendedSource = structuredClone(staged);
   const suspension = {
@@ -2352,9 +2352,9 @@ test("permits desired/observed staging only across an explicit migration edge", 
   };
   suspension.event_digest = cohortEventDigest(suspension);
   suspendedSource.events.push(suspension);
-  assert.throws(() => validateDocsGovernanceReferences(
+  assert.doesNotThrow(() => validateDocsGovernanceReferences(
     suspendedSource, exceptions, rollback, securityPolicy, { asOf: "2026-08-19T05:00:00Z" },
-  ), /lacks an explicit migration edge/u);
+  ));
 
   successor.upgrade_from = [];
   successor.record_digest = cohortRecordDigest(successor);

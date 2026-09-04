@@ -144,6 +144,14 @@ The internal checksum hashes lexically sorted `path`, NUL, Git blob SHA, and LF
 records with SHA-256. It detects inconsistent edits inside the ledger; it does
 not prove that remote Git objects exist or that a revision contains those blobs.
 
+Qualified Docs Cohort generations are explicit authority. Existing v1 records,
+events, and digest domains are immutable. Cohort v2 binds exactly five named
+coordinates with three direct roots, two exact transitives, and a closed
+dependency graph; package count, schema shape, and installed modules are never
+generation selectors. A v2 qualification receipt is supporting evidence only
+when bound to an immutable execution envelope and never replaces hosted central
+consumer CANARY evidence.
+
 ## Organization Security Defaults
 
 The live organization code-security defaults and their limitations are recorded

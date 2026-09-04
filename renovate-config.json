@@ -49,8 +49,11 @@
     {
       "description": "Docs Cohort packages are updated only by qualified Cohort proposals.",
       "matchPackageNames": [
+        "@agent-teams/docs-protocol",
+        "@agent-teams/docs-protocol-agent-teams",
+        "@agent-teams/document-authoring",
         "@agent-teams/engineering-foundation",
-        "@agent-teams/docs-protocol"
+        "@agent-teams/repository-mutation"
       ],
       "enabled": false,
       "automerge": false,

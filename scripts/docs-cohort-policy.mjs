@@ -5,6 +5,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 const TERMINAL_STATES = new Set(["SUPPORT_ENDED", "WITHDRAWN"]);
 const BLOCKED_STATES = new Set(["SUPPORT_ENDED", "SUSPENDED", "WITHDRAWN"]);
 const RUNTIME_CLOSURE_PACKAGE_MANAGER = "pnpm@11.18.0";
+const RUNTIME_CLOSURE_V2_PACKAGE_MANAGER = "pnpm@11.20.0";
 const RUNTIME_CLOSURE_LOCKFILE_VERSION = "9.0";
 const RUNTIME_CLOSURE_MAX_PACKAGES = 2048;
 const RUNTIME_CLOSURE_MAX_DEPTH = 64;
@@ -13,6 +14,22 @@ export const QUALIFIED_DOCS_PROFILE_PATH = "architecture/foundation/docs-protoco
 export const QUALIFIED_DOCS_SKILL_PATH = ".agents/skills/docs-authoring/SKILL.md";
 const REGISTRY_VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?(?:\+[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
 const SHA512_SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
+export const DOCS_COHORT_V2_PACKAGES = Object.freeze([
+  Object.freeze({ name: "@agent-teams/repository-mutation", role: "transitive" }),
+  Object.freeze({ name: "@agent-teams/document-authoring", role: "transitive" }),
+  Object.freeze({ name: "@agent-teams/docs-protocol", role: "direct" }),
+  Object.freeze({ name: "@agent-teams/docs-protocol-agent-teams", role: "direct" }),
+  Object.freeze({ name: "@agent-teams/engineering-foundation", role: "direct" }),
+]);
+export const DOCS_COHORT_V2_DEPENDENCY_EDGES = Object.freeze([
+  Object.freeze({ from: "@agent-teams/document-authoring", to: "@agent-teams/repository-mutation" }),
+  Object.freeze({ from: "@agent-teams/docs-protocol", to: "@agent-teams/document-authoring" }),
+  Object.freeze({ from: "@agent-teams/docs-protocol", to: "@agent-teams/repository-mutation" }),
+  Object.freeze({ from: "@agent-teams/docs-protocol-agent-teams", to: "@agent-teams/docs-protocol" }),
+  Object.freeze({ from: "@agent-teams/docs-protocol-agent-teams", to: "@agent-teams/repository-mutation" }),
+  Object.freeze({ from: "@agent-teams/engineering-foundation", to: "@agent-teams/document-authoring" }),
+  Object.freeze({ from: "@agent-teams/engineering-foundation", to: "@agent-teams/repository-mutation" }),
+]);
 const NEXT_STATES = new Map([
   ["PUBLISHED_UNQUALIFIED", new Set(["VERIFIED", "WITHDRAWN"])],
   ["VERIFIED", new Set(["COOLDOWN", "QUALIFIED", "WITHDRAWN"])],
@@ -222,6 +239,139 @@ export function docsRuntimeClosureEvidence(lock, expectedPackages) {
   };
 }
 
+export function docsRuntimeClosureV2Evidence(lock, expectedPackages) {
+  assert(Array.isArray(expectedPackages) && expectedPackages.length === 5,
+    "Runtime closure v2 requires exactly five named Cohort coordinates.");
+  assert(canonicalJson(expectedPackages.map(({ name, role }) => ({ name, role }))) ===
+    canonicalJson(DOCS_COHORT_V2_PACKAGES),
+  "Runtime closure v2 package names, order, and roles are not the closed authority.");
+  assert(lock !== null && typeof lock === "object" && !Array.isArray(lock) &&
+    String(lock.lockfileVersion) === RUNTIME_CLOSURE_LOCKFILE_VERSION &&
+    lock.importers !== null && typeof lock.importers === "object" &&
+    lock.packages !== null && typeof lock.packages === "object" &&
+    lock.snapshots !== null && typeof lock.snapshots === "object",
+  "Runtime closure v2 requires one pnpm lockfile v9 with importers, packages, and snapshots.");
+  const root = lock.importers["."];
+  assert(root !== null && typeof root === "object" && !Array.isArray(root),
+    "Runtime closure v2 lockfile is missing its root importer.");
+  const coordinateByName = new Map(expectedPackages.map((entry) => [entry.name, entry]));
+  const roots = [];
+  for (const entry of expectedPackages) {
+    const bindings = dependencyBinding(root, entry.name);
+    if (entry.role === "transitive") {
+      assert(bindings.length === 0, `${entry.name} must remain transitive in the v2 root importer.`);
+      continue;
+    }
+    assert(bindings.length === 1 && bindings[0] !== null && typeof bindings[0] === "object" &&
+      bindings[0].specifier === entry.version && typeof bindings[0].version === "string",
+    `${entry.name} v2 root binding is not exact.`);
+    const locator = registrySnapshotLocator(entry.name, bindings[0].version, `${entry.name} v2 root`);
+    assert(locator.split("(", 1)[0] === `${entry.name}@${entry.version}`,
+      `${entry.name} v2 root version differs from the Cohort.`);
+    roots.push({ name: entry.name, locator });
+  }
+  const pending = roots.map(({ locator }) => ({ locator, depth: 0 }));
+  const visited = new Set();
+  const packages = [];
+  const managedEdges = [];
+  while (pending.length > 0) {
+    const { locator, depth } = pending.shift();
+    if (visited.has(locator)) {continue;}
+    assert(depth <= RUNTIME_CLOSURE_MAX_DEPTH, "Runtime closure v2 exceeds its depth bound.");
+    visited.add(locator);
+    assert(visited.size <= RUNTIME_CLOSURE_MAX_PACKAGES, "Runtime closure v2 exceeds its package bound.");
+    const physicalLocator = locator.split("(", 1)[0];
+    const packageEntry = lock.packages[physicalLocator];
+    const snapshot = lock.snapshots[locator];
+    assert(packageEntry !== null && typeof packageEntry === "object" && !Array.isArray(packageEntry) &&
+      snapshot !== null && typeof snapshot === "object" && !Array.isArray(snapshot),
+    `Runtime closure v2 locator ${locator} is incomplete.`);
+    const integrity = packageEntry.resolution?.integrity;
+    assert(SHA512_SRI.test(integrity ?? ""), `Runtime closure v2 locator ${locator} has no exact SRI.`);
+    const dependencies = sortedEdges(snapshot, "dependencies", locator);
+    const optionalDependencies = sortedEdges(snapshot, "optionalDependencies", locator);
+    const from = [...coordinateByName.keys()].find((name) => physicalLocator ===
+      `${name}@${coordinateByName.get(name).version}`);
+    for (const edge of [...dependencies, ...optionalDependencies]) {
+      pending.push({ locator: edge.locator, depth: depth + 1 });
+      if (from !== undefined && coordinateByName.has(edge.name)) {
+        managedEdges.push({ from, to: edge.name });
+      }
+    }
+    packages.push({ locator, integrity, dependencies, optionalDependencies });
+  }
+  for (const coordinate of expectedPackages) {
+    const locator = [...visited].find((candidate) =>
+      candidate.split("(", 1)[0] === `${coordinate.name}@${coordinate.version}`);
+    assert(locator !== undefined, `${coordinate.name} is absent from the v2 runtime closure.`);
+    assert(lock.packages[`${coordinate.name}@${coordinate.version}`]?.resolution?.integrity ===
+      coordinate.integrity, `${coordinate.name} v2 closure integrity differs from the Cohort.`);
+  }
+  managedEdges.sort(({ from: leftFrom, to: leftTo }, { from: rightFrom, to: rightTo }) =>
+    leftFrom === rightFrom ? leftTo.localeCompare(rightTo) : leftFrom.localeCompare(rightFrom));
+  const expectedManagedEdges = [...DOCS_COHORT_V2_DEPENDENCY_EDGES]
+    .sort(({ from: leftFrom, to: leftTo }, { from: rightFrom, to: rightTo }) =>
+      leftFrom === rightFrom ? leftTo.localeCompare(rightTo) : leftFrom.localeCompare(rightFrom));
+  assert(canonicalJson(managedEdges) === canonicalJson(expectedManagedEdges),
+    "Runtime closure v2 internal dependency edges are not exactly closed.");
+  roots.sort(({ name: left }, { name: right }) => left.localeCompare(right));
+  packages.sort(({ locator: left }, { locator: right }) => left.localeCompare(right));
+  const projection = {
+    schemaVersion: 2,
+    domain: "agent-teams.docs-runtime-closure/v2",
+    packageManager: RUNTIME_CLOSURE_V2_PACKAGE_MANAGER,
+    lockfileVersion: RUNTIME_CLOSURE_LOCKFILE_VERSION,
+    packageCount: packages.length,
+    roots,
+    coordinates: expectedPackages.map(({ name, role, version, integrity }) =>
+      ({ name, role, version, integrity })),
+    managedEdges,
+    packages,
+  };
+  const physicalLocators = [...new Set(packages.map(({ locator }) => locator.split("(", 1)[0]))]
+    .sort((left, right) => left.localeCompare(right));
+  const pnpmLock = {
+    lockfileVersion: RUNTIME_CLOSURE_LOCKFILE_VERSION,
+    settings: { autoInstallPeers: true, excludeLinksFromLockfile: false },
+    importers: { ".": { devDependencies: Object.fromEntries(roots.map(({ name, locator }) => [
+      name,
+      { specifier: coordinateByName.get(name).version, version: locator.slice(`${name}@`.length) },
+    ])) } },
+    packages: Object.fromEntries(physicalLocators.map((locator) => [locator, lock.packages[locator]])),
+    snapshots: Object.fromEntries(packages.map(({ locator }) => [locator, lock.snapshots[locator]])),
+  };
+  const evidence = {
+    domain: projection.domain,
+    schemaVersion: 2,
+    packageManager: projection.packageManager,
+    packageCount: projection.packageCount,
+    coordinates: projection.coordinates,
+    managedEdges: projection.managedEdges,
+    pnpmLock,
+  };
+  const source = `${canonicalJson(evidence)}\n`;
+  assert(Buffer.byteLength(source, "utf8") <= RUNTIME_CLOSURE_MAX_BYTES,
+    `Runtime closure v2 evidence exceeds ${RUNTIME_CLOSURE_MAX_BYTES} bytes.`);
+  const contentDigest = `sha256:${createHash("sha256").update(source).digest("hex")}`;
+  return {
+    evidence,
+    source,
+    authority: {
+      schema_version: 2,
+      domain: projection.domain,
+      package_manager: projection.packageManager,
+      lockfile_version: projection.lockfileVersion,
+      package_count: projection.packageCount,
+      projection_path: `governance/docs-runtime-closures/${contentDigest.replace(":", "-")}.json`,
+      digest: contentDigest,
+    },
+  };
+}
+
+export function docsRuntimeClosureV2Authority(lock, expectedPackages) {
+  return docsRuntimeClosureV2Evidence(lock, expectedPackages).authority;
+}
+
 function timestampMilliseconds(value, label) {
   const milliseconds = Date.parse(value);
   assert(Number.isFinite(milliseconds), `${label} must be a real UTC timestamp.`);
@@ -232,7 +382,9 @@ function timestampMilliseconds(value, label) {
 
 export function cohortRecordDigest(record) {
   const { record_digest: _ignored, ...body } = record;
-  return digest("agent-teams.docs-qualified-cohort/v1", body);
+  return digest(record.cohort_generation === 2
+    ? "agent-teams.docs-qualified-cohort/v2"
+    : "agent-teams.docs-qualified-cohort/v1", body);
 }
 
 export function cohortEventDigest(event) {
@@ -245,16 +397,27 @@ function validateCohortRecord(record) {
   assert(record.runtime_closure.projection_path ===
     `governance/docs-runtime-closures/${record.runtime_closure.digest.replace(":", "-")}.json`,
   `${record.cohort_id} runtime closure path is not content-addressed by its exact digest.`);
-  assert(
-    record.packages[0].name === "@agent-teams/engineering-foundation" &&
+  const v2 = record.cohort_generation === 2;
+  if (v2) {
+    assert(canonicalJson(record.packages.map(({ name, role }) => ({ name, role }))) ===
+      canonicalJson(DOCS_COHORT_V2_PACKAGES),
+    `${record.cohort_id} must use the exact explicit v2 package coordinates.`);
+    assert(canonicalJson(record.dependency_edges) === canonicalJson(DOCS_COHORT_V2_DEPENDENCY_EDGES),
+      `${record.cohort_id} v2 dependency edges are not closed.`);
+    assert(record.runtime_closure.domain === "agent-teams.docs-runtime-closure/v2" &&
+      record.runtime_closure.schema_version === 2,
+    `${record.cohort_id} must bind runtime closure v2 explicitly.`);
+  } else {
+    assert(record.cohort_generation === undefined &&
+      record.packages[0].name === "@agent-teams/engineering-foundation" &&
       record.packages[1].name === "@agent-teams/docs-protocol",
-    `${record.cohort_id} package order must preserve the release dependency order.`
-  );
+    `${record.cohort_id} package order must preserve the v1 release dependency order.`);
+  }
   const publishedTimes = record.packages.map((entry) => timestampMilliseconds(
     entry.published_at,
     `${record.cohort_id} ${entry.name} published_at`,
   ));
-  assert(publishedTimes[0] <= publishedTimes[1],
+  assert(v2 || publishedTimes[0] <= publishedTimes[1],
     `${record.cohort_id} Foundation must be published no later than Docs Protocol.`);
   const assetPaths = Object.values(record.assets).map((asset) => asset.path);
   assert(new Set(assetPaths).size === assetPaths.length,
@@ -443,6 +606,12 @@ export function validateDocsQualifiedCohorts(registry, schema, options = {}) {
   );
   const { lastEventById, qualificationEventById, stateById, supportUntilById } =
     validateEventChain(registry, cohortById, asOf);
+  for (const record of registry.cohorts) {
+    for (const target of [...record.upgrade_from, ...record.rollback_to]) {
+      assert(qualificationEventById.has(target),
+        `${record.cohort_id} migration target ${target} is not an explicitly QUALIFIED Cohort.`);
+    }
+  }
   assert(registry.cohorts.every(({ cohort_id: cohortId }) => stateById.has(cohortId)),
     "Every immutable Cohort record requires lifecycle evidence.");
   return { cohortById, lastEventById, qualificationEventById, stateById, supportUntilById };
@@ -475,6 +644,7 @@ export function isDocsCohortSupportedForExistingBinding(
 
 export function docsCohortTransitionKind(observed, desired) {
   if (desired?.upgrade_from.includes(observed?.cohort_id)) {return "upgrade";}
+  if (observed?.rollback_to.includes(desired?.cohort_id)) {return "rollback";}
   return undefined;
 }
 
@@ -497,8 +667,19 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
   assert(record !== undefined && event !== undefined,
     `${cohortId} has no immutable QUALIFIED projection.`);
   const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
+  const v2 = record.cohort_generation === 2;
+  const packageProjection = v2 ? {
+    repositoryMutation: packageByName.get("@agent-teams/repository-mutation"),
+    documentAuthoring: packageByName.get("@agent-teams/document-authoring"),
+    docsProtocol: packageByName.get("@agent-teams/docs-protocol"),
+    docsProtocolAgentTeams: packageByName.get("@agent-teams/docs-protocol-agent-teams"),
+    engineeringFoundation: packageByName.get("@agent-teams/engineering-foundation"),
+  } : {
+    docsProtocol: packageByName.get("@agent-teams/docs-protocol"),
+    engineeringFoundation: packageByName.get("@agent-teams/engineering-foundation"),
+  };
   return {
-    schemaVersion: 1,
+    schemaVersion: v2 ? 2 : 1,
     cohortId: record.cohort_id,
     channel: record.channel,
     recordDigest: record.record_digest,
@@ -506,16 +687,8 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
     eligibleAfter: record.eligible_after,
     upgradeFrom: record.upgrade_from,
     rollbackTo: record.rollback_to,
-    packages: {
-      docsProtocol: {
-        version: packageByName.get("@agent-teams/docs-protocol").version,
-        integrity: packageByName.get("@agent-teams/docs-protocol").integrity,
-      },
-      engineeringFoundation: {
-        version: packageByName.get("@agent-teams/engineering-foundation").version,
-        integrity: packageByName.get("@agent-teams/engineering-foundation").integrity,
-      },
-    },
+    packages: Object.fromEntries(Object.entries(packageProjection).map(([key, value]) =>
+      [key, { version: value.version, integrity: value.integrity }])),
     workflow: {
       repository: record.reusable_workflow.repository,
       path: record.reusable_workflow.path,
@@ -528,7 +701,9 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
       assetCatalogDigest: record.assets.asset_catalog.digest,
       transitionCatalogDigest: record.assets.transition_catalog.digest,
     },
-    schemas: { consumerIntegration: 1, managedState: 1, docsProtocol: 1 },
+    schemas: v2
+      ? { consumerIntegration: 3, managedState: 2, docsProtocol: 1 }
+      : { consumerIntegration: 1, managedState: 1, docsProtocol: 1 },
     runtime: {
       node: record.runtime.node,
       pnpm: record.runtime.pnpm,
@@ -572,6 +747,22 @@ function assertBoundRepository(
     `${repository.repository} observed Cohort record digest differs.`);
   assert(repository.observed_cohort_event_digest === qualification.event_digest,
     `${repository.repository} observed qualification event digest differs.`);
+  const observedV2 = observed.cohort_generation === 2;
+  assert(observedV2
+    ? repository.observed_cohort_generation === 2
+    : repository.observed_cohort_generation === undefined,
+  `${repository.repository} observed Cohort generation is not explicit and exact.`);
+  if (observedV2) {
+    const versions = Object.fromEntries([
+      ["repository_mutation", "@agent-teams/repository-mutation"],
+      ["document_authoring", "@agent-teams/document-authoring"],
+      ["docs_protocol", "@agent-teams/docs-protocol"],
+      ["docs_protocol_agent_teams", "@agent-teams/docs-protocol-agent-teams"],
+      ["engineering_foundation", "@agent-teams/engineering-foundation"],
+    ].map(([key, name]) => [key, observed.packages.find((entry) => entry.name === name)?.version]));
+    assert(canonicalJson(repository.exact_cohort_v2_packages) === canonicalJson(versions),
+      `${repository.repository} v2 package policy differs from all five exact coordinates.`);
+  }
   const observedState = stateById.get(observed.cohort_id);
   const observedSupported = isDocsCohortSupportedForExistingBinding(
     observedState,
@@ -587,14 +778,26 @@ function assertBoundRepository(
     const transitionKind = docsCohortTransitionKind(observed, desired);
     assert(repository.cohort_binding_status === "rollout_pending" &&
       transitionKind !== undefined,
-    `${repository.repository} staged rollout lacks an explicit migration edge.`);
+      `${repository.repository} staged rollout lacks an explicit migration edge.`);
+    assert(desired?.cohort_generation === 2
+      ? repository.desired_cohort_generation === 2
+      : repository.desired_cohort_generation === undefined,
+    `${repository.repository} desired Cohort generation is not explicit and exact.`);
     assert(observedSupported || observedState === "SUSPENDED",
       `${repository.repository} rollout source is no longer supported and is not suspended for fix-forward.`);
-    const targetAllowed = isDocsCohortSelectableForRepository(
-      desired,
-      stateById.get(desired.cohort_id),
-      repository.repository_id,
-    );
+    const targetAllowed = transitionKind === "upgrade"
+      ? isDocsCohortSelectableForRepository(
+        desired,
+        stateById.get(desired.cohort_id),
+        repository.repository_id,
+      )
+      : isDocsCohortSupportedForExistingBinding(
+        stateById.get(desired.cohort_id),
+        supportUntilById.get(desired.cohort_id),
+        asOf,
+        desired,
+        repository.repository_id,
+      );
     assert(targetAllowed,
       `${repository.repository} rollout target is not currently selectable.`);
   }
@@ -685,6 +888,9 @@ export function validateDocsGovernanceReferences(
       const desired = cohortById.get(repository.desired_cohort_id);
       assert(repository.admission_status === "admission_candidate" &&
         desired !== undefined &&
+        (desired.cohort_generation === 2
+          ? repository.desired_cohort_generation === 2
+          : repository.desired_cohort_generation === undefined) &&
         isDocsCohortSelectableForRepository(
           desired,
           stateById.get(desired.cohort_id),
@@ -710,8 +916,10 @@ export function validateDocsGovernanceReferences(
 }
 
 export function assertDocsCohortAppendOnly(previous, current) {
-  assert(canonicalJson(previous.policy) === canonicalJson(current.policy),
-    "Qualified Docs Cohort policy cannot change in an append-only lifecycle PR.");
+  const metadata = (registry) => Object.fromEntries(Object.entries(registry)
+    .filter(([key]) => !["cohorts", "events"].includes(key)));
+  assert(canonicalJson(metadata(previous)) === canonicalJson(metadata(current)),
+    "Qualified Docs Cohort top-level metadata cannot change in an append-only lifecycle PR.");
   assert(current.cohorts.length >= previous.cohorts.length,
     "Qualified Docs Cohort records cannot be deleted.");
   assert(current.events.length >= previous.events.length,
