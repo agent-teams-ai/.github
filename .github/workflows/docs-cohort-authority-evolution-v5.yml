@@ -1,0 +1,95 @@
+name: Trusted Docs Cohort Authority Evolution V5
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-cohort-authority-evolution-v5:
+    name: trusted-cohort-authority-evolution-v5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pull = context.payload.pull_request;
+            const workflowPath = ".github/workflows/docs-cohort-authority-evolution-v5.yml";
+            const testPath = "scripts/docs-cohort-authority-evolution-v5.test.mjs";
+            const authorityPrefixes = [".github/workflows/", "scripts/"];
+            const installAuthorityNames = new Set([
+              ".node-version", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            const expectedTuples = [
+              new Map([
+                [".github/workflows/docs-cohort-append-only.yml", { status: "modified", sha: "3c7f54dc24a6a2cd8c1c124df242841cde46df87" }],
+                ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "464dd548ea0f32a8e7ff5c9c6df4a6f72adeacda" }],
+                ["scripts/verify-docs-cohort-evidence.mjs", { status: "modified", sha: "f4550a689e979f82f23843577dd303b739c3a7c9" }]
+              ]),
+              new Map([
+                [".github/workflows/docs-cohort-append-only.yml", { status: "modified", sha: "f31a0e94be08cb023fe88fd01a0c32ba0256ce05" }],
+                ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "4e6e34f62b420cbc71f6ce8e47945066852bc172" }],
+                ["scripts/verify-docs-cohort-evidence.mjs", { status: "modified", sha: "bdccef70895d4f9df6e4510ea80b48e7f46bbe97" }]
+              ])
+            ];
+            const isAuthorityPath = (path) => path === workflowPath || path === testPath ||
+              authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1) {
+              core.setFailed("Cohort v2 evidence authority PR changed_files must be a positive safe integer.");
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated Cohort v2 evidence authority is incomplete or duplicated.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            if (!changed.some((file) => allPaths(file).some(isAuthorityPath))) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            if (pull.head.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Cohort v2 evidence authority changes from forks are not eligible.");
+              return;
+            }
+            const matchesTuple = (expected) => changed.length === expected.size &&
+              changed.every((file) => {
+                const identity = expected.get(file.filename);
+                return file.previous_filename === undefined && identity !== undefined &&
+                  identity.status === file.status && identity.sha === file.sha;
+              });
+            if (expectedTuples.filter(matchesTuple).length !== 1) {
+              core.setFailed("This successor accepts only one complete exact forward or rollback Cohort v2 evidence tuple; partial or mixed tuples are forbidden.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Cohort v2 evidence authority PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("Cohort v2 evidence authority PR base is stale; update it before cutover.");
+              return;
+            }
+            core.setOutput("mode", "authority");
