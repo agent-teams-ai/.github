@@ -28,6 +28,8 @@ release procedures remain in the owning repository.
   inventory, admission status, evidence, and exceptions.
 - `governance/docs-qualified-cohorts.json` - immutable package, workflow,
   schema, and asset Cohorts with append-only lifecycle evidence.
+  Historical v1 entries remain byte-immutable; future v2 entries require an
+  explicit generation discriminator and exactly five qualified coordinates.
 - `governance/docs-protocol-exceptions.json` - owned, scoped, reviewed, and
   expiring temporary exceptions.
 - `pnpm governance:cohorts:verify -- --cohort <id>` - live npm, provenance, and

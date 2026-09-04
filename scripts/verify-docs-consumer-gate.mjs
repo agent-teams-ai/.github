@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { lstat, mkdir, opendir, readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import { isAlias, isNode, parseDocument, visit } from "yaml";
@@ -12,6 +12,8 @@ import {
   canonicalDocsManagedAssetDigests,
   docsRuntimeClosureAuthority,
   docsRuntimeClosureEvidence,
+  docsRuntimeClosureV2Authority,
+  docsRuntimeClosureV2Evidence,
   docsCohortTransitionKind,
   isDocsCohortSelectableForRepository,
   isDocsCohortSupportedForExistingBinding,
@@ -28,9 +30,20 @@ const MANAGED_PROJECTION_PATH = "architecture/foundation/docs-protocol-managed-s
 const QUALIFICATION_CONTRACT_PATH = "architecture/foundation/docs-protocol-qualification.json";
 const CALLER_WORKFLOW_PATH = ".github/workflows/docs-protocol.yml";
 const PNPM_WORKSPACE_PATH = "pnpm-workspace.yaml";
+const DIGEST = /^sha256:(?!0{64}$)[0-9a-f]{64}$/u;
 const MANAGED_PACKAGES = Object.freeze([
   "@agent-teams/engineering-foundation",
   "@agent-teams/docs-protocol",
+]);
+const MANAGED_PACKAGES_V2 = Object.freeze([
+  "@agent-teams/docs-protocol",
+  "@agent-teams/docs-protocol-agent-teams",
+  "@agent-teams/engineering-foundation",
+]);
+const COORDINATE_PACKAGES_V2 = Object.freeze([
+  "@agent-teams/repository-mutation",
+  "@agent-teams/document-authoring",
+  ...MANAGED_PACKAGES_V2,
 ]);
 export const CURRENT_CONTROLLER_DATA_PATHS = Object.freeze([
   "governance/docs-protocol-exceptions.json",
@@ -297,17 +310,20 @@ function stateFor(lifecycle, repositoryEntry, record, repositoryId, asOf) {
 
 function packagesFor(record) {
   const packages = new Map(record.packages.map((entry) => [entry.name, entry]));
-  return MANAGED_PACKAGES.map((name) => {
+  const names = record.cohort_generation === 2 ? COORDINATE_PACKAGES_V2 : MANAGED_PACKAGES;
+  return names.map((name) => {
     const value = packages.get(name);
     assert(value !== undefined && EXACT_VERSION.test(value.version) && SRI.test(value.integrity),
       `${name} Cohort package authority is invalid.`);
-    return { name, version: value.version, integrity: value.integrity };
+    return { name, version: value.version, integrity: value.integrity, ...(record.cohort_generation === 2
+      ? { role: value.role }
+      : {}) };
   });
 }
 
-export function managedStateDigest(body) {
+export function managedStateDigest(body, schemaVersion = 1) {
   return sha256(canonicalJson({
-    domain: "agent-teams.docs-protocol.managed-state/v1",
+    domain: `agent-teams.docs-protocol.managed-state/v${schemaVersion}`,
     body,
   }));
 }
@@ -317,8 +333,9 @@ export function canonicalManagedProjection(profile, cohort, repositoryIdentity) 
     ...cohort.assets,
     ...canonicalDocsManagedAssetDigests(profile),
   };
+  const stateVersion = cohort.schemaVersion === 2 ? 2 : 1;
   const body = {
-    schemaVersion: 1,
+    schemaVersion: stateVersion,
     cohortId: cohort.cohortId,
     cohortAuthority: {
       channel: cohort.channel,
@@ -340,21 +357,24 @@ export function canonicalManagedProjection(profile, cohort, repositoryIdentity) 
   };
   return Object.freeze({
     ...body,
-    stateDigest: managedStateDigest(body),
+    stateDigest: managedStateDigest(body, stateVersion),
   });
 }
 
-export function trustedInstallWorkspaceConfig(expectedPackages) {
-  assert(Array.isArray(expectedPackages) && expectedPackages.length === MANAGED_PACKAGES.length,
+export function trustedInstallWorkspaceConfig(expectedPackages, qualificationProfile = "legacy") {
+  const v2 = qualificationProfile === "cohort-v2";
+  const excludedNames = v2 ? COORDINATE_PACKAGES_V2 : MANAGED_PACKAGES;
+  assert(["legacy", "cohort-v2"].includes(qualificationProfile) &&
+    Array.isArray(expectedPackages) && expectedPackages.length === (v2 ? 5 : 2),
     "Trusted install must select exactly the managed Cohort packages.");
   const exactVersions = new Map(expectedPackages.map(({ name, version }) => [name, version]));
-  assert(exactVersions.size === MANAGED_PACKAGES.length && MANAGED_PACKAGES.every((name) =>
+  assert(exactVersions.size === excludedNames.length && excludedNames.every((name) =>
     EXACT_VERSION.test(exactVersions.get(name) ?? "")),
   "Trusted install package exclusions must be exact managed package versions.");
   return [
     "packages: []",
     "minimumReleaseAgeExclude:",
-    ...MANAGED_PACKAGES.map((name) => `  - '${name}@${exactVersions.get(name)}'`),
+    ...excludedNames.map((name) => `  - '${name}@${exactVersions.get(name)}'`),
     "",
   ].join("\n");
 }
@@ -366,7 +386,8 @@ function assertProjection(projection, profile, expected, repository) {
     nameWithOwner: repository.fullName,
   };
 
-  assert((profile.schemaVersion === 1 || profile.schemaVersion === 2) && profile.integrationRoot === "." &&
+  assert([1, 2, 3].includes(profile.schemaVersion) && profile.schemaVersion ===
+    (expected.cohort.schemaVersion === 2 ? 3 : profile.schemaVersion) && profile.integrationRoot === "." &&
     profile.packageManager === "pnpm" && profile.profilePath === QUALIFIED_DOCS_PROFILE_PATH &&
     profile.skillPath === QUALIFIED_DOCS_SKILL_PATH &&
     profile.callerWorkflowPath === CALLER_WORKFLOW_PATH &&
@@ -414,7 +435,9 @@ function assertManifest(manifest, expectedPackages) {
     .some((key) => Object.hasOwn(pnpm, key)),
   "Consumer package.json contains forbidden pnpm mutation policy.");
   assert(manifest.resolutions === undefined, "Consumer package.json contains forbidden resolutions.");
-  for (const expected of expectedPackages) {
+  const rootPackages = expectedPackages.filter(({ role }) => role !== "transitive");
+  const transitivePackages = expectedPackages.filter(({ role }) => role === "transitive");
+  for (const expected of rootPackages) {
     assert(manifest.devDependencies?.[expected.name] === expected.version,
       `${expected.name} must be one exact root devDependency.`);
     for (const section of ["dependencies", "optionalDependencies", "peerDependencies"]) {
@@ -422,6 +445,92 @@ function assertManifest(manifest, expectedPackages) {
         `${expected.name} must not appear in ${section}.`);
     }
   }
+  for (const expected of transitivePackages) {
+    for (const section of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
+      assert(manifest[section]?.[expected.name] === undefined,
+        `${expected.name} must remain a Cohort-qualified transitive coordinate.`);
+    }
+  }
+}
+
+function validateExactPnpmLockV2(manifest, lock, expectedPackages, options) {
+  assertNoForbiddenLockPolicy(lock);
+  assert(exactObject(lock.importers?.["."]) && exactObject(lock.packages) && exactObject(lock.snapshots),
+    "Consumer v2 lockfile is missing its root importer, packages, or snapshots.");
+  const byName = new Map(expectedPackages.map((entry) => [entry.name, entry]));
+  const root = lock.importers["."];
+  const resolvedLocators = new Map();
+  for (const expected of expectedPackages) {
+    const rootValues = managedEntries(root, expected.name);
+    assert(rootValues.length === (expected.role === "direct" ? 1 : 0),
+      `${expected.name} v2 root/transitive role differs from the Cohort.`);
+    if (expected.role === "direct") {
+      assert(rootValues[0]?.specifier === expected.version &&
+        rootValues[0]?.version?.split("(", 1)[0] === expected.version,
+      `${expected.name} v2 root binding is not exact.`);
+      resolvedLocators.set(expected.name, `${expected.name}@${rootValues[0].version}`);
+    }
+    const physicalKey = `${expected.name}@${expected.version}`;
+    const physicalKeys = Object.keys(lock.packages).filter((key) => key.startsWith(`${expected.name}@`));
+    assert(physicalKeys.length === 1 && physicalKeys[0] === physicalKey &&
+      lock.packages[physicalKey]?.resolution?.integrity === expected.integrity,
+    `${expected.name} v2 physical resolution is not exact.`);
+  }
+  for (const [importerName, importer] of Object.entries(lock.importers)) {
+    if (importerName === ".") {continue;}
+    for (const expected of expectedPackages) {
+      assert(managedEntries(importer, expected.name).length === 0,
+        `${expected.name} must not be a direct root in nested importer ${importerName}.`);
+    }
+  }
+  const internalEdges = [];
+  const pending = [...resolvedLocators.keys()];
+  const visited = new Set();
+  while (pending.length > 0) {
+    const name = pending.shift();
+    if (visited.has(name)) {continue;}
+    visited.add(name);
+    const locator = resolvedLocators.get(name);
+    const snapshot = lock.snapshots[locator];
+    assert(exactObject(snapshot), `${name} v2 snapshot is missing at its exact resolved locator.`);
+    for (const section of ["dependencies", "optionalDependencies"]) {
+      for (const [dependencyName, raw] of Object.entries(snapshot[section] ?? {})) {
+        if (!byName.has(dependencyName)) {continue;}
+        assert(typeof raw === "string" && raw.split("(", 1)[0] === byName.get(dependencyName).version,
+          `${name} -> ${dependencyName} does not bind the exact Cohort version.`);
+        const dependencyLocator = `${dependencyName}@${raw}`;
+        assert(resolvedLocators.get(dependencyName) === undefined ||
+          resolvedLocators.get(dependencyName) === dependencyLocator,
+        `${dependencyName} has ambiguous managed snapshot variants.`);
+        resolvedLocators.set(dependencyName, dependencyLocator);
+        internalEdges.push({ from: name, to: dependencyName });
+        pending.push(dependencyName);
+      }
+    }
+  }
+  assert(resolvedLocators.size === expectedPackages.length,
+    "Consumer v2 runtime closure does not resolve all five managed identities.");
+  for (const expected of expectedPackages) {
+    const physical = `${expected.name}@${expected.version}`;
+    const variants = Object.keys(lock.snapshots).filter((locator) => locator.split("(", 1)[0] === physical);
+    assert(variants.length === 1 && variants[0] === resolvedLocators.get(expected.name),
+      `${expected.name} has an additional or unresolved managed snapshot variant.`);
+  }
+  internalEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
+  const expectedEdges = [
+    { from: "@agent-teams/document-authoring", to: "@agent-teams/repository-mutation" },
+    { from: "@agent-teams/docs-protocol", to: "@agent-teams/document-authoring" },
+    { from: "@agent-teams/docs-protocol", to: "@agent-teams/repository-mutation" },
+    { from: "@agent-teams/docs-protocol-agent-teams", to: "@agent-teams/docs-protocol" },
+    { from: "@agent-teams/docs-protocol-agent-teams", to: "@agent-teams/repository-mutation" },
+    { from: "@agent-teams/engineering-foundation", to: "@agent-teams/document-authoring" },
+    { from: "@agent-teams/engineering-foundation", to: "@agent-teams/repository-mutation" },
+  ];
+  expectedEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
+  assert(canonicalJson(internalEdges) === canonicalJson(expectedEdges),
+    "Consumer v2 managed dependency edges are not exactly closed.");
+  assertManifest(manifest, expectedPackages);
+  assertSafeWorkspacePolicy(options.workspace, lock, options.qualifiedRuntimeClosureLock);
 }
 
 function managedEntries(container, name) {
@@ -547,6 +656,13 @@ function assertSafeWorkspacePolicy(workspace, lock, qualifiedRuntimeClosureLock)
 }
 
 export function validateExactPnpmLock(manifest, lock, expectedPackages, options = {}) {
+  assert(["legacy", "cohort-v2"].includes(options.qualificationProfile ?? "legacy"),
+    "Qualification profile must be explicit.");
+  if (options.qualificationProfile === "cohort-v2") {
+    validateExactPnpmLockV2(manifest, lock, expectedPackages, options);
+    return;
+  }
+  assert(expectedPackages.length === 2, "Legacy qualification requires exactly two packages.");
   assertNoForbiddenLockPolicy(lock);
   assert(exactObject(lock.importers) && exactObject(lock.importers["."]) && exactObject(lock.packages),
     "Consumer pnpm lockfile is missing its root importer or packages map.");
@@ -673,6 +789,15 @@ export function authorizeConsumerGate(input) {
   const caller = parseYamlStrict(callerSource, CALLER_WORKFLOW_PATH, CALLER_LIMIT);
   const record = lifecycle.cohortById.get(managed.cohortId);
   assert(record !== undefined, "Managed projection selects an unknown central Cohort.");
+  const selectedGeneration = policyEntry.desired_cohort_id === record.cohort_id
+    ? policyEntry.desired_cohort_generation
+    : policyEntry.observed_cohort_id === record.cohort_id
+      ? policyEntry.observed_cohort_generation
+      : undefined;
+  assert(record.cohort_generation === 2
+    ? selectedGeneration === 2
+    : selectedGeneration === undefined,
+  "Central consumer policy does not explicitly match the Cohort generation.");
   const state = lifecycle.stateById.get(record.cohort_id);
   stateFor(lifecycle, policyEntry, record, input.repository.id, input.asOf);
   if (["QUALIFIED", "CANARY"].includes(state)) {
@@ -705,8 +830,21 @@ export function authorizeConsumerGate(input) {
       policyEntry.reusable_workflow_revision === record.reusable_workflow.revision,
     "Central observed repository state has the wrong reusable workflow revision.");
   }
+  const v2 = record.cohort_generation === 2;
+  assert((v2 && profile.schemaVersion === 3) || (!v2 && [1, 2].includes(profile.schemaVersion)),
+    "Consumer profile generation does not explicitly match the selected Cohort generation.");
+  if (v2) {
+    assert(canonicalJson(policyEntry.v3_qualification_coordinates) === canonicalJson({
+      profile_schema_version: 3,
+      cohort_schema_version: 2,
+      managed_state_schema_version: 2,
+      receipt_schema_version: 3,
+      execution_envelope_schema_version: 1,
+      evidence_class: "cohort-v2-supporting-canary",
+    }), "Central consumer policy lacks exact Cohort v2 qualification coordinates.");
+  }
   const cohortProjection = {
-    schemaVersion: 1,
+    schemaVersion: v2 ? 2 : 1,
     cohortId: record.cohort_id,
     channel: record.channel,
     recordDigest: record.record_digest,
@@ -714,7 +852,16 @@ export function authorizeConsumerGate(input) {
     eligibleAfter: record.eligible_after,
     upgradeFrom: record.upgrade_from,
     rollbackTo: record.rollback_to,
-    packages: {
+    packages: v2 ? Object.fromEntries([
+      ["repositoryMutation", "@agent-teams/repository-mutation"],
+      ["documentAuthoring", "@agent-teams/document-authoring"],
+      ["docsProtocol", "@agent-teams/docs-protocol"],
+      ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
+      ["engineeringFoundation", "@agent-teams/engineering-foundation"],
+    ].map(([key, name]) => [key, {
+      version: packageByName.get(name)?.version,
+      integrity: packageByName.get(name)?.integrity,
+    }])) : {
       docsProtocol: {
         version: packageByName.get("@agent-teams/docs-protocol")?.version,
         integrity: packageByName.get("@agent-teams/docs-protocol")?.integrity,
@@ -748,6 +895,7 @@ export function authorizeConsumerGate(input) {
     },
   };
   const expectedPackages = packagesFor(record);
+  const qualificationProfile = v2 ? "cohort-v2" : profile.schemaVersion === 2 ? "legacy" : "none";
   const expected = {
     cohort: cohortProjection,
     callerWorkflowDigest: cohortProjection.assets.callerWorkflowDigest,
@@ -767,19 +915,19 @@ export function authorizeConsumerGate(input) {
     record.runtime_closure.projection_path,
     2 * 1024 * 1024,
   );
-  const regeneratedRuntimeClosure = docsRuntimeClosureEvidence(
-    runtimeClosureEvidence.pnpmLock,
-    expectedPackages,
-  );
+  const regeneratedRuntimeClosure = v2
+    ? docsRuntimeClosureV2Evidence(runtimeClosureEvidence.pnpmLock, expectedPackages)
+    : docsRuntimeClosureEvidence(runtimeClosureEvidence.pnpmLock, expectedPackages);
   assert(regeneratedRuntimeClosure.source === runtimeClosureSource &&
     canonicalJson(regeneratedRuntimeClosure.authority) === canonicalJson(record.runtime_closure),
   "Qualified runtime closure evidence is not the canonical exact Cohort projection.");
   validateExactPnpmLock(manifest, lock, expectedPackages, {
+    qualificationProfile: v2 ? "cohort-v2" : "legacy",
     workspace,
     qualifiedRuntimeClosureLock: runtimeClosureEvidence.pnpmLock,
   });
   return Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: v2 ? 2 : 1,
     repositoryId: input.repository.id,
     repository: input.repository.fullName,
     callerSha: input.callerSha,
@@ -787,6 +935,17 @@ export function authorizeConsumerGate(input) {
     workflowIdentity: workflow,
     cohortId: record.cohort_id,
     profilePath: profile.profilePath,
+    qualificationProfile,
+    qualificationPackageManager: qualificationProfile === "cohort-v2" ? "pnpm@11.20.0" : "pnpm@11.18.0",
+    ...(v2 ? { qualificationAuthority: {
+      cohortGeneration: 2,
+      cohortId: record.cohort_id,
+      recordDigest: record.record_digest,
+      qualificationEvent: qualification,
+      canaryRepositories: record.canary_repositories,
+      reusableWorkflow: record.reusable_workflow,
+      schemas: record.schemas,
+    } } : {}),
     expectedPackages,
     expectedRuntimeClosure: record.runtime_closure,
     expectedRuntimeClosureLock: runtimeClosureEvidence.pnpmLock,
@@ -955,6 +1114,10 @@ async function authorizeCommand() {
   });
   const envelope = { authorization, authorizationDigest: authorizationDigest(authorization) };
   await writeFile(process.env.AUTHORIZATION_PATH, `${canonicalJson(envelope)}\n`, { mode: 0o600 });
+  if (process.env.GITHUB_OUTPUT) {
+    await writeFile(process.env.GITHUB_OUTPUT,
+      `qualification-profile=${authorization.qualificationProfile}\n`, { flag: "a" });
+  }
   console.log(`Authorized ${authorization.repository} at ${authorization.callerSha} for ${authorization.cohortId}.`);
 }
 
@@ -964,6 +1127,148 @@ async function readAuthorization() {
   assert(envelope.authorizationDigest === authorizationDigest(envelope.authorization),
     "Gate authorization digest is invalid.");
   return envelope.authorization;
+}
+
+async function qualificationPackageTreeDigest(root, name) {
+  const entries = [];
+  async function visitTree(current) {
+    const handle = await opendir(current);
+    for await (const entry of handle) {
+      assert(entries.length < 20_000, `${name} installed tree exceeds its entry bound.`);
+      const path = join(current, entry.name);
+      const portable = path.slice(root.length + 1).split(sep).join("/");
+      assert(!entry.isSymbolicLink(), `${name} installed tree contains a symlink.`);
+      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable }); await visitTree(path);}
+      else {assert(entry.isFile(), `${name} installed tree contains a non-file entry.`); entries.push({ kind: "file", path: portable, absolute: path });}
+    }
+  }
+  await visitTree(root);
+  entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
+  const hash = createHash("sha256"); let total = 0;
+  for (const entry of entries) {
+    hash.update(entry.kind).update("\0").update(entry.path).update("\0");
+    if (entry.kind === "file") {
+      const metadata = await lstat(entry.absolute);
+      assert(metadata.isFile() && metadata.size <= 16 * 1024 * 1024, `${name} installed artifact exceeds its file bound.`);
+      const bytes = await readFile(entry.absolute); total += bytes.byteLength;
+      assert(total <= 256 * 1024 * 1024, `${name} installed tree exceeds its byte bound.`);
+      hash.update(bytes).update("\0");
+    }
+  }
+  return `sha256:${hash.digest("hex")}`;
+}
+
+async function qualificationInstalledPackageRoot(installRoot, expected) {
+  const direct = join(installRoot, "node_modules", expected.name);
+  try {
+    const root = await realpath(direct);
+    const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+      `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
+    if (manifest.name === expected.name && manifest.version === expected.version) {return root;}
+  } catch (error) {
+    if (error?.code !== "ENOENT") {throw error;}
+  }
+  const matches = [];
+  const virtualStore = join(installRoot, "node_modules", ".pnpm");
+  const handle = await opendir(virtualStore);
+  for await (const entry of handle) {
+    if (!entry.isDirectory()) {continue;}
+    try {
+      const root = await realpath(join(virtualStore, entry.name, "node_modules", expected.name));
+      const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+        `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
+      if (manifest.name === expected.name && manifest.version === expected.version) {matches.push(root);}
+    } catch (error) {
+      if (error?.code !== "ENOENT") {throw error;}
+    }
+  }
+  assert(new Set(matches).size === 1, `${expected.name} does not have one exact installed package root.`);
+  return matches[0];
+}
+
+export async function runQualificationV3Command(options = {}) {
+  const authorization = await readAuthorization();
+  assert(authorization.qualificationProfile === "cohort-v2" &&
+    authorization.qualificationPackageManager === "pnpm@11.20.0" &&
+    authorization.schemaVersion === 2,
+  "Qualification v3 requires explicit Cohort v2 authorization.");
+  const consumerRoot = resolve(process.env.CONSUMER_CHECKOUT);
+  const profilePath = resolve(consumerRoot, INTEGRATION_PROFILE_PATH);
+  const lockPath = resolve(consumerRoot, "pnpm-lock.yaml");
+  for (const [path, absolute] of [[INTEGRATION_PROFILE_PATH, profilePath], ["pnpm-lock.yaml", lockPath]]) {
+    assert(absolute.startsWith(`${consumerRoot}${sep}`), `${path} escapes the consumer checkout.`);
+    const metadata = await lstat(absolute);
+    assert(metadata.isFile() && !metadata.isSymbolicLink(), `${path} is not a regular authorized file.`);
+  }
+  const [profileBytes, lockBytes, installEvidenceSource] = await Promise.all([
+    readFile(profilePath), readFile(lockPath), readFile(process.env.INSTALL_EVIDENCE_PATH, "utf8"),
+  ]);
+  assert(sha256(profileBytes) === authorization.fileDigests[INTEGRATION_PROFILE_PATH],
+    "Authorized Cohort v2 profile changed before qualification execution.");
+  assert(sha256(lockBytes) === authorization.fileDigests["pnpm-lock.yaml"],
+    "Authorized Cohort v2 lockfile changed before qualification execution.");
+  const profile = parseJsonStrict(profileBytes.toString("utf8"), INTEGRATION_PROFILE_PATH,
+    JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
+  assert(profile.schemaVersion === 3, "Qualification v3 profile is invalid.");
+  const installEvidence = parseJsonStrict(installEvidenceSource, "trusted install evidence", 4 * 1024 * 1024);
+  assert(installEvidence.schemaVersion === 1 &&
+    installEvidence.authorizationDigest === authorizationDigest(authorization) &&
+    Array.isArray(installEvidence.packages) && installEvidence.packages.length === 5,
+  "Qualification v3 install evidence is not bound to the authorization.");
+  const expectedByName = new Map(authorization.expectedPackages.map((entry) => [entry.name, entry]));
+  const installedByName = new Map(installEvidence.packages.map((entry) => [entry.name, entry]));
+  assert(expectedByName.size === 5 && installedByName.size === 5,
+    "Qualification v3 requires five unique authorized installed coordinates.");
+  for (const [name, expected] of expectedByName) {
+    const installed = installedByName.get(name);
+    assert(installed !== undefined && canonicalJson({ name: installed.name, role: installed.role,
+      version: installed.version, integrity: installed.integrity }) === canonicalJson(expected) &&
+      DIGEST.test(installed.treeDigest ?? ""),
+    `Qualification v3 installed evidence differs for ${name}.`);
+  }
+  const adapter = expectedByName.get("@agent-teams/docs-protocol-agent-teams");
+  assert(adapter?.role === "direct", "Qualification v3 adapter is not one authorized direct root.");
+  assert(typeof process.env.TRUSTED_INSTALL_ROOT === "string",
+    "Qualification v3 trusted install root is required.");
+  const installedRoots = new Map();
+  for (const expected of authorization.expectedPackages) {
+    const root = await qualificationInstalledPackageRoot(process.env.TRUSTED_INSTALL_ROOT, expected);
+    assert(await qualificationPackageTreeDigest(root, expected.name) === installedByName.get(expected.name).treeDigest,
+      `${expected.name} installed bytes changed before qualification execution.`);
+    installedRoots.set(expected.name, root);
+  }
+  const adapterRoot = installedRoots.get(adapter.name);
+  const adapterManifest = parseJsonStrict(await readFile(join(adapterRoot, "package.json"), "utf8"),
+    "installed adapter package.json", JSON_LIMITS["package.json"]);
+  assert(adapterManifest.name === adapter.name && adapterManifest.version === adapter.version &&
+    adapterManifest.exports?.["./qualification"]?.import === "./dist/qualification/index.js",
+  "Installed adapter does not expose the exact qualification entrypoint.");
+  const entrypoint = await realpath(join(adapterRoot, "dist", "qualification", "index.js"));
+  assert(entrypoint.startsWith(`${adapterRoot}${sep}`) && (await lstat(entrypoint)).isFile(),
+    "Qualification v3 entrypoint escapes the exact installed adapter.");
+  const packageKeys = [
+    ["repositoryMutation", "@agent-teams/repository-mutation"],
+    ["documentAuthoring", "@agent-teams/document-authoring"],
+    ["docsProtocol", "@agent-teams/docs-protocol"],
+    ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
+    ["engineeringFoundation", "@agent-teams/engineering-foundation"],
+  ];
+  const evidence = {
+    packages: Object.fromEntries(packageKeys.map(([key, name]) => [key, {
+      version: expectedByName.get(name).version,
+      integrity: expectedByName.get(name).integrity,
+    }])),
+    schemas: { consumerIntegration: 3, managedState: 2, docsProtocol: 1 },
+    runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
+  };
+  const importModule = options.importModule ?? ((path) => import(pathToFileURL(path).href));
+  const module = await importModule(entrypoint);
+  assert(typeof module.runDocsProtocolQualificationV3 === "function",
+    "Installed adapter qualification entrypoint lacks runDocsProtocolQualificationV3.");
+  const receipt = await module.runDocsProtocolQualificationV3({ profile, evidence, lockfileBytes: lockBytes });
+  assert(typeof process.env.QUALIFICATION_RECEIPT === "string", "Qualification receipt path is required.");
+  await writeFile(process.env.QUALIFICATION_RECEIPT, `${canonicalJson(receipt)}\n`, { mode: 0o600 });
+  console.log("Trusted base-owned runner wrote the Cohort v2 qualification v3 receipt.");
 }
 
 async function verifyCheckoutCommand() {
@@ -1007,13 +1312,23 @@ async function prepareInstallCommand() {
   const authorization = await readAuthorization();
   const directory = resolve(process.env.TRUSTED_INSTALL_ROOT);
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  const devDependencies = Object.fromEntries(authorization.expectedPackages.map(({ name, version }) => [name, version]));
+  assert(["legacy", "cohort-v2"].includes(authorization.qualificationProfile),
+    "Central authorization lacks an explicit qualification profile.");
+  assert(authorization.qualificationPackageManager ===
+    (authorization.qualificationProfile === "cohort-v2" ? "pnpm@11.20.0" : "pnpm@11.18.0"),
+  "Central authorization qualification pnpm does not match its explicit profile.");
+  const rootPackages = authorization.qualificationProfile === "cohort-v2"
+    ? authorization.expectedPackages.filter(({ role }) => role === "direct")
+    : authorization.expectedPackages;
+  assert(rootPackages.length === (authorization.qualificationProfile === "cohort-v2" ? 3 : 2),
+    "Trusted install has the wrong explicit root package set.");
+  const devDependencies = Object.fromEntries(rootPackages.map(({ name, version }) => [name, version]));
   await Promise.all([
     writeFile(join(directory, "package.json"), `${JSON.stringify({
       name: "agent-teams-docs-trusted-gate",
       version: "0.0.0",
       private: true,
-      packageManager: "pnpm@11.18.0",
+      packageManager: authorization.qualificationPackageManager,
       devDependencies,
     }, null, 2)}\n`, { mode: 0o600 }),
     writeFile(join(directory, ".npmrc"), [
@@ -1025,7 +1340,7 @@ async function prepareInstallCommand() {
       "",
     ].join("\n"), { mode: 0o600 }),
     writeFile(join(directory, "pnpm-workspace.yaml"),
-      trustedInstallWorkspaceConfig(authorization.expectedPackages), { mode: 0o600 }),
+      trustedInstallWorkspaceConfig(authorization.expectedPackages, authorization.qualificationProfile), { mode: 0o600 }),
     writeFile(join(directory, "pnpm-lock.yaml"),
       `${canonicalJson(authorization.expectedRuntimeClosureLock)}\n`, { mode: 0o600 }),
   ]);
@@ -1038,29 +1353,94 @@ async function verifyInstallCommand() {
     "trusted install package.json", JSON_LIMITS["package.json"]);
   const lock = parseYamlStrict(await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
     "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
-  validateExactPnpmLock(manifest, lock, authorization.expectedPackages);
-  assert(canonicalJson(docsRuntimeClosureAuthority(lock, authorization.expectedPackages)) ===
+  validateExactPnpmLock(manifest, lock, authorization.expectedPackages, {
+    qualificationProfile: authorization.qualificationProfile,
+  });
+  const runtimeClosureAuthority = authorization.qualificationProfile === "cohort-v2"
+    ? docsRuntimeClosureV2Authority
+    : docsRuntimeClosureAuthority;
+  assert(canonicalJson(runtimeClosureAuthority(lock, authorization.expectedPackages)) ===
     canonicalJson(authorization.expectedRuntimeClosure),
   "Trusted install runtime closure differs from the qualified Cohort authority.");
+  async function installedPackageRoot(expected) {
+    const direct = join(directory, "node_modules", expected.name);
+    try {
+      const root = await realpath(direct);
+      const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+        `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
+      if (manifest.name === expected.name && manifest.version === expected.version) {return root;}
+    } catch (error) {
+      if (error?.code !== "ENOENT") {throw error;}
+    }
+    const virtualStore = join(directory, "node_modules", ".pnpm");
+    const matches = [];
+    const handle = await opendir(virtualStore);
+    for await (const entry of handle) {
+      if (!entry.isDirectory()) {continue;}
+      const candidate = join(virtualStore, entry.name, "node_modules", expected.name);
+      try {
+        const root = await realpath(candidate);
+        const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+          `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
+        if (manifest.name === expected.name && manifest.version === expected.version) {matches.push(root);}
+      } catch (error) {
+        if (error?.code !== "ENOENT") {throw error;}
+      }
+    }
+    assert(new Set(matches).size === 1, `${expected.name} does not have one exact installed package root.`);
+    return matches[0];
+  }
+  const installedRoots = new Map();
   for (const expected of authorization.expectedPackages) {
-    const installed = parseJsonStrict(await readFile(join(directory, "node_modules", expected.name, "package.json"), "utf8"),
+    const root = await installedPackageRoot(expected);
+    installedRoots.set(expected.name, root);
+    const installed = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
       `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
     assert(installed.name === expected.name && installed.version === expected.version,
       `${expected.name} installed identity differs from the authorized Cohort.`);
   }
   const docs = authorization.expectedPackages.find(({ name }) => name === "@agent-teams/docs-protocol");
-  const foundation = authorization.expectedPackages.find(({ name }) => name === "@agent-teams/engineering-foundation");
-  const docsManifest = parseJsonStrict(await readFile(join(directory, "node_modules", docs.name, "package.json"), "utf8"),
+  const docsManifest = parseJsonStrict(await readFile(join(installedRoots.get(docs.name), "package.json"), "utf8"),
     "installed Docs Protocol package.json", JSON_LIMITS["package.json"]);
-  assert(docsManifest.dependencies?.[foundation.name] === foundation.version,
-    "Installed Docs Protocol has the wrong exact Foundation dependency.");
-  const cli = await realpath(join(directory, "node_modules", docs.name, "dist", "cli.js"));
-  const packageRoot = await realpath(join(directory, "node_modules", docs.name));
+  if (authorization.qualificationProfile === "cohort-v2") {
+    const byName = new Map(authorization.expectedPackages.map((entry) => [entry.name, entry]));
+    const installedEdges = [];
+    for (const expected of authorization.expectedPackages) {
+      const installed = parseJsonStrict(await readFile(join(installedRoots.get(expected.name), "package.json"), "utf8"),
+        `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
+      for (const section of ["dependencies", "optionalDependencies"]) {
+        for (const [name, version] of Object.entries(installed[section] ?? {})) {
+          if (!byName.has(name)) {continue;}
+          assert(version === byName.get(name).version,
+            `${expected.name} -> ${name} installed dependency is not exact.`);
+          installedEdges.push({ from: expected.name, to: name });
+        }
+      }
+    }
+    installedEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
+    const expectedEdges = [
+      ["@agent-teams/document-authoring", "@agent-teams/repository-mutation"],
+      ["@agent-teams/docs-protocol", "@agent-teams/document-authoring"],
+      ["@agent-teams/docs-protocol", "@agent-teams/repository-mutation"],
+      ["@agent-teams/docs-protocol-agent-teams", "@agent-teams/docs-protocol"],
+      ["@agent-teams/docs-protocol-agent-teams", "@agent-teams/repository-mutation"],
+      ["@agent-teams/engineering-foundation", "@agent-teams/document-authoring"],
+      ["@agent-teams/engineering-foundation", "@agent-teams/repository-mutation"],
+    ].map(([from, to]) => ({ from, to }));
+    assert(canonicalJson(installedEdges) === canonicalJson(expectedEdges),
+      "Installed Cohort v2 managed dependency edges are not exactly closed.");
+  } else {
+    const foundation = authorization.expectedPackages.find(({ name }) => name === "@agent-teams/engineering-foundation");
+    assert(docsManifest.dependencies?.[foundation.name] === foundation.version,
+      "Installed Docs Protocol has the wrong exact Foundation dependency.");
+  }
+  const cli = await realpath(join(installedRoots.get(docs.name), "dist", "cli.js"));
+  const packageRoot = installedRoots.get(docs.name);
   assert(cli.startsWith(`${packageRoot}${sep}`) && (await lstat(cli)).isFile(),
     "Trusted Docs CLI does not resolve to a regular file inside the exact package.");
   const installedPackages = [];
   for (const expected of authorization.expectedPackages) {
-    const root = await realpath(join(directory, "node_modules", expected.name));
+    const root = installedRoots.get(expected.name);
     const entries = [];
     async function visit(current) {
       const handle = await opendir(current);
@@ -1106,7 +1486,8 @@ async function verifyInstallLockCommand() {
   const lock = parseYamlStrict(await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
     "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
   validateExactPnpmLock(manifest, lock, authorization.expectedPackages,
-    authorization.expectedRuntimeClosure);
+    { qualificationProfile: authorization.qualificationProfile,
+      qualifiedRuntimeClosureLock: authorization.expectedRuntimeClosureLock });
   console.log("Trusted isolated install lock matches the exact Cohort before package execution.");
 }
 
@@ -1120,10 +1501,11 @@ if (isEntrypoint) {
     ["prepare-install", prepareInstallCommand],
     ["verify-install-lock", verifyInstallLockCommand],
     ["verify-install", verifyInstallCommand],
+    ["run-qualification-v3", runQualificationV3Command],
   ]);
   const command = commands.get(process.argv[2]);
   if (command === undefined) {
-    console.error("Usage: verify-docs-consumer-gate.mjs <authorize|verify-checkout|verify-controller-snapshot|prepare-install|verify-install-lock|verify-install>");
+    console.error("Usage: verify-docs-consumer-gate.mjs <authorize|verify-checkout|verify-controller-snapshot|prepare-install|verify-install-lock|verify-install|run-qualification-v3>");
     process.exitCode = 2;
   } else {
     try {

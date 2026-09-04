@@ -53,15 +53,18 @@ if (!renovateConfig.extends?.includes("config:best-practices")) {
 
 export function validateRenovateDocsCohortRule(config) {
   const managed = [
+    "@agent-teams/docs-protocol-agent-teams",
     "@agent-teams/docs-protocol",
+    "@agent-teams/document-authoring",
     "@agent-teams/engineering-foundation",
-  ];
+    "@agent-teams/repository-mutation",
+  ].sort();
   const matching = (config.packageRules ?? []).filter((rule) =>
     managed.some((name) => rule.matchPackageNames?.includes(name)));
   if (matching.length !== 1 || matching[0] !== config.packageRules.at(-1) ||
       JSON.stringify([...matching[0].matchPackageNames].sort()) !== JSON.stringify(managed) ||
       matching[0].enabled !== false || matching[0].automerge !== false) {
-    throw new Error("Renovate must end with one Cohort rule disabling independent Foundation and Docs Protocol updates.");
+    throw new Error("Renovate must end with one Cohort rule disabling independent updates for all five v2 coordinates.");
   }
 }
 
@@ -199,6 +202,7 @@ export function validateDocsProtocolWorkflow(workflow) {
           "workflow-sha": "${{ steps.authority.outputs.workflow-sha }}", "controller-sha": "${{ steps.authority.outputs.controller-sha }}",
           "workflow-ref": "${{ steps.authority.outputs.workflow-ref }}", "workflow-repository": "${{ steps.authority.outputs.workflow-repository }}",
           "workflow-file-path": "${{ steps.authority.outputs.workflow-file-path }}",
+          "qualification-profile": "${{ steps.authorization.outputs.qualification-profile }}",
         },
         env: { TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance", AUTHORIZATION_PATH: "${{ github.workspace }}/.trusted/docs-gate-authorization.json" },
         steps: [
@@ -209,7 +213,7 @@ export function validateDocsProtocolWorkflow(workflow) {
           { name: "Set up pnpm for trusted tooling", uses: pnpm, with: { version: "11.18.0", run_install: false } },
           { name: "Set up Node for trusted tooling", uses: node, with: { "node-version": "24.18.0", cache: "pnpm", "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
           { name: "Install only base-owned validator dependencies", run: "pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
-          { name: "Authorize exact consumer snapshot without executing consumer code", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize",
+          { name: "Authorize exact consumer snapshot without executing consumer code", id: "authorization", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize",
             env: { GITHUB_TOKEN: "${{ github.token }}", GITHUB_REPOSITORY: "${{ github.repository }}", CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}",
               CONTROLLER_SNAPSHOT_SHA: "${{ steps.authority.outputs.controller-sha }}", JOB_WORKFLOW_SHA: "${{ steps.authority.outputs.workflow-sha }}",
               JOB_WORKFLOW_REF: "${{ steps.authority.outputs.workflow-ref }}", JOB_WORKFLOW_REPOSITORY: "${{ steps.authority.outputs.workflow-repository }}",
@@ -248,7 +252,8 @@ export function validateDocsProtocolWorkflow(workflow) {
             run: "case \"$RUNNER_TEMP\" in\n  /*) ;;\n  *) echo \"RUNNER_TEMP must be an absolute path\" >&2; exit 1 ;;\nesac\n{\n  printf 'TRUSTED_INSTALL_ROOT=%s/docs-qualification-install\\n' \"$RUNNER_TEMP\"\n  printf 'INSTALL_EVIDENCE_PATH=%s/docs-qualification-install-evidence.json\\n' \"$RUNNER_TEMP\"\n  printf 'QUALIFICATION_RECEIPT=%s/docs-qualification-receipt.json\\n' \"$RUNNER_TEMP\"\n} >> \"$GITHUB_ENV\"\n" },
           { name: "Check out exact Cohort-bound validator implementation", uses: checkout,
             with: { repository: "${{ needs.trusted-authorize.outputs.workflow-repository }}", ref: "${{ needs.trusted-authorize.outputs.workflow-sha }}", path: ".trusted/governance", "persist-credentials": false } },
-          { name: "Set up pnpm for trusted qualification tooling", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up pnpm for legacy trusted qualification tooling", if: "needs.trusted-authorize.outputs.qualification-profile != 'cohort-v2'", uses: pnpm, with: { version: "11.18.0", run_install: false } },
+          { name: "Set up pnpm for Cohort v2 trusted qualification tooling", if: "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'", uses: pnpm, with: { version: "11.20.0", run_install: false } },
           { name: "Set up Node for trusted qualification tooling", uses: node,
             with: { "node-version": "24.18.0", cache: "pnpm", "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml" } },
           { name: "Install only base-owned qualification verifier dependencies",
@@ -259,20 +264,22 @@ export function validateDocsProtocolWorkflow(workflow) {
             with: { repository: "${{ github.repository }}", ref: "${{ github.sha }}", path: ".trusted/consumer", "persist-credentials": false } },
           { name: "Bind checkout bytes to central authorization", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-checkout",
             env: { GITHUB_REPOSITORY: "${{ github.repository }}", CALLER_REPOSITORY_ID: "${{ github.repository_id }}", GITHUB_SHA: "${{ github.sha }}" } },
-          { name: "Detect exact qualification contract version", id: "qualification", shell: "bash",
-            run: "node -e 'const integration=require(process.env.CONSUMER_CHECKOUT + \"/architecture/foundation/docs-consumer-integration.json\"); if (integration.schemaVersion !== 1 && integration.schemaVersion !== 2) process.exit(1); process.stdout.write(\"enabled=\" + (integration.schemaVersion === 2 ? \"true\" : \"false\") + \"\\n\")' >> \"$GITHUB_OUTPUT\"" },
-          { name: "Prepare fresh isolated exact Cohort installation", if: "steps.qualification.outputs.enabled == 'true'",
+          { name: "Prepare fresh isolated exact Cohort installation", if: "needs.trusted-authorize.outputs.qualification-profile != 'none'",
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" prepare-install" },
-          { name: "Verify isolated exact lock before package installation", if: "steps.qualification.outputs.enabled == 'true'",
+          { name: "Verify isolated exact lock before package installation", if: "needs.trusted-authorize.outputs.qualification-profile != 'none'",
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install-lock" },
-          { name: "Install isolated exact Cohort graph without lifecycle hooks", if: "steps.qualification.outputs.enabled == 'true'",
+          { name: "Install isolated exact Cohort graph without lifecycle hooks", if: "needs.trusted-authorize.outputs.qualification-profile != 'none'",
             run: "pnpm install --dir \"$TRUSTED_INSTALL_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
-          { name: "Verify installed Cohort package identities before execution", id: "trusted-install", if: "steps.qualification.outputs.enabled == 'true'",
+          { name: "Verify installed Cohort package identities before execution", id: "trusted-install", if: "needs.trusted-authorize.outputs.qualification-profile != 'none'",
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-install" },
-          { name: "Run only the exact installed agent-teams-docs qualify CLI", if: "steps.qualification.outputs.enabled == 'true'", shell: "bash",
+          { name: "Run only the exact installed agent-teams-docs qualify CLI", if: "needs.trusted-authorize.outputs.qualification-profile == 'legacy'", shell: "bash",
             run: "set -o pipefail\nnode \"${{ steps.trusted-install.outputs.cli }}\" qualify \\\n  --consumer \"$CONSUMER_CHECKOUT\" \\\n  --integration architecture/foundation/docs-consumer-integration.json --json \\\n  | tee \"$QUALIFICATION_RECEIPT\"\n" },
-          { name: "Bind released-cohort receipt to exact checkout and installed Cohort", if: "steps.qualification.outputs.enabled == 'true'",
+          { name: "Run Cohort v2 qualification through the trusted base-owned runner", if: "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'",
+            run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" run-qualification-v3" },
+          { name: "Bind released-cohort receipt to exact checkout and installed Cohort", if: "needs.trusted-authorize.outputs.qualification-profile == 'legacy'",
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-qualification-receipt.mjs\" --consumer \"$CONSUMER_CHECKOUT\" --install-root \"$TRUSTED_INSTALL_ROOT\" --authorization \"$AUTHORIZATION_PATH\" --install-evidence \"$INSTALL_EVIDENCE_PATH\" --receipt \"$QUALIFICATION_RECEIPT\" --caller-sha \"${{ github.sha }}\"" },
+          { name: "Bind Cohort v2 supporting receipt without asserting central CANARY", if: "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'",
+            run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-cohort-v2-receipt.mjs\" --consumer \"$CONSUMER_CHECKOUT\" --install-root \"$TRUSTED_INSTALL_ROOT\" --authorization \"$AUTHORIZATION_PATH\" --install-evidence \"$INSTALL_EVIDENCE_PATH\" --receipt \"$QUALIFICATION_RECEIPT\" --caller-sha \"${{ github.sha }}\"" },
           { name: "Confirm current controller authority stayed stable through qualification", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot", env: { GITHUB_TOKEN: "${{ github.token }}" } },
         ],
       },
