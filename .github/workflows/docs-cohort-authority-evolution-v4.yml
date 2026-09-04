@@ -1,0 +1,101 @@
+name: Trusted Docs Cohort Authority Evolution V4
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-cohort-authority-evolution-v4:
+    name: trusted-cohort-authority-evolution-v4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pull = context.payload.pull_request;
+            const workflowPath = ".github/workflows/docs-cohort-authority-evolution-v4.yml";
+            const testPath = "scripts/docs-cohort-authority-evolution-v4.test.mjs";
+            const authorityPrefixes = [".github/workflows/", "scripts/"];
+            const installAuthorityNames = new Set([
+              ".node-version", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            const expected = new Map([
+              [".github/workflows/docs-protocol-check.yml", { status: "modified", sha: "c30e87dabf7dda27c60d2d688b1ed9446fc2c23e" }],
+              ["GOVERNANCE.md", { status: "modified", sha: "e4976d350b7f7099c9293f6584c37da80fed8377" }],
+              ["README.md", { status: "modified", sha: "3b3945ad01573724c402928e6e5b734351355002" }],
+              ["docs/decisions/0005-qualified-docs-cohort-v2.md", { status: "added", sha: "149e70804d573375dd25d9fc1e26fafb4c2b708d" }],
+              ["docs/decisions/README.md", { status: "modified", sha: "270596a12937390e9cb3b2b18f52634ec19b2c34" }],
+              ["governance/docs-protocol-policy-v2.schema.json", { status: "modified", sha: "d45b368c2967f6347236b978971c6c0545f60b10" }],
+              ["governance/docs-qualified-cohorts.schema.json", { status: "modified", sha: "cddbc867f15c5fb3c238a348f49c970a1a21ee06" }],
+              ["renovate-config.json", { status: "modified", sha: "fc73e4c544e4e76b6d5c87bf5b007752b297bc68" }],
+              ["scripts/check-community-files.mjs", { status: "modified", sha: "15d424cc6e6c65094111b48ada7d228178dafb5e" }],
+              ["scripts/check-community-files.test.mjs", { status: "modified", sha: "78d52b974ff4cd72f44579b09d0bfd509ed6f755" }],
+              ["scripts/docs-cohort-policy.mjs", { status: "modified", sha: "4d05735b16bdb4dd06eb75712a356fc98376edc2" }],
+              ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "4e6e34f62b420cbc71f6ce8e47945066852bc172" }],
+              ["scripts/docs-cohort-v2.test.mjs", { status: "added", sha: "fa1de91ff6b4296fa055731f02c5bef7bf4c89ec" }],
+              ["scripts/verify-docs-cohort-v2-receipt.mjs", { status: "added", sha: "63e86f01863b2a31d73c22d1d1419e9828e9b131" }],
+              ["scripts/verify-docs-consumer-gate.mjs", { status: "modified", sha: "002f5b5841768426b11529679a2962a6860e94fc" }],
+              ["scripts/verify-docs-consumer-gate.test.mjs", { status: "modified", sha: "0d3977cde703a02f18ee7dd8d11ecea29e7068ff" }]
+            ]);
+            const isAuthorityPath = (path) => path === workflowPath || path === testPath ||
+              authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1) {
+              core.setFailed("Cohort v2 authority PR changed_files must be a positive safe integer.");
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated Cohort v2 authority evidence is incomplete or duplicated.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            if (!changed.some((file) => allPaths(file).some(isAuthorityPath))) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            if (pull.head.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Cohort v2 authority changes from forks are not eligible.");
+              return;
+            }
+            const invalid = changed.filter((file) => {
+              const identity = expected.get(file.filename);
+              return file.previous_filename !== undefined || identity === undefined ||
+                identity.status !== file.status || identity.sha !== file.sha;
+            });
+            if (changed.length !== expected.size || invalid.length > 0 ||
+                changed.some(({ filename }) => !expected.has(filename))) {
+              core.setFailed("This successor accepts only the exact reviewed Cohort v2 authority substrate.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Cohort v2 authority PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("Cohort v2 authority PR base is stale; update it before cutover.");
+              return;
+            }
+            core.setOutput("mode", "authority");
