@@ -12,9 +12,12 @@ import {
   cohortEventDigest,
   cohortRecordDigest,
   collectRepositoryInventoryPages,
+  DOCS_COHORT_V2_DEPENDENCY_EDGES,
+  DOCS_COHORT_V2_PACKAGES,
   docsRuntimeClosureAuthority,
   docsRuntimeClosureEvidence,
   docsRuntimeClosureProjection,
+  docsRuntimeClosureV2Evidence,
   QUALIFIED_DOCS_PROFILE_PATH,
   QUALIFIED_DOCS_SKILL_PATH,
   observeStableRepositoryInventory,
@@ -421,7 +424,8 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow, /file\.status !== "added"/u);
   assert.match(appendOnlyWorkflow, /outputs\.mode == 'emergency'/u);
   assert.match(appendOnlyWorkflow, /check-cohort-emergency-append\.mjs/u);
-  assert.match(appendOnlyWorkflow, /outputs\.mode == 'full'[\s\S]*pnpm install/u);
+  assert.match(appendOnlyWorkflow,
+    /outputs\.mode == 'full'[\s\S]*DOCS_COHORT_PNPM_V1_BIN[\s\S]*install/u);
   assert.doesNotMatch(appendOnlyWorkflow, /pull_request\.head\.repo/u);
   const authorityClassifier = appendOnlyWorkflow.indexOf("const changedAuthority");
   const unrelatedNoop = appendOnlyWorkflow.indexOf("if (!changesRegistry)");
@@ -430,8 +434,52 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow, /\[filename, prior\][\s\S]*authorityPaths\.has/u);
   assert.match(appendOnlyWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(appendOnlyWorkflow, /authorityPaths\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
-  assert.match(appendOnlyWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile/u);
-  assert.doesNotMatch(appendOnlyWorkflow, /pnpm install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile --ignore-workspace/u);
+  assert.match(appendOnlyWorkflow,
+    /"\$DOCS_COHORT_PNPM_V1_BIN" install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile/u);
+  assert.doesNotMatch(appendOnlyWorkflow,
+    /"\$DOCS_COHORT_PNPM_V1_BIN" install[\s\S]{0,160}--ignore-workspace/u);
+  assert.match(appendOnlyWorkflow,
+    /version: 11\.18\.0[\s\S]*dest: \$\{\{ runner\.temp \}\}\/docs-cohort-pnpm-v1/u);
+  assert.match(appendOnlyWorkflow,
+    /version: 11\.20\.0[\s\S]*dest: \$\{\{ runner\.temp \}\}\/docs-cohort-pnpm-v2/u);
+  assert.match(appendOnlyWorkflow,
+    /DOCS_COHORT_PNPM_V1_BIN: \$\{\{ steps\.pnpm-v1\.outputs\.bin_dest \}\}\/pnpm/u);
+  assert.match(appendOnlyWorkflow,
+    /DOCS_COHORT_PNPM_V2_BIN: \$\{\{ steps\.pnpm-v2\.outputs\.bin_dest \}\}\/pnpm/u);
+  assert.match(appendOnlyWorkflow,
+    /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V1_BIN" --version\)" = "11\.18\.0"/u);
+  assert.match(appendOnlyWorkflow,
+    /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V2_BIN" --version\)" = "11\.20\.0"/u);
+  const pnpmV1Setup = appendOnlyWorkflow.indexOf("- id: pnpm-v1");
+  const setupNode = appendOnlyWorkflow.indexOf("uses: actions/setup-node@");
+  const pnpmV2Setup = appendOnlyWorkflow.indexOf("- id: pnpm-v2");
+  const verifyPnpm = appendOnlyWorkflow.indexOf("Verify trusted package-manager binaries");
+  const baseInstall = appendOnlyWorkflow.indexOf("Install trusted base dependencies");
+  assert.ok(pnpmV1Setup >= 0 && pnpmV1Setup < setupNode && setupNode < pnpmV2Setup &&
+    pnpmV2Setup < baseInstall,
+  "setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed");
+  const pnpmV1SetupStep = appendOnlyWorkflow.slice(pnpmV1Setup, setupNode);
+  const pnpmV2SetupStep = appendOnlyWorkflow.slice(pnpmV2Setup, verifyPnpm);
+  assert.doesNotMatch(pnpmV1SetupStep, /package_json_file:/u,
+    "v1 setup must keep the matching root packageManager authority");
+  assert.match(pnpmV2SetupStep,
+    /package_json_file: governance\/docs-qualified-cohorts\.schema\.json/u,
+  "v2 setup must not read the conflicting v1 root packageManager authority");
+  assert.doesNotMatch(appendOnlyWorkflow, /\brun:\s+pnpm\b/u);
+  const emergencyStart = appendOnlyWorkflow.indexOf(
+    "Validate negative emergency append without network dependencies",
+  );
+  const liveEvidenceStart = appendOnlyWorkflow.indexOf(
+    "Verify live evidence for every appended Cohort record or event",
+  );
+  assert.ok(emergencyStart >= 0 && emergencyStart < liveEvidenceStart);
+  const emergencyStep = appendOnlyWorkflow.slice(emergencyStart, liveEvidenceStart);
+  const liveEvidenceStep = appendOnlyWorkflow.slice(liveEvidenceStart);
+  assert.doesNotMatch(emergencyStep, /DOCS_COHORT_PNPM_V[12]_BIN/u);
+  assert.match(liveEvidenceStep,
+    /DOCS_COHORT_PNPM_V1_BIN: \$\{\{ steps\.pnpm-v1\.outputs\.bin_dest \}\}\/pnpm/u);
+  assert.match(liveEvidenceStep,
+    /DOCS_COHORT_PNPM_V2_BIN: \$\{\{ steps\.pnpm-v2\.outputs\.bin_dest \}\}\/pnpm/u);
   assert.match(appendOnlyWorkflow, /"package\.json"/u);
   assert.match(appendOnlyWorkflow, /"pnpm-lock\.yaml"/u);
   assert.match(appendOnlyWorkflow, /"governance\/docs-qualified-cohorts\.schema\.json"/u);
@@ -885,22 +933,33 @@ test("installs exact packages before npm cryptographic signature audit", async (
 
 test("derives the qualified runtime closure with the fixed isolated pnpm resolver", async () => {
   const calls = [];
+  let runtimeRoot;
   const observed = await resolvePublishedRuntimeClosure(cohort().packages,
     async (program, args, options) => {
       calls.push([program, args, options]);
+      assert.equal(program, "/trusted/pnpm-v1");
+      assert.match(options.cwd, /docs-cohort-runtime-closure-/u);
       assert.equal(await readFile(options.env.NPM_CONFIG_USERCONFIG, "utf8"), "");
       assert.equal(await readFile(options.env.NPM_CONFIG_GLOBALCONFIG, "utf8"), "");
+      if (args[0] === "--version") {
+        runtimeRoot = options.cwd;
+        await assert.rejects(readFile(join(options.cwd, "package.json")), { code: "ENOENT" });
+        return { stdout: "11.18.0\n", stderr: "" };
+      }
       const root = args[args.indexOf("--dir") + 1];
+      assert.equal(options.cwd, runtimeRoot);
+      assert.equal(JSON.parse(await readFile(join(root, "package.json"), "utf8")).packageManager,
+        "pnpm@11.18.0");
       await writeFile(join(root, "pnpm-lock.yaml"), YAML.stringify(runtimeLock()));
       return { stdout: "", stderr: "" };
-    });
+    }, { pnpmBinary: "/trusted/pnpm-v1" });
   assert.deepEqual(observed, runtimeClosureEvidence());
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], "pnpm");
-  assert.ok(calls[0][1].includes("--lockfile-only"));
-  assert.ok(calls[0][1].includes("--ignore-scripts"));
-  assert.ok(calls[0][1].includes("--ignore-pnpmfile"));
-  assert.ok(calls[0][1].includes("--ignore-workspace"));
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls[0][1], ["--version"]);
+  assert.ok(calls[1][1].includes("--lockfile-only"));
+  assert.ok(calls[1][1].includes("--ignore-scripts"));
+  assert.ok(calls[1][1].includes("--ignore-pnpmfile"));
+  assert.ok(calls[1][1].includes("--ignore-workspace"));
   assert.match(calls[0][2].env.NPM_CONFIG_USERCONFIG, /\/user\.npmrc$/u);
   assert.match(calls[0][2].env.NPM_CONFIG_GLOBALCONFIG, /\/global\.npmrc$/u);
   assert.notEqual(
@@ -1027,6 +1086,221 @@ function verifierAdapters(record, overrides = {}) {
     ...overrides,
   };
 }
+
+function cohortV2EvidenceFixture() {
+  const previous = registry();
+  const result = structuredClone(previous);
+  const predecessor = result.cohorts[0];
+  const version = "1.0.0-rc.1";
+  const packages = DOCS_COHORT_V2_PACKAGES.map(({ name, role }) => ({
+    name,
+    role,
+    version,
+    integrity: INTEGRITY,
+    registry: "https://registry.npmjs.org/",
+    published_at: "2026-08-19T00:00:00Z",
+    provenance: {
+      source_repository: "agent-teams-ai/engineering-foundation",
+      source_repository_id: 1316243988,
+      source_workflow: ".github/workflows/release.yml",
+      source_commit: "1".repeat(40),
+      workflow_run_id: 123,
+      workflow_run_attempt: 1,
+      registry_attestation_url: `https://registry.npmjs.org/-/npm/v1/attestations/${
+        name.replace("/", "%2f")}@${version}`,
+      workflow_run_url: "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/123",
+      signature_verified: true,
+    },
+  }));
+  const locator = (name) => `${name}@${version}`;
+  const dependencyMap = (from) => Object.fromEntries(DOCS_COHORT_V2_DEPENDENCY_EDGES
+    .filter((edge) => edge.from === from).map(({ to }) => [to, version]));
+  const lock = {
+    lockfileVersion: "9.0",
+    importers: { ".": { devDependencies: Object.fromEntries(packages
+      .filter(({ role }) => role === "direct")
+      .map(({ name }) => [name, { specifier: version, version }])) } },
+    packages: Object.fromEntries(packages.map(({ name }) =>
+      [locator(name), { resolution: { integrity: INTEGRITY } }])),
+    snapshots: Object.fromEntries(packages.map(({ name }) =>
+      [locator(name), { dependencies: dependencyMap(name) }])),
+  };
+  const closure = docsRuntimeClosureV2Evidence(lock, packages);
+  const bundle = {
+    cohort: qualifiedCohortProjection(previous, predecessor.cohort_id, {
+      asOf: "2026-08-19T00:00:00Z",
+    }),
+    skillPath: `assets/history/${predecessor.assets.skill.digest.replace(":", "-")}/skill.md`,
+    skillDigest: predecessor.assets.skill.digest,
+    callerWorkflowPath: `assets/history/${predecessor.assets.caller_workflow.rendered_digest
+      .replace(":", "-")}/caller.yml`,
+    callerWorkflowDigest: predecessor.assets.caller_workflow.rendered_digest,
+    ...canonicalDocsManagedAssetDigests({
+      profilePath: QUALIFIED_DOCS_PROFILE_PATH,
+      skillPath: QUALIFIED_DOCS_SKILL_PATH,
+    }),
+  };
+  const transitionBytes = Buffer.from(`${JSON.stringify({
+    currentSourceExecutors: [], directTargetBundles: [bundle], schemaVersion: 1,
+  })}\n`);
+  const contents = {
+    ...ASSET_CONTENTS,
+    "assets/transition-catalog.json": transitionBytes,
+  };
+  const digest = (path) => `sha256:${createHash("sha256").update(contents[path]).digest("hex")}`;
+  const record = {
+    cohort_generation: 2,
+    cohort_id: "docs-2026-08-20-v2-rc1",
+    channel: "rc",
+    packages,
+    dependency_edges: DOCS_COHORT_V2_DEPENDENCY_EDGES,
+    reusable_workflow: structuredClone(predecessor.reusable_workflow),
+    schemas: {
+      consumer_integration: 3,
+      managed_state: 2,
+      docs_protocol: 1,
+      qualification_receipt: 3,
+      foundation_plan: 1,
+      foundation_journal: 1,
+      foundation_receipt: 1,
+      foundation_envelope: 5,
+    },
+    assets: {
+      skill: { package: "@agent-teams/docs-protocol-agent-teams", path: "skills/docs/SKILL.md", digest: digest("skills/docs/SKILL.md") },
+      caller_workflow: {
+        package: "@agent-teams/docs-protocol-agent-teams",
+        path: "assets/docs-protocol.yml",
+        digest: digest("assets/docs-protocol.yml"),
+        rendered_digest: renderedCallerDigest(),
+      },
+      asset_catalog: { package: "@agent-teams/docs-protocol-agent-teams", path: "assets/catalog.json", digest: digest("assets/catalog.json") },
+      transition_catalog: { package: "@agent-teams/docs-protocol-agent-teams", path: "assets/transition-catalog.json", digest: digest("assets/transition-catalog.json") },
+    },
+    runtime: structuredClone(predecessor.runtime),
+    runtime_closure: closure.authority,
+    eligible_after: "2026-08-20T00:00:00Z",
+    upgrade_from: [predecessor.cohort_id],
+    rollback_to: [predecessor.cohort_id],
+    canary_repositories: structuredClone(predecessor.canary_repositories),
+    evidence_references: ["governance/evidence/docs-cohorts/v2.json"],
+    record_digest: `sha256:${"0".repeat(64)}`,
+  };
+  record.record_digest = cohortRecordDigest(record);
+  result.cohorts.push(record);
+  const event = {
+    sequence: result.events.length + 1,
+    cohort_id: record.cohort_id,
+    state: "PUBLISHED_UNQUALIFIED",
+    effective_at: "2026-08-19T00:00:00Z",
+    support_until: null,
+    evidence_references: ["governance/evidence/docs-cohorts/v2-published.json"],
+    canary_evidence: [],
+    previous_event_digest: result.events.at(-1).event_digest,
+    event_digest: `sha256:${"0".repeat(64)}`,
+  };
+  event.event_digest = cohortEventDigest(event);
+  result.events.push(event);
+  const historical = {
+    [bundle.skillPath]: Buffer.from(ASSET_CONTENTS["skills/docs/SKILL.md"]),
+    [bundle.callerWorkflowPath]: Buffer.from(
+      "uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@" +
+        "2".repeat(40) + "\n",
+    ),
+  };
+  const adapters = verifierAdapters(record, {
+    asOf: "2026-08-20T00:00:00Z",
+    resolveRuntimeClosure: async (_packages, options) => {
+      assert.deepEqual(options, { cohortGeneration: 2 });
+      return closure;
+    },
+    readRuntimeClosureEvidence: async () => closure.source,
+    readPublishedPackage: async (entry, paths) => {
+      assert.equal(entry.name, "@agent-teams/docs-protocol-agent-teams");
+      return new Map(paths.map((path) => {
+        const value = path === "package.json" ? JSON.stringify({ dependencies: {
+          "@agent-teams/docs-protocol": version,
+          "@agent-teams/repository-mutation": version,
+        } }) : contents[path] ?? historical[path];
+        assert.notEqual(value, undefined, `Missing v2 published fixture ${path}`);
+        return [path, Buffer.isBuffer(value) ? value : Buffer.from(value)];
+      }));
+    },
+  });
+  return { adapters, closure, lock, previous, record, registry: result };
+}
+
+test("v2 runtime resolver uses pnpm 11.20 with exactly three explicit roots", async () => {
+  const fixture = cohortV2EvidenceFixture();
+  let manifest;
+  let runtimeRoot;
+  const observed = await resolvePublishedRuntimeClosure(
+    fixture.record.packages,
+    async (program, args, options) => {
+      assert.equal(program, "/trusted/pnpm-v2");
+      assert.match(options.cwd, /docs-cohort-runtime-closure-/u);
+      if (args[0] === "--version") {
+        runtimeRoot = options.cwd;
+        await assert.rejects(readFile(join(options.cwd, "package.json")), { code: "ENOENT" });
+        return { stdout: "11.20.0\n", stderr: "" };
+      }
+      const root = args[args.indexOf("--dir") + 1];
+      assert.equal(options.cwd, runtimeRoot);
+      manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+      await writeFile(join(root, "pnpm-lock.yaml"), YAML.stringify(fixture.lock));
+      return { stdout: "", stderr: "" };
+    },
+    { cohortGeneration: 2, pnpmBinary: "/trusted/pnpm-v2" },
+  );
+  assert.equal(manifest.packageManager, "pnpm@11.20.0");
+  assert.deepEqual(Object.keys(manifest.devDependencies).sort(), DOCS_COHORT_V2_PACKAGES
+    .filter(({ role }) => role === "direct").map(({ name }) => name).sort());
+  assert.deepEqual(observed, fixture.closure);
+});
+
+test("runtime resolver rejects PATH lookup, non-absolute binaries, and mixed pnpm versions", async () => {
+  const candidate = cohort().packages;
+  await assert.rejects(resolvePublishedRuntimeClosure(candidate, async () => ({
+    stdout: "11.18.0\n", stderr: "",
+  })), /trusted absolute pnpm binary path/u);
+  await assert.rejects(resolvePublishedRuntimeClosure(candidate, async () => ({
+    stdout: "11.18.0\n", stderr: "",
+  }), { pnpmBinary: "pnpm" }), /trusted absolute pnpm binary path/u);
+  await assert.rejects(resolvePublishedRuntimeClosure(candidate, async (_program, args, options) => {
+    assert.match(options.cwd, /docs-cohort-runtime-closure-/u);
+    await assert.rejects(readFile(join(options.cwd, "package.json")), { code: "ENOENT" });
+    return { stdout: args[0] === "--version" ? "11.20.0\n" : "", stderr: "" };
+  }, { pnpmBinary: "/trusted/pnpm-v1" }), /pnpm binary version is not exact/u);
+  assert.match(cohortEvidenceVerifierSource,
+    /isAbsolute\(v1\)[\s\S]*isAbsolute\(v2\)[\s\S]*v1 !== v2/u);
+  assert.doesNotMatch(cohortEvidenceVerifierSource, /run\("pnpm"/u);
+});
+
+test("trusted live evidence verification supports only explicit Cohort v2 semantics", async () => {
+  const { adapters, record, registry: candidate } = cohortV2EvidenceFixture();
+  await assert.doesNotReject(verifyDocsCohortEvidence(
+    candidate, registrySchema, record.cohort_id, adapters,
+  ));
+
+  const forgedOwner = structuredClone(candidate);
+  forgedOwner.cohorts.at(-1).assets.skill.package = "@agent-teams/docs-protocol";
+  forgedOwner.cohorts.at(-1).record_digest = cohortRecordDigest(forgedOwner.cohorts.at(-1));
+  await assert.rejects(verifyDocsCohortEvidence(
+    forgedOwner, registrySchema, record.cohort_id, adapters,
+  ), /JSON Schema/u);
+});
+
+test("trusted changed-evidence gate requires v2 rollback and preserves v1 fix-forward", async () => {
+  const fixture = cohortV2EvidenceFixture();
+  await assert.doesNotReject(verifyChangedDocsCohortEvidence(
+    fixture.previous, fixture.registry, registrySchema, fixture.adapters,
+  ));
+  const noRollback = structuredClone(fixture.registry);
+  noRollback.cohorts.at(-1).rollback_to = [];
+  noRollback.cohorts.at(-1).record_digest = cohortRecordDigest(noRollback.cohorts.at(-1));
+  await assert.rejects(verifyChangedDocsCohortEvidence(
+    fixture.previous, noRollback, registrySchema, fixture.adapters,
+  ), /V2 Cohort must declare at least one explicit rollback target/u);
+});
 
 test("allows qualification before the informational eligible_after timestamp", () => {
   const candidate = registry();

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import YAML from "yaml";
@@ -11,6 +11,7 @@ import { validateDocsProtocolWorkflow } from "./check-community-files.mjs";
 import {
   canonicalDocsManagedAssetDigests,
   docsRuntimeClosureEvidence,
+  docsRuntimeClosureV2Evidence,
   QUALIFIED_DOCS_PROFILE_PATH,
   QUALIFIED_DOCS_SKILL_PATH,
   qualifiedCohortProjection,
@@ -232,15 +233,31 @@ export async function verifyInstalledPackageSignatures(packages, run = command) 
   }
 }
 
-export async function resolvePublishedRuntimeClosure(packages, run = command) {
+export async function resolvePublishedRuntimeClosure(packages, runOrOptions = command, options = {}) {
+  const run = typeof runOrOptions === "function" ? runOrOptions : command;
+  const effectiveOptions = typeof runOrOptions === "function" ? options : runOrOptions;
+  const cohortGeneration = effectiveOptions.cohortGeneration;
+  assert(cohortGeneration === undefined || cohortGeneration === 2,
+    "Runtime closure generation must be absent for v1 or explicitly 2 for v2.");
+  const v2 = cohortGeneration === 2;
+  const expectedPnpmVersion = v2 ? "11.20.0" : "11.18.0";
+  const pnpmBinary = effectiveOptions.pnpmBinary;
+  assert(typeof pnpmBinary === "string" && isAbsolute(pnpmBinary),
+    `Runtime closure ${v2 ? "v2" : "v1"} requires its trusted absolute pnpm binary path.`);
+  const roots = v2 ? packages.filter(({ role }) => role === "direct") : packages;
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-runtime-closure-"));
   try {
+    await withIsolatedNpmOptions({ cwd: root }, async (options) => {
+      const { stdout } = await run(pnpmBinary, ["--version"], options);
+      assert(stdout.trim() === expectedPnpmVersion,
+        `Runtime closure ${v2 ? "v2" : "v1"} pnpm binary version is not exact.`);
+    });
     await Promise.all([
       writeFile(join(root, "package.json"), `${JSON.stringify({
         name: "docs-cohort-runtime-closure",
         private: true,
-        packageManager: "pnpm@11.18.0",
-        devDependencies: Object.fromEntries(packages.map(({ name, version }) => [name, version])),
+        packageManager: `pnpm@${expectedPnpmVersion}`,
+        devDependencies: Object.fromEntries(roots.map(({ name, version }) => [name, version])),
       })}\n`),
       writeFile(join(root, ".npmrc"), [
         "registry=https://registry.npmjs.org/",
@@ -251,15 +268,26 @@ export async function resolvePublishedRuntimeClosure(packages, run = command) {
         "",
       ].join("\n")),
     ]);
-    await withIsolatedNpmOptions({}, (options) => run("pnpm", [
+    await withIsolatedNpmOptions({ cwd: root }, (options) => run(pnpmBinary, [
         "install", "--dir", root, "--lockfile-only", "--ignore-scripts",
         "--ignore-pnpmfile", "--ignore-workspace",
       ], options));
     const lock = YAML.parse(await readFile(join(root, "pnpm-lock.yaml"), "utf8"));
-    return docsRuntimeClosureEvidence(lock, packages);
+    return v2
+      ? docsRuntimeClosureV2Evidence(lock, packages)
+      : docsRuntimeClosureEvidence(lock, packages);
   } finally {
     await rm(root, { force: true, recursive: true });
   }
+}
+
+function trustedCohortPnpmBinary(cohortGeneration) {
+  const v1 = process.env.DOCS_COHORT_PNPM_V1_BIN;
+  const v2 = process.env.DOCS_COHORT_PNPM_V2_BIN;
+  assert(typeof v1 === "string" && isAbsolute(v1) &&
+    typeof v2 === "string" && isAbsolute(v2) && v1 !== v2,
+  "Trusted Cohort verification requires distinct absolute v1 and v2 pnpm binary paths.");
+  return cohortGeneration === 2 ? v2 : v1;
 }
 
 export async function defaultIsCommitAncestor(
@@ -468,13 +496,28 @@ export function renderCallerWorkflowTemplate(content, reusableWorkflow) {
 }
 
 async function verifyPublishedContents(record, registry, asOf, adapters) {
-  const foundation = record.packages[0];
-  const docs = record.packages[1];
+  const v2 = record.cohort_generation === 2;
+  const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
+  const foundation = packageByName.get("@agent-teams/engineering-foundation");
+  const docs = packageByName.get(v2
+    ? "@agent-teams/docs-protocol-agent-teams"
+    : "@agent-teams/docs-protocol");
+  assert(foundation !== undefined && docs !== undefined,
+    `${record.cohort_id} published content owners are absent from the explicit Cohort.`);
   const paths = ["package.json", ...Object.values(record.assets).map(({ path }) => path)];
   const publishedFiles = await adapters.readPublishedPackage(docs, paths);
   const manifest = JSON.parse(publishedFiles.get("package.json").toString("utf8"));
-  assert(manifest.dependencies?.[foundation.name] === foundation.version,
-    `${docs.name}@${docs.version} must depend on exact ${foundation.name}@${foundation.version}.`);
+  if (v2) {
+    const expectedDependencies = record.dependency_edges
+      .filter(({ from }) => from === docs.name)
+      .map(({ to }) => packageByName.get(to));
+    assert(expectedDependencies.every((entry) =>
+      entry !== undefined && manifest.dependencies?.[entry.name] === entry.version),
+    `${docs.name}@${docs.version} must bind its exact declared Cohort v2 dependency edges.`);
+  } else {
+    assert(manifest.dependencies?.[foundation.name] === foundation.version,
+      `${docs.name}@${docs.version} must depend on exact ${foundation.name}@${foundation.version}.`);
+  }
   for (const [label, asset] of Object.entries(record.assets)) {
     assert(asset.package === docs.name, `${label} must be sourced from the published Docs package.`);
     assert(sha256(publishedFiles.get(asset.path)) === asset.digest,
@@ -697,6 +740,8 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
   validateDocsQualifiedCohorts(registry, schema, { asOf: overrides.asOf });
   const record = registry.cohorts.find(({ cohort_id: id }) => id === cohortId);
   assert(record !== undefined, "Requested Qualified Docs Cohort does not exist.");
+  assert(record.cohort_generation !== 2 || record.rollback_to.length > 0,
+    `${record.cohort_id} V2 Cohort must declare at least one explicit rollback target.`);
   const adapters = {
     npmView: (specifier) => npmJson(["view", specifier]),
     npmTimes: (name) => npmJson(["view", name, "time"]),
@@ -706,7 +751,12 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
       return response.json();
     },
     verifySignatures: verifyInstalledPackageSignatures,
-    resolveRuntimeClosure: resolvePublishedRuntimeClosure,
+    resolveRuntimeClosure: (packages, options) => {
+      return resolvePublishedRuntimeClosure(packages, command, {
+        ...options,
+        pnpmBinary: trustedCohortPnpmBinary(options.cohortGeneration),
+      });
+    },
     readRuntimeClosureEvidence: async (path) => {
       const revision = process.env.DOCS_COHORT_EVIDENCE_REF;
       if (revision === undefined) {return readFile(path, "utf8");}
@@ -789,11 +839,15 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
     verifiedAttestations.find(({ name, version }) => name === entry.name && version === entry.version),
   )));
   await verifyPublishedContents(record, registry, overrides.asOf, adapters);
-  const runtimeClosure = await adapters.resolveRuntimeClosure(record.packages);
+  const runtimeClosure = await adapters.resolveRuntimeClosure(record.packages, {
+    cohortGeneration: record.cohort_generation,
+  });
   const runtimeClosureSource = await adapters.readRuntimeClosureEvidence(
     record.runtime_closure.projection_path,
   );
   assert(runtimeClosure.authority.schema_version === record.runtime_closure.schema_version &&
+    (record.cohort_generation !== 2 ||
+      runtimeClosure.authority.domain === record.runtime_closure.domain) &&
     runtimeClosure.authority.package_manager === record.runtime_closure.package_manager &&
     runtimeClosure.authority.lockfile_version === record.runtime_closure.lockfile_version &&
     runtimeClosure.authority.package_count === record.runtime_closure.package_count &&
@@ -864,8 +918,10 @@ export async function verifyChangedDocsCohortEvidence(
       (record) => record.cohort_id === cohortId,
     );
     const record = lifecycle.cohortById.get(cohortId);
-    assert(!isNewRecord || record.rollback_to.length === 0,
+    assert(!isNewRecord || record.cohort_generation === 2 || record.rollback_to.length === 0,
       `${cohortId} new V1 Cohort must declare explicit fix-forward rollback policy.`);
+    assert(!isNewRecord || record.cohort_generation !== 2 || record.rollback_to.length > 0,
+      `${cohortId} new V2 Cohort must declare at least one explicit rollback target.`);
     if (!isNewRecord && !appendedEvents.some(({ state }) => positiveStates.has(state))) {
       continue;
     }
