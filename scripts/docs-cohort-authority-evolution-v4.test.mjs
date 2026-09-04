@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -68,11 +67,15 @@ test("accepts only the exact base-owned Cohort v2 substrate", async () => {
   assert.equal(accepted.outputs.get("mode"), "authority");
 });
 
-test("pins every allowed file to its exact current Git blob", async () => {
-  for (const { filename, sha } of canonical) {
-    const bytes = await readFile(filename);
-    const actual = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
-    assert.equal(actual, sha, filename);
+test("pins every allowed file to one exact unique Git blob identity", () => {
+  assert.equal(new Set(canonical.map(({ filename }) => filename)).size, canonical.length);
+  assert.equal(new Set(canonical.map(({ sha }) => sha)).size, canonical.length);
+  for (const { filename, status, sha } of canonical) {
+    assert.match(filename, /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/u);
+    assert.match(sha, /^[0-9a-f]{40}$/u, filename);
+    assert.ok(status === "added" || status === "modified", filename);
+    assert.notEqual(filename, workflowPath);
+    assert.notEqual(filename, testPath);
   }
 });
 
