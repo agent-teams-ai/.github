@@ -90,10 +90,11 @@ jobs:
                 file.sha === expected[2], "Unexpected path/status/new blob or rename");
             }
             const end = await read(github.rest.pulls.listFiles, { pull_number: 192, per_page: 100, page: 2 });
-            // GitHub may retain first/prev links on an empty out-of-range page; never follow them.
+            // GitHub may retain first/prev/last links to page 1 on an empty page 2; never follow them.
             const backLinksOnly = end.headers.link === undefined || (typeof end.headers.link === "string" &&
+              !/[^\x20-\x7e]/u.test(end.headers.link) &&
               end.headers.link.split(",").every((link) =>
-                /^<https:\/\/api\.github\.com\/[^<>\s]+>; rel="(?:prev|first)"$/u.test(link.trim())));
+                /^<https:\/\/api\.github\.com\/(?:repositories\/1316243981|repos\/agent-teams-ai\/\.github)\/pulls\/192\/files\?(?:per_page=100&page=1|page=1&per_page=100)>; rel="(?:prev|first|last)"$/u.test(link.trim())));
             need(backLinksOnly && Array.isArray(end.data) && end.data.length === 0, "Unexpected file continuation");
             const base = event.base.sha, head = event.head.sha;
             const comparison = (await read(github.rest.repos.compareCommits, {

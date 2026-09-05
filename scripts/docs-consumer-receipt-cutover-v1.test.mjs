@@ -279,3 +279,99 @@ rejectCase("rejects an ordinary one-file data PR", (f) => {
   f.context.payload.pull_request.changed_files = 1; for (const pull of f.pulls) pull.changed_files = 1;
   f.pages[0] = [{ filename: "governance/docs-qualified-cohorts.json", sha: other, status: "modified" }];
 });
+
+const pageOne = "https://api.github.com/repositories/1316243981/pulls/192/files?per_page=100&page=1";
+// Exact header observed in GitHub's empty page 2 response on 2026-09-05.
+const capturedBackLinks = ["prev", "last", "first"].map((rel) => `<${pageOne}>; rel="${rel}"`).join(", ");
+const terminalLink = (link) => (method, response, occurrence) => {
+  if (method === "pulls.listFiles" && occurrence === 1) response.headers.link = link;
+};
+for (const route of ["repositories/1316243981", "repos/agent-teams-ai/.github"]) {
+  for (const query of ["per_page=100&page=1", "page=1&per_page=100"]) {
+    test(`accepts empty page 2 with prev/last/first to ${route}?${query} without following links`, async () => {
+      const link = capturedBackLinks.replaceAll("repositories/1316243981", route).replaceAll("per_page=100&page=1", query);
+      const f = await run(fixture(), terminalLink(link));
+      assert.equal(f.outputs.length, 1); assert.deepEqual(f.logs, [f.outputs[0][1]]);
+      assert.equal(f.calls.length, 13);
+      assert.deepEqual(f.calls.filter(({ name }) => name === "pulls.listFiles").map(({ args }) => args.page), [1, 2]);
+    });
+  }
+}
+for (const rel of ["prev", "last", "first"]) {
+  test(`accepts a single backward ${rel} to the fixed page 1`, async () => {
+    await run(fixture(), terminalLink(`<${pageOne}>; rel="${rel}"`));
+  });
+}
+const foreignTargets = {
+  "foreign host": pageOne.replace("api.github.com", "example.com"),
+  "host suffix": pageOne.replace("api.github.com", "api.github.com.example.com"),
+  "credentials": pageOne.replace("api.github.com", "user@api.github.com"),
+  "port": pageOne.replace("api.github.com", "api.github.com:443"),
+  "HTTP": pageOne.replace("https:", "http:"),
+  "foreign repository ID": pageOne.replace("1316243981", "1316243982"),
+  "foreign repository name": pageOne.replace("repositories/1316243981", "repos/agent-teams-ai/elsewhere"),
+  "foreign owner": pageOne.replace("repositories/1316243981", "repos/elsewhere/.github"),
+  "wrong PR": pageOne.replace("pulls/192", "pulls/193"),
+  "wrong endpoint": pageOne.replace("/files?", "/commits?"),
+  "extra path": pageOne.replace("/files?", "/files/extra?"),
+  "path traversal": pageOne.replace("/files?", "/../files?"),
+  "encoded path": pageOne.replace("/files?", "/%66iles?"),
+  "page 0": pageOne.replace("&page=1", "&page=0"),
+  "page 2": pageOne.replace("&page=1", "&page=2"),
+  "page 3": pageOne.replace("&page=1", "&page=3"),
+  "wrong page size": pageOne.replace("per_page=100", "per_page=99"),
+  "missing page size": pageOne.replace("per_page=100&", ""),
+  "missing page": pageOne.replace("&page=1", ""),
+  "duplicate page": `${pageOne}&page=2`,
+  "duplicate page size": `${pageOne}&per_page=100`,
+  "extra query": `${pageOne}&extra=1`,
+  "fragment": `${pageOne}#page=2`
+};
+for (const [name, target] of Object.entries(foreignTargets)) {
+  for (const rel of ["prev", "last", "first"]) {
+    test(`rejects terminal ${rel} with ${name}`, async () => {
+      const f = fixture();
+      await rejected(f, terminalLink(`<${target}>; rel="${rel}"`), /Unexpected file continuation/u);
+      assert.equal(f.calls.length, 5);
+    });
+  }
+}
+const malformedLinks = {
+  "next to page 1": `<${pageOne}>; rel="next"`,
+  "unknown relation": `<${pageOne}>; rel="alternate"`,
+  "mixed backward and forward": `${capturedBackLinks}, <${pageOne}>; rel="next"`,
+  "mixed backward and foreign": `${capturedBackLinks}, <${foreignTargets["foreign host"]}>; rel="prev"`,
+  "multiple relations": `<${pageOne}>; rel="prev next"`,
+  "duplicate rel attribute": `<${pageOne}>; rel="prev"; rel="next"`,
+  "missing relation": `<${pageOne}>`,
+  "unquoted relation": `<${pageOne}>; rel=prev`,
+  "unclosed URL": `<${pageOne}; rel="prev"`,
+  "extra angle bracket": `<<${pageOne}>; rel="prev"`,
+  "trailing junk": `${capturedBackLinks} junk`,
+  "trailing comma": `${capturedBackLinks},`,
+  "empty link between commas": `${capturedBackLinks},,${capturedBackLinks}`,
+  "line break": `${capturedBackLinks}\n`,
+  "non-ASCII whitespace": `\u00a0${capturedBackLinks}`,
+  "Unicode line separator": `${capturedBackLinks}\u2028`,
+  "header injection": `${capturedBackLinks}\r\nLink: <${pageOne}>; rel="next"`,
+  "empty string": "", "whitespace": " ", "null": null, "array": [capturedBackLinks], "object": {}
+};
+for (const [name, link] of Object.entries(malformedLinks)) {
+  test(`rejects malformed/forward terminal header: ${name}`, async () => {
+    const f = fixture();
+    await rejected(f, terminalLink(link), /Unexpected file continuation/u);
+    assert.equal(f.calls.length, 5);
+  });
+}
+test("backward links never excuse nonempty or non-array second-page data", async () => {
+  for (const data of [[fixture().pages[0][0]], {}, null]) {
+    const f = fixture(); f.pages[1] = data;
+    await rejected(f, terminalLink(capturedBackLinks), /Unexpected file continuation|Invalid API response/u);
+    assert.equal(f.calls.length, 5);
+  }
+});
+test("backward links remain forbidden on the complete first page", async () => {
+  await rejected(fixture(), (method, response, occurrence) => {
+    if (method === "pulls.listFiles" && occurrence === 0) response.headers.link = capturedBackLinks;
+  }, /Incomplete\/duplicate file page/u);
+});
