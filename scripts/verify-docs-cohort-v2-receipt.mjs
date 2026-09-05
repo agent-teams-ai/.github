@@ -50,12 +50,24 @@ function qualificationEventDigest(event) {
  * Central hosted CANARY check evidence remains independently mandatory.
  */
 export function verifyDocsCohortV2SupportingEvidence({ receipt, executionEnvelope, record, qualificationEvent }) {
-  if (record?.cohort_generation !== 2) {fail("Supporting receipt requires an explicit Cohort v2 record.");}
+  const verified = verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualificationEvent });
+  if (!record.canary_repositories?.some(({ repository_id: id, repository }) =>
+    id === executionEnvelope.checkout.repositoryId &&
+    repository === executionEnvelope.checkout.repository)) {
+    fail("Cohort v2 execution envelope checkout is not a declared canary repository.");
+  }
+  return Object.freeze({ ...verified, evidenceClass: "cohort-v2-supporting-canary" });
+}
+
+// Internal byte-binding verifier, not an authorizer. The consumer CLI reaches
+// this only after the trusted workflow's authorization and installed-tree checks.
+function verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualificationEvent }) {
+  if (record?.cohort_generation !== 2) {fail("Qualification receipt requires an explicit Cohort v2 record.");}
   if (!exactObject(qualificationEvent) || qualificationEvent.state !== "QUALIFIED" ||
     qualificationEvent.cohort_id !== record.cohort_id ||
     !DIGEST.test(qualificationEvent.event_digest ?? "") ||
     qualificationEvent.event_digest !== qualificationEventDigest(qualificationEvent)) {
-    fail("Supporting receipt requires the exact immutable QUALIFIED event.");
+    fail("Qualification receipt requires the exact immutable QUALIFIED event.");
   }
   if (!exactKeys(receipt, ["schemaVersion", "receiptDigest", "cohortAdmissible",
     "profileSchemaVersion", "cohort", "packages", "schemas", "runtime", "checks"]) ||
@@ -117,11 +129,6 @@ export function verifyDocsCohortV2SupportingEvidence({ receipt, executionEnvelop
     !/^agent-teams-ai\/[A-Za-z0-9_.-]+$/u.test(executionEnvelope.checkout.repository ?? "")) {
     fail("Cohort v2 execution envelope checkout identity is not immutable.");
   }
-  if (!record.canary_repositories?.some(({ repository_id: id, repository }) =>
-    id === executionEnvelope.checkout.repositoryId &&
-    repository === executionEnvelope.checkout.repository)) {
-    fail("Cohort v2 execution envelope checkout is not a declared canary repository.");
-  }
   if (!exactKeys(executionEnvelope.workflow, ["repository", "path", "revision", "blobSha",
     "runId", "runAttempt"]) ||
     executionEnvelope.workflow.repository !== record.reusable_workflow.repository ||
@@ -134,7 +141,6 @@ export function verifyDocsCohortV2SupportingEvidence({ receipt, executionEnvelop
     fail("Cohort v2 execution envelope workflow identity differs from immutable authority.");
   }
   return Object.freeze({
-    evidenceClass: "cohort-v2-supporting-canary",
     receiptDigest,
     envelopeDigest: claimedEnvelopeDigest,
     centralCanaryEvidenceSatisfied: false,
@@ -308,16 +314,16 @@ async function verifyCommand(argv) {
     installEvidenceDigest: sha256(installEvidenceSource),
     receiptDigest: receipt?.receiptDigest,
   };
-  const verified = verifyDocsCohortV2SupportingEvidence({
+  const verified = verifyDocsCohortV2Receipt({
     receipt,
     executionEnvelope: { ...envelopeBody, envelopeDigest: envelopeDigest(envelopeBody) },
     record,
     qualificationEvent: authority.qualificationEvent,
   });
   if (verified.centralCanaryEvidenceSatisfied !== false) {
-    fail("Supporting receipt must never satisfy central CANARY evidence.");
+    fail("Consumer receipt must never satisfy central CANARY evidence.");
   }
-  console.log("Cohort v2 supporting qualification receipt is bound; central CANARY remains unsatisfied.");
+  console.log("Cohort v2 authorized consumer qualification receipt is bound; central CANARY remains unsatisfied.");
 }
 
 const isEntrypoint = process.argv[1] !== undefined &&

@@ -111,7 +111,7 @@ test("dispatches schema 1/2/3 to none, legacy, and Cohort v2 qualification profi
     /trusted-install\.outputs\.cli/u);
   assert.match(byName.get("Run Cohort v2 qualification through the trusted base-owned runner").run,
     /run-qualification-v3/u);
-  assert.match(byName.get("Bind Cohort v2 supporting receipt without asserting central CANARY").run,
+  assert.match(byName.get("Bind Cohort v2 authorized consumer receipt without asserting central CANARY").run,
     /verify-docs-cohort-v2-receipt\.mjs/u);
   assert.equal(qualification.steps.at(-1).if, undefined);
   assert.equal(workflow.jobs["docs-protocol-check"].needs, "trusted-qualification");

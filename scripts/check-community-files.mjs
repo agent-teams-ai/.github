@@ -278,7 +278,7 @@ export function validateDocsProtocolWorkflow(workflow) {
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" run-qualification-v3" },
           { name: "Bind released-cohort receipt to exact checkout and installed Cohort", if: "needs.trusted-authorize.outputs.qualification-profile == 'legacy'",
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-qualification-receipt.mjs\" --consumer \"$CONSUMER_CHECKOUT\" --install-root \"$TRUSTED_INSTALL_ROOT\" --authorization \"$AUTHORIZATION_PATH\" --install-evidence \"$INSTALL_EVIDENCE_PATH\" --receipt \"$QUALIFICATION_RECEIPT\" --caller-sha \"${{ github.sha }}\"" },
-          { name: "Bind Cohort v2 supporting receipt without asserting central CANARY", if: "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'",
+          { name: "Bind Cohort v2 authorized consumer receipt without asserting central CANARY", if: "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'",
             run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-cohort-v2-receipt.mjs\" --consumer \"$CONSUMER_CHECKOUT\" --install-root \"$TRUSTED_INSTALL_ROOT\" --authorization \"$AUTHORIZATION_PATH\" --install-evidence \"$INSTALL_EVIDENCE_PATH\" --receipt \"$QUALIFICATION_RECEIPT\" --caller-sha \"${{ github.sha }}\"" },
           { name: "Confirm current controller authority stayed stable through qualification", run: "node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" verify-controller-snapshot", env: { GITHUB_TOKEN: "${{ github.token }}" } },
         ],
