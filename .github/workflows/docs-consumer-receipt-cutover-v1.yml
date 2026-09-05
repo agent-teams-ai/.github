@@ -1,0 +1,162 @@
+name: Trusted Docs Consumer Receipt Cutover V1
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-consumer-receipt-cutover-v1:
+    name: trusted-consumer-receipt-cutover-v1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Temporary PR192-only guard. No no-op, rollback, checkout or PR code.
+            const { createHash } = require("node:crypto");
+            const repo = { owner: "agent-teams-ai", repo: ".github" };
+            const repositoryId = 1316243981;
+            const repository = "agent-teams-ai/.github";
+            const tuple = [
+              [".github/workflows/docs-protocol-check.yml", "c30e87dabf7dda27c60d2d688b1ed9446fc2c23e", "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"],
+              ["scripts/check-community-files.mjs", "15d424cc6e6c65094111b48ada7d228178dafb5e", "5a21286b881c83a6ab2203731ec17411f12f6ca8"],
+              ["scripts/check-community-files.test.mjs", "78d52b974ff4cd72f44579b09d0bfd509ed6f755", "fe25fc2080ed470098208c7753793e8c1b144e4f"],
+              ["scripts/verify-docs-cohort-v2-receipt.mjs", "63e86f01863b2a31d73c22d1d1419e9828e9b131", "91aa50e8a5773f063d49199c2c2fedacc34a2b0e"],
+              ["scripts/verify-docs-consumer-gate.test.mjs", "0d3977cde703a02f18ee7dd8d11ecea29e7068ff", "d0bea695cdacd7556267c491bd09afb97adc84b1"]
+            ];
+            const need = (ok, message) => { if (!ok) throw new Error(message); };
+            const sha = (value) => typeof value === "string" && /^(?!0{40}$)[0-9a-f]{40}$/u.test(value);
+            const positive = (value) => Number.isSafeInteger(value) && value > 0;
+            function identity(value) {
+              need(value?.id === repositoryId && value.full_name === repository &&
+                value.name === repo.repo && value.owner?.login === repo.owner, "Repository identity mismatch");
+            }
+            async function read(method, args = {}) {
+              const response = await method({ ...repo, ...args, headers: {
+                accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+                "Cache-Control": "no-cache"
+              } });
+              need(response?.status === 200 &&
+                /^application\/json(?:;|$)/u.test(response.headers?.["content-type"] ?? "") &&
+                response.data !== null && typeof response.data === "object", "Invalid API response");
+              return response;
+            }
+            function pullSnapshot(pull) {
+              need(pull?.number === 192 && positive(pull.id) && pull.state === "open" &&
+                pull.merged === false && pull.draft === false && pull.changed_files === tuple.length &&
+                positive(pull.commits) && typeof pull.updated_at === "string" && pull.updated_at.length > 0,
+                "Invalid PR192 metadata/count");
+              identity(pull.base?.repo); identity(pull.head?.repo);
+              for (const side of [pull.base, pull.head]) {
+                need(sha(side.sha) && typeof side.ref === "string" && side.ref.length > 0, "Invalid PR ref");
+              }
+              need(pull.base.sha !== pull.head.sha, "Empty PR");
+              return JSON.stringify([pull.id, pull.number, pull.base.ref, pull.base.sha,
+                pull.head.ref, pull.head.sha, pull.commits, pull.changed_files, pull.updated_at]);
+            }
+            need(context.eventName === "pull_request_target" &&
+              ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(context.payload.action) &&
+              context.payload.number === 192 && context.repo.owner === repo.owner &&
+              context.repo.repo === repo.repo, "Wrong event/repository/PR");
+            identity(context.payload.repository);
+            const event = context.payload.pull_request;
+            const expectedSnapshot = pullSnapshot(event);
+            async function snapshot() {
+              const pull = (await read(github.rest.pulls.get, { pull_number: 192 })).data;
+              need(pullSnapshot(pull) === expectedSnapshot, "Stale PR/event snapshot");
+              const controller = (await read(github.rest.repos.get)).data;
+              identity(controller);
+              need(typeof controller.default_branch === "string" && controller.default_branch.length > 0 &&
+                controller.default_branch === context.payload.repository.default_branch &&
+                pull.base.ref === controller.default_branch, "Default branch mismatch");
+              const branch = (await read(github.rest.repos.getBranch, { branch: controller.default_branch })).data;
+              need(branch.name === controller.default_branch && sha(branch.commit?.sha) &&
+                branch.commit.sha === pull.base.sha && context.sha === pull.base.sha &&
+                context.ref === `refs/heads/${controller.default_branch}`, "Stale live/execution base");
+            }
+            await snapshot();
+            // Five entries fit one page. Any continuation or nonempty second page is inconsistent.
+            const files = await read(github.rest.pulls.listFiles, { pull_number: 192, per_page: 100, page: 1 });
+            need(!files.headers.link && Array.isArray(files.data) && files.data.length === tuple.length &&
+              new Set(files.data.map((file) => file?.filename)).size === tuple.length, "Incomplete/duplicate file page");
+            for (const file of files.data) {
+              const expected = tuple.find(([path]) => path === file?.filename);
+              need(expected && file.status === "modified" && !("previous_filename" in file) &&
+                file.sha === expected[2], "Unexpected path/status/new blob or rename");
+            }
+            const end = await read(github.rest.pulls.listFiles, { pull_number: 192, per_page: 100, page: 2 });
+            // GitHub may retain first/prev/last links to page 1 on an empty page 2; never follow them.
+            const backLinksOnly = end.headers.link === undefined || (typeof end.headers.link === "string" &&
+              !/[^\x20-\x7e]/u.test(end.headers.link) &&
+              end.headers.link.split(",").every((link) =>
+                /^<https:\/\/api\.github\.com\/(?:repositories\/1316243981|repos\/agent-teams-ai\/\.github)\/pulls\/192\/files\?(?:per_page=100&page=1|page=1&per_page=100)>; rel="(?:prev|first|last)"$/u.test(link.trim())));
+            need(backLinksOnly && Array.isArray(end.data) && end.data.length === 0, "Unexpected file continuation");
+            const base = event.base.sha, head = event.head.sha;
+            const comparison = (await read(github.rest.repos.compareCommits, {
+              base, head, per_page: 1, page: 1
+            })).data;
+            need(comparison.status === "ahead" && comparison.base_commit?.sha === base &&
+              comparison.merge_base_commit?.sha === base && comparison.behind_by === 0 &&
+              comparison.ahead_by === event.commits && comparison.total_commits === event.commits,
+              "Head does not contain the live base");
+            async function tree(ref) {
+              const commit = (await read(github.rest.git.getCommit, { commit_sha: ref })).data;
+              need(commit.sha === ref && sha(commit.tree?.sha), "Invalid immutable commit");
+              const data = (await read(github.rest.git.getTree, { tree_sha: commit.tree.sha, recursive: "1" })).data;
+              need(data.sha === commit.tree.sha && data.truncated === false &&
+                Array.isArray(data.tree) && data.tree.length > 0, "Incomplete immutable tree");
+              const entries = new Map();
+              for (const entry of data.tree) {
+                need(typeof entry?.path === "string" && !/[\x00-\x1f\x7f]/u.test(entry.path) &&
+                  entry.path.split("/").every((part) => part && part !== "." && part !== "..") &&
+                  !entries.has(entry.path) && sha(entry.sha) &&
+                  ((entry.type === "tree" && entry.mode === "040000") ||
+                    (entry.type === "blob" && ["100644", "100755"].includes(entry.mode) &&
+                      Number.isSafeInteger(entry.size) && entry.size >= 0)), "Invalid tree entry/type/mode");
+                entries.set(entry.path, entry);
+              }
+              const children = new Map([["", []]]);
+              for (const entry of entries.values()) if (entry.type === "tree") children.set(entry.path, []);
+              for (const entry of entries.values()) {
+                const parent = entry.path.includes("/") ? entry.path.slice(0, entry.path.lastIndexOf("/")) : "";
+                need(children.has(parent), "Missing tree parent");
+                children.get(parent).push(entry);
+              }
+              // Rehash every directory: truncated/omitted metadata must not hide an extra change.
+              const name = (entry) => entry.path.split("/").at(-1);
+              const key = (entry) => Buffer.from(name(entry) + (entry.type === "tree" ? "/" : ""));
+              for (const [path, items] of children) {
+                items.sort((a, b) => Buffer.compare(key(a), key(b)));
+                const bytes = Buffer.concat(items.flatMap((entry) => [
+                  Buffer.from(`${entry.mode.replace(/^0/u, "")} ${name(entry)}\0`), Buffer.from(entry.sha, "hex")
+                ]));
+                const digest = createHash("sha1").update(`tree ${bytes.length}\0`).update(bytes).digest("hex");
+                need(digest === (path ? entries.get(path).sha : data.sha), "Tree metadata hash mismatch");
+              }
+              return entries;
+            }
+            const oldTree = await tree(base);
+            const newTree = await tree(head);
+            need(oldTree.size === newTree.size, "Extra/missing tree paths");
+            const changed = [];
+            for (const [path, old] of oldTree) {
+              const next = newTree.get(path);
+              need(next && old.type === next.type && old.mode === next.mode, "Extra/missing path or mode change");
+              if (old.type === "blob" && old.sha !== next.sha) changed.push(path);
+            }
+            need(changed.length === tuple.length && changed.every((path) => tuple.some(([p]) => p === path)),
+              "Tree diff is not the complete five-file tuple");
+            const observed = tuple.map(([path, oldBlob, newBlob]) => {
+              need(oldTree.get(path)?.type === "blob" && oldTree.get(path).mode === "100644" &&
+                oldTree.get(path).sha === oldBlob && newTree.get(path)?.sha === newBlob, "Old/new blob mismatch");
+              return { path, status: "modified", mode: "100644", oldBlob, newBlob };
+            });
+            await snapshot();
+            const evidence = { repository, repositoryId, pr: 192, base, head, files: observed };
+            core.setOutput("evidence", JSON.stringify(evidence));
+            core.info(JSON.stringify(evidence));
