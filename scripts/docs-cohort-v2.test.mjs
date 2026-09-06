@@ -23,6 +23,26 @@ const schema = JSON.parse(await readFile("governance/docs-qualified-cohorts.sche
 const current = JSON.parse(await readFile("governance/docs-qualified-cohorts.json", "utf8"));
 const INTEGRITY = `sha512-${"A".repeat(86)}==`;
 const VERSION = "1.0.0-rc.1";
+const HISTORICAL_V1_COHORT_ID = "docs-2026-08-17-rc1";
+const FIXTURE_AS_OF = "2026-09-04T03:00:00Z";
+
+function historicalV1QualifiedPrefix(source) {
+  const record = source.cohorts.find(({ cohort_id }) => cohort_id === HISTORICAL_V1_COHORT_ID);
+  assert.ok(record, "the named historical v1 cohort must exist");
+  assert.equal(source.cohorts[0], record);
+  assert.equal(record.cohort_generation, undefined);
+  const qualificationIndex = source.events.findIndex(({ cohort_id, state }) =>
+    cohort_id === HISTORICAL_V1_COHORT_ID && state === "QUALIFIED");
+  assert.ok(qualificationIndex >= 0, "the named cohort must have an explicit QUALIFIED event");
+  const events = source.events.slice(0, qualificationIndex + 1);
+  assert.deepEqual(events.map(({ sequence }) => sequence), [1, 2, 3, 4]);
+  assert.ok(events.every(({ cohort_id }) => cohort_id === HISTORICAL_V1_COHORT_ID));
+  assert.equal(events.at(-1).state, "QUALIFIED");
+  assert.equal(events.at(-1).effective_at, "2026-08-17T10:46:59Z");
+  return structuredClone({ ...source, cohorts: [record], events });
+}
+
+const historicalV1 = historicalV1QualifiedPrefix(current);
 
 function lock() {
   const locator = (name) => `${name}@${VERSION}`;
@@ -55,8 +75,8 @@ function provenance(name) {
 }
 
 function fixture() {
-  const registry = structuredClone(current);
-  const predecessor = registry.cohorts.at(-1).cohort_id;
+  const registry = structuredClone(historicalV1);
+  const predecessor = HISTORICAL_V1_COHORT_ID;
   const closure = docsRuntimeClosureV2Evidence(lock(), DOCS_COHORT_V2_PACKAGES.map((entry) => ({
     ...entry,
     version: VERSION,
@@ -145,19 +165,51 @@ function fixture() {
 test("coexists with byte-immutable v1 and dispatches only on the explicit v2 discriminator", () => {
   const { registry, record } = fixture();
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(registry, schema, {
-    asOf: "2026-09-04T03:00:00Z",
+    asOf: FIXTURE_AS_OF,
   }));
-  assert.deepEqual(registry.cohorts.slice(0, current.cohorts.length), current.cohorts);
-  assert.deepEqual(registry.events.slice(0, current.events.length), current.events);
+  assert.deepEqual(registry.cohorts.slice(0, historicalV1.cohorts.length), historicalV1.cohorts);
+  assert.deepEqual(registry.events.slice(0, historicalV1.events.length), historicalV1.events);
   const disguised = structuredClone(record);
   delete disguised.cohort_generation;
   disguised.record_digest = cohortRecordDigest(disguised);
   const invalid = structuredClone(registry);
   invalid.cohorts.splice(-1, 1, disguised);
   assert.throws(() => validateDocsQualifiedCohorts(invalid, schema, {
-    asOf: "2026-09-04T03:00:00Z",
+    asOf: FIXTURE_AS_OF,
   }), /JSON Schema/u);
   assert.notEqual(cohortRecordDigest(record), cohortRecordDigest(disguised));
+});
+
+test("later suffixes including an unqualified tail preserve the historical prefix and source", () => {
+  const source = structuredClone(current);
+  const tail = structuredClone(source.cohorts[0]);
+  tail.cohort_id = "docs-2026-09-07-rc1";
+  tail.record_digest = cohortRecordDigest(tail);
+  source.cohorts.push(tail);
+  const event = {
+    ...structuredClone(source.events[0]),
+    cohort_id: tail.cohort_id,
+    sequence: source.events.length + 1,
+    state: "PUBLISHED_UNQUALIFIED",
+    effective_at: "2026-09-07T00:00:00Z",
+    previous_event_digest: source.events.at(-1).event_digest,
+  };
+  event.event_digest = cohortEventDigest(event);
+  source.events.push(event);
+  const before = structuredClone(source);
+  assert.deepEqual(historicalV1QualifiedPrefix(source), historicalV1);
+  assert.deepEqual(source, before);
+});
+
+test("rejects a final QUALIFIED event one millisecond after the fixed fixture clock", () => {
+  const { registry } = fixture();
+  const qualification = registry.events.at(-1);
+  assert.equal(qualification.state, "QUALIFIED");
+  qualification.effective_at = new Date(Date.parse(FIXTURE_AS_OF) + 1).toISOString();
+  qualification.event_digest = cohortEventDigest(qualification);
+  assert.throws(() => validateDocsQualifiedCohorts(registry, schema, {
+    asOf: FIXTURE_AS_OF,
+  }), /future/u);
 });
 
 test("binds three roots, two transitives, seven exact internal edges, and runtime domain v2", () => {
@@ -181,7 +233,7 @@ test("binds three roots, two transitives, seven exact internal edges, and runtim
 test("projects schema tuple 3/2/1 and docs-protocol-agent-teams-owned v2 assets", () => {
   const { registry, record } = fixture();
   const projection = qualifiedCohortProjection(registry, record.cohort_id, {
-    asOf: "2026-09-04T03:00:00Z",
+    asOf: FIXTURE_AS_OF,
   });
   assert.equal(projection.schemaVersion, 2);
   assert.deepEqual(projection.schemas, { consumerIntegration: 3, managedState: 2, docsProtocol: 1 });
@@ -207,11 +259,11 @@ test("binds migration edges to a qualified target and recognizes explicit upgrad
 });
 
 test("locks every top-level metadata field while allowing only append-only records/events", () => {
-  const changed = structuredClone(current);
+  const changed = structuredClone(historicalV1);
   changed.organization = "attacker";
-  assert.throws(() => assertDocsCohortAppendOnly(current, changed), /top-level metadata/u);
+  assert.throws(() => assertDocsCohortAppendOnly(historicalV1, changed), /top-level metadata/u);
   const added = fixture().registry;
-  assert.doesNotThrow(() => assertDocsCohortAppendOnly(current, added));
+  assert.doesNotThrow(() => assertDocsCohortAppendOnly(historicalV1, added));
 });
 
 test("accepts receipt v3 only with an immutable envelope and never substitutes central CANARY evidence", () => {
