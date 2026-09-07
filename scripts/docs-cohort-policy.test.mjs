@@ -1595,6 +1595,25 @@ test("live verifier binds tarball dependency/assets and exact hosted canary evid
   ), /live release workflow run does not bind/u);
 });
 
+test("v2 verifies failed origins reconciled by a later exact successful release", async () => {
+  const { registry: candidate, record, adapters } = cohortV2EvidenceFixture();
+  await assert.doesNotReject(verifyDocsCohortEvidence(
+    candidate, registrySchema, record.cohort_id, adapters,
+  ));
+  for (const entry of record.packages) {
+    entry.provenance.reconciliation = { workflow_run_attempt: 2, release_job_id: 777 };
+  }
+  record.record_digest = cohortRecordDigest(record);
+  await assert.doesNotReject(verifyDocsCohortEvidence(
+    candidate, registrySchema, record.cohort_id, adapters,
+  ));
+  record.packages[0].provenance.reconciliation.workflow_run_attempt = 1;
+  record.record_digest = cohortRecordDigest(record);
+  await assert.rejects(verifyDocsCohortEvidence(
+    candidate, registrySchema, record.cohort_id, adapters,
+  ), /strictly later/iu);
+});
+
 test("binds a recovered package release to immutable failed and successful attempts", async () => {
   const candidate = reconciledRegistry();
   const record = candidate.cohorts[0];

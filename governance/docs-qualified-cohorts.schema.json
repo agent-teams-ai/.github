@@ -69,15 +69,7 @@
             "registry_attestation_url": { "type": "string", "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$" },
             "workflow_run_url": { "type": "string", "pattern": "^https://github\\.com/agent-teams-ai/engineering-foundation/actions/runs/[1-9][0-9]+$" },
             "signature_verified": { "const": true },
-            "reconciliation": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["workflow_run_attempt", "release_job_id"],
-              "properties": {
-                "workflow_run_attempt": { "type": "integer", "minimum": 1 },
-                "release_job_id": { "type": "integer", "minimum": 1 }
-              }
-            }
+            "reconciliation": { "$ref": "#/$defs/packagePublicationReconciliation" }
           }
         }
       }
@@ -279,6 +271,15 @@
     "docsProtocolPackage": { "allOf": [{ "$ref": "#/$defs/packageV2" }, { "type": "object", "properties": { "name": { "const": "@agent-teams/docs-protocol" }, "role": { "const": "direct" } } }] },
     "docsProtocolAgentTeamsPackage": { "allOf": [{ "$ref": "#/$defs/packageV2" }, { "type": "object", "properties": { "name": { "const": "@agent-teams/docs-protocol-agent-teams" }, "role": { "const": "direct" } } }] },
     "engineeringFoundationPackage": { "allOf": [{ "$ref": "#/$defs/packageV2" }, { "type": "object", "properties": { "name": { "const": "@agent-teams/engineering-foundation" }, "role": { "const": "direct" } } }] },
+    "packagePublicationReconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow_run_attempt", "release_job_id"],
+      "properties": {
+        "workflow_run_attempt": { "type": "integer", "minimum": 1 },
+        "release_job_id": { "type": "integer", "minimum": 1 }
+      }
+    },
     "packageProvenanceV2": {
       "type": "object",
       "additionalProperties": false,
@@ -292,7 +293,8 @@
         "workflow_run_attempt": { "type": "integer", "minimum": 1 },
         "registry_attestation_url": { "type": "string", "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:repository-mutation|document-authoring|docs-protocol|docs-protocol-agent-teams|engineering-foundation)@[0-9A-Za-z.-]+$" },
         "workflow_run_url": { "type": "string", "pattern": "^https://github\\.com/agent-teams-ai/engineering-foundation/actions/runs/[1-9][0-9]+$" },
-        "signature_verified": { "const": true }
+        "signature_verified": { "const": true },
+        "reconciliation": { "$ref": "#/$defs/packagePublicationReconciliation" }
       }
     },
     "reusableWorkflow": {

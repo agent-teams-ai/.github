@@ -180,6 +180,46 @@ test("coexists with byte-immutable v1 and dispatches only on the explicit v2 dis
   assert.notEqual(cohortRecordDigest(record), cohortRecordDigest(disguised));
 });
 
+test("v2 accepts optional closed publication reconciliation with fresh record digests", () => {
+  const { registry, record } = fixture();
+  const validate = () => {
+    record.record_digest = cohortRecordDigest(record);
+    validateDocsQualifiedCohorts(registry, schema, { asOf: FIXTURE_AS_OF });
+  };
+  assert.doesNotThrow(validate);
+  for (const entry of record.packages) {
+    entry.provenance.reconciliation = { workflow_run_attempt: 2, release_job_id: 777 };
+  }
+  assert.doesNotThrow(validate);
+  const origin = record.packages[0].provenance;
+  const valid = structuredClone(origin.reconciliation);
+  const invalid = [null, [], {}, { ...valid, unknown: true }];
+  for (const field of Object.keys(valid)) {
+    const missing = { ...valid };
+    delete missing[field];
+    invalid.push(missing);
+    for (const value of [0, -1, "2", true]) {
+      invalid.push({ ...valid, [field]: value });
+    }
+  }
+  for (const reconciliation of invalid) {
+    origin.reconciliation = reconciliation;
+    assert.throws(validate, /JSON Schema/u, JSON.stringify(reconciliation));
+  }
+  for (const field of Object.keys(valid)) {
+    // Fractional values cannot be canonicalized; schema must reject them first.
+    origin.reconciliation = { ...valid, [field]: 1.5 };
+    assert.throws(() => validateDocsQualifiedCohorts(registry, schema, {
+      asOf: FIXTURE_AS_OF,
+    }), /JSON Schema/u);
+  }
+  origin.reconciliation = valid;
+  origin.unrelated = true;
+  assert.throws(validate, /JSON Schema/u);
+  delete origin.unrelated;
+  assert.doesNotThrow(validate);
+});
+
 test("later suffixes including an unqualified tail preserve the historical prefix and source", () => {
   const source = structuredClone(current);
   const tail = structuredClone(source.cohorts[0]);
