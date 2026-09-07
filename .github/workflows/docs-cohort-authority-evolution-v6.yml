@@ -1,0 +1,103 @@
+name: Trusted Docs Cohort Authority Evolution V6
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-cohort-authority-evolution-v6:
+    name: trusted-cohort-authority-evolution-v6
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Staged bootstrap only: protects subsequent schema PRs after merge and owner cutover.
+            // This immutable successor cannot authorize its own introduction or modification.
+            const pull = context.payload.pull_request;
+            const workflowPath = ".github/workflows/docs-cohort-authority-evolution-v6.yml";
+            const testPath = "scripts/docs-cohort-authority-evolution-v6.test.mjs";
+            const authorityPrefixes = [".github/", "scripts/", "tools/"];
+            const installAuthorityNames = new Set([
+              ".node-version", ".nvmrc", ".yarnrc.yml", "yarn.lock", "package-lock.json", "npm-shrinkwrap.json", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            const expectedTuples = [
+              new Map([
+                ["governance/docs-qualified-cohorts.schema.json", { status: "modified", sha: "99ead31926964965e9061d5f3097f1beef1c31e8" }],
+                ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "bc64b1aed3013cf901196f7cbc69c8e049ed4f22" }],
+                ["scripts/docs-cohort-v2.test.mjs", { status: "modified", sha: "f129e6b73b0c3c274cc5eb52b05725747a96c768" }]
+              ]),
+              new Map([
+                ["governance/docs-qualified-cohorts.schema.json", { status: "modified", sha: "cddbc867f15c5fb3c238a348f49c970a1a21ee06" }],
+                ["scripts/docs-cohort-policy.test.mjs", { status: "modified", sha: "464dd548ea0f32a8e7ff5c9c6df4a6f72adeacda" }],
+                ["scripts/docs-cohort-v2.test.mjs", { status: "modified", sha: "7f70c74c8cff84f214054f6e36cb1aca02f60c37" }]
+              ])
+            ];
+            const isAuthorityPath = (path) => path === workflowPath || path === testPath ||
+              authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            if (!Number.isSafeInteger(pull?.changed_files) || pull.changed_files < 1 || pull.changed_files > 3000) {
+              core.setFailed("Cohort v2 publication-reconciliation schema authority PR changed_files must be a positive safe integer within 1..3000.");
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            const validFile = (file) => file && typeof file.filename === "string" && file.filename.length > 0 &&
+              ["added", "removed", "modified", "renamed", "copied", "changed", "unchanged"].includes(file.status) && /^[0-9a-f]{40}$/u.test(file.sha) &&
+              (file.previous_filename === undefined ||
+                (typeof file.previous_filename === "string" && file.previous_filename.length > 0));
+            if (!Array.isArray(changed) || !changed.every(validFile) || changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated Cohort v2 publication-reconciliation schema authority is incomplete or duplicated.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            if (pull.head?.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Missing or foreign head repository is not eligible.");
+              return;
+            }
+            if (!changed.some((file) => allPaths(file).some(isAuthorityPath))) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            const matchesTuple = (expected) => changed.length === expected.size &&
+              changed.every((file) => {
+                const identity = expected.get(file.filename);
+                return file.previous_filename === undefined && identity !== undefined &&
+                  identity.status === file.status && identity.sha === file.sha;
+              });
+            if (expectedTuples.filter(matchesTuple).length !== 1) {
+              core.setFailed("This successor accepts only one complete exact forward or rollback Cohort v2 publication-reconciliation schema tuple; partial or mixed tuples are forbidden.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (typeof controller.data?.default_branch !== "string" || !controller.data.default_branch ||
+                pull.base?.ref !== controller.data.default_branch) {
+              core.setFailed("Cohort v2 publication-reconciliation schema authority PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
+            });
+            if (!/^[0-9a-f]{40}$/u.test(pull.base?.sha) ||
+                branch.data?.commit?.sha !== pull.base.sha) {
+              core.setFailed("Cohort v2 publication-reconciliation schema authority PR base is stale; update it before cutover.");
+              return;
+            }
+            core.setOutput("mode", "authority");
