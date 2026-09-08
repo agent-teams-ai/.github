@@ -1,0 +1,27 @@
+{
+  "cohort_id": "docs-2026-09-08-stable13",
+  "record_digest": "sha256:2cd0168ddeb74f0a6e8da1649eee1571512e06414467ce04b9db113e60cc2fa9",
+  "recorded_at": "2026-09-08T04:13:04.858Z",
+  "scope": "Published cohort qualification; consumer admission and rollback execution remain separate",
+  "live_verifier": {
+    "command": "node scripts/verify-docs-cohort-evidence.mjs --cohort docs-2026-09-08-stable13",
+    "exit_code": 0,
+    "log_sha256": "18e66001cad5ca82417d87b62fa73f526d1938d18058848859630288f3a42470"
+  },
+  "full_check": {
+    "scope": "full controller pnpm check on staged stable13 published-only registry",
+    "startedAt": "2026-09-08T04:11:30.255635+00:00",
+    "registrySha256": "0f34c170dd8cf371ee58b59df3bd593ab34eb760fe52b08d7736a2ccaf1a316a",
+    "nodeSha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c",
+    "writableRoot": "/var/data/sandboxes/ef-resume-20260907/TEST-stable13-full-check-0416/output",
+    "pid": 975970,
+    "exitCode": 0,
+    "finishedAt": "2026-09-08T04:11:47.979964+00:00",
+    "logSha256": "b145935a83c95a8fa19533253c98db8b9418f42592e248679de0093693c606aa"
+  },
+  "independent_record_review": {
+    "sha256": "77b98d2f7a8b8d958d327b03efbcdcd4e38bf1c444a68c4ffd4bb586d01ab244",
+    "decision": "GO for immutable record and initial published event"
+  },
+  "migration_eligibility": "2026-09-09T03:43:34Z"
+}
