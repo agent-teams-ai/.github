@@ -3,7 +3,7 @@
   "cohortId": "docs-2026-09-08-stable15",
   "channel": "stable",
   "recordDigest": "sha256:639812f41c99205f499aacd6557b14e5d48d5f47fde27448205cbc83f44a8dd2",
-  "qualificationEventDigest": "sha256:9d8d592b7bd10d325504c043aaa205a54da5957b3a2425f50b2013376de5ab7c",
+  "qualificationEventDigest": "sha256:277934236b34018741de3e3db58d2aeff151734294e3d939ca6b25f4a06afa8b",
   "eligibleAfter": "2026-09-09T11:05:15Z",
   "upgradeFrom": [
     "docs-2026-08-28-stable8",
