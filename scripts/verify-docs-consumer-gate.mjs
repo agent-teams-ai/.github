@@ -1230,6 +1230,16 @@ export async function runQualificationV3Command(options = {}) {
   assert(adapter?.role === "direct", "Qualification v3 adapter is not one authorized direct root.");
   assert(typeof process.env.TRUSTED_INSTALL_ROOT === "string",
     "Qualification v3 trusted install root is required.");
+  const trustedLockPath = join(resolve(process.env.TRUSTED_INSTALL_ROOT), "pnpm-lock.yaml");
+  const trustedLockMetadata = await lstat(trustedLockPath);
+  assert(trustedLockMetadata.isFile() && !trustedLockMetadata.isSymbolicLink(),
+    "Qualification v3 trusted lockfile is not a regular file.");
+  const trustedLockBytes = await readFile(trustedLockPath);
+  const trustedLock = parseYamlStrict(trustedLockBytes.toString("utf8"),
+    "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
+  assert(canonicalJson(docsRuntimeClosureV2Authority(trustedLock, authorization.expectedPackages)) ===
+    canonicalJson(authorization.expectedRuntimeClosure),
+  "Trusted install runtime closure differs from the qualified Cohort authority.");
   const installedRoots = new Map();
   for (const expected of authorization.expectedPackages) {
     const root = await qualificationInstalledPackageRoot(process.env.TRUSTED_INSTALL_ROOT, expected);
@@ -1265,7 +1275,7 @@ export async function runQualificationV3Command(options = {}) {
   const module = await importModule(entrypoint);
   assert(typeof module.runDocsProtocolQualificationV3 === "function",
     "Installed adapter qualification entrypoint lacks runDocsProtocolQualificationV3.");
-  const receipt = await module.runDocsProtocolQualificationV3({ profile, evidence, lockfileBytes: lockBytes });
+  const receipt = await module.runDocsProtocolQualificationV3({ profile, evidence, lockfileBytes: trustedLockBytes });
   assert(typeof process.env.QUALIFICATION_RECEIPT === "string", "Qualification receipt path is required.");
   await writeFile(process.env.QUALIFICATION_RECEIPT, `${canonicalJson(receipt)}\n`, { mode: 0o600 });
   console.log("Trusted base-owned runner wrote the Cohort v2 qualification v3 receipt.");

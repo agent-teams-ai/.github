@@ -688,6 +688,11 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
     const authorizationPath = join(root, "authorization.json");
     const receiptPath = join(root, "receipt.json");
     const input = cohortV2Fixture();
+    const consumerLock = cohortV2Lock();
+    consumerLock.snapshots["@agent-teams/docs-protocol@1.0.0-rc.1"].dependencies["consumer-runtime"] = "2.0.0";
+    consumerLock.packages["consumer-runtime@2.0.0"] = { resolution: { integrity: TRANSITIVE_INTEGRITY } };
+    consumerLock.snapshots["consumer-runtime@2.0.0"] = {};
+    input.files["pnpm-lock.yaml"] = stringifyYaml(consumerLock);
     const authorization = authorizeConsumerGate(input);
     await mkdir(join(consumer, "architecture", "foundation"), { recursive: true });
     await Promise.all([
@@ -706,6 +711,9 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
       }));
       installedRoots.set(expected.name, packageRoot);
     }
+    const trustedLockBytes = Buffer.from(stringifyYaml(authorization.expectedRuntimeClosureLock));
+    await writeFile(join(install, "pnpm-lock.yaml"), trustedLockBytes);
+    assert.notEqual(trustedLockBytes.toString(), input.files["pnpm-lock.yaml"]);
     const adapterRoot = join(install, "node_modules", "@agent-teams", "docs-protocol-agent-teams");
     await mkdir(join(adapterRoot, "dist", "qualification"), { recursive: true });
     await Promise.all([
@@ -743,17 +751,30 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
       imports += 1;
       assert.equal(entrypoint, await import("node:fs/promises").then(({ realpath }) =>
         realpath(join(adapterRoot, "dist", "qualification", "index.js"))));
-      return { runDocsProtocolQualificationV3: ({ profile, evidence, lockfileBytes }) => ({
+      return { runDocsProtocolQualificationV3: ({ profile, evidence, lockfileBytes }) => {
+        assert.deepEqual(lockfileBytes, trustedLockBytes);
+        assert.equal(docsRuntimeClosureV2Evidence(parseYamlStrict(lockfileBytes.toString(),
+          "qualified lockfile", 8 * 1024 * 1024), authorization.expectedPackages).authority.digest,
+        evidence.runtimeClosureDigest);
+        return ({
         schemaVersion: 3,
         cohortAdmissible: profile.schemaVersion === 3 && evidence.schemas.managedState === 2 && lockfileBytes.length > 0,
         receiptDigest: `sha256:${"b".repeat(64)}`,
-      }) };
+      }); } };
     };
     await runQualificationV3Command({ importModule });
     assert.equal(imports, 1);
     assert.equal(await readFile(receiptPath, "utf8"),
       `${canonical({ schemaVersion: 3, cohortAdmissible: true, receiptDigest: `sha256:${"b".repeat(64)}` })}\n`);
     imports = 0;
+    await writeFile(join(install, "pnpm-lock.yaml"), input.files["pnpm-lock.yaml"]);
+    await assert.rejects(() => runQualificationV3Command({ importModule }),
+      /Trusted install runtime closure differs/u);
+    assert.equal(imports, 0);
+    await rm(join(install, "pnpm-lock.yaml"));
+    await assert.rejects(() => runQualificationV3Command({ importModule }), /ENOENT/u);
+    assert.equal(imports, 0);
+    await writeFile(join(install, "pnpm-lock.yaml"), trustedLockBytes);
     await writeFile(join(adapterRoot, "dist", "qualification", "index.js"), "export const tampered = true;\n");
     await assert.rejects(() => runQualificationV3Command({ importModule }),
       /installed bytes changed before qualification execution/u);
