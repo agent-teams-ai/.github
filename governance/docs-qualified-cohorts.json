@@ -6495,6 +6495,36 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:458914d04116384c1d9df2ab016bb36fea9bb3150c87ab65b69bd838c09721ca",
       "event_digest": "sha256:5adc77fc6a3b473b2caf913e830452584788e1b5b733878d3916d806984e03d2"
+    },
+    {
+      "sequence": 121,
+      "cohort_id": "docs-2026-09-08-stable15",
+      "state": "VERIFIED",
+      "effective_at": "2026-09-08T16:22:12Z",
+      "support_until": null,
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-09-08-stable15/qualification.json",
+        "governance/evidence/docs-cohorts/docs-2026-09-08-stable15/operator-live-receipt.json",
+        "governance/evidence/docs-cohorts/docs-2026-09-08-stable15/operator-live-verification.log"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:5adc77fc6a3b473b2caf913e830452584788e1b5b733878d3916d806984e03d2",
+      "event_digest": "sha256:699971834c68ec2482672922839e687e5a848167f8c005b3c47fd2d8485fdc0b"
+    },
+    {
+      "sequence": 122,
+      "cohort_id": "docs-2026-09-08-stable15",
+      "state": "QUALIFIED",
+      "effective_at": "2026-09-08T16:22:12Z",
+      "support_until": null,
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-09-08-stable15/qualification.json",
+        "governance/evidence/docs-cohorts/docs-2026-09-08-stable15/operator-live-receipt.json",
+        "governance/evidence/docs-cohorts/docs-2026-09-08-stable15/operator-live-verification.log"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:699971834c68ec2482672922839e687e5a848167f8c005b3c47fd2d8485fdc0b",
+      "event_digest": "sha256:9d8d592b7bd10d325504c043aaa205a54da5957b3a2425f50b2013376de5ab7c"
     }
   ]
 }

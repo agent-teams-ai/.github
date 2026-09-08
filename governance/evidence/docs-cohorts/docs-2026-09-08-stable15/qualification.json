@@ -1,0 +1,66 @@
+{
+  "cohortId": "docs-2026-09-08-stable15",
+  "evidenceKind": "Supplied operator live evidence; not CI or rollout evidence",
+  "source": {
+    "candidateCommit": "5a129e21fdb2409a121b7df8cba24c85aea7f363",
+    "controllerRevision": "822ab02e6be9c76218b4da33b9c1fdec97bef9ef",
+    "registrySha256": "c485010369da0d311b2585e84c491254be83ce4aeb0eded8403966a7f9603880",
+    "recordDigest": "sha256:639812f41c99205f499aacd6557b14e5d48d5f47fde27448205cbc83f44a8dd2",
+    "publicationEventDigest": "sha256:5adc77fc6a3b473b2caf913e830452584788e1b5b733878d3916d806984e03d2"
+  },
+  "verification": {
+    "command": [
+      "node",
+      "scripts/verify-docs-cohort-evidence.mjs",
+      "--cohort",
+      "docs-2026-09-08-stable15"
+    ],
+    "observedAt": "2026-09-08T16:17:16.020446+00:00",
+    "exitCode": 0,
+    "pnpmV1": "/var/data/worker-jobs/ar-assembly-adoption-20260908-tests/toolchain/pnpm-11.18.0",
+    "pnpmV2": "/var/data/worker-jobs/ar-assembly-adoption-20260908-tests/toolchain/pnpm-11.20.0",
+    "receiptSha256": "698eca00028e3514b1969d7a17394287387c7949a21c2befab4c2bd224a67fdf",
+    "logSha256": "2b1b6a7f47a2ec9ba9d227a9de89f3d03cc1f6cdb7b795504b01d3213e7f4db3",
+    "scope": "Parent supplied successful live npm signatures, provenance, assets, rendered caller, workflow and closure checks using pinned pnpm 11.18.0/11.20.0. Worker checked evidence bindings, not a fresh live rerun."
+  },
+  "closure": {
+    "suppliedEvidenceSha256": "6e8dd7ecc7be529375774d67e5d74a719e3a78691f2f087e331ffbfa77e1f9e4",
+    "observedAt": "2026-09-08T16:10:53.553Z",
+    "packageCount": 82,
+    "authority": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 82,
+      "projection_path": "governance/docs-runtime-closures/sha256-13f40994f7320bba8202314fe3eba916ce2db3c5c2185f79889dd562904ffbb4.json",
+      "digest": "sha256:13f40994f7320bba8202314fe3eba916ce2db3c5c2185f79889dd562904ffbb4"
+    },
+    "comparison": "Fresh supplied source equals existing closure bytes; authority equals unchanged record."
+  },
+  "output": {
+    "registrySha256": "ae664f15b23fbe90c1eb1f6b6467050a9a3ef82b5a29756f06b52e26acff4a17",
+    "events": [
+      {
+        "sequence": 121,
+        "state": "VERIFIED",
+        "effectiveAt": "2026-09-08T16:22:12Z",
+        "eventDigest": "sha256:699971834c68ec2482672922839e687e5a848167f8c005b3c47fd2d8485fdc0b",
+        "previousEventDigest": "sha256:5adc77fc6a3b473b2caf913e830452584788e1b5b733878d3916d806984e03d2"
+      },
+      {
+        "sequence": 122,
+        "state": "QUALIFIED",
+        "effectiveAt": "2026-09-08T16:22:12Z",
+        "eventDigest": "sha256:9d8d592b7bd10d325504c043aaa205a54da5957b3a2425f50b2013376de5ab7c",
+        "previousEventDigest": "sha256:699971834c68ec2482672922839e687e5a848167f8c005b3c47fd2d8485fdc0b"
+      }
+    ],
+    "qualifiedProjectionSha256": "3b7c03df575d2a0b19b0d0b4f78923c4806152c488d60e126a801d81d5861895"
+  },
+  "limitations": [
+    "Final exact-head live verify, full CI and independent review pending before merge.",
+    "No CANARY, RECOMMENDED, policy selection or consumer migration claimed.",
+    "Operator receipt binds staged source, not execution on resulting metadata head."
+  ]
+}
