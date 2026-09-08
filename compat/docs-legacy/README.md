@@ -55,6 +55,27 @@ This changes four candidate files: the two schemas under `governance/`,
 `scripts/docs-cohort-policy.mjs`, and `scripts/verify-docs-consumer-gate.mjs`.
 It does not create a supported release, a workflow commit, or adoption metadata.
 
+## Bounded successor qualification checkpoint
+
+[Qualification staging input and checklist](qualification-staging/README.md)
+binds delivery candidate `194bf51cbc46d870bb90470aa197ba987d7f5b64`, the exact
+inner patch and retained diagnostic inputs. The supplied backport result is
+ACCEPT / 195 tests PASS / PR207 maincheck SUCCESS; successor qualification is
+still incomplete.
+
+Live stable10 verification failed solely because fresh resolution changed
+`fast-uri` 3.1.6 to 3.1.7 (package SRI/locator, snapshot and both Ajv edges).
+Root bindings and package count 153 remain identical for Docs 0.4.1 and
+Foundation 0.21.0. The immutable closure digest is
+`sha256:33d07e21e60a169b86895dab7a1693b7ccf9ccbda6dc2797c9ea0a377b074ab4`;
+the captured actual digest is
+`sha256:c7454c52e2310e90d94981a4e6bcb902ef0051ed91183d15a8bbc2ff5406edb7`.
+The staging checklist references external evidence by exact SHA-256, avoiding
+large copied runtime reports in this repository. It records missing published transition and
+historical asset evidence, source materialization commands, and the boundary
+between local preparation and separately authorized merge/publication.
+Neither this capture nor the existing green backport checks qualify a successor.
+
 ## Qualification and adoption remaining
 
 1. Central maintainers review the exact artifact and materialize a new immutable
