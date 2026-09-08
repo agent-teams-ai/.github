@@ -1,0 +1,117 @@
+{
+  "cohort_id": "docs-2026-09-08-stable14",
+  "record_digest": "sha256:b6af2268e070b64b4a406ecaa8ecd4caff9d7efcf7ff474fe9a02f009fb09412",
+  "recorded_at": "2026-09-08T12:12:23Z",
+  "scope": "Candidate immutable published tuple qualification only; root integration is pending.",
+  "status": "CANDIDATE_PENDING_ROOT_REVIEW_AND_LIVE_VERIFICATION",
+  "base_revision": "a2fa473bcfdbcf1eb5a68c81b9f58ef9e03917c0",
+  "adapter_crypto": {
+    "status": "ROOT_ACCEPTED_ADAPTER022_ACTUAL_CRYPTO_ONLY",
+    "source": "aa0ce695e5d5f28f03eaeaeb4886244a16f655d0",
+    "run": 34217252017,
+    "attempt": 1,
+    "input_sha256": "4d38c6d7124ae39cd9573dfa93d7ebe94818d2514ce1ddc9751f2445d773ca15",
+    "audit_archive_sha256": "c9195a529d060519eb452a93de2fca8d8131c807f73262a02d2dc321da40b866"
+  },
+  "publication_observation": {
+    "published_at": "2026-09-08T11:05:14.301Z",
+    "observed_at": "2026-09-08T12:05:46.956281+00:00",
+    "input_sha256": "da3000acee7da27e853aca840db3abdeebbd087ecfb576bcabbd44de52eca55d"
+  },
+  "unchanged_package_evidence": {
+    "path": "governance/evidence/docs-cohorts/docs-2026-09-08-stable13/record-review.md",
+    "sha256": "77b98d2f7a8b8d958d327b03efbcdcd4e38bf1c444a68c4ffd4bb586d01ab244",
+    "scope": "Only unchanged EF1.1.0/docs0.6.0/authoring0.3.0/mutation0.2.0 coordinates, SRIs and f7be87586dae11be5641a7e963525b7f63b72338/run34167531297 attempt1 origins; not old adapter, closure, caller rendering or lifecycle proof. MCP0.2.3 is supporting only."
+  },
+  "supplied_archives": {
+    "closure_sha256": "bcacf513924380c2588e1b3c035154648ce19e2fa030dba3192247cd7eb1f3da",
+    "assets_sha256": "88d97f49ea3b81962fb1cdef63323d43c9839cc0c7617b85d572f15ff7793c61",
+    "combined_binding_review": "PENDING_ROOT; supplied closure/assets do not imply root acceptance"
+  },
+  "offline_binding_verification": {
+    "status": "PASS_OFFLINE_STATIC_BINDINGS",
+    "checked_at": "2026-09-08T12:12:23Z",
+    "base_revision": "a2fa473bcfdbcf1eb5a68c81b9f58ef9e03917c0",
+    "base_registry_sha256": "a0bb405413d1a80f8192dc4c378cae41b30981b81fe9fc7d95cb175bd0a6e283",
+    "record_digest": "sha256:b6af2268e070b64b4a406ecaa8ecd4caff9d7efcf7ff474fe9a02f009fb09412",
+    "closure": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 82,
+      "projection_path": "governance/docs-runtime-closures/sha256-13f40994f7320bba8202314fe3eba916ce2db3c5c2185f79889dd562904ffbb4.json",
+      "digest": "sha256:13f40994f7320bba8202314fe3eba916ce2db3c5c2185f79889dd562904ffbb4"
+    },
+    "closure_recomputed_from_actual_lock": true,
+    "complete_lock_packages_and_snapshots_equal": true,
+    "published_predecessor_projections": [
+      "docs-2026-08-17-rc1",
+      "docs-2026-08-17-rc7",
+      "docs-2026-08-17-rc9",
+      "docs-2026-08-18-rc1",
+      "docs-2026-08-18-rc2",
+      "docs-2026-08-18-rc3",
+      "docs-2026-08-23-stable1",
+      "docs-2026-08-24-stable2",
+      "docs-2026-08-25-stable3",
+      "docs-2026-08-28-stable8",
+      "docs-2026-08-28-stable9.1",
+      "docs-2026-08-31-stable10"
+    ],
+    "support": [
+      {
+        "cohort_id": "docs-2026-08-28-stable8",
+        "state": "SUPERSEDED",
+        "support_until": "2026-09-28T16:41:06Z"
+      },
+      {
+        "cohort_id": "docs-2026-08-28-stable9.1",
+        "state": "SUPERSEDED",
+        "support_until": "2026-09-30T16:59:35Z"
+      },
+      {
+        "cohort_id": "docs-2026-08-31-stable10",
+        "state": "RECOMMENDED",
+        "support_until": null
+      }
+    ],
+    "workflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "a2fa473bcfdbcf1eb5a68c81b9f58ef9e03917c0",
+      "blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+      "sha256": "ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6",
+      "rendered_caller_digest": "sha256:a5a3aa1174d376d0bc06380bfc68c9466ac7a74fadeb4afa2ba75fea4b04e252"
+    },
+    "inventory": {
+      "status": "PASS",
+      "tar_sha256": "fbb7a340c77b9e7b84a57512a62335f699f1588e3bb2868478f8ebe72fdf331e",
+      "integrity": "sha512-z1JxNBR/sxPRuvNZI8Okpcx1H3KsIc3oVW6OC10LFZcEGR4k08fbMth2WVTicCeHMYDugjLzd0ddFo03b/vh7w==",
+      "file_count": 365,
+      "bytes": 1202935,
+      "whole_inventory_digest": "sha256:384f5af66d5f807831d771ecf60044e9d5f49ad7507e4ffcaad660b9f4548833",
+      "all_tar_payloads_equal_retained_files": true,
+      "retained_inventory_sha256": "384f5af66d5f807831d771ecf60044e9d5f49ad7507e4ffcaad660b9f4548833"
+    },
+    "prior_records_and_events_equal": true
+  },
+  "live_verifier": {
+    "status": "NOT_RUN",
+    "command": "node scripts/verify-docs-cohort-evidence.mjs --registry governance/docs-qualified-cohorts.json --schema governance/docs-qualified-cohorts.schema.json --cohort docs-2026-09-08-stable14",
+    "reason": "Requires live npm/GitHub transport and isolated signature/closure installs; prohibited in this offline lane."
+  },
+  "timing": {
+    "minimum_release_age_hours": 24,
+    "latest_publication": "2026-09-08T11:05:14.301Z",
+    "eligible_after": "2026-09-09T11:05:15Z",
+    "basis": "Ceiling to UTC second of latest actual publication plus existing policy hours. Metadata only; no invented cooldown or execution wait."
+  },
+  "limits": [
+    "Candidate VERIFIED/QUALIFIED events are proposed registration data; they do not report a new live-verifier PASS or root acceptance.",
+    "Root must obtain independent combined binding review and exact diff review GO, plus required live verification/CI, before accepting or integrating this checkpoint.",
+    "TEST1336577313 is the only designated canary; desired and observed policy remain unchanged.",
+    "No CANARY/RECOMMENDED, delivery, migration, restoration, public producer E2E or fleet completion claim; full E2E remains outstanding."
+  ]
+}
