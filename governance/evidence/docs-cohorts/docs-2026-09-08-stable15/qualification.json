@@ -39,24 +39,24 @@
     "comparison": "Fresh supplied source equals existing closure bytes; authority equals unchanged record."
   },
   "output": {
-    "registrySha256": "ae664f15b23fbe90c1eb1f6b6467050a9a3ef82b5a29756f06b52e26acff4a17",
+    "registrySha256": "b7a4384334161d588f3649cd65adf59983ed4d35fe83eebfbd598b53b2fd43bd",
     "events": [
       {
         "sequence": 121,
         "state": "VERIFIED",
         "effectiveAt": "2026-09-08T16:22:12Z",
-        "eventDigest": "sha256:699971834c68ec2482672922839e687e5a848167f8c005b3c47fd2d8485fdc0b",
+        "eventDigest": "sha256:b6a3d54d7425663eb9f17f62d433417173af39d629b2b693ba00e1838f55ab6b",
         "previousEventDigest": "sha256:5adc77fc6a3b473b2caf913e830452584788e1b5b733878d3916d806984e03d2"
       },
       {
         "sequence": 122,
         "state": "QUALIFIED",
         "effectiveAt": "2026-09-08T16:22:12Z",
-        "eventDigest": "sha256:9d8d592b7bd10d325504c043aaa205a54da5957b3a2425f50b2013376de5ab7c",
-        "previousEventDigest": "sha256:699971834c68ec2482672922839e687e5a848167f8c005b3c47fd2d8485fdc0b"
+        "eventDigest": "sha256:277934236b34018741de3e3db58d2aeff151734294e3d939ca6b25f4a06afa8b",
+        "previousEventDigest": "sha256:b6a3d54d7425663eb9f17f62d433417173af39d629b2b693ba00e1838f55ab6b"
       }
     ],
-    "qualifiedProjectionSha256": "3b7c03df575d2a0b19b0d0b4f78923c4806152c488d60e126a801d81d5861895"
+    "qualifiedProjectionSha256": "5b21cf9123ab783966977bd089b1124cbcfb2b18105e65815912261e18fac7b7"
   },
   "limitations": [
     "Final exact-head live verify, full CI and independent review pending before merge.",
