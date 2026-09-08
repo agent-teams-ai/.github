@@ -26,12 +26,12 @@ status; this checkpoint did not query hosted checks or independently rerun those
 ## Retained capture and diagnosis
 
 Evidence is retained outside the repository under
-:
+`/var/data/agtmai-goal-20260905-01a07193/`:
 
-- , SHA-256
-  .
-- ,
-  SHA-256 .
+- `stable10-runtime-closure-comparison.json`, SHA-256
+  `12241977138fe90b949f201cbf7f26f475773ffa0fc72dfc9fac1db16188db0b`.
+- `docs-closure-diagnosis-job/agtmai-docs-closure-diagnosis.latest-result.json`,
+  SHA-256 `f1746959ee25016e0f51ebc1e77268c52122dc9c3d4af344c1fac061db49f4e5`.
 
 The comparison is the authoritative capture for this diagnosis, not new
 central qualification authority. Canonical sorted JSON plus a trailing newline
