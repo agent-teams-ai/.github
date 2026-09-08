@@ -2150,9 +2150,9 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
         `uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`,
       ),
   };
-  assert.deepEqual(await verifyDocsAdmissionEvidence(
+  assert.deepEqual((await verifyDocsAdmissionEvidence(
     policy, candidateRegistry, registrySchema, adapters,
-  ), [consumer.repository_id]);
+  )).historical_verified, [consumer.repository_id]);
   const priorJobToken = process.env.GH_TOKEN;
   const priorCredential = process.env.DOCS_GOVERNANCE_READ_TOKEN;
   delete process.env.GH_TOKEN;
@@ -2162,9 +2162,9 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
       policy, candidateRegistry, registrySchema, { ...adapters, requireCredential: true },
     ), /requires a job-scoped GH_TOKEN/u);
     process.env.GH_TOKEN = "job-token";
-    assert.deepEqual(await verifyDocsAdmissionEvidence(
+    assert.deepEqual((await verifyDocsAdmissionEvidence(
       policy, candidateRegistry, registrySchema, { ...adapters, requireCredential: true },
-    ), [consumer.repository_id]);
+    )).historical_verified, [consumer.repository_id]);
     const privateAdapters = {
       ...adapters,
       requireCredential: true,
@@ -2180,9 +2180,9 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
     ), /private live admission requires DOCS_GOVERNANCE_READ_TOKEN/u);
     process.env.GH_TOKEN = "dedicated-token";
     process.env.DOCS_GOVERNANCE_READ_TOKEN = "dedicated-token";
-    assert.deepEqual(await verifyDocsAdmissionEvidence(
+    assert.deepEqual((await verifyDocsAdmissionEvidence(
       policy, candidateRegistry, registrySchema, privateAdapters,
-    ), [consumer.repository_id]);
+    )).historical_verified, [consumer.repository_id]);
   } finally {
     if (priorJobToken === undefined) delete process.env.GH_TOKEN;
     else process.env.GH_TOKEN = priorJobToken;
@@ -2222,9 +2222,9 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
         repository: { id: consumer.repository_id, full_name: consumer.repository },
       },
   };
-  assert.deepEqual(await verifyDocsAdmissionEvidence(
+  assert.deepEqual((await verifyDocsAdmissionEvidence(
     policy, candidateRegistry, registrySchema, advancedAdapters,
-  ), [consumer.repository_id]);
+  )).historical_verified, [consumer.repository_id]);
   await assert.rejects(verifyDocsAdmissionEvidence(
     policy, candidateRegistry, registrySchema, {
       ...advancedAdapters,
