@@ -271,6 +271,19 @@ for (const advance of [false, true]) {
   }
 }
 
+test("skipped check on the same head is not competing admission evidence", async (t) => {
+  const f = await fixture(t); const { targetHead } = successfulTarget(f, true);
+  const get = f.options.getCheckRuns;
+  f.options.getCheckRuns = async (repo, revision) => {
+    const checks = await get(repo, revision);
+    return repo === f.selected.repository && revision === targetHead
+      ? [...checks, { ...checks[0], id: 1904, conclusion: "skipped",
+        html_url: `https://github.com/${repo}/actions/runs/1900/job/1904` }] : checks;
+  };
+  const result = await f.run();
+  assert.ok(result.current_verified.some((row) => row.revision === targetHead));
+});
+
 for (const field of ["head_sha", "name", "app"]) {
   test(`different current check ${field} does not create context ambiguity`, async (t) => {
     const f = await fixture(t); const { targetHead } = successfulTarget(f, true);

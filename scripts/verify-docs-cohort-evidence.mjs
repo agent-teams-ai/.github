@@ -822,7 +822,7 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       {
         const matches = (await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
           check.head_sha === head && check.name === evidence.required_context &&
-          check.app?.id === evidence.integration_id);
+          check.app?.id === evidence.integration_id && check.conclusion !== "skipped");
         if (head === evidence.revision) {
           assert(matches.length === 1 && matches[0].conclusion === "success" &&
             matches[0].id === evidence.check_run_id && matches[0].html_url === evidence.check_run_url,
@@ -889,7 +889,7 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
   for (const snapshot of currentChecks) {
     const matches = (await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter((check) =>
       check.head_sha === snapshot.revision && check.name === snapshot.check.name &&
-      check.app?.id === snapshot.check.app.id);
+      check.app?.id === snapshot.check.app.id && check.conclusion !== "skipped");
     assert(matches.length === 1 && isDeepStrictEqual(matches[0], snapshot.check),
       `${snapshot.repository} current admitted check became missing, ambiguous or changed during the fleet admission audit.`);
   }
