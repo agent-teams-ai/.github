@@ -36,7 +36,18 @@ function exactKeys(value, keys) {
   return exactObject(value) && canonicalJson(Object.keys(value).sort()) === canonicalJson([...keys].sort());
 }
 function sha256(value) {return `sha256:${createHash("sha256").update(value).digest("hex")}`;}
-function bodyDigest(body) {return sha256(canonicalJson(body));}
+// Receipt v3 follows the published adapter's UTF-8 key ordering. Keep the
+// existing central authorization, envelope, and event digest domains separate.
+function receiptCanonicalJson(value) {
+  if (Array.isArray(value)) {return `[${value.map(receiptCanonicalJson).join(",")}]`;}
+  if (exactObject(value)) {
+    return `{${Object.entries(value).sort(([left], [right]) =>
+      Buffer.compare(Buffer.from(left), Buffer.from(right)))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${receiptCanonicalJson(entry)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+function bodyDigest(body) {return sha256(receiptCanonicalJson(body));}
 function envelopeDigest(body) {
   return sha256(canonicalJson({ domain: "agent-teams.docs-cohort-v2-execution-envelope/v1", body }));
 }

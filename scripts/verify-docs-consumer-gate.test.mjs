@@ -643,7 +643,14 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
     checks: ["profile-v3", "cohort-v2", "five-package-closure", "exact-package-versions",
       "exact-package-integrities", "schema-bindings-3-2-1", "runtime-closure-digest"],
   };
-  const writeReceipt = (value = body) => writeFile(receiptPath, canonical({ ...value, receiptDigest: digest(canonical(value)) }));
+  // Producer receipt hashing is UTF-8 ordered; authorization/install fixtures
+  // retain the existing central canonicalization above.
+  const receiptCanonical = (value) => Array.isArray(value) ? `[${value.map(receiptCanonical).join(",")}]` :
+    value !== null && typeof value === "object" ? `{${Object.entries(value)
+      .sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${receiptCanonical(entry)}`).join(",")}}` : JSON.stringify(value);
+  const writeReceipt = (value = body) => writeFile(receiptPath,
+    canonical({ ...value, receiptDigest: digest(receiptCanonical(value)) }));
   await Promise.all([writeFile(authorizationPath, authorizationSource), writeFile(evidencePath, canonical(evidence)), writeReceipt()]);
   const execute = promisify(execFile);
   const run = (callerSha = authorization.callerSha) => execute(process.execPath, [
@@ -671,6 +678,11 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
   wrongIntegrity.packages[0].integrity = TRANSITIVE_INTEGRITY;
   await writeReceipt(wrongIntegrity);
   await assert.rejects(() => run(), /coordinate .* is not exact/u);
+  // A legacy locale digest must not become an accept-both fallback.
+  await writeFile(receiptPath, canonical({ ...body, receiptDigest: digest(canonical(body)) }));
+  await assert.rejects(() => run(), /Qualification receipt v3 digest is invalid/u);
+  await writeFile(receiptPath, canonical({ ...body, receiptDigest: `sha256:${"f".repeat(64)}` }));
+  await assert.rejects(() => run(), /Qualification receipt v3 digest is invalid/u);
   await writeReceipt();
   await writeFile(join(install, "node_modules", "@agent-teams", "repository-mutation", "drift.txt"), "changed\n");
   await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
