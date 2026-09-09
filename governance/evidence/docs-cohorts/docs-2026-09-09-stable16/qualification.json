@@ -1,0 +1,33 @@
+{
+  "cohort_id": "docs-2026-09-09-stable16",
+  "record_digest": "sha256:8b3cb855c837ed3a1eec3bc38245169e1f9042a51239c7abeea71ea6d1a6ef88",
+  "recorded_at": "2026-09-09T07:46:42Z",
+  "scope": "Published cohort qualification only; consumer migration, hosted CANARY and admission remain separate",
+  "source_registry_sha256": "da2b34ce574ba0981995a0b34e4afca567acd16dae39343243278fae7b4186b1",
+  "controller_revision": "822ab02e6be9c76218b4da33b9c1fdec97bef9ef",
+  "base_authority_revision": "870f62612d3c81d6040b0918be9de48690b39c53",
+  "live_verifier": {
+    "command": "node scripts/verify-docs-cohort-evidence.mjs --changed-from <retained exact 870 registry>",
+    "exit_code": 0,
+    "log_sha256": "5d54c5e8200c2ae4ed9fff2e2b1788b088c50e9a250a90f1a73b4eaaf272f7d6"
+  },
+  "full_check": {
+    "command": "pnpm check",
+    "exit_code": 0,
+    "tests": 1038,
+    "failures": 0,
+    "skipped": 0,
+    "log_sha256": "ff6a0f3bb5a9487a329469cded6eba2cdfc2e9c9e6129875e5901d71f4fd01f2"
+  },
+  "independent_staging_review": {
+    "decision": "GO",
+    "sha256": "3eccaa007d649189e69a873c59600e8b523854b2bb285ab843f1d9384644d0b9"
+  },
+  "release_reconciliation": {
+    "run": 34303694349,
+    "origin_attempt": 2,
+    "origin_conclusion": "failure",
+    "successful_attempt": 3,
+    "successful_release_job": 102372378907
+  }
+}
