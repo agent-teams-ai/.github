@@ -116,9 +116,9 @@ async function rejected(f, alter, pattern = /./u, script = bound) {
 }
 function rejectCase(name, change) { test(name, async () => { const f = fixture(); change(f); await rejected(f); }); }
 
-test("production binds the retained exact 69b99136 ten-path tuple; UNBOUND source fails before IO", async () => {
-  assert.equal(digest(tupleText), "00715746ddaf8aa4ef22d12d71f0568c8283be45bd30cc3f6b60aa7dd64d9f0b");
-  assert.match(source, /const patchSHA256 = "69b9913608464dbe58a6b1b6e57969f859fe3ba8dd2b019c8e874e20c9602462";/u);
+test("production binds the retained exact 73cd92db ten-path tuple; UNBOUND source fails before IO", async () => {
+  assert.equal(digest(tupleText), "0226c7b30914801fccc0769d90b89a4668b40f3b73abe9782e87fb4c04915e56");
+  assert.match(source, /const patchSHA256 = "73cd92dba5b0fdef76502981769e051f50107eb6a5f27a297c699871f1a46b45";/u);
   assert.equal(production.length, 10);
   assert.equal(production.filter((row) => row.status === "added").length, 6);
   const f = fixture(); await rejected(f, undefined, /UNBOUND/u, unbound); assert.deepEqual(f.calls, []);
@@ -135,7 +135,7 @@ test("complete synthetic ten-file modified/added tuple emits exact evidence only
   assert.equal(f.outputs.length, 1); assert.equal(f.outputs[0][0], "evidence");
   const evidence = JSON.parse(f.outputs[0][1]);
   assert.deepEqual(evidence, { repository: identity.full_name, repositoryId: identity.id, pr, base: f.base, head: f.head,
-    patchSHA256: "69b9913608464dbe58a6b1b6e57969f859fe3ba8dd2b019c8e874e20c9602462", guardPath: workflowPath,
+    patchSHA256: "73cd92dba5b0fdef76502981769e051f50107eb6a5f27a297c699871f1a46b45", guardPath: workflowPath,
     guardBlob: f.old.find((row) => row.path === workflowPath).sha, testBlob: f.old.find((row) => row.path === testPath).sha,
     result: "exact_implementation_transition", files: tuple.map((row) => ({ path: row.path, status: row.status,
       oldMode: row.old_mode, newMode: row.new_mode, oldBlob: row.old_blob, newBlob: row.new_blob, sha256: row.sha256 })) });
