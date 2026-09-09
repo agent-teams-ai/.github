@@ -22,7 +22,7 @@ async function fixture(t) {
   const token = process.env.GH_TOKEN;
   process.env.GH_TOKEN = "synthetic-job-token";
   t.after(() => { if (token === undefined) delete process.env.GH_TOKEN; else process.env.GH_TOKEN = token; });
-  const baseBytes = await readFile(POLICY_PATH);
+  const baseBytes = await readAdmissionBaseFile(POLICY_PATH, base);
   const policy = JSON.parse(baseBytes);
   const registryBytes = await readFile(REGISTRY_PATH);
   const registry = JSON.parse(registryBytes);
