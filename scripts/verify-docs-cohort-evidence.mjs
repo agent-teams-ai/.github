@@ -745,7 +745,11 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
             ({ name: stepName, number, status: stepStatus, conclusion: stepConclusion })) }));
     },
     getJobLog: async (repository, jobId) => {
-      const { stdout } = await command("gh", ["api", `repos/${repository}/actions/jobs/${jobId}/logs`]);
+      const { stdout } = await command("gh", [
+        "api",
+        "--allow-escape-sequences",
+        `repos/${repository}/actions/jobs/${jobId}/logs`,
+      ]);
       return Buffer.from(stdout, "utf8");
     },
     ...overrides,
