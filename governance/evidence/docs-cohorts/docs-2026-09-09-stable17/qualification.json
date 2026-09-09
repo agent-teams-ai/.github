@@ -1,0 +1,18 @@
+{
+  "cohort_id": "docs-2026-09-09-stable17",
+  "status": "live_package_evidence_verified",
+  "exitCode": 0,
+  "controllerRevision": "b4b90d89a1ba3429d01e670c9d0a4c7210cd82cf",
+  "command": "node scripts/verify-docs-cohort-evidence.mjs --cohort docs-2026-09-09-stable17",
+  "workingDirectory": "/var/data/sandboxes/ef-resume-20260907/TEST-central023-live-qualification-20260909",
+  "logSha256": "79de9aff439a0118c8f975e760513593f30da40d3ff041743c64eee4f157684c",
+  "logCompletedAt": "2026-09-09T12:32:59.156509+00:00",
+  "registrySha256": "034a29f56a18d34ae04767d6589015dd1c07dfdb28ed1b1efe8596c753b8c8c3",
+  "node": "v24.18.0",
+  "pnpmV1": "11.18.0",
+  "pnpmV2": "11.20.0",
+  "hostMachineId": "93732118417e46618cefafc022c8b1db",
+  "qualificationEventAppended": false,
+  "canaryExecuted": false,
+  "consumerEligibility": false
+}
