@@ -73,8 +73,15 @@ function fixture() {
       .map((role, index) => ({ id: index === 3 ? 12 : 101 + index, run_id: 22, run_attempt: 1, head_sha: current,
         name: `docs-protocol / ${role}`, status: "completed", conclusion: "success",
         html_url: `https://github.com/${repository}/actions/runs/22/job/${index === 3 ? 12 : 101 + index}`,
-        steps: [{ name: "Run repository semantic documentation gate", status: "completed", conclusion: "success" },
-          { name: "Confirm current controller authority stayed stable through qualification", status: "completed", conclusion: "success" }] })),
+        // These records are legacy Cohorts (no cohort_generation discriminator).
+        // Match the canonical legacy branch, including the skipped v2 runner.
+        steps: role === "trusted-qualification" ? [
+          { name: "Run only the exact installed agent-teams-docs qualify CLI", status: "completed", conclusion: "success" },
+          { name: "Run Cohort v2 qualification through the trusted base-owned runner", status: "completed", conclusion: "skipped" },
+          { name: "Confirm current controller authority stayed stable through qualification", status: "completed", conclusion: "success" },
+        ] : role === "docs-protocol-check" ? [
+          { name: "Run repository semantic documentation gate", status: "completed", conclusion: "success" },
+        ] : [] })),
     readRepositoryFile: async (_repo, path, revision) => {
       const id = revision === historical ? "a" : currentId;
       const expected = targetProjection(id);
@@ -163,6 +170,25 @@ const targetMutations = {
     f.adapters.getWorkflowJobs = async () => (await read()).map((job) => ({ ...job, steps: job.steps.map((step) =>
       step.name === "Run repository semantic documentation gate" ? { ...step, conclusion: "skipped" } : step) })); },
 };
+// Exercise executed-step rejection on both selected-target and final-observed
+// paths; successful job conclusions alone must not satisfy qualification.
+for (const mutation of ["missing", "wrong-generation", "failure", "cancelled", "skipped", "duplicate"]) {
+  targetMutations[`${mutation} qualification execution`] = (f) => {
+    const read = f.adapters.getWorkflowJobs;
+    f.adapters.getWorkflowJobs = async () => (await read()).map((job) => {
+      if (!job.name.endsWith("trusted-qualification")) return job;
+      const name = "Run only the exact installed agent-teams-docs qualify CLI";
+      const executed = job.steps.find((step) => step.name === name);
+      const steps = mutation === "missing" ? job.steps.filter((step) => step !== executed)
+        : mutation === "duplicate" ? [...job.steps, { ...executed }]
+          : job.steps.map((step) => step === executed
+            ? { ...step, conclusion: mutation === "wrong-generation" ? "skipped" : mutation }
+            : mutation === "wrong-generation" && step.name === "Run Cohort v2 qualification through the trusted base-owned runner"
+              ? { ...step, conclusion: "success" } : step);
+      return { ...job, steps };
+    });
+  };
+}
 for (const [name, mutate] of Object.entries(targetMutations)) {
   test(`selected target rejects wrong ${name}`, async () => {
     const f = fixture(); mutate(f); await assert.rejects(f.execute(), { name: "AssertionError" });
