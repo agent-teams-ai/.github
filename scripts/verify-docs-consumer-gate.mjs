@@ -1437,6 +1437,7 @@ async function verifyInstallCommand() {
       ["@agent-teams/engineering-foundation", "@agent-teams/document-authoring"],
       ["@agent-teams/engineering-foundation", "@agent-teams/repository-mutation"],
     ].map(([from, to]) => ({ from, to }));
+    expectedEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
     assert(canonicalJson(installedEdges) === canonicalJson(expectedEdges),
       "Installed Cohort v2 managed dependency edges are not exactly closed.");
   } else {
