@@ -53,7 +53,7 @@ export async function verifyAdmissionController(execution, read = api) {
 export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   const [policyBytes, basePolicyBytes, exceptionsBytes, registryBytes, policySchema, exceptionsSchema, registrySchema, security] =
     await Promise.all([
-      readFile(paths.policy), readFile(POLICY_PATH), readFile(paths.exceptions), readFile(REGISTRY_PATH),
+      readFile(paths.policy), overrides.basePolicyBytes ?? readFile(POLICY_PATH), readFile(paths.exceptions), readFile(REGISTRY_PATH),
       loadJson("governance/docs-protocol-policy-v2.schema.json"),
       loadJson("governance/docs-protocol-exceptions.schema.json"),
       loadJson("governance/docs-qualified-cohorts.schema.json"), loadJson("governance/code-security-defaults.json"),

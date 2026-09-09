@@ -92,7 +92,7 @@ async function fixture(t) {
     base: { sha: base, ref: "main", repo: controller }, head: { sha: head, repo: controller } };
   let controllerCalls = 0;
   const options = {
-    clock: () => asOf, asOf, execution,
+    clock: () => asOf, asOf, execution, basePolicyBytes: baseBytes,
     verifyController: async (value) => {
       controllerCalls++;
       return verifyAdmissionController(value, async (path) => path.endsWith("/pulls/999") ? centralPull
