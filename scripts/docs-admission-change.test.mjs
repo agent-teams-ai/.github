@@ -284,6 +284,20 @@ test("skipped check on the same head is not competing admission evidence", async
   assert.ok(result.current_verified.some((row) => row.revision === targetHead));
 });
 
+test("latest attempt replaces an earlier check from the same workflow run", async (t) => {
+  const f = await fixture(t); const { targetHead } = successfulTarget(f, true);
+  const get = f.options.getCheckRuns;
+  f.options.getCheckRuns = async (repo, revision) => {
+    const checks = await get(repo, revision);
+    if (repo !== f.selected.repository || revision !== targetHead) return checks;
+    const current = checks[0];
+    return [{ ...current, id: current.id - 1, conclusion: "failure",
+      html_url: current.html_url.replace(/\/job\/\d+$/u, `/job/${current.id - 1}`) }, current];
+  };
+  const result = await f.run();
+  assert.ok(result.current_verified.some((row) => row.revision === targetHead));
+});
+
 for (const field of ["head_sha", "name", "app"]) {
   test(`different current check ${field} does not create context ambiguity`, async (t) => {
     const f = await fixture(t); const { targetHead } = successfulTarget(f, true);

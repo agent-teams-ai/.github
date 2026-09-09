@@ -28,6 +28,17 @@ function assert(condition, message) {
   if (!condition) {throw new Error(message);}
 }
 
+function decisiveCheckRuns(checks) {
+  const byExecution = new Map();
+  for (const check of checks.filter(({ conclusion }) => conclusion !== "skipped")) {
+    const run = /\/actions\/runs\/(\d+)\/job\/\d+$/u.exec(check.html_url ?? "")?.[1];
+    const key = run === undefined ? `check:${check.id}` : `run:${run}`;
+    const retained = byExecution.get(key);
+    if (retained === undefined || check.id > retained.id) byExecution.set(key, check);
+  }
+  return [...byExecution.values()];
+}
+
 async function command(program, args, options = {}) {
   return execFileAsync(program, args, {
     encoding: "utf8",
@@ -820,9 +831,9 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       assert(!(advancing || firstAdmission) || head === evidence.revision, `${entry.repository} observed advancement is not the current target default head.`);
       rowResult = { repository_id: entry.repository_id, revision: head, cohort_id: entry.observed_cohort_id };
       {
-        const matches = (await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
+        const matches = decisiveCheckRuns((await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
           check.head_sha === head && check.name === evidence.required_context &&
-          check.app?.id === evidence.integration_id && check.conclusion !== "skipped");
+          check.app?.id === evidence.integration_id));
         if (head === evidence.revision) {
           assert(matches.length === 1 && matches[0].conclusion === "success" &&
             matches[0].id === evidence.check_run_id && matches[0].html_url === evidence.check_run_url,
@@ -887,9 +898,9 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
   // Historical identity lookup above deliberately tolerates later executions.
   // Current success must instead remain unique across the complete context/App set.
   for (const snapshot of currentChecks) {
-    const matches = (await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter((check) =>
+    const matches = decisiveCheckRuns((await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter((check) =>
       check.head_sha === snapshot.revision && check.name === snapshot.check.name &&
-      check.app?.id === snapshot.check.app.id && check.conclusion !== "skipped");
+      check.app?.id === snapshot.check.app.id));
     assert(matches.length === 1 && isDeepStrictEqual(matches[0], snapshot.check),
       `${snapshot.repository} current admitted check became missing, ambiguous or changed during the fleet admission audit.`);
   }

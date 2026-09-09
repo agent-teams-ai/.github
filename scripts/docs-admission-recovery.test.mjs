@@ -17,6 +17,7 @@ const section = (start, end) => {
 };
 const makeVerifier = new Function("assert", "createHash", "validateDocsQualifiedCohorts", "isDeepStrictEqual", "qualifiedCohortProjection", "verifyRecoveryIncident",
   `const defaultIsCommitAncestor = () => { throw new Error("Unmocked ancestry adapter"); };
+   ${section("function decisiveCheckRuns(", "\n}\n") + "\n}"}
    ${section("function workflowRunIdFromCheck(", "\n}\n") + "\n}"}
    ${section("function sha256(", "function plainRecord(")}
    ${section("export async function verifyAdmissionRevision(", "export async function verifyDocsCohortEvidence(").replaceAll("export ", "")}
