@@ -1,0 +1,228 @@
+name: Trusted Central PR224 Inverse v1
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-central-pr224-inverse-v1:
+    name: trusted-central-pr224-inverse-v1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Exact inverse bytes only. No no-op, forward tuple or head execution.
+            // Rollback PR226 is bound here; Root independently pins current main base/head in the cutover
+            // verifier AFTER staging/rebase. Embedding our own future commit SHA is forbidden.
+            const inversePR = 226;
+            const guardPath = ".github/workflows/docs-central-pr224-inverse-v1.yml";
+            const testPath = "scripts/docs-central-pr224-inverse-v1.test.mjs";
+            const { createHash } = require("node:crypto");
+            const repo = { owner: "agent-teams-ai", repo: ".github" };
+            const repositoryId = 1316243981;
+            const repository = "agent-teams-ai/.github";
+            const tuple = [{"path":"scripts/docs-admission-change.test.mjs","status":"modified","old_mode":"100644","old_type":"blob","old_blob":"2269c2fb4cf386d1af4d122fafc6e369c519137d","old_bytes":45871,"old_sha256":"bbf22491384cf81c968de08f9c9676113c6e722fc0b178322b6b1f98606abfa4","new_mode":"100644","new_type":"blob","new_blob":"7b8e02bf0a0de0a6a9159051b23c690056674262","new_bytes":32914,"new_sha256":"41c74d48f3d7478094f7a1f320f10953a9b8217de229d48320cc19c823dbc860"},{"path":"scripts/docs-admission-recovery.test.mjs","status":"modified","old_mode":"100644","old_type":"blob","old_blob":"46d6a9f55c2691d180b0289c4e4fa2cc19f293ed","old_bytes":16446,"old_sha256":"88d70f4be27fb4d5e80f5387d228d5396e1889b1295166cf841a8a36ce8fb59b","new_mode":"100644","new_type":"blob","new_blob":"e16072215f6ad987a4e203486bbc803b10331cdb","new_bytes":13733,"new_sha256":"478ad12d6bd8f75c06c2c1527d00073353dba15f31f09296ede149a069b255ec"},{"path":"scripts/verify-docs-cohort-evidence.mjs","status":"modified","old_mode":"100644","old_type":"blob","old_blob":"0088e8cd6e5631ad2382faf53c01a5d31c90e443","old_bytes":61532,"old_sha256":"8fb6c804c9465a5aed38fd5e0e47471d0c37505f0f221f97e2ce8b9274341204","new_mode":"100644","new_type":"blob","new_blob":"ca7b1e1590063f2d32630c9f1adc160fed9edc3b","new_bytes":60020,"new_sha256":"9948b8ae334c7e263eef5b21232b8a96446404dcf6467dbf38d19483f813e531"}];
+            const need = (ok, message) => { if (!ok) throw new Error(message); };
+            const sha = (value) => typeof value === "string" && /^(?!0{40}$)[0-9a-f]{40}$/u.test(value);
+            const positive = (value) => Number.isSafeInteger(value) && value > 0;
+            need(positive(inversePR), "UNBOUND inverse PR: root binding and review required");
+            need(tuple.length === 3 && new Set(tuple.map((row) => row.path)).size === 3 &&
+              tuple.every((row) => row.status === "modified" && ["old", "new"].every((side) =>
+                row[side + "_mode"] === "100644" && row[side + "_type"] === "blob" &&
+                sha(row[side + "_blob"]) && /^[0-9a-f]{64}$/u.test(row[side + "_sha256"]) &&
+                positive(row[side + "_bytes"]) && row[side + "_bytes"] <= 1048576)), "Invalid reviewed tuple");
+            // Manifest v1: UTF-8 JSON.stringify of this ordered array, no trailing LF.
+            // Each lexically path-sorted row contains path, then old/new mode,type,blob,bytes,SHA256.
+            // A recomputed content manifest, NOT patch authorization or hosted check attestation.
+            const manifest = (rows) => JSON.stringify(["central-pr224-inverse-manifest-v1",
+              repository, repositoryId, inversePR, "main", [...rows].sort((a, b) =>
+                a.path < b.path ? -1 : a.path > b.path ? 1 : 0).map((row) => [row.path,
+                  ...["old", "new"].flatMap((side) => ["mode", "type", "blob", "bytes", "sha256"].map(
+                    (field) => row[side + "_" + field]))])]);
+            function identity(value) {
+              need(value?.id === repositoryId && value.full_name === repository &&
+                value.name === repo.repo && value.owner?.login === repo.owner, "Repository identity mismatch");
+            }
+            async function read(method, args = {}) {
+              const response = await method({ ...repo, ...args, headers: {
+                accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+                "Cache-Control": "no-cache"
+              } });
+              need(response?.status === 200 &&
+                /^application\/json(?:;|$)/u.test(response.headers?.["content-type"] ?? "") &&
+                response.data !== null && typeof response.data === "object", "Invalid API response");
+              return response;
+            }
+            function pullSnapshot(pull) {
+              need(pull?.number === inversePR && positive(pull.id) && pull.state === "open" &&
+                pull.merged === false && pull.draft === false && pull.changed_files === tuple.length &&
+                positive(pull.commits) && typeof pull.updated_at === "string" &&
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u.test(pull.updated_at) &&
+                Number.isFinite(Date.parse(pull.updated_at)) &&
+                new Date(pull.updated_at).toISOString() === pull.updated_at.replace("Z", ".000Z"),
+                "Invalid inverse PR metadata/count");
+              identity(pull.base?.repo); identity(pull.head?.repo);
+              for (const side of [pull.base, pull.head]) {
+                need(sha(side.sha) && typeof side.ref === "string" && side.ref.length > 0, "Invalid PR ref");
+              }
+              need(pull.base.sha !== pull.head.sha, "Empty PR");
+              return JSON.stringify([pull.id, pull.number, pull.base.ref, pull.base.sha,
+                pull.head.ref, pull.head.sha, pull.commits, pull.changed_files, pull.updated_at]);
+            }
+            need(context.eventName === "pull_request_target" &&
+              ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(context.payload.action) &&
+              context.payload.number === inversePR && context.repo.owner === repo.owner &&
+              context.repo.repo === repo.repo, "Wrong event/repository/PR");
+            identity(context.payload.repository);
+            const event = context.payload.pull_request;
+            const expectedSnapshot = pullSnapshot(event);
+            async function snapshot() {
+              const pull = (await read(github.rest.pulls.get, { pull_number: inversePR })).data;
+              need(pullSnapshot(pull) === expectedSnapshot, "Stale PR/event snapshot");
+              const controller = (await read(github.rest.repos.get)).data;
+              identity(controller);
+              need(typeof controller.default_branch === "string" && controller.default_branch === "main" &&
+                controller.default_branch === context.payload.repository.default_branch &&
+                pull.base.ref === controller.default_branch, "Default branch mismatch");
+              const branch = (await read(github.rest.repos.getBranch, { branch: controller.default_branch })).data;
+              need(branch.name === controller.default_branch && sha(branch.commit?.sha) &&
+                branch.commit.sha === pull.base.sha && context.sha === pull.base.sha &&
+                context.ref === `refs/heads/${controller.default_branch}`, "Stale live/execution base");
+            }
+            await snapshot();
+            // Three entries fit one page. Any continuation or nonempty second page is inconsistent.
+            const files = await read(github.rest.pulls.listFiles, { pull_number: inversePR, per_page: 100, page: 1 });
+            need(files.headers.link === undefined && Array.isArray(files.data) && files.data.length === tuple.length &&
+              new Set(files.data.map((file) => file?.filename)).size === tuple.length, "Incomplete/duplicate file page");
+            for (const file of files.data) {
+              const expected = tuple.find((row) => row.path === file?.filename);
+              need(expected && file.status === expected.status && !("previous_filename" in file) &&
+                file.sha === expected.new_blob, "Unexpected path/status/new blob or rename");
+            }
+            const end = await read(github.rest.pulls.listFiles, { pull_number: inversePR, per_page: 100, page: 2 });
+            // GitHub may retain first/prev/last links to page 1 on an empty page 2; never follow them.
+            const backLinksOnly = end.headers.link === undefined || (typeof end.headers.link === "string" &&
+              !/[^\x20-\x7e]/u.test(end.headers.link) && end.headers.link.split(",").every((link) => {
+                const match = /^<([^>]+)>; rel="(?:prev|first|last)"$/u.exec(link.trim());
+                return match && ["repositories/1316243981", "repos/agent-teams-ai/.github"].some((route) =>
+                  ["per_page=100&page=1", "page=1&per_page=100"].some((query) =>
+                    match[1] === `https://api.github.com/${route}/pulls/${inversePR}/files?${query}`));
+              }));
+            need(backLinksOnly && Array.isArray(end.data) && end.data.length === 0, "Unexpected file continuation");
+            const base = event.base.sha, head = event.head.sha;
+            const comparison = (await read(github.rest.repos.compareCommits, {
+              base, head, per_page: 1, page: 1
+            })).data;
+            need(comparison.status === "ahead" && comparison.base_commit?.sha === base &&
+              comparison.merge_base_commit?.sha === base && comparison.behind_by === 0 &&
+              comparison.ahead_by === event.commits && comparison.total_commits === event.commits,
+              "Head does not contain the live base");
+            async function tree(ref) {
+              const commit = (await read(github.rest.git.getCommit, { commit_sha: ref })).data;
+              need(commit.sha === ref && sha(commit.tree?.sha), "Invalid immutable commit");
+              const response = await read(github.rest.git.getTree, { tree_sha: commit.tree.sha, recursive: "1" });
+              need(response.headers.link === undefined, "Unexpected tree pagination");
+              const data = response.data;
+              need(data.sha === commit.tree.sha && data.truncated === false &&
+                Array.isArray(data.tree) && data.tree.length > 0 && data.tree.length <= 100000, "Incomplete immutable tree");
+              const entries = new Map();
+              for (const entry of data.tree) {
+                need(typeof entry?.path === "string" && !/[\x00-\x1f\x7f]/u.test(entry.path) &&
+                  entry.path.split("/").every((part) => part && part !== "." && part !== "..") &&
+                  !entries.has(entry.path) && sha(entry.sha) &&
+                  ((entry.type === "tree" && entry.mode === "040000") ||
+                    (entry.type === "blob" && ["100644", "100755"].includes(entry.mode) &&
+                      Number.isSafeInteger(entry.size) && entry.size >= 0)), "Invalid tree entry/type/mode");
+                entries.set(entry.path, entry);
+              }
+              const children = new Map([["", []]]);
+              for (const entry of entries.values()) if (entry.type === "tree") children.set(entry.path, []);
+              for (const entry of entries.values()) {
+                const parent = entry.path.includes("/") ? entry.path.slice(0, entry.path.lastIndexOf("/")) : "";
+                need(children.has(parent), "Missing tree parent");
+                children.get(parent).push(entry);
+              }
+              // Rehash every directory: truncated/omitted metadata must not hide an extra change.
+              const name = (entry) => entry.path.split("/").at(-1);
+              const key = (entry) => Buffer.from(name(entry) + (entry.type === "tree" ? "/" : ""));
+              for (const [path, items] of children) {
+                items.sort((a, b) => Buffer.compare(key(a), key(b)));
+                const bytes = Buffer.concat(items.flatMap((entry) => [
+                  Buffer.from(`${entry.mode.replace(/^0/u, "")} ${name(entry)}\0`), Buffer.from(entry.sha, "hex")
+                ]));
+                const digest = createHash("sha1").update(`tree ${bytes.length}\0`).update(bytes).digest("hex");
+                need(digest === (path ? entries.get(path).sha : data.sha), "Tree metadata hash mismatch");
+              }
+              entries.rootSHA = data.sha;
+              return entries;
+            }
+            const oldTree = await tree(base);
+            const newTree = await tree(head);
+            // Compare the full tree, including unprotected paths and directory structure.
+            const changed = [];
+            for (const path of new Set([...oldTree.keys(), ...newTree.keys()])) {
+              const old = oldTree.get(path), next = newTree.get(path);
+              if (old?.type === "tree" || next?.type === "tree") {
+                need(!old || !next || (old.type === next.type && old.mode === next.mode), "Directory type/mode change");
+                // This exact modified-only tuple cannot add or remove any directory.
+                need(old && next,
+                  "Unexpected added/removed directory");
+                continue;
+              }
+              if (!old || !next || old.sha !== next.sha || old.mode !== next.mode || old.type !== next.type || old.size !== next.size) changed.push(path);
+            }
+            need(changed.length === tuple.length && changed.every((path) => tuple.some((row) => row.path === path)),
+              "Tree diff is not the complete three-file tuple");
+            async function blob(expected, size, sha256) {
+              const data = (await read(github.rest.git.getBlob, { file_sha: expected })).data;
+              need(data.sha === expected && data.encoding === "base64" && typeof data.content === "string" &&
+                Number.isSafeInteger(data.size) && data.size >= 0 && data.size === size && size <= 1048576,
+                "Invalid immutable blob metadata");
+              // Only GitHub's LF line wrapping is accepted; Buffer's permissive decoder alone is insufficient.
+              const encoded = data.content.replace(/\n/gu, "");
+              need(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded),
+                "Invalid blob encoding");
+              const bytes = Buffer.from(encoded, "base64");
+              need(bytes.length === size && bytes.toString("base64") === encoded &&
+                createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex") === expected,
+                "Blob body hash mismatch");
+              if (sha256) need(createHash("sha256").update(bytes).digest("hex") === sha256, "Blob SHA256 mismatch");
+              return { mode: "100644", type: "blob", blob: expected, bytes: bytes.length,
+                sha256: createHash("sha256").update(bytes).digest("hex") };
+            }
+            const observed = [];
+            for (const row of tuple) {
+              const old = oldTree.get(row.path), next = newTree.get(row.path);
+              need(["old", "new"].every((side) => {
+                const entry = side === "old" ? old : next;
+                return entry?.type === row[side + "_type"] && entry.mode === row[side + "_mode"] &&
+                  entry.sha === row[side + "_blob"] && entry.size === row[side + "_bytes"];
+              }), "Old/new blob, mode, type or size mismatch");
+              const record = { path: row.path, status: row.status };
+              for (const side of ["old", "new"]) {
+                const actual = await blob(row[side + "_blob"], row[side + "_bytes"], row[side + "_sha256"]);
+                for (const [key, value] of Object.entries(actual)) record[side + "_" + key] = value;
+              }
+              observed.push(record);
+            }
+            need(manifest(observed) === manifest(tuple), "Observed manifest mismatch");
+            const manifestSHA256 = createHash("sha256").update(manifest(observed), "utf8").digest("hex");
+            // Exact full diff already excludes self changes. Explicitly require staged source/tests to exist.
+            for (const path of [guardPath, testPath]) {
+              const old = oldTree.get(path), next = newTree.get(path);
+              need(old?.type === "blob" && old.mode === "100644" && next?.sha === old.sha && next.mode === old.mode,
+                "Missing/changed base-owned guard or tests");
+              await blob(old.sha, old.size);
+            }
+            await snapshot();
+            const evidence = { repository, repositoryId, pr: inversePR, base, head, baseTree: oldTree.rootSHA, headTree: newTree.rootSHA, manifestSHA256,
+              guardPath, guardBlob: oldTree.get(guardPath).sha, testBlob: oldTree.get(testPath).sha,
+              result: "exact_inverse_transition", files: observed };
+            core.setOutput("evidence", JSON.stringify(evidence));
+            core.info(JSON.stringify(evidence));
