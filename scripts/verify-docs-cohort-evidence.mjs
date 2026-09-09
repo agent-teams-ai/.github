@@ -662,6 +662,18 @@ export async function verifyAdmissionRevision(
       run.referenced_workflows[0].sha === workflow.revision &&
       run.referenced_workflows[0].path === `${workflow.repository}/${workflow.path}@${workflow.revision}`,
     `${entry.repository} target run does not bind its exact runner and attempt.`);
+    // Read the same immutable consumer contract that the bound trusted jobs
+    // authorize and verify. Generation alone cannot distinguish schema 1 (no
+    // qualification) from schema 2 (legacy CLI). Never default missing evidence
+    // to the no-qualification branch or accept a caller-supplied selector.
+    const integration = JSON.parse((await adapters.readRepositoryFile(entry.repository,
+      "architecture/foundation/docs-consumer-integration.json", observation.revision)).toString("utf8"));
+    assert(record.cohort_generation === 2 ? integration?.schemaVersion === 3
+      : [1, 2].includes(integration?.schemaVersion),
+    `${entry.repository} target integration contract does not match its Cohort generation.`);
+    const qualificationStep = integration.schemaVersion === 3
+      ? "Run Cohort v2 qualification through the trusted base-owned runner"
+      : "Run only the exact installed agent-teams-docs qualify CLI";
     const jobs = await adapters.getWorkflowJobs(entry.repository, run.id, run.run_attempt);
     const roles = ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"];
     assert(jobs.length === roles.length && new Set(jobs.map((job) => job.id)).size === jobs.length &&
@@ -674,14 +686,19 @@ export async function verifyAdmissionRevision(
       `${entry.repository} target trusted/semantic job is not exact current success.`);
       const role = job.name.split(" / ").at(-1);
       const required = role === "docs-protocol-check" ? ["Run repository semantic documentation gate"]
-        : role === "trusted-qualification" ? ["Confirm current controller authority stayed stable through qualification",
-          record.cohort_generation === 2
-            ? "Run Cohort v2 qualification through the trusted base-owned runner"
-            : "Run only the exact installed agent-teams-docs qualify CLI"] : [];
-      assert(required.every((name) => {
+        : role === "trusted-qualification" ? ["Confirm current controller authority stayed stable through qualification"] : [];
+      const exactStep = (name, conclusion) => {
         const matching = job.steps.filter((step) => step.name === name);
-        return matching.length === 1 && matching[0].status === "completed" && matching[0].conclusion === "success";
-      }),
+        return matching.length === 1 && matching[0].status === "completed" && matching[0].conclusion === conclusion;
+      };
+      const alternative = qualificationStep === "Run only the exact installed agent-teams-docs qualify CLI"
+        ? "Run Cohort v2 qualification through the trusted base-owned runner"
+        : "Run only the exact installed agent-teams-docs qualify CLI";
+      assert((role !== "trusted-qualification" ||
+        !job.steps.some((step) => step.name === alternative) || exactStep(alternative, "skipped")) &&
+        required.every((name) => exactStep(name, "success")) &&
+        (role !== "trusted-qualification" || exactStep(qualificationStep,
+          integration.schemaVersion === 1 ? "skipped" : "success")),
       `${entry.repository} target qualification/semantics did not actually execute successfully.`);
       if (role === "docs-protocol-check") assert(job.id === check.id && job.html_url === check.html_url,
         `${entry.repository} target semantic job differs from the required check.`);

@@ -17,15 +17,15 @@ const head = "c".repeat(40); // Synthetic central PR, never published.
 const encode = (value) => Buffer.from(JSON.stringify(value));
 const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  pull_request:\n  merge_group:\n  push:\n\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n  docs-protocol:\n    uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`);
 
-// Canonical workflow branches: only the selected generation executes; the
-// alternative remains visible as skipped in the hosted job's step list.
+// Historical runners expose only the legacy CLI. Current v2 runners also
+// expose the skipped legacy alternative; schema 1 executes neither qualifier.
 const legacyQualification = "Run only the exact installed agent-teams-docs qualify CLI";
 const v2Qualification = "Run Cohort v2 qualification through the trusted base-owned runner";
-function successfulSteps(role, generation) {
+function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 : 2) {
   const step = (name, conclusion = "success") => ({ name, status: "completed", conclusion });
   if (role === "trusted-qualification") return [
-    step(legacyQualification, generation === 2 ? "skipped" : "success"),
-    step(v2Qualification, generation === 2 ? "success" : "skipped"),
+    step(legacyQualification, schemaVersion === 2 ? "success" : "skipped"),
+    ...(generation === 2 ? [step(v2Qualification)] : []),
     step("Confirm current controller authority stayed stable through qualification"),
   ];
   if (role === "docs-protocol-check") return [step("Run repository semantic documentation gate")];
@@ -146,7 +146,7 @@ async function fixture(t) {
       head_sha: collateral.observed_default_branch_evidence.revision, name: "docs-protocol / trusted-authorize", status: "completed", conclusion: "success",
       html_url: `https://github.com/${repository}/actions/runs/${id}/job/171`,
       steps: [{ name: failureStep[0], status: "completed", conclusion: "success" }] }],
-    readRepositoryFile: async (repository, path) => path.endsWith("managed-state.json") ? projectionFor(entryFor(repository)) : caller(recordFor(entryFor(repository))),
+    readRepositoryFile: async (repository, path) => path === "architecture/foundation/docs-consumer-integration.json" ? encode({ schemaVersion: recordFor(entryFor(repository)).cohort_generation === 2 ? 3 : 2 }) : path.endsWith("managed-state.json") ? projectionFor(entryFor(repository)) : caller(recordFor(entryFor(repository))),
     readGitFile: async (repository, path, revision) => repository === execution.controller.repository
       ? path === proofCoordinate.path ? encode(proof) : readAdmissionBaseFile(path, revision)
       : options.readRepositoryFile(repository, path, revision),
@@ -242,7 +242,7 @@ function successfulTarget(f, advance = false) {
   f.options.readRepositoryFile = async (repo, path, revision) => {
     if (repo !== original.repository) return priorOptions.readRepositoryFile(repo, path, revision);
     const id = revision === targetHead ? targetId : original.observed_cohort_id;
-    return path.endsWith("managed-state.json") ? f.projectionFor(original, id) : caller(f.registry.cohorts.find((row) => row.cohort_id === id));
+    return path === "architecture/foundation/docs-consumer-integration.json" ? encode({ schemaVersion: record.cohort_generation === 2 ? 3 : 2 }) : path.endsWith("managed-state.json") ? f.projectionFor(original, id) : caller(f.registry.cohorts.find((row) => row.cohort_id === id));
   };
   return { original, targetHead, targetId };
 }
@@ -391,7 +391,7 @@ test("bootstrap accepts an explicitly null observed generation allowed by the sc
 });
 
 // Imported independent P1 regressions; synthetic API evidence, real validators.
-async function firstBinding(t, generation = 2) {
+async function firstBinding(t, generation = 2, schemaVersion = generation === 2 ? 3 : 2) {
   const f = await fixture(t);
   if (generation === 2) successfulTarget(f, true);
   const selected = generation === 2 ? f.selected : f.policy.repositories.find(r => r.repository.endsWith('/extension-foundation'));
@@ -410,6 +410,14 @@ async function firstBinding(t, generation = 2) {
   } };
   validate();
   f.options.getDefaultBranchHead = async repo => f.policy.repositories.find(r => r.repository === repo).observed_default_branch_evidence.revision;
+  const readConsumer = f.options.readRepositoryFile;
+  f.options.readRepositoryFile = async (repo, path, revision) => {
+    if (repo === selected.repository && path === "architecture/foundation/docs-consumer-integration.json") {
+      assert.equal(revision, selected.observed_default_branch_evidence.revision);
+      return encode({ schemaVersion });
+    }
+    return readConsumer(repo, path, revision);
+  };
   let jobReads = 0;
   const jobs = f.options.getWorkflowJobs;
   f.options.getWorkflowJobs = async (repo, id, attempt) => {
@@ -421,7 +429,7 @@ async function firstBinding(t, generation = 2) {
       return { id: jobId, run_id: evidence.workflow_run_id, run_attempt: 1, head_sha: evidence.revision,
         name: `docs-protocol / ${role}`, status: 'completed', conclusion: 'success',
         html_url: `https://github.com/${repo}/actions/runs/${evidence.workflow_run_id}/job/${jobId}`,
-        steps: successfulSteps(role, generation) };
+        steps: successfulSteps(role, generation, schemaVersion) };
     });
   };
   return { f, selected, prior, validate, jobReads: () => jobReads,
@@ -500,7 +508,8 @@ for (const mode of ["selected-target", "final-observed", "first-binding-legacy",
         if (mutation === "missing") job.steps = job.steps.filter((step) => step !== executed);
         else if (mutation === "wrong-generation") {
           executed.conclusion = "skipped";
-          job.steps.find((step) => step.name === (generation === 2 ? legacyQualification : v2Qualification)).conclusion = "success";
+          job.steps = job.steps.filter((step) => step.name !== (generation === 2 ? legacyQualification : v2Qualification));
+          job.steps.push({ name: generation === 2 ? legacyQualification : v2Qualification, status: "completed", conclusion: "success" });
         } else if (mutation.startsWith("duplicate")) {
           job.steps.push({ ...executed, conclusion: mutation === "duplicate" ? "success" : "skipped" });
         } else if (mutation === "in-progress") executed.status = "in_progress";
@@ -508,6 +517,99 @@ for (const mode of ["selected-target", "final-observed", "first-binding-legacy",
         return jobs;
       };
       await assert.rejects(b ? b.run() : f.run(), /target qualification\/semantics did not actually execute successfully/u);
+    });
+  }
+}
+
+test("historical schema1 first binding accepts skipped qualification with successful controller and semantics", async t => {
+  const b = await firstBinding(t, 1, 1);
+  const result = await b.run();
+  assert.equal(result.current_verified.length, 6);
+  assert.equal(result.recovery_pending.length, 0);
+});
+
+
+test("supported pinned runners bind actual none, legacy, and cohort-v2 dispatch", async () => {
+  const registry = JSON.parse(await readFile(REGISTRY_PATH));
+  for (const id of ["docs-2026-08-31-stable10", "docs-2026-09-08-stable14", "docs-2026-09-08-stable15"]) {
+    const record = registry.cohorts.find(row => row.cohort_id === id);
+    const { path, revision, blob_sha: blob } = record.reusable_workflow;
+    const bytes = await readAdmissionBaseFile(path, revision);
+    assert.equal(recoveryBlob(bytes), blob);
+    const steps = YAML.parse(bytes.toString()).jobs["trusted-qualification"].steps;
+    const legacy = steps.filter(step => step.name === legacyQualification);
+    assert.equal(legacy.length, 1);
+    if (record.cohort_generation === 2) {
+      assert.equal(legacy[0].if, "needs.trusted-authorize.outputs.qualification-profile == 'legacy'");
+      assert.equal(steps.filter(step => step.name === v2Qualification).length, 1);
+      assert.equal(steps.find(step => step.name === v2Qualification).if,
+        "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'");
+      const authorization = (await readAdmissionBaseFile("scripts/verify-docs-consumer-gate.mjs", revision)).toString();
+      assert.ok(authorization.includes('const qualificationProfile = v2 ? "cohort-v2" : profile.schemaVersion === 2 ? "legacy" : "none";'));
+    } else {
+      assert.equal(steps.filter(step => step.name === v2Qualification).length, 0);
+      assert.equal(legacy[0].if, "steps.qualification.outputs.enabled == 'true'");
+      const detector = steps.find(step => step.name === "Detect exact qualification contract version");
+      assert.equal(detector.id, "qualification");
+      assert.ok(detector.run.includes('integration.schemaVersion !== 1 && integration.schemaVersion !== 2'));
+      assert.ok(detector.run.includes('integration.schemaVersion === 2 ? "true" : "false"'));
+      assert.ok(detector.run.includes('/architecture/foundation/docs-consumer-integration.json'));
+    }
+    assert.equal(steps.filter(step => step.name === "Confirm current controller authority stayed stable through qualification").length, 1);
+  }
+});
+
+for (const field of ["qualification", "controller", "semantic"]) {
+  for (const mutation of ["missing", "failure", "cancelled", "in-progress", "duplicate", "wrong-branch"]) {
+    test(`historical schema1 rejects ${mutation} ${field}`, async t => {
+      const b = await firstBinding(t, 1, 1);
+      const get = b.f.options.getWorkflowJobs;
+      b.f.options.getWorkflowJobs = async (...args) => {
+        const jobs = await get(...args);
+        if (args[0] !== b.selected.repository) return jobs;
+        const job = jobs.find(job => job.name.endsWith(field === "semantic" ? " / docs-protocol-check" : " / trusted-qualification"));
+        const name = field === "qualification" ? legacyQualification : field === "controller"
+          ? "Confirm current controller authority stayed stable through qualification" : "Run repository semantic documentation gate";
+        const step = job.steps.find(step => step.name === name);
+        if (mutation === "missing") job.steps = job.steps.filter(item => item !== step);
+        else if (mutation === "duplicate") job.steps.push({ ...step });
+        else if (mutation === "in-progress") step.status = "in_progress";
+        else step.conclusion = mutation === "wrong-branch" ? (field === "qualification" ? "success" : "skipped") : mutation;
+        return jobs;
+      };
+      await assert.rejects(b.run(), /target qualification\/semantics did not actually execute successfully/u);
+    });
+  }
+}
+
+for (const generation of [1, 2]) {
+  for (const contract of [null, {}, { schemaVersion: 0 }, { schemaVersion: "1" }, { schemaVersion: generation === 2 ? 1 : 3 }]) {
+    test(`immutable contract rejects invalid selector ${JSON.stringify(contract)} generation ${generation}`, async t => {
+      const b = await firstBinding(t, generation);
+      const read = b.f.options.readRepositoryFile;
+      b.f.options.readRepositoryFile = async (repo, path, revision) => repo === b.selected.repository &&
+        path === "architecture/foundation/docs-consumer-integration.json" ? encode(contract) : read(repo, path, revision);
+      await assert.rejects(b.run());
+    });
+  }
+}
+
+for (const [generation, schemaVersion] of [[1, 1], [1, 2], [2, 3]]) {
+  for (const mutation of ["success", "failure", "duplicate-skipped"]) {
+    test(`unselected qualification rejects ${mutation} schema ${schemaVersion}`, async t => {
+      const b = await firstBinding(t, generation, schemaVersion);
+      const get = b.f.options.getWorkflowJobs;
+      b.f.options.getWorkflowJobs = async (...args) => {
+        const jobs = await get(...args);
+        if (args[0] !== b.selected.repository) return jobs;
+        const job = jobs.find(job => job.name.endsWith(" / trusted-qualification"));
+        const name = generation === 2 ? legacyQualification : v2Qualification;
+        job.steps = job.steps.filter(step => step.name !== name);
+        job.steps.push({ name, status: "completed", conclusion: mutation === "duplicate-skipped" ? "skipped" : mutation });
+        if (mutation === "duplicate-skipped") job.steps.push({ ...job.steps.at(-1) });
+        return jobs;
+      };
+      await assert.rejects(b.run(), /target qualification\/semantics did not actually execute successfully/u);
     });
   }
 }

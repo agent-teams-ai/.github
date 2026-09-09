@@ -74,10 +74,9 @@ function fixture() {
         name: `docs-protocol / ${role}`, status: "completed", conclusion: "success",
         html_url: `https://github.com/${repository}/actions/runs/22/job/${index === 3 ? 12 : 101 + index}`,
         // These records are legacy Cohorts (no cohort_generation discriminator).
-        // Match the canonical legacy branch, including the skipped v2 runner.
+        // Historical qualification runners expose only the legacy CLI.
         steps: role === "trusted-qualification" ? [
           { name: "Run only the exact installed agent-teams-docs qualify CLI", status: "completed", conclusion: "success" },
-          { name: "Run Cohort v2 qualification through the trusted base-owned runner", status: "completed", conclusion: "skipped" },
           { name: "Confirm current controller authority stayed stable through qualification", status: "completed", conclusion: "success" },
         ] : role === "docs-protocol-check" ? [
           { name: "Run repository semantic documentation gate", status: "completed", conclusion: "success" },
@@ -85,7 +84,7 @@ function fixture() {
     readRepositoryFile: async (_repo, path, revision) => {
       const id = revision === historical ? "a" : currentId;
       const expected = targetProjection(id);
-      return path.endsWith("managed-state.json") ? Buffer.from(JSON.stringify({
+      return path === "architecture/foundation/docs-consumer-integration.json" ? Buffer.from(JSON.stringify({ schemaVersion: 2 })) : path.endsWith("managed-state.json") ? Buffer.from(JSON.stringify({
         ...expected, repository: { provider: "github", id: "123", nameWithOwner: repository },
         cohortAuthority: { recordDigest: digest(id), qualificationEventDigest: event(id).event_digest,
           channel: expected.channel, eligibleAfter: expected.eligibleAfter, upgradeFrom: expected.upgradeFrom, rollbackTo: expected.rollbackTo } }))
@@ -185,6 +184,9 @@ for (const mutation of ["missing", "wrong-generation", "failure", "cancelled", "
             ? { ...step, conclusion: mutation === "wrong-generation" ? "skipped" : mutation }
             : mutation === "wrong-generation" && step.name === "Run Cohort v2 qualification through the trusted base-owned runner"
               ? { ...step, conclusion: "success" } : step);
+      if (mutation === "wrong-generation") steps.push({
+        name: "Run Cohort v2 qualification through the trusted base-owned runner", status: "completed", conclusion: "success",
+      });
       return { ...job, steps };
     });
   };
@@ -235,3 +237,17 @@ test("a same-head workflow rerun cannot replay an earlier successful admission r
   };
   await assert.rejects(f.execute(), /workflow execution changed/u);
 });
+
+for (const [mode, make] of [["selected-target", fixture], ["final-observed", observationFixture]]) {
+  test(`schema1 skipped qualification accepts ${mode}`, async () => {
+    const f = make();
+    const read = f.adapters.readRepositoryFile;
+    f.adapters.readRepositoryFile = async (repo, path, revision) => path === "architecture/foundation/docs-consumer-integration.json"
+      ? Buffer.from(JSON.stringify({ schemaVersion: 1 })) : read(repo, path, revision);
+    const jobs = f.adapters.getWorkflowJobs;
+    f.adapters.getWorkflowJobs = async (...args) => (await jobs(...args)).map(job => ({ ...job,
+      steps: job.steps.map(step => step.name === "Run only the exact installed agent-teams-docs qualify CLI"
+        ? { ...step, conclusion: "skipped" } : step) }));
+    await f.execute();
+  });
+}
