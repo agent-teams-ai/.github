@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 import YAML from "yaml";
 import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile } from "./verify-docs-admission-change.mjs";
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences } from "./docs-cohort-policy.mjs";
-import { qualifiedCohortProjection } from "./docs-cohort-policy.mjs";
+import { assertDocsCohortAppendOnly, cohortRecordDigest, cohortEventDigest, validateDocsQualifiedCohorts, qualifiedCohortProjection } from "./docs-cohort-policy.mjs";
 import { POLICY_PATH, REGISTRY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH,
   recoveryBlob, recoveryDigest, recoveryTarget, reproduceLegacyParserErrors } from "./docs-legacy-admission-recovery.mjs";
 
@@ -50,13 +50,14 @@ async function fixture(t) {
   t.after(() => { if (token === undefined) delete process.env.GH_TOKEN; else process.env.GH_TOKEN = token; });
   const baseBytes = await readAdmissionBaseFile(POLICY_PATH, base);
   const policy = JSON.parse(baseBytes);
-  const registryBytes = await readFile(REGISTRY_PATH);
+  // Keep checkout authority and proof coordinates on the same historical snapshot.
+  const registryBytes = await readAdmissionBaseFile(REGISTRY_PATH, base);
   const registry = JSON.parse(registryBytes);
   const asOfDate = new Date(Date.parse(registry.events.at(-1).effective_at) + 1_000);
   const asOf = asOfDate.toISOString().replace(/\.000Z$/u, "Z");
   const validFrom = new Date(asOfDate.getTime() - 60_000).toISOString().replace(/\.000Z$/u, "Z");
   const expiresAt = new Date(asOfDate.getTime() + 60_000).toISOString().replace(/\.000Z$/u, "Z");
-  const exceptions = await readFile(EXCEPTIONS_PATH);
+  const exceptions = await readAdmissionBaseFile(EXCEPTIONS_PATH, base);
   const candidates = policy.repositories.filter((row) => ["bound", "rollout_pending"].includes(row.cohort_binding_status));
   const selected = policy.repositories.find((row) => row.repository === "agent-teams-ai/docs-protocol-canary-20260817");
   const collateral = policy.repositories.find((row) => row.repository === "agent-teams-ai/agent-teams-token");
@@ -157,8 +158,17 @@ async function fixture(t) {
   };
   const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
   await writeFile(paths.exceptions, exceptions);
+  // The real verifier reads checkout authority relative to cwd. Materialize its
+  // pinned inputs without modifying the shared worktree or bypassing base checks.
+  await mkdir(join(directory, "governance"));
+  await symlink(resolve(".git"), join(directory, ".git"), "dir");
+  for (const path of [REGISTRY_PATH, "governance/docs-protocol-policy-v2.schema.json",
+    "governance/docs-protocol-exceptions.schema.json", "governance/docs-qualified-cohorts.schema.json",
+    "governance/code-security-defaults.json"]) {
+    await writeFile(join(directory, path), await readAdmissionBaseFile(path, base));
+  }
   return { policy, registry, selected, collateral, originalCollateral, authority, authorization, execution, options, centralPull,
-    projectionFor,
+    projectionFor, checkoutRegistryPath: join(directory, REGISTRY_PATH),
     bindOperation: (kind) => {
       operation.kind = kind; operation.after_policy_blob = recoveryBlob(encode(policy));
       operation.target = recoveryTarget(registry, selected.desired_cohort_id);
@@ -166,7 +176,14 @@ async function fixture(t) {
       authorization.incidents[0].owner_decision.body_digest = recoveryDigest(Buffer.from(decisionText));
     },
     controllerCalls: () => controllerCalls,
-    run: async () => { await writeFile(paths.policy, encode(policy)); return verifyDocsAdmissionChange(paths, options); } };
+    run: async () => {
+      await writeFile(paths.policy, encode(policy));
+      const cwd = process.cwd();
+      // These tests run serially; always restore cwd, including on rejection.
+      process.chdir(directory);
+      try { return await verifyDocsAdmissionChange(paths, options); }
+      finally { process.chdir(cwd); }
+    } };
 }
 
 test("full imported verifier admits exact TEST selection with independently covered unchanged Token pending", async (t) => {
@@ -177,6 +194,43 @@ test("full imported verifier admits exact TEST selection with independently cove
   assert.equal(f.selected.desired_cohort_id, "docs-2026-09-08-stable15");
   assert.equal(f.collateral.desired_cohort_id, "docs-2026-08-28-stable8");
   assert.equal(f.controllerCalls(), 2);
+});
+
+test("historical fixture stays pinned across unrelated checkout registry appends", async (t) => {
+  const pinnedRegistryBytes = await readAdmissionBaseFile(REGISTRY_PATH, base);
+  const f = await fixture(t);
+  assert.ok(f.registry.cohorts.some((row) => row.cohort_id === "docs-2026-09-09-stable16"));
+  // Derive an unrelated, unpublished test successor solely from immutable data.
+  // No ambient checkout successor (such as stable17) is needed for this regression.
+  const laterRegistry = structuredClone(f.registry);
+  const successor = structuredClone(laterRegistry.cohorts.at(-1));
+  successor.cohort_id = "docs-2026-09-09-fixture-successor";
+  successor.upgrade_from = [laterRegistry.cohorts.at(-1).cohort_id];
+  successor.rollback_to = [];
+  successor.record_digest = cohortRecordDigest(successor);
+  laterRegistry.cohorts.push(successor);
+  const publication = structuredClone(laterRegistry.events.find((event) =>
+    event.cohort_id === successor.upgrade_from[0] && event.state === "PUBLISHED_UNQUALIFIED"));
+  publication.cohort_id = successor.cohort_id;
+  publication.sequence = laterRegistry.events.length + 1;
+  publication.previous_event_digest = laterRegistry.events.at(-1).event_digest;
+  publication.event_digest = cohortEventDigest(publication);
+  laterRegistry.events.push(publication);
+  const schema = JSON.parse(await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base));
+  validateDocsQualifiedCohorts(laterRegistry, schema, { asOf: f.options.asOf });
+  assertDocsCohortAppendOnly(f.registry, laterRegistry);
+  assert.ok(!f.registry.cohorts.some((row) => row.cohort_id === successor.cohort_id));
+  assert.deepEqual(await readFile(f.checkoutRegistryPath), pinnedRegistryBytes);
+  assert.equal(f.authorization.operation.registry_blob, recoveryBlob(pinnedRegistryBytes));
+  assert.equal(f.authorization.operation.exceptions_blob, recoveryBlob(await readAdmissionBaseFile(EXCEPTIONS_PATH, base)));
+  await f.run();
+  // Even a valid later registry must fail the real exact-base control if mixed in.
+  await writeFile(f.checkoutRegistryPath, encode(laterRegistry));
+  const cwd = process.cwd();
+  await assert.rejects(f.run(), /Checkout authority is not the exact base/);
+  assert.equal(process.cwd(), cwd);
+  await writeFile(f.checkoutRegistryPath, pinnedRegistryBytes);
+  await f.run();
 });
 
 const negatives = {
@@ -402,7 +456,7 @@ async function firstBinding(t, generation = 2, schemaVersion = generation === 2 
     'exact_package_version', 'exact_foundation_version', 'reusable_workflow_revision', 'observed_default_branch_evidence']) prior[key] = null;
   delete prior.observed_cohort_generation; delete prior.exact_cohort_v2_packages;
   prior.qualification = { status: 'not_qualified', observed_revision: null, evidence_paths: [] };
-  const read = async name => JSON.parse(await readFile(`governance/${name}.json`, 'utf8'));
+  const read = async name => JSON.parse(await readAdmissionBaseFile(`governance/${name}.json`, base));
   const [policySchema, schema, exceptions, security] = await Promise.all(['docs-protocol-policy-v2.schema',
     'docs-qualified-cohorts.schema', 'docs-protocol-exceptions', 'code-security-defaults'].map(read));
   const validate = () => { for (const p of [basePolicy, f.policy]) {
