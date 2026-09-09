@@ -268,6 +268,17 @@ test("independent owner, both parser replays and exact source run produce pendin
   assert.deepEqual(f.finish().recovery_pending, [{ repository_id: 3, source_head: sha(2) }]);
 });
 
+test("latest check attempt replaces an earlier check from the same workflow run", async () => {
+  const f = await proofFixture();
+  const current = await f.adapters.getCheckRuns();
+  f.adapters.getCheckRuns = async () => [{
+    ...current[0],
+    id: current[0].id - 1,
+    html_url: current[0].html_url.replace(/\/job\/\d+$/u, "/job/73"),
+  }, ...current];
+  assert.equal((await f.verify()).status, "recovery_pending");
+});
+
 const proofMutations = {
   "changed source profile since historical success": (f) => {
     const read = f.adapters.readGitFile;
@@ -310,7 +321,11 @@ const proofMutations = {
   "wrong run event": (f) => { f.liveRun.event = "pull_request"; },
   "wrong runner": (f) => { f.liveRun.referenced_workflows[0].sha = sha(9); },
   "missing source check": (f) => { f.adapters.getCheckRuns = async () => []; },
-  "ambiguous source check": (f) => { const old = f.adapters.getCheckRuns; f.adapters.getCheckRuns = async () => [...await old(), ...await old()]; },
+  "ambiguous source check": (f) => { const old = f.adapters.getCheckRuns; f.adapters.getCheckRuns = async () => {
+    const checks = await old();
+    return [...checks, { ...checks[0], id: checks[0].id + 100,
+      html_url: checks[0].html_url.replace(/\/actions\/runs\/\d+/u, "/actions/runs/999") }];
+  }; },
   "wrong source App": (f) => { const old = f.adapters.getCheckRuns; f.adapters.getCheckRuns = async () => (await old()).map((row) => ({ ...row, app: { id: 99 } })); },
   "wrong parser log": (f) => { f.adapters.getJobLog = async () => Buffer.from("unrelated error"); },
   "unreproduced registry rejection": (f) => { f.adapters.reproduceParserErrors = async () => ({ policy: f.errors.policy, registry: [] }); },
