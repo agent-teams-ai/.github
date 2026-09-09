@@ -1,0 +1,1534 @@
+{
+  "schema_version": 1,
+  "source_target": {
+    "cohort_id": "docs-2026-08-28-stable8",
+    "record_digest": "sha256:e1ad7395b51d7b912db2181d263104067c712fc0cd13bac91aa5dccbc2590cc4",
+    "event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471",
+    "generation": 1,
+    "workflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "07d49409cb51f6124ad17673860b812a9d7b5f5b",
+      "blob_sha": "efb9327218d89b6959ee38fa09b0e68f1ce5fe22"
+    },
+    "packages": [
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "version": "0.20.0",
+        "integrity": "sha512-YGyNyfpxyElMUALIho+pi+xM9XHXWWEV5hBBEzcysaCO1Dgz5/3GuUjQ6fQM2sCjfPo7Pd6OoFJOSKiHaqe5ZA==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-08-27T23:35:08.965Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "775824b32c200663f1076eb9448dafa3f913a4f6",
+          "workflow_run_id": 33126302368,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@0.20.0",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/33126302368",
+          "signature_verified": true,
+          "reconciliation": {
+            "workflow_run_attempt": 2,
+            "release_job_id": 98707032821
+          }
+        }
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "version": "0.2.0",
+        "integrity": "sha512-KtmILYJTQf91wU643UMRh5QuO2Jnbn5f/kBD6e3agUIWv0KpuxHqEyZZPLsp0jiTA1WV4TBJa4EyFDT0Ju1/KQ==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-08-27T23:40:54.999Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "775824b32c200663f1076eb9448dafa3f913a4f6",
+          "workflow_run_id": 33126302368,
+          "workflow_run_attempt": 2,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.2.0",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/33126302368",
+          "signature_verified": true
+        }
+      }
+    ]
+  },
+  "historical_inputs": {
+    "policy": {
+      "path": "governance/docs-protocol-policy-v2.json",
+      "revision": "d8795dcac61284b801ce3854b18d8d9965cd8924",
+      "blob": "e7e861dbcc4a51570414d8d3c26d39ac295191ae"
+    },
+    "registry": {
+      "path": "governance/docs-qualified-cohorts.json",
+      "revision": "d8795dcac61284b801ce3854b18d8d9965cd8924",
+      "blob": "df8c1a495867617a6f83e28b830f249ce2f852cf"
+    }
+  },
+  "historical_run": {
+    "attempt": 1,
+    "authorize_job_id": 98744156242,
+    "log_digest": "sha256:ff4beb852582c69276964ba8985c432d23d254c05e71598bcd2d3377f4c84aba"
+  },
+  "current_inputs": {
+    "policy": {
+      "path": "governance/docs-protocol-policy-v2.json",
+      "revision": "f367fc2a64a22f4a6143247a117b182eb2a7810c",
+      "blob": "92b060bb4965ffb75291efb6b860e2379fd7aa0d"
+    },
+    "registry": {
+      "path": "governance/docs-qualified-cohorts.json",
+      "revision": "f367fc2a64a22f4a6143247a117b182eb2a7810c",
+      "blob": "51dcdf1ba0368cc1e38b67b12a812c80931831be"
+    }
+  },
+  "schemas": {
+    "policy": {
+      "path": "governance/docs-protocol-policy-v2.schema.json",
+      "revision": "07d49409cb51f6124ad17673860b812a9d7b5f5b",
+      "blob": "0fc9bca363f13a2de67960c9ecdb8bb3516d8a16"
+    },
+    "registry": {
+      "path": "governance/docs-qualified-cohorts.schema.json",
+      "revision": "07d49409cb51f6124ad17673860b812a9d7b5f5b",
+      "blob": "b3f8863091b6c4061566473c8e985845b1746dcd"
+    }
+  },
+  "caller_blob": "cfdd07fd138713af0accd601a3a6f526b8a0c5ae",
+  "projection_blob": "ac493291639f2fb292b4cff534e04f250a455dd5",
+  "parser_errors": {
+    "policy": [
+      {
+        "instancePath": "/repositories/7",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "desired_cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/repositories/7",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "v3_qualification_coordinates"
+        },
+        "message": "must NOT have additional properties"
+      }
+    ],
+    "registry": [
+      {
+        "instancePath": "/cohorts/23",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/23",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "dependency_edges"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/23/packages",
+        "schemaPath": "#/properties/packages/maxItems",
+        "keyword": "maxItems",
+        "params": {
+          "limit": 2
+        },
+        "message": "must NOT have more than 2 items"
+      },
+      {
+        "instancePath": "/cohorts/23/packages/0",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/23/packages/0/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/23/packages/0/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/23/packages/1",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/23/packages/1/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/23/packages/1/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/23/schemas",
+        "schemaPath": "#/properties/schemas/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "consumer_plan"
+        },
+        "message": "must have required property 'consumer_plan'"
+      },
+      {
+        "instancePath": "/cohorts/23/schemas",
+        "schemaPath": "#/properties/schemas/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "qualification_receipt"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/23/schemas/consumer_integration",
+        "schemaPath": "#/properties/schemas/properties/consumer_integration/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/schemas/managed_state",
+        "schemaPath": "#/properties/schemas/properties/managed_state/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/assets/skill/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/assets/caller_workflow/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/assets/asset_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/assets/transition_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/runtime_closure",
+        "schemaPath": "#/properties/runtime_closure/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "domain"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/23/runtime_closure/schema_version",
+        "schemaPath": "#/properties/runtime_closure/properties/schema_version/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/23/runtime_closure/package_manager",
+        "schemaPath": "#/properties/runtime_closure/properties/package_manager/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "pnpm@11.18.0"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/24",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "dependency_edges"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/24/packages",
+        "schemaPath": "#/properties/packages/maxItems",
+        "keyword": "maxItems",
+        "params": {
+          "limit": 2
+        },
+        "message": "must NOT have more than 2 items"
+      },
+      {
+        "instancePath": "/cohorts/24/packages/0",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/24/packages/0/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/24/packages/0/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/24/packages/1",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/24/packages/1/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/24/packages/1/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/24/schemas",
+        "schemaPath": "#/properties/schemas/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "consumer_plan"
+        },
+        "message": "must have required property 'consumer_plan'"
+      },
+      {
+        "instancePath": "/cohorts/24/schemas",
+        "schemaPath": "#/properties/schemas/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "qualification_receipt"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/24/schemas/consumer_integration",
+        "schemaPath": "#/properties/schemas/properties/consumer_integration/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/schemas/managed_state",
+        "schemaPath": "#/properties/schemas/properties/managed_state/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/assets/skill/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/assets/caller_workflow/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/assets/asset_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/assets/transition_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/runtime_closure",
+        "schemaPath": "#/properties/runtime_closure/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "domain"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/24/runtime_closure/schema_version",
+        "schemaPath": "#/properties/runtime_closure/properties/schema_version/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/24/runtime_closure/package_manager",
+        "schemaPath": "#/properties/runtime_closure/properties/package_manager/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "pnpm@11.18.0"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/25",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "dependency_edges"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/25/packages",
+        "schemaPath": "#/properties/packages/maxItems",
+        "keyword": "maxItems",
+        "params": {
+          "limit": 2
+        },
+        "message": "must NOT have more than 2 items"
+      },
+      {
+        "instancePath": "/cohorts/25/packages/0",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/25/packages/0/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/25/packages/0/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/25/packages/1",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/25/packages/1/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/25/packages/1/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/25/schemas",
+        "schemaPath": "#/properties/schemas/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "consumer_plan"
+        },
+        "message": "must have required property 'consumer_plan'"
+      },
+      {
+        "instancePath": "/cohorts/25/schemas",
+        "schemaPath": "#/properties/schemas/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "qualification_receipt"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/25/schemas/consumer_integration",
+        "schemaPath": "#/properties/schemas/properties/consumer_integration/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/schemas/managed_state",
+        "schemaPath": "#/properties/schemas/properties/managed_state/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/assets/skill/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/assets/caller_workflow/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/assets/asset_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/assets/transition_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/runtime_closure",
+        "schemaPath": "#/properties/runtime_closure/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "domain"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/25/runtime_closure/schema_version",
+        "schemaPath": "#/properties/runtime_closure/properties/schema_version/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/25/runtime_closure/package_manager",
+        "schemaPath": "#/properties/runtime_closure/properties/package_manager/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "pnpm@11.18.0"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/26",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "dependency_edges"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/26/packages",
+        "schemaPath": "#/properties/packages/maxItems",
+        "keyword": "maxItems",
+        "params": {
+          "limit": 2
+        },
+        "message": "must NOT have more than 2 items"
+      },
+      {
+        "instancePath": "/cohorts/26/packages/0",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/26/packages/0/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/26/packages/0/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/26/packages/1",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/26/packages/1/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/26/packages/1/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/26/schemas",
+        "schemaPath": "#/properties/schemas/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "consumer_plan"
+        },
+        "message": "must have required property 'consumer_plan'"
+      },
+      {
+        "instancePath": "/cohorts/26/schemas",
+        "schemaPath": "#/properties/schemas/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "qualification_receipt"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/26/schemas/consumer_integration",
+        "schemaPath": "#/properties/schemas/properties/consumer_integration/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/schemas/managed_state",
+        "schemaPath": "#/properties/schemas/properties/managed_state/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/assets/skill/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/assets/caller_workflow/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/assets/asset_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/assets/transition_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/runtime_closure",
+        "schemaPath": "#/properties/runtime_closure/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "domain"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/26/runtime_closure/schema_version",
+        "schemaPath": "#/properties/runtime_closure/properties/schema_version/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/26/runtime_closure/package_manager",
+        "schemaPath": "#/properties/runtime_closure/properties/package_manager/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "pnpm@11.18.0"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/27",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "dependency_edges"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/27/packages",
+        "schemaPath": "#/properties/packages/maxItems",
+        "keyword": "maxItems",
+        "params": {
+          "limit": 2
+        },
+        "message": "must NOT have more than 2 items"
+      },
+      {
+        "instancePath": "/cohorts/27/packages/0",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/27/packages/0/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/27/packages/0/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/27/packages/1",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/27/packages/1/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/27/packages/1/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/27/schemas",
+        "schemaPath": "#/properties/schemas/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "consumer_plan"
+        },
+        "message": "must have required property 'consumer_plan'"
+      },
+      {
+        "instancePath": "/cohorts/27/schemas",
+        "schemaPath": "#/properties/schemas/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "qualification_receipt"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/27/schemas/consumer_integration",
+        "schemaPath": "#/properties/schemas/properties/consumer_integration/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/schemas/managed_state",
+        "schemaPath": "#/properties/schemas/properties/managed_state/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/assets/skill/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/assets/caller_workflow/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/assets/asset_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/assets/transition_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/runtime_closure",
+        "schemaPath": "#/properties/runtime_closure/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "domain"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/27/runtime_closure/schema_version",
+        "schemaPath": "#/properties/runtime_closure/properties/schema_version/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/27/runtime_closure/package_manager",
+        "schemaPath": "#/properties/runtime_closure/properties/package_manager/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "pnpm@11.18.0"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "cohort_generation"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/28",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "dependency_edges"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/28/packages",
+        "schemaPath": "#/properties/packages/maxItems",
+        "keyword": "maxItems",
+        "params": {
+          "limit": 2
+        },
+        "message": "must NOT have more than 2 items"
+      },
+      {
+        "instancePath": "/cohorts/28/packages/0",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/28/packages/0/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/28/packages/0/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/28/packages/1",
+        "schemaPath": "#/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "role"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/28/packages/1/name",
+        "schemaPath": "#/properties/name/enum",
+        "keyword": "enum",
+        "params": {
+          "allowedValues": [
+            "@agent-teams/docs-protocol",
+            "@agent-teams/engineering-foundation"
+          ]
+        },
+        "message": "must be equal to one of the allowed values"
+      },
+      {
+        "instancePath": "/cohorts/28/packages/1/provenance/registry_attestation_url",
+        "schemaPath": "#/properties/provenance/properties/registry_attestation_url/pattern",
+        "keyword": "pattern",
+        "params": {
+          "pattern": "^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$"
+        },
+        "message": "must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\""
+      },
+      {
+        "instancePath": "/cohorts/28/schemas",
+        "schemaPath": "#/properties/schemas/required",
+        "keyword": "required",
+        "params": {
+          "missingProperty": "consumer_plan"
+        },
+        "message": "must have required property 'consumer_plan'"
+      },
+      {
+        "instancePath": "/cohorts/28/schemas",
+        "schemaPath": "#/properties/schemas/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "qualification_receipt"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/28/schemas/consumer_integration",
+        "schemaPath": "#/properties/schemas/properties/consumer_integration/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/schemas/managed_state",
+        "schemaPath": "#/properties/schemas/properties/managed_state/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/assets/skill/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/assets/caller_workflow/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/assets/asset_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/assets/transition_catalog/package",
+        "schemaPath": "#/properties/package/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "@agent-teams/docs-protocol"
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/runtime_closure",
+        "schemaPath": "#/properties/runtime_closure/additionalProperties",
+        "keyword": "additionalProperties",
+        "params": {
+          "additionalProperty": "domain"
+        },
+        "message": "must NOT have additional properties"
+      },
+      {
+        "instancePath": "/cohorts/28/runtime_closure/schema_version",
+        "schemaPath": "#/properties/runtime_closure/properties/schema_version/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": 1
+        },
+        "message": "must be equal to constant"
+      },
+      {
+        "instancePath": "/cohorts/28/runtime_closure/package_manager",
+        "schemaPath": "#/properties/runtime_closure/properties/package_manager/const",
+        "keyword": "const",
+        "params": {
+          "allowedValue": "pnpm@11.18.0"
+        },
+        "message": "must be equal to constant"
+      }
+    ]
+  },
+  "run": {
+    "id": 34254286344,
+    "attempt": 2,
+    "workflow_id": 344094656,
+    "head": "5bd0551ed253ca20ac84225a93b874347232ce2e",
+    "branch": "main",
+    "path": ".github/workflows/docs-protocol.yml"
+  },
+  "jobs": [
+    {
+      "id": 102394686942,
+      "run_id": 34254286344,
+      "run_attempt": 2,
+      "head_sha": "5bd0551ed253ca20ac84225a93b874347232ce2e",
+      "name": "docs-protocol / trusted-authorize",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/34254286344/job/102394686942",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Resolve trusted controller snapshot and called-workflow identity",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Check out exact Cohort-bound validator implementation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Set up pnpm for trusted tooling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Set up Node for trusted tooling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Install only base-owned validator dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Authorize exact consumer snapshot without executing consumer code",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 7
+        },
+        {
+          "name": "Publish bounded structural authorization for the non-OIDC verifier",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Post Set up Node for trusted tooling",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14
+        },
+        {
+          "name": "Post Set up pnpm for trusted tooling",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Post Check out exact Cohort-bound validator implementation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        }
+      ]
+    },
+    {
+      "id": 102394870031,
+      "run_id": 34254286344,
+      "run_attempt": 2,
+      "head_sha": "5bd0551ed253ca20ac84225a93b874347232ce2e",
+      "name": "docs-protocol / trusted-qualification",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/34254286344/job/102394870031",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Require successful trusted structural authorization",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 2
+        },
+        {
+          "name": "Initialize isolated qualification paths",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3
+        },
+        {
+          "name": "Check out exact Cohort-bound validator implementation",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4
+        },
+        {
+          "name": "Set up pnpm for trusted qualification tooling",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 5
+        },
+        {
+          "name": "Set up Node for trusted qualification tooling",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6
+        },
+        {
+          "name": "Install only base-owned qualification verifier dependencies",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7
+        },
+        {
+          "name": "Download exact authorization from the OIDC-only job",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Check out authorized immutable consumer snapshot",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9
+        },
+        {
+          "name": "Bind checkout bytes to central authorization",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10
+        },
+        {
+          "name": "Detect exact qualification contract version",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11
+        },
+        {
+          "name": "Prepare fresh isolated exact Cohort installation",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 12
+        },
+        {
+          "name": "Verify isolated exact lock before package installation",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 13
+        },
+        {
+          "name": "Install isolated exact Cohort graph without lifecycle hooks",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14
+        },
+        {
+          "name": "Verify installed Cohort package identities before execution",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15
+        },
+        {
+          "name": "Run only the exact installed agent-teams-docs qualify CLI",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16
+        },
+        {
+          "name": "Bind released-cohort receipt to exact checkout and installed Cohort",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17
+        },
+        {
+          "name": "Confirm current controller authority stayed stable through qualification",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 18
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        }
+      ]
+    },
+    {
+      "id": 102394870386,
+      "run_id": 34254286344,
+      "run_attempt": 2,
+      "head_sha": "5bd0551ed253ca20ac84225a93b874347232ce2e",
+      "name": "docs-protocol / trusted-structural",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/34254286344/job/102394870386",
+      "status": "completed",
+      "conclusion": "skipped",
+      "steps": []
+    },
+    {
+      "id": 102394907703,
+      "run_id": 34254286344,
+      "run_attempt": 2,
+      "head_sha": "5bd0551ed253ca20ac84225a93b874347232ce2e",
+      "name": "docs-protocol / docs-protocol-check",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/34254286344/job/102394907703",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Require successful trusted qualification",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 2
+        },
+        {
+          "name": "Check out consumer revision",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3
+        },
+        {
+          "name": "Set up pnpm for repository semantic gate",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 4
+        },
+        {
+          "name": "Set up Node for repository semantic gate",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 5
+        },
+        {
+          "name": "Install consumer dependencies in the untrusted context",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 6
+        },
+        {
+          "name": "Run repository semantic documentation gate",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        }
+      ]
+    }
+  ],
+  "parser_job_id": 102394686942,
+  "parser_log_digest": "sha256:465d4e165a4c8b66d4f1370be05fd4b88b149fa514ff51238328ae13664206b4"
+}
