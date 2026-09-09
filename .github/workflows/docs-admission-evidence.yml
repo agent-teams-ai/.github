@@ -22,9 +22,12 @@ jobs:
           script: |
             const fs = require("node:fs/promises");
             const path = require("node:path");
+            const { createHash } = require("node:crypto");
             const pull = context.payload.pull_request;
             const policyPath = "governance/docs-protocol-policy-v2.json";
             const exceptionsPath = "governance/docs-protocol-exceptions.json";
+            const recoveryPath = "governance/docs-admission-recovery.json";
+            const recoveryEvidencePrefix = "governance/evidence/docs-admission-recovery/";
             const allowedData = new Set([policyPath, exceptionsPath]);
             const allowedEvidence = /^governance\/evidence\/docs-admission\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
             const hardAuthority = new Set([
@@ -41,6 +44,7 @@ jobs:
               "governance/code-security-defaults.json",
               "governance/code-security-defaults.schema.json",
               "scripts/verify-docs-admission-change.mjs",
+              "scripts/docs-legacy-admission-recovery.mjs",
               "scripts/verify-docs-cohort-evidence.mjs",
               "scripts/docs-cohort-policy.mjs",
               "scripts/governance-policy.mjs"
@@ -66,6 +70,11 @@ jobs:
             const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
             const changesAdmission = changed.some((file) =>
               allPaths(file).some((entry) => allowedData.has(entry)));
+            if (changed.some((file) => allPaths(file).some((entry) =>
+              entry === recoveryPath || entry.startsWith(recoveryEvidencePrefix)))) {
+              core.setFailed("Recovery authority additions, revocations and proof changes require a separately trusted exact staging transition; this data gate cannot authorize them.");
+              return;
+            }
             if (!changesAdmission) {
               core.setOutput("mode", "noop");
               return;
@@ -91,6 +100,28 @@ jobs:
               return;
             }
             const controller = await github.rest.repos.get({ owner: context.repo.owner, repo: context.repo.repo });
+            const controllerId = 1316243981;
+            const controllerName = "agent-teams-ai/.github";
+            const sha = (value) => typeof value === "string" && /^(?!0{40}$)[0-9a-f]{40}$/u.test(value);
+            const identity = (value) => value?.id === controllerId && value.full_name === controllerName;
+            if (context.eventName !== "pull_request_target" || !identity(controller.data) ||
+                !identity(pull.base.repo) || !identity(pull.head.repo) ||
+                controller.data.archived !== false || controller.data.disabled !== false ||
+                !sha(pull.base.sha) || !sha(pull.head.sha) || pull.base.sha === pull.head.sha ||
+                context.sha !== pull.base.sha || context.ref !== `refs/heads/${controller.data.default_branch}`) {
+              throw new Error("Admission requires exact central identity and base-owned execution.");
+            }
+            const snapshot = (value) => JSON.stringify([value.id, value.number, value.state, value.merged,
+              value.base.sha, value.head.sha, value.base.ref, value.head.ref, value.commits, value.changed_files, value.updated_at]);
+            async function stablePull() {
+              const live = (await github.rest.pulls.get({ owner: context.repo.owner, repo: context.repo.repo,
+                pull_number: pull.number })).data;
+              if (live.state !== "open" || live.merged !== false || !identity(live.base.repo) ||
+                  !identity(live.head.repo) || snapshot(live) !== snapshot(pull)) {
+                throw new Error("Stale admission event/live PR tuple.");
+              }
+            }
+            await stablePull();
             if (pull.base.ref !== controller.data.default_branch) {
               core.setFailed("Admission PR base must be the live controller default branch.");
               return;
@@ -102,6 +133,72 @@ jobs:
               core.setFailed("PR base is stale; update it before changing admission data.");
               return;
             }
+            const need = (ok, message) => { if (!ok) throw new Error(message); };
+            const read = (method, args) => method({ owner: context.repo.owner, repo: context.repo.repo, ...args });
+            const comparison = (await read(github.rest.repos.compareCommits, {
+              base: pull.base.sha, head: pull.head.sha, per_page: 1, page: 1
+            })).data;
+            need(Number.isSafeInteger(pull.commits) && pull.commits > 0 && comparison.status === "ahead" &&
+              comparison.base_commit?.sha === pull.base.sha && comparison.merge_base_commit?.sha === pull.base.sha &&
+              comparison.behind_by === 0 && comparison.ahead_by === pull.commits && comparison.total_commits === pull.commits,
+              "Admission head does not contain the exact live base.");
+            async function tree(ref) {
+              const commit = (await read(github.rest.git.getCommit, { commit_sha: ref })).data;
+              need(commit.sha === ref && sha(commit.tree?.sha), "Invalid immutable commit");
+              const data = (await read(github.rest.git.getTree, { tree_sha: commit.tree.sha, recursive: "1" })).data;
+              need(data.sha === commit.tree.sha && data.truncated === false &&
+                Array.isArray(data.tree) && data.tree.length > 0 && data.tree.length <= 20000, "Incomplete immutable tree");
+              const entries = new Map();
+              for (const entry of data.tree) {
+                need(typeof entry?.path === "string" && !/[\x00-\x1f\x7f]/u.test(entry.path) &&
+                  entry.path.split("/").every((part) => part && part !== "." && part !== "..") &&
+                  !entries.has(entry.path) && sha(entry.sha) &&
+                  ((entry.type === "tree" && entry.mode === "040000") ||
+                    (entry.type === "blob" && ["100644", "100755"].includes(entry.mode) &&
+                      Number.isSafeInteger(entry.size) && entry.size >= 0)), "Invalid tree entry/type/mode");
+                entries.set(entry.path, entry);
+              }
+              const children = new Map([["", []]]);
+              for (const entry of entries.values()) if (entry.type === "tree") children.set(entry.path, []);
+              for (const entry of entries.values()) {
+                const parent = entry.path.includes("/") ? entry.path.slice(0, entry.path.lastIndexOf("/")) : "";
+                need(children.has(parent), "Missing tree parent");
+                children.get(parent).push(entry);
+              }
+              // Rehash every directory: truncated/omitted metadata must not hide an extra change.
+              const name = (entry) => entry.path.split("/").at(-1);
+              const key = (entry) => Buffer.from(name(entry) + (entry.type === "tree" ? "/" : ""));
+              for (const [path, items] of children) {
+                items.sort((a, b) => Buffer.compare(key(a), key(b)));
+                const bytes = Buffer.concat(items.flatMap((entry) => [
+                  Buffer.from(`${entry.mode.replace(/^0/u, "")} ${name(entry)}\0`), Buffer.from(entry.sha, "hex")
+                ]));
+                const digest = createHash("sha1").update(`tree ${bytes.length}\0`).update(bytes).digest("hex");
+                need(digest === (path ? entries.get(path).sha : data.sha), "Tree metadata hash mismatch");
+              }
+              return entries;
+            }
+            const [oldTree, newTree] = await Promise.all([tree(pull.base.sha), tree(pull.head.sha)]);
+            const actualChanged = [];
+            for (const filePath of new Set([...oldTree.keys(), ...newTree.keys()])) {
+              const old = oldTree.get(filePath), next = newTree.get(filePath);
+              if (old?.type === "tree" || next?.type === "tree") {
+                need(next?.type === "tree" && (old === undefined || old.type === "tree"), "Directory removed or changed type.");
+                if (!old) need(changed.some((file) => file.status === "added" && file.filename.startsWith(filePath + "/")),
+                  "Unrelated directory added outside the complete admission diff.");
+                continue;
+              }
+              if (!old || !next || old.sha !== next.sha || old.mode !== next.mode) {
+                const file = changed.find((item) => item.filename === filePath);
+                need(file && next?.type === "blob" && next.mode === "100644" && next.sha === file.sha &&
+                  (old === undefined ? file.status === "added" : old.type === "blob" && old.mode === "100644" && file.status === "modified"),
+                "Admission diff contains an omitted/extra/nonregular/mode-changed file.");
+                actualChanged.push(filePath);
+              }
+            }
+            need(actualChanged.length === changed.length, "Paginated files do not equal the complete immutable tree diff.");
+            for (const filePath of allowedData) need(newTree.get(filePath)?.type === "blob" && newTree.get(filePath).mode === "100644",
+              "Admission data must remain regular files at canonical paths.");
             async function loadHead(filePath) {
               const response = await github.rest.repos.getContent({
                 owner: context.repo.owner, repo: context.repo.repo, path: filePath, ref: pull.head.sha
@@ -109,18 +206,33 @@ jobs:
               if (Array.isArray(response.data) || response.data.type !== "file" || response.data.encoding !== "base64") {
                 throw new Error(`${filePath} is not one base64-encoded file.`);
               }
-              return Buffer.from(response.data.content, "base64");
+              const content = Buffer.from(response.data.content, "base64");
+              const digest = createHash("sha1").update(`blob ${content.length}\0`).update(content).digest("hex");
+              if (digest !== response.data.sha || digest !== newTree.get(filePath).sha || content.length > 8 * 1024 * 1024) {
+                throw new Error("Materialized head blob does not match its exact Git identity/size bound.");
+              }
+              return content;
             }
             const policyOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-policy.json");
             const exceptionsOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-exceptions.json");
+            const executionOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-execution.json");
             const [policy, exceptions] = await Promise.all([loadHead(policyPath), loadHead(exceptionsPath)]);
+            await stablePull();
+            const finalBranch = await github.rest.repos.getBranch({ owner: context.repo.owner, repo: context.repo.repo,
+              branch: controller.data.default_branch });
+            if (finalBranch.data.commit.sha !== pull.base.sha) throw new Error("Controller moved during materialization.");
+            const execution = { controller: { repository: controllerName, repository_id: controllerId },
+              pull_number: pull.number, base: pull.base.sha, head: pull.head.sha, execution_base: context.sha,
+              changed_files: changed.map((file) => file.filename).sort() };
             await Promise.all([
               fs.writeFile(policyOutput, policy, { flag: "wx" }),
-              fs.writeFile(exceptionsOutput, exceptions, { flag: "wx" })
+              fs.writeFile(exceptionsOutput, exceptions, { flag: "wx" }),
+              fs.writeFile(executionOutput, JSON.stringify(execution), { flag: "wx" })
             ]);
             core.setOutput("mode", "admission");
             core.setOutput("policy-path", policyOutput);
             core.setOutput("exceptions-path", exceptionsOutput);
+            core.setOutput("execution-path", executionOutput);
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.materialize.outputs.mode == 'admission'
         with:
@@ -147,4 +259,5 @@ jobs:
           DOCS_GOVERNANCE_READ_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN }}
           DOCS_ADMISSION_POLICY_PATH: ${{ steps.materialize.outputs.policy-path }}
           DOCS_ADMISSION_EXCEPTIONS_PATH: ${{ steps.materialize.outputs.exceptions-path }}
+          DOCS_ADMISSION_EXECUTION_PATH: ${{ steps.materialize.outputs.execution-path }}
         run: node scripts/verify-docs-admission-change.mjs

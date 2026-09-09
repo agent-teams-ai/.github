@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
+import { promisify, isDeepStrictEqual } from "node:util";
 import YAML from "yaml";
 
 import { validateDocsProtocolWorkflow } from "./check-community-files.mjs";
@@ -18,6 +18,7 @@ import {
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
 import { loadJson } from "./governance-policy.mjs";
+import { verifyRecoveryIncident } from "./docs-legacy-admission-recovery.mjs";
 
 const execFileAsync = promisify(execFile);
 const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/u;
@@ -576,7 +577,7 @@ async function verifyCanaryEvidence(record, canaryEvent, adapters) {
   }
 }
 
-async function verifyAdmissionRevision(
+export async function verifyAdmissionRevision(
   entry,
   evidence,
   record,
@@ -584,10 +585,13 @@ async function verifyAdmissionRevision(
   observation,
   adapters,
 ) {
+  assert(["historical", "current"].includes(observation.binding), "Explicit admission binding is required.");
   const checks = observation.check === undefined
     ? await adapters.getCheckRuns(entry.repository, observation.revision)
     : [observation.check];
-  const check = checks.find(({ id }) => id === observation.checkRunId);
+  const matchingChecks = checks.filter(({ id }) => id === observation.checkRunId);
+  assert(matchingChecks.length === 1, "Historical check identity is missing or ambiguous.");
+  const [check] = matchingChecks;
   assert(check?.head_sha === observation.revision &&
     check.name === evidence.required_context &&
     check.app?.id === evidence.integration_id && check.conclusion === "success" &&
@@ -611,9 +615,11 @@ async function verifyAdmissionRevision(
       observation.revision,
     ),
   ]);
+  const historical = observation.binding === "historical";
+  const callerDigest = record.assets.caller_workflow.rendered_digest;
   assert(evidence.caller_workflow_path === entry.caller_workflow_path &&
-    evidence.caller_workflow_digest === record.assets.caller_workflow.rendered_digest &&
-    sha256(caller) === evidence.caller_workflow_digest,
+    (!historical || evidence.caller_workflow_digest === callerDigest) &&
+    sha256(caller) === callerDigest,
   `${entry.repository} observed caller bytes differ from its Cohort.`);
   let projection;
   try {projection = JSON.parse(projectionBytes.toString("utf8"));} catch {
@@ -623,9 +629,50 @@ async function verifyAdmissionRevision(
   assert(projection.cohortId === record.cohort_id &&
     authority.recordDigest === record.record_digest &&
     authority.qualificationEventDigest === qualification.event_digest &&
-    entry.observed_cohort_record_digest === record.record_digest &&
-    entry.observed_cohort_event_digest === qualification.event_digest,
+    (!historical || (entry.observed_cohort_record_digest === record.record_digest &&
+      entry.observed_cohort_event_digest === qualification.event_digest)),
   `${entry.repository} observed managed projection does not prove the observed Cohort.`);
+  if (observation.targetProjection) {
+    const expected = observation.targetProjection;
+    for (const field of ["schemaVersion", "cohortId", "packages", "schemas", "runtime"]) {
+      assert(isDeepStrictEqual(projection[field], expected[field]), `${entry.repository} target projection ${field} differs.`);
+    }
+    for (const field of ["channel", "recordDigest", "qualificationEventDigest", "eligibleAfter", "upgradeFrom", "rollbackTo"]) {
+      assert(isDeepStrictEqual(authority[field], expected[field]), `${entry.repository} target authority ${field} differs.`);
+    }
+    for (const [field, value] of Object.entries(expected.assets)) {
+      assert(projection.assets?.[field] === value, `${entry.repository} target asset ${field} differs.`);
+    }
+    assert(isDeepStrictEqual(projection.repository, { provider: "github", id: String(entry.repository_id),
+      nameWithOwner: entry.repository }), `${entry.repository} target projection repository differs.`);
+    const workflow = record.reusable_workflow;
+    assert(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0 && run.status === "completed" &&
+      Array.isArray(run.referenced_workflows) && run.referenced_workflows.length === 1 &&
+      run.referenced_workflows[0].sha === workflow.revision &&
+      run.referenced_workflows[0].path === `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+    `${entry.repository} target run does not bind its exact runner and attempt.`);
+    const jobs = await adapters.getWorkflowJobs(entry.repository, run.id, run.run_attempt);
+    const roles = ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"];
+    assert(jobs.length === roles.length && new Set(jobs.map((job) => job.id)).size === jobs.length &&
+      roles.every((role) => jobs.filter((job) => job.name.split(" / ").at(-1) === role).length === 1),
+    `${entry.repository} target qualification job evidence is incomplete/ambiguous.`);
+    for (const job of jobs) {
+      assert(job.run_id === run.id && job.run_attempt === run.run_attempt && job.head_sha === observation.revision &&
+        job.status === "completed" && job.conclusion === "success" &&
+        job.html_url === `https://github.com/${entry.repository}/actions/runs/${run.id}/job/${job.id}`,
+      `${entry.repository} target trusted/semantic job is not exact current success.`);
+      const role = job.name.split(" / ").at(-1);
+      const required = role === "docs-protocol-check" ? ["Run repository semantic documentation gate"]
+        : role === "trusted-qualification" ? ["Confirm current controller authority stayed stable through qualification",
+          ...(record.cohort_generation === 2 ? ["Run only the exact installed agent-teams-docs qualify CLI"] : [])] : [];
+      assert(required.every((name) => job.steps.filter((step) => step.name === name &&
+        step.status === "completed" && step.conclusion === "success").length === 1),
+      `${entry.repository} target qualification/semantics did not actually execute successfully.`);
+      if (role === "docs-protocol-check") assert(job.id === check.id && job.html_url === check.html_url,
+        `${entry.repository} target semantic job differs from the required check.`);
+    }
+  }
+  return { repository: entry.repository, revision: observation.revision, check: structuredClone(check), run: structuredClone(run) };
 }
 
 export async function verifyDocsAdmissionEvidence(policy, registry, schema, overrides = {}) {
@@ -650,7 +697,7 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     isCommitAncestor: defaultIsCommitAncestor,
     getCheckRuns: async (repository, revision) => {
       const { stdout } = await command("gh", [
-        "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100`,
+        "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100&filter=all`,
         "--jq", ".check_runs[]",
       ]);
       return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
@@ -665,8 +712,34 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       ]);
       return Buffer.from(stdout.replace(/\s/gu, ""), "base64");
     },
+    getDecisionComment: async (repository, commentId) => {
+      const { stdout } = await command("gh", ["api", `repos/${repository}/issues/comments/${commentId}`]);
+      return JSON.parse(stdout);
+    },
+    getCollaboratorPermission: async (repository, login) => {
+      const { stdout } = await command("gh", ["api", `repos/${repository}/collaborators/${login}/permission`]);
+      return JSON.parse(stdout);
+    },
+    getWorkflowJobs: async (repository, runId, attempt) => {
+      const { stdout } = await command("gh", ["api", "--paginate", "--slurp",
+        `repos/${repository}/actions/runs/${runId}/attempts/${attempt}/jobs?per_page=100`]);
+      const pages = JSON.parse(stdout);
+      assert(Array.isArray(pages) && pages.length > 0 && pages.length <= 32, "Invalid job pages.");
+      const jobs = pages.flatMap((page) => page.jobs);
+      assert(pages.every((page) => Array.isArray(page.jobs) && page.total_count === jobs.length) &&
+        new Set(jobs.map((job) => job.id)).size === jobs.length, "Incomplete or duplicate workflow jobs.");
+      return jobs.map(({ id, run_id, run_attempt, head_sha, name, html_url, status, conclusion, steps }) =>
+        ({ id, run_id, run_attempt, head_sha, name, html_url, status, conclusion,
+          steps: steps.map(({ name: stepName, number, status: stepStatus, conclusion: stepConclusion }) =>
+            ({ name: stepName, number, status: stepStatus, conclusion: stepConclusion })) }));
+    },
+    getJobLog: async (repository, jobId) => {
+      const { stdout } = await command("gh", ["api", `repos/${repository}/actions/jobs/${jobId}/logs`]);
+      return Buffer.from(stdout, "utf8");
+    },
     ...overrides,
   };
+  adapters.readGitFile ??= adapters.readRepositoryFile;
   delete adapters.asOf;
   delete adapters.requireCredential;
 
@@ -677,8 +750,23 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     assert(typeof process.env.GH_TOKEN === "string" && process.env.GH_TOKEN.length > 0,
       "Live admission verification requires a job-scoped GH_TOKEN.");
   }
+  const report = { historical_verified: [], current_verified: [], recovery_pending: [] };
+  const verifiedHeads = [];
+  const verifiedExecutions = [];
+  const currentChecks = [];
   for (const entry of candidates) {
     const evidence = entry.observed_default_branch_evidence;
+    const prior = overrides.basePolicy?.repositories.find((row) => row.repository_id === entry.repository_id);
+    const firstAdmission = prior?.admission_status === "admission_candidate" &&
+      prior.cohort_binding_status === "bootstrap_pending" &&
+      ["observed_cohort_id", "observed_cohort_record_digest", "observed_cohort_event_digest",
+        "exact_package_version", "exact_foundation_version", "reusable_workflow_revision",
+        "observed_default_branch_evidence"].every((field) => prior[field] === null) &&
+      prior.observed_cohort_generation == null && prior.exact_cohort_v2_packages === undefined &&
+      prior.qualification?.status === "not_qualified" && prior.qualification.observed_revision === null &&
+      Array.isArray(prior.qualification.evidence_paths) && prior.qualification.evidence_paths.length === 0;
+    const advancing = prior && !firstAdmission && (prior.observed_cohort_id !== entry.observed_cohort_id ||
+      !isDeepStrictEqual(prior.observed_default_branch_evidence, evidence));
     assert(entry.admission_status === "admitted" && evidence !== null,
       `${entry.repository} lacks live-verifiable admitted default-branch evidence.`);
     const record = lifecycle.cohortById.get(entry.observed_cohort_id);
@@ -699,41 +787,122 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     assert(repository.id === entry.repository_id && repository.full_name === entry.repository &&
       repository.default_branch === evidence.default_branch,
     `${entry.repository} live identity/default branch differs from admission evidence.`);
-    await verifyAdmissionRevision(entry, evidence, record, qualification, {
+    if (advancing || firstAdmission) {
+      assert(prior.desired_cohort_id === entry.observed_cohort_id && entry.desired_cohort_id === entry.observed_cohort_id,
+        `${entry.repository} observation does not finalize the previously selected target.`);
+    }
+    if (advancing) {
+      const old = prior.observed_default_branch_evidence;
+      assert(old && old.default_branch === evidence.default_branch &&
+        await adapters.isCommitAncestor(entry.repository, old.revision, evidence.revision),
+      `${entry.repository} prior historical observation is not ancestral to target success.`);
+      verifiedExecutions.push(await verifyAdmissionRevision(prior, old, lifecycle.cohortById.get(prior.observed_cohort_id),
+        lifecycle.qualificationEventById.get(prior.observed_cohort_id), {
+          binding: "historical", revision: old.revision, checkRunId: old.check_run_id,
+          checkRunUrl: old.check_run_url, workflowRunId: old.workflow_run_id,
+        }, adapters));
+    }
+    verifiedExecutions.push(await verifyAdmissionRevision(entry, evidence, record, qualification, {
+      binding: "historical",
+      ...((advancing || firstAdmission) ? { targetProjection: qualifiedCohortProjection(registry, record.cohort_id, { asOf: overrides.asOf }) } : {}),
       revision: evidence.revision,
       checkRunId: evidence.check_run_id,
       checkRunUrl: evidence.check_run_url,
       workflowRunId: evidence.workflow_run_id,
-    }, adapters);
+    }, adapters));
+    report.historical_verified.push(entry.repository_id);
+    let rowResult;
     let stableHead = false;
     for (let attempt = 1; attempt <= 2 && !stableHead; attempt += 1) {
       const head = await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch);
       assert(await adapters.isCommitAncestor(entry.repository, evidence.revision, head),
         `${entry.repository} admission revision is not an ancestor of the current default-branch head.`);
-      if (head !== evidence.revision) {
+      assert(!(advancing || firstAdmission) || head === evidence.revision, `${entry.repository} observed advancement is not the current target default head.`);
+      rowResult = { repository_id: entry.repository_id, revision: head, cohort_id: entry.observed_cohort_id };
+      {
         const matches = (await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
           check.head_sha === head && check.name === evidence.required_context &&
-          check.app?.id === evidence.integration_id && check.conclusion === "success");
-        assert(matches.length === 1,
+          check.app?.id === evidence.integration_id);
+        if (head === evidence.revision) {
+          assert(matches.length === 1 && matches[0].conclusion === "success" &&
+            matches[0].id === evidence.check_run_id && matches[0].html_url === evidence.check_run_url,
           `${entry.repository} current default-branch head requires exactly one successful admitted check.`);
-        const [check] = matches;
-        await verifyAdmissionRevision(entry, evidence, record, qualification, {
-          revision: head,
-          checkRunId: check.id,
-          checkRunUrl: check.html_url,
-          workflowRunId: workflowRunIdFromCheck(entry.repository, check),
-          check,
-        }, adapters);
+          currentChecks.push({ repository: entry.repository, revision: head, check: structuredClone(matches[0]) });
+        } else if (matches.length === 1 && matches[0].conclusion === "failure" && overrides.recovery) {
+          rowResult = await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, head,
+            overrides.recovery.execution, adapters);
+        } else {
+          assert(matches.length === 1 && matches[0].conclusion === "success",
+            `${entry.repository} current default-branch head requires exactly one successful admitted check.`);
+          const [check] = matches;
+          currentChecks.push({ repository: entry.repository, revision: head, check: structuredClone(check) });
+          // Select from the current committed projection, then validate its exact
+          // binding. Historical policy fields are never temporarily rewritten.
+          const bytes = await adapters.readRepositoryFile(entry.repository,
+            "architecture/foundation/docs-protocol-managed-state.json", head);
+          const currentId = JSON.parse(bytes.toString("utf8")).cohortId;
+          assert([entry.observed_cohort_id, entry.desired_cohort_id].includes(currentId),
+            `${entry.repository} current projection selects an unrelated Cohort.`);
+          const currentRecord = lifecycle.cohortById.get(currentId);
+          const currentQualification = lifecycle.qualificationEventById.get(currentId);
+          assert(currentRecord !== undefined && currentQualification !== undefined,
+            `${entry.repository} current Cohort is not qualified.`);
+          const generation = currentId === entry.desired_cohort_id
+            ? entry.desired_cohort_generation : entry.observed_cohort_generation;
+          assert(currentRecord.cohort_generation === 2 ? generation === 2 : generation === undefined,
+            `${entry.repository} current policy generation differs from its Cohort.`);
+          verifiedExecutions.push(await verifyAdmissionRevision(entry, evidence, currentRecord, currentQualification, {
+            binding: "current",
+            ...(currentId !== entry.observed_cohort_id ? {
+              targetProjection: qualifiedCohortProjection(registry, currentId, { asOf: overrides.asOf }),
+            } : {}),
+            revision: head,
+            checkRunId: check.id,
+            checkRunUrl: check.html_url,
+            workflowRunId: workflowRunIdFromCheck(entry.repository, check),
+            check,
+          }, adapters));
+          rowResult.cohort_id = currentId;
+        }
       }
       stableHead = await adapters.getDefaultBranchHead(
         entry.repository,
         evidence.default_branch,
       ) === head;
     }
+    verifiedHeads.push({ repository: entry.repository, branch: evidence.default_branch,
+      head: rowResult.source_head ?? rowResult.revision });
+    report[rowResult.status === "recovery_pending" ? "recovery_pending" : "current_verified"].push(rowResult);
     assert(stableHead,
       `${entry.repository} default-branch head changed repeatedly during live admission verification.`);
   }
-  return candidates.map(({ repository_id: id }) => id);
+  for (const snapshot of verifiedExecutions) {
+    assert(isDeepStrictEqual(await adapters.getWorkflowRun(snapshot.repository, snapshot.run.id), snapshot.run),
+      `${snapshot.repository} workflow execution changed during the fleet admission audit.`);
+    const checks = await adapters.getCheckRuns(snapshot.repository, snapshot.revision);
+    const exact = checks.filter((check) => check.id === snapshot.check.id);
+    assert(exact.length === 1 && isDeepStrictEqual(exact[0], snapshot.check),
+      `${snapshot.repository} admitted check changed during the fleet admission audit.`);
+  }
+  // Historical identity lookup above deliberately tolerates later executions.
+  // Current success must instead remain unique across the complete context/App set.
+  for (const snapshot of currentChecks) {
+    const matches = (await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter((check) =>
+      check.head_sha === snapshot.revision && check.name === snapshot.check.name &&
+      check.app?.id === snapshot.check.app.id);
+    assert(matches.length === 1 && isDeepStrictEqual(matches[0], snapshot.check),
+      `${snapshot.repository} current admitted check became missing, ambiguous or changed during the fleet admission audit.`);
+  }
+  for (const pending of report.recovery_pending) {
+    const entry = candidates.find((row) => row.repository_id === pending.repository_id);
+    await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, pending.source_head,
+      overrides.recovery.execution, adapters);
+  }
+  for (const snapshot of verifiedHeads) {
+    assert(await adapters.getDefaultBranchHead(snapshot.repository, snapshot.branch) === snapshot.head,
+      `${snapshot.repository} default-branch head changed during the fleet admission audit.`);
+  }
+  return report;
 }
 
 export async function verifyDocsCohortEvidence(registry, schema, cohortId, overrides = {}) {
@@ -793,7 +962,7 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
     isDefaultBranchAncestor: defaultIsDefaultBranchAncestor,
     getCheckRuns: async (repository, revision) => {
       const { stdout } = await command("gh", [
-        "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100`,
+        "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100&filter=all`,
         "--jq", ".check_runs[]",
       ]);
       return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
@@ -961,7 +1130,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const verified = await verifyDocsAdmissionEvidence(
       await loadJson(admissionPolicyPath), registry, schema, { requireCredential: true },
     );
-    console.log(`Live Docs admission evidence verified for ${verified.length} bound consumer(s).`);
+    console.log(JSON.stringify(verified));
   } else if (changedFrom !== undefined) {
     const changed = await verifyChangedDocsCohortEvidence(
       await loadJson(changedFrom),
