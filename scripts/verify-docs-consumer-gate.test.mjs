@@ -508,15 +508,6 @@ function cohortV2Fixture() {
   input.files["package.json"] = `${JSON.stringify(cohortV2Manifest())}\n`;
   input.files["pnpm-lock.yaml"] = stringifyYaml(cohortV2Lock());
   input.runtimeClosureSources = { [record.runtime_closure.projection_path]: closure.source };
-  Object.assign(input.policy.repositories[0], {
-    desired_cohort_generation: 2,
-    observed_cohort_generation: 2,
-    v3_qualification_coordinates: {
-      profile_schema_version: 3, cohort_schema_version: 2, managed_state_schema_version: 2,
-      receipt_schema_version: 3, execution_envelope_schema_version: 1,
-      evidence_class: "cohort-v2-supporting-canary",
-    },
-  });
   return input;
 }
 
@@ -577,7 +568,7 @@ test("authorizes an inputless exact caller from central desired/observed authori
   assert.equal(result.expectedPackages.length, 2);
 });
 
-test("authorizes Cohort v2 only through its explicit selected generation authority", () => {
+test("authorizes Cohort v2 from the selected immutable Cohort authority", () => {
   const input = cohortV2Fixture();
   const authorization = authorizeConsumerGate(input);
   assert.equal(authorization.schemaVersion, 2);
@@ -585,13 +576,6 @@ test("authorizes Cohort v2 only through its explicit selected generation authori
   assert.equal(authorization.qualificationPackageManager, "pnpm@11.20.0");
   assert.equal(authorization.expectedPackages.length, 5);
   assert.equal(authorization.qualificationAuthority.qualificationEvent.state, "QUALIFIED");
-  const wrongDesired = cohortV2Fixture();
-  wrongDesired.policy.repositories[0].desired_cohort_generation = undefined;
-  assert.throws(() => authorizeConsumerGate(wrongDesired), /explicitly match the Cohort generation/u);
-  const wrongObserved = cohortV2Fixture();
-  wrongObserved.policy.repositories[0].desired_cohort_id = "other-cohort";
-  wrongObserved.policy.repositories[0].observed_cohort_generation = null;
-  assert.throws(() => authorizeConsumerGate(wrongObserved), /explicitly match the Cohort generation/u);
 });
 
 test("Cohort v2 authorization keeps non-canaries out before RECOMMENDED", () => {

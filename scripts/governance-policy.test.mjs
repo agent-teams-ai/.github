@@ -125,6 +125,17 @@ test("accepts the authoritative documentation protocol admission policy", () => 
   assert.doesNotThrow(() => validateDocsProtocolPolicy(clone(docsProtocol), docsProtocolSchema));
 });
 
+test("keeps policy v2 records compatible with immutable consumer schemas", () => {
+  const changed = clone(docsProtocol);
+  changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/docs-protocol-canary-20260817",
+  ).desired_cohort_generation = 2;
+  assert.throws(
+    () => validateDocsProtocolPolicy(changed, docsProtocolSchema),
+    /JSON Schema/u,
+  );
+});
+
 test("keeps stable3 as an immutable compatibility snapshot represented in v2", () => {
   assert.doesNotThrow(() => validateDocsProtocolCompatibilitySnapshot(
     stableDocsProtocolSource,

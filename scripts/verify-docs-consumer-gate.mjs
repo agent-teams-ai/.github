@@ -789,15 +789,6 @@ export function authorizeConsumerGate(input) {
   const caller = parseYamlStrict(callerSource, CALLER_WORKFLOW_PATH, CALLER_LIMIT);
   const record = lifecycle.cohortById.get(managed.cohortId);
   assert(record !== undefined, "Managed projection selects an unknown central Cohort.");
-  const selectedGeneration = policyEntry.desired_cohort_id === record.cohort_id
-    ? policyEntry.desired_cohort_generation
-    : policyEntry.observed_cohort_id === record.cohort_id
-      ? policyEntry.observed_cohort_generation
-      : undefined;
-  assert(record.cohort_generation === 2
-    ? selectedGeneration === 2
-    : selectedGeneration === undefined,
-  "Central consumer policy does not explicitly match the Cohort generation.");
   const state = lifecycle.stateById.get(record.cohort_id);
   stateFor(lifecycle, policyEntry, record, input.repository.id, input.asOf);
   if (["QUALIFIED", "CANARY"].includes(state)) {
@@ -833,16 +824,6 @@ export function authorizeConsumerGate(input) {
   const v2 = record.cohort_generation === 2;
   assert((v2 && profile.schemaVersion === 3) || (!v2 && [1, 2].includes(profile.schemaVersion)),
     "Consumer profile generation does not explicitly match the selected Cohort generation.");
-  if (v2) {
-    assert(canonicalJson(policyEntry.v3_qualification_coordinates) === canonicalJson({
-      profile_schema_version: 3,
-      cohort_schema_version: 2,
-      managed_state_schema_version: 2,
-      receipt_schema_version: 3,
-      execution_envelope_schema_version: 1,
-      evidence_class: "cohort-v2-supporting-canary",
-    }), "Central consumer policy lacks exact Cohort v2 qualification coordinates.");
-  }
   const cohortProjection = {
     schemaVersion: v2 ? 2 : 1,
     cohortId: record.cohort_id,

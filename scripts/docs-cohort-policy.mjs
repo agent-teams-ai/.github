@@ -747,22 +747,6 @@ function assertBoundRepository(
     `${repository.repository} observed Cohort record digest differs.`);
   assert(repository.observed_cohort_event_digest === qualification.event_digest,
     `${repository.repository} observed qualification event digest differs.`);
-  const observedV2 = observed.cohort_generation === 2;
-  assert(observedV2
-    ? repository.observed_cohort_generation === 2
-    : repository.observed_cohort_generation === undefined,
-  `${repository.repository} observed Cohort generation is not explicit and exact.`);
-  if (observedV2) {
-    const versions = Object.fromEntries([
-      ["repository_mutation", "@agent-teams/repository-mutation"],
-      ["document_authoring", "@agent-teams/document-authoring"],
-      ["docs_protocol", "@agent-teams/docs-protocol"],
-      ["docs_protocol_agent_teams", "@agent-teams/docs-protocol-agent-teams"],
-      ["engineering_foundation", "@agent-teams/engineering-foundation"],
-    ].map(([key, name]) => [key, observed.packages.find((entry) => entry.name === name)?.version]));
-    assert(canonicalJson(repository.exact_cohort_v2_packages) === canonicalJson(versions),
-      `${repository.repository} v2 package policy differs from all five exact coordinates.`);
-  }
   const observedState = stateById.get(observed.cohort_id);
   const observedSupported = isDocsCohortSupportedForExistingBinding(
     observedState,
@@ -779,10 +763,6 @@ function assertBoundRepository(
     assert(repository.cohort_binding_status === "rollout_pending" &&
       transitionKind !== undefined,
       `${repository.repository} staged rollout lacks an explicit migration edge.`);
-    assert(desired?.cohort_generation === 2
-      ? repository.desired_cohort_generation === 2
-      : repository.desired_cohort_generation === undefined,
-    `${repository.repository} desired Cohort generation is not explicit and exact.`);
     assert(observedSupported || observedState === "SUSPENDED",
       `${repository.repository} rollout source is no longer supported and is not suspended for fix-forward.`);
     const targetAllowed = transitionKind === "upgrade"
@@ -888,9 +868,6 @@ export function validateDocsGovernanceReferences(
       const desired = cohortById.get(repository.desired_cohort_id);
       assert(repository.admission_status === "admission_candidate" &&
         desired !== undefined &&
-        (desired.cohort_generation === 2
-          ? repository.desired_cohort_generation === 2
-          : repository.desired_cohort_generation === undefined) &&
         isDocsCohortSelectableForRepository(
           desired,
           stateById.get(desired.cohort_id),
