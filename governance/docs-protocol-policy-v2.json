@@ -324,7 +324,7 @@
       "exact_package_version": "0.3.2",
       "exact_foundation_version": "0.20.0",
       "cohort_binding_status": "rollout_pending",
-      "desired_cohort_id": "docs-2026-09-08-stable14",
+      "desired_cohort_id": "docs-2026-09-08-stable15",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
         "profile_schema_version": 3,

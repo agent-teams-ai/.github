@@ -1,0 +1,207 @@
+name: Trusted Central Recovery Transition
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-central-recovery-transition:
+    name: trusted-central-recovery-transition
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Exact implementation bytes only. No no-op, historical tuple, rollback or head execution.
+            // Root binds PR before staging; independently pins final base/head in the cutover
+            // verifier AFTER staging/rebase. Embedding our own future commit SHA is forbidden.
+            const implementationPR = 210;
+            const patchSHA256 = "73cd92dba5b0fdef76502981769e051f50107eb6a5f27a297c699871f1a46b45";
+            const guardPath = ".github/workflows/docs-central-recovery-transition.yml";
+            const testPath = "scripts/docs-central-recovery-transition.test.mjs";
+            const { createHash } = require("node:crypto");
+            const repo = { owner: "agent-teams-ai", repo: ".github" };
+            const repositoryId = 1316243981;
+            const repository = "agent-teams-ai/.github";
+            const tuple = [{"path":".github/workflows/docs-admission-evidence.yml","status":"modified","old_mode":"100644","new_mode":"100644","old_blob":"a9e9e806d2ceabec63b30f1587209bb76982ae47","new_blob":"5ad526fd141a572e34c22209e49f124005b7401b","sha256":"0bbdf2fd5cca379e0abcda28fee2c5941ed2f15ac44b399fcfebe8c20e03be3f"},{"path":"docs/decisions/0006-bounded-central-admission-recovery.md","status":"added","old_mode":null,"new_mode":"100644","old_blob":null,"new_blob":"84c190236e76c58855d297d47ef253307519396d","sha256":"ddedf90793746d8d1e17687c1062f933e3f0aed9b9eeb09634c591704b012b48"},{"path":"scripts/docs-admission-change.test.mjs","status":"added","old_mode":null,"new_mode":"100644","old_blob":null,"new_blob":"883a4190103ee798368e1470c44d3f83124b6073","sha256":"d0a325eda24fbd638d08e82ebdfae6d5f4975885007978bdd913ff0df3e31f67"},{"path":"scripts/docs-admission-recovery.test.mjs","status":"added","old_mode":null,"new_mode":"100644","old_blob":null,"new_blob":"4b2d479f00286bfc266d565c5ab84f833ed56ebc","sha256":"c7aa818681f273ee7254a349fe28ff1fce9cab3123bbca35f3aff63a36722aae"},{"path":"scripts/docs-admission-workflow.test.mjs","status":"added","old_mode":null,"new_mode":"100644","old_blob":null,"new_blob":"da21e160af7fcd3c4a004b97739f0756774139ed","sha256":"f3e836d91e7480fef320f1cbf7b6942706166b0f90382aaf3f234f8736bc90cc"},{"path":"scripts/docs-cohort-policy.test.mjs","status":"modified","old_mode":"100644","new_mode":"100644","old_blob":"bc64b1aed3013cf901196f7cbc69c8e049ed4f22","new_blob":"77effa8d9495cc9dd153a97a187c37fc595fc7dc","sha256":"e072e66491d3e11548684dbfefe4dd66af0af33c66f6971367a6b7a7e3e5add0"},{"path":"scripts/docs-legacy-admission-recovery.mjs","status":"added","old_mode":null,"new_mode":"100644","old_blob":null,"new_blob":"123adee6f039d45c22ae6e8ded98585ed6a46e3f","sha256":"6a2a9ade2904227bd6a51014df86d12119fc6d2f61034978565d68e2254cd31c"},{"path":"scripts/docs-legacy-admission-recovery.test.mjs","status":"added","old_mode":null,"new_mode":"100644","old_blob":null,"new_blob":"0de232fe1af305fdef74769fb931d581bd069d83","sha256":"d401da5369119ed2d472aa78c95958a9863ae76d778ac1e0d3d7ef63ef1fb723"},{"path":"scripts/verify-docs-admission-change.mjs","status":"modified","old_mode":"100644","new_mode":"100644","old_blob":"5703b7bdc63eac7570e3313255af2f33d7a5faf8","new_blob":"e0448f06d34ea0cb308083dc07380252e4bfd3df","sha256":"1810b38d5d7bb52fda7454e39bca8faec1112457b6d02859388e47011b03fc8f"},{"path":"scripts/verify-docs-cohort-evidence.mjs","status":"modified","old_mode":"100644","new_mode":"100644","old_blob":"f4550a689e979f82f23843577dd303b739c3a7c9","new_blob":"6543f425fe424170909bfe7a71dbfbbdbf475bdf","sha256":"0521fdda6db280b07b7be73941041e2d5d78b1ecb250a58cbdf3c25b416f2df5"}];
+            const need = (ok, message) => { if (!ok) throw new Error(message); };
+            const sha = (value) => typeof value === "string" && /^(?!0{40}$)[0-9a-f]{40}$/u.test(value);
+            const positive = (value) => Number.isSafeInteger(value) && value > 0;
+            need(positive(implementationPR), "UNBOUND implementation PR: root binding and review required");
+            need(tuple.length === 10 && new Set(tuple.map((row) => row.path)).size === 10 &&
+              tuple.every((row) => row.new_mode === "100644" && sha(row.new_blob) &&
+                /^[0-9a-f]{64}$/u.test(row.sha256) &&
+                ((row.status === "added" && row.old_blob === null && row.old_mode === null) ||
+                  (row.status === "modified" && row.old_mode === "100644" && sha(row.old_blob)))), "Invalid reviewed tuple");
+            function identity(value) {
+              need(value?.id === repositoryId && value.full_name === repository &&
+                value.name === repo.repo && value.owner?.login === repo.owner, "Repository identity mismatch");
+            }
+            async function read(method, args = {}) {
+              const response = await method({ ...repo, ...args, headers: {
+                accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+                "Cache-Control": "no-cache"
+              } });
+              need(response?.status === 200 &&
+                /^application\/json(?:;|$)/u.test(response.headers?.["content-type"] ?? "") &&
+                response.data !== null && typeof response.data === "object", "Invalid API response");
+              return response;
+            }
+            function pullSnapshot(pull) {
+              need(pull?.number === implementationPR && positive(pull.id) && pull.state === "open" &&
+                pull.merged === false && pull.draft === false && pull.changed_files === tuple.length &&
+                positive(pull.commits) && typeof pull.updated_at === "string" && pull.updated_at.length > 0,
+                "Invalid implementation PR metadata/count");
+              identity(pull.base?.repo); identity(pull.head?.repo);
+              for (const side of [pull.base, pull.head]) {
+                need(sha(side.sha) && typeof side.ref === "string" && side.ref.length > 0, "Invalid PR ref");
+              }
+              need(pull.base.sha !== pull.head.sha, "Empty PR");
+              return JSON.stringify([pull.id, pull.number, pull.base.ref, pull.base.sha,
+                pull.head.ref, pull.head.sha, pull.commits, pull.changed_files, pull.updated_at]);
+            }
+            need(context.eventName === "pull_request_target" &&
+              ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(context.payload.action) &&
+              context.payload.number === implementationPR && context.repo.owner === repo.owner &&
+              context.repo.repo === repo.repo, "Wrong event/repository/PR");
+            identity(context.payload.repository);
+            const event = context.payload.pull_request;
+            const expectedSnapshot = pullSnapshot(event);
+            async function snapshot() {
+              const pull = (await read(github.rest.pulls.get, { pull_number: implementationPR })).data;
+              need(pullSnapshot(pull) === expectedSnapshot, "Stale PR/event snapshot");
+              const controller = (await read(github.rest.repos.get)).data;
+              identity(controller);
+              need(typeof controller.default_branch === "string" && controller.default_branch === "main" &&
+                controller.default_branch === context.payload.repository.default_branch &&
+                pull.base.ref === controller.default_branch, "Default branch mismatch");
+              const branch = (await read(github.rest.repos.getBranch, { branch: controller.default_branch })).data;
+              need(branch.name === controller.default_branch && sha(branch.commit?.sha) &&
+                branch.commit.sha === pull.base.sha && context.sha === pull.base.sha &&
+                context.ref === `refs/heads/${controller.default_branch}`, "Stale live/execution base");
+            }
+            await snapshot();
+            // Ten entries fit one page. Any continuation or nonempty second page is inconsistent.
+            const files = await read(github.rest.pulls.listFiles, { pull_number: implementationPR, per_page: 100, page: 1 });
+            need(!files.headers.link && Array.isArray(files.data) && files.data.length === tuple.length &&
+              new Set(files.data.map((file) => file?.filename)).size === tuple.length, "Incomplete/duplicate file page");
+            for (const file of files.data) {
+              const expected = tuple.find((row) => row.path === file?.filename);
+              need(expected && file.status === expected.status && !("previous_filename" in file) &&
+                file.sha === expected.new_blob, "Unexpected path/status/new blob or rename");
+            }
+            const end = await read(github.rest.pulls.listFiles, { pull_number: implementationPR, per_page: 100, page: 2 });
+            // GitHub may retain first/prev/last links to page 1 on an empty page 2; never follow them.
+            const backLinksOnly = end.headers.link === undefined || (typeof end.headers.link === "string" &&
+              !/[^\x20-\x7e]/u.test(end.headers.link) && end.headers.link.split(",").every((link) => {
+                const match = /^<([^>]+)>; rel="(?:prev|first|last)"$/u.exec(link.trim());
+                return match && ["repositories/1316243981", "repos/agent-teams-ai/.github"].some((route) =>
+                  ["per_page=100&page=1", "page=1&per_page=100"].some((query) =>
+                    match[1] === `https://api.github.com/${route}/pulls/${implementationPR}/files?${query}`));
+              }));
+            need(backLinksOnly && Array.isArray(end.data) && end.data.length === 0, "Unexpected file continuation");
+            const base = event.base.sha, head = event.head.sha;
+            const comparison = (await read(github.rest.repos.compareCommits, {
+              base, head, per_page: 1, page: 1
+            })).data;
+            need(comparison.status === "ahead" && comparison.base_commit?.sha === base &&
+              comparison.merge_base_commit?.sha === base && comparison.behind_by === 0 &&
+              comparison.ahead_by === event.commits && comparison.total_commits === event.commits,
+              "Head does not contain the live base");
+            async function tree(ref) {
+              const commit = (await read(github.rest.git.getCommit, { commit_sha: ref })).data;
+              need(commit.sha === ref && sha(commit.tree?.sha), "Invalid immutable commit");
+              const data = (await read(github.rest.git.getTree, { tree_sha: commit.tree.sha, recursive: "1" })).data;
+              need(data.sha === commit.tree.sha && data.truncated === false &&
+                Array.isArray(data.tree) && data.tree.length > 0, "Incomplete immutable tree");
+              const entries = new Map();
+              for (const entry of data.tree) {
+                need(typeof entry?.path === "string" && !/[\x00-\x1f\x7f]/u.test(entry.path) &&
+                  entry.path.split("/").every((part) => part && part !== "." && part !== "..") &&
+                  !entries.has(entry.path) && sha(entry.sha) &&
+                  ((entry.type === "tree" && entry.mode === "040000") ||
+                    (entry.type === "blob" && ["100644", "100755"].includes(entry.mode) &&
+                      Number.isSafeInteger(entry.size) && entry.size >= 0)), "Invalid tree entry/type/mode");
+                entries.set(entry.path, entry);
+              }
+              const children = new Map([["", []]]);
+              for (const entry of entries.values()) if (entry.type === "tree") children.set(entry.path, []);
+              for (const entry of entries.values()) {
+                const parent = entry.path.includes("/") ? entry.path.slice(0, entry.path.lastIndexOf("/")) : "";
+                need(children.has(parent), "Missing tree parent");
+                children.get(parent).push(entry);
+              }
+              // Rehash every directory: truncated/omitted metadata must not hide an extra change.
+              const name = (entry) => entry.path.split("/").at(-1);
+              const key = (entry) => Buffer.from(name(entry) + (entry.type === "tree" ? "/" : ""));
+              for (const [path, items] of children) {
+                items.sort((a, b) => Buffer.compare(key(a), key(b)));
+                const bytes = Buffer.concat(items.flatMap((entry) => [
+                  Buffer.from(`${entry.mode.replace(/^0/u, "")} ${name(entry)}\0`), Buffer.from(entry.sha, "hex")
+                ]));
+                const digest = createHash("sha1").update(`tree ${bytes.length}\0`).update(bytes).digest("hex");
+                need(digest === (path ? entries.get(path).sha : data.sha), "Tree metadata hash mismatch");
+              }
+              return entries;
+            }
+            const oldTree = await tree(base);
+            const newTree = await tree(head);
+            // Compare the full tree, including unprotected paths and directory structure.
+            const changed = [];
+            for (const path of new Set([...oldTree.keys(), ...newTree.keys()])) {
+              const old = oldTree.get(path), next = newTree.get(path);
+              if (old?.type === "tree" || next?.type === "tree") {
+                need(!old || !next || (old.type === next.type && old.mode === next.mode), "Directory type/mode change");
+                // Added directory must be an ancestor of a reviewed addition; no removed directories.
+                need(next && (old || tuple.some((row) => row.status === "added" && row.path.startsWith(path + "/"))),
+                  "Unexpected added/removed directory");
+                continue;
+              }
+              if (!old || !next || old.sha !== next.sha || old.mode !== next.mode || old.type !== next.type) changed.push(path);
+            }
+            need(changed.length === tuple.length && changed.every((path) => tuple.some((row) => row.path === path)),
+              "Tree diff is not the complete ten-file tuple");
+            async function blob(expected, size, sha256) {
+              const data = (await read(github.rest.git.getBlob, { file_sha: expected })).data;
+              need(data.sha === expected && data.encoding === "base64" && typeof data.content === "string" &&
+                Number.isSafeInteger(data.size) && data.size >= 0 && data.size === size && size <= 1048576,
+                "Invalid immutable blob metadata");
+              // Only GitHub's LF line wrapping is accepted; Buffer's permissive decoder alone is insufficient.
+              const encoded = data.content.replace(/\n/gu, "");
+              need(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded),
+                "Invalid blob encoding");
+              const bytes = Buffer.from(encoded, "base64");
+              need(bytes.length === size && bytes.toString("base64") === encoded &&
+                createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex") === expected,
+                "Blob body hash mismatch");
+              if (sha256) need(createHash("sha256").update(bytes).digest("hex") === sha256, "New blob SHA256 mismatch");
+            }
+            const observed = [];
+            for (const row of tuple) {
+              const old = oldTree.get(row.path), next = newTree.get(row.path);
+              need(next?.type === "blob" && next.mode === row.new_mode && next.sha === row.new_blob &&
+                (row.status === "added" ? !old : old?.type === "blob" && old.mode === row.old_mode && old.sha === row.old_blob),
+                "Old/new blob or mode mismatch");
+              if (old) await blob(row.old_blob, old.size);
+              await blob(row.new_blob, next.size, row.sha256);
+              observed.push({ path: row.path, status: row.status, oldMode: row.old_mode, newMode: row.new_mode,
+                oldBlob: row.old_blob, newBlob: row.new_blob, sha256: row.sha256 });
+            }
+            // Exact full diff already excludes self changes. Explicitly require staged source/tests to exist.
+            for (const path of [guardPath, testPath]) {
+              const old = oldTree.get(path), next = newTree.get(path);
+              need(old?.type === "blob" && old.mode === "100644" && next?.sha === old.sha && next.mode === old.mode,
+                "Missing/changed base-owned guard or tests");
+              await blob(old.sha, old.size);
+            }
+            await snapshot();
+            const evidence = { repository, repositoryId, pr: implementationPR, base, head, patchSHA256,
+              guardPath, guardBlob: oldTree.get(guardPath).sha, testBlob: oldTree.get(testPath).sha,
+              result: "exact_implementation_transition", files: observed };
+            core.setOutput("evidence", JSON.stringify(evidence));
+            core.info(JSON.stringify(evidence));

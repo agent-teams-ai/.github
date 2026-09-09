@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 2,
+  "cohortId": "docs-2026-09-08-stable15",
+  "channel": "stable",
+  "recordDigest": "sha256:639812f41c99205f499aacd6557b14e5d48d5f47fde27448205cbc83f44a8dd2",
+  "qualificationEventDigest": "sha256:277934236b34018741de3e3db58d2aeff151734294e3d939ca6b25f4a06afa8b",
+  "eligibleAfter": "2026-09-09T11:05:15Z",
+  "upgradeFrom": [
+    "docs-2026-08-28-stable8",
+    "docs-2026-08-28-stable9.1",
+    "docs-2026-08-31-stable10"
+  ],
+  "rollbackTo": [
+    "docs-2026-08-28-stable8",
+    "docs-2026-08-28-stable9.1",
+    "docs-2026-08-31-stable10"
+  ],
+  "packages": {
+    "repositoryMutation": {
+      "version": "0.2.0",
+      "integrity": "sha512-a02kzLlWtQjPAG2fFo/HyC+T6D+hW+FJ+aNCYoTLuTdKqeuL50hIvSnQLMUbGajWBb4nAvaINvW2jvmJ+Qku0g=="
+    },
+    "documentAuthoring": {
+      "version": "0.3.0",
+      "integrity": "sha512-LdNT8VHPQxXvuyXsCblFSeCmbEEZcXwiCTY1E+c0ZEWWJG0V2qoi95F8fHAwI4ngZLDmLr/yzHGyDqwkd9GBrA=="
+    },
+    "docsProtocol": {
+      "version": "0.6.0",
+      "integrity": "sha512-xSlc0DFTGh0jed9581LoToHAXwxxZMhzlItbPeoc67YNBSDxLCP8XNwK0LCMs4w8MLqY6silJDtpzsHFw2XSVg=="
+    },
+    "docsProtocolAgentTeams": {
+      "version": "0.2.2",
+      "integrity": "sha512-z1JxNBR/sxPRuvNZI8Okpcx1H3KsIc3oVW6OC10LFZcEGR4k08fbMth2WVTicCeHMYDugjLzd0ddFo03b/vh7w=="
+    },
+    "engineeringFoundation": {
+      "version": "1.1.0",
+      "integrity": "sha512-BsHAyVYRQEuIACqmC3j23ADOraEH7oLuHMe9Bh8TasaAocGJE7yqEq1m/6FzMi1tLxlJ0Uko67gZu365t9e7pw=="
+    }
+  },
+  "workflow": {
+    "repository": "agent-teams-ai/.github",
+    "path": ".github/workflows/docs-protocol-check.yml",
+    "revision": "822ab02e6be9c76218b4da33b9c1fdec97bef9ef",
+    "blobSha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+  },
+  "assets": {
+    "skillDigest": "sha256:a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5",
+    "callerWorkflowDigest": "sha256:96722be4609daa262cc3cb8defe0cb8869713c0b77276886783b92720280ddf2",
+    "assetCatalogDigest": "sha256:3ec380a1a6dd8534824ba82ff23affba993e19e9cb6b3c5e424ea9973ad686da",
+    "transitionCatalogDigest": "sha256:7d7d5308e5495dc159b34aaaceaf5953e4649a1330a96065585777464d68d06c"
+  },
+  "schemas": {
+    "consumerIntegration": 3,
+    "managedState": 2,
+    "docsProtocol": 1
+  },
+  "runtime": {
+    "node": ">=24.18.0 <25",
+    "pnpm": ">=11.17.0 <12",
+    "runtimeClosureDigest": "sha256:13f40994f7320bba8202314fe3eba916ce2db3c5c2185f79889dd562904ffbb4"
+  }
+}

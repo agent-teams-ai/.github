@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "authorizations": [
+    {
+      "id": "pr209-stable15-selection-20260909",
+      "state": "active",
+      "valid_from": "2026-09-09T08:35:33Z",
+      "expires_at": "2026-09-10T08:35:33Z",
+      "controller": {
+        "repository": "agent-teams-ai/.github",
+        "repository_id": 1316243981
+      },
+      "pull_number": 209,
+      "operation": {
+        "kind": "selection",
+        "repository_id": 1336577313,
+        "before_policy_blob": "92b060bb4965ffb75291efb6b860e2379fd7aa0d",
+        "after_policy_blob": "319f2997ec6f482c7ba4d9313ba971a343024bc3",
+        "registry_blob": "51dcdf1ba0368cc1e38b67b12a812c80931831be",
+        "exceptions_blob": "227ff02acba7de7a53a563ae2e93fa0322a1672a",
+        "target": {
+          "cohort_id": "docs-2026-09-08-stable15",
+          "record_digest": "sha256:639812f41c99205f499aacd6557b14e5d48d5f47fde27448205cbc83f44a8dd2",
+          "event_digest": "sha256:277934236b34018741de3e3db58d2aeff151734294e3d939ca6b25f4a06afa8b",
+          "generation": 2,
+          "workflow": {
+            "repository": "agent-teams-ai/.github",
+            "repository_id": 1316243981,
+            "path": ".github/workflows/docs-protocol-check.yml",
+            "revision": "822ab02e6be9c76218b4da33b9c1fdec97bef9ef",
+            "blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+          },
+          "packages": [
+            {
+              "name": "@agent-teams/repository-mutation",
+              "role": "transitive",
+              "version": "0.2.0",
+              "integrity": "sha512-a02kzLlWtQjPAG2fFo/HyC+T6D+hW+FJ+aNCYoTLuTdKqeuL50hIvSnQLMUbGajWBb4nAvaINvW2jvmJ+Qku0g==",
+              "registry": "https://registry.npmjs.org/",
+              "published_at": "2026-09-07T22:59:41.813Z",
+              "provenance": {
+                "source_repository": "agent-teams-ai/engineering-foundation",
+                "source_repository_id": 1316243988,
+                "source_workflow": ".github/workflows/release.yml",
+                "source_commit": "f7be87586dae11be5641a7e963525b7f63b72338",
+                "workflow_run_id": 34167531297,
+                "workflow_run_attempt": 1,
+                "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.0",
+                "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297",
+                "signature_verified": true
+              }
+            },
+            {
+              "name": "@agent-teams/document-authoring",
+              "role": "transitive",
+              "version": "0.3.0",
+              "integrity": "sha512-LdNT8VHPQxXvuyXsCblFSeCmbEEZcXwiCTY1E+c0ZEWWJG0V2qoi95F8fHAwI4ngZLDmLr/yzHGyDqwkd9GBrA==",
+              "registry": "https://registry.npmjs.org/",
+              "published_at": "2026-09-07T22:59:58.854Z",
+              "provenance": {
+                "source_repository": "agent-teams-ai/engineering-foundation",
+                "source_repository_id": 1316243988,
+                "source_workflow": ".github/workflows/release.yml",
+                "source_commit": "f7be87586dae11be5641a7e963525b7f63b72338",
+                "workflow_run_id": 34167531297,
+                "workflow_run_attempt": 1,
+                "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.0",
+                "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297",
+                "signature_verified": true
+              }
+            },
+            {
+              "name": "@agent-teams/docs-protocol",
+              "role": "direct",
+              "version": "0.6.0",
+              "integrity": "sha512-xSlc0DFTGh0jed9581LoToHAXwxxZMhzlItbPeoc67YNBSDxLCP8XNwK0LCMs4w8MLqY6silJDtpzsHFw2XSVg==",
+              "registry": "https://registry.npmjs.org/",
+              "published_at": "2026-09-07T23:00:21.392Z",
+              "provenance": {
+                "source_repository": "agent-teams-ai/engineering-foundation",
+                "source_repository_id": 1316243988,
+                "source_workflow": ".github/workflows/release.yml",
+                "source_commit": "f7be87586dae11be5641a7e963525b7f63b72338",
+                "workflow_run_id": 34167531297,
+                "workflow_run_attempt": 1,
+                "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.0",
+                "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297",
+                "signature_verified": true
+              }
+            },
+            {
+              "name": "@agent-teams/docs-protocol-agent-teams",
+              "role": "direct",
+              "version": "0.2.2",
+              "integrity": "sha512-z1JxNBR/sxPRuvNZI8Okpcx1H3KsIc3oVW6OC10LFZcEGR4k08fbMth2WVTicCeHMYDugjLzd0ddFo03b/vh7w==",
+              "registry": "https://registry.npmjs.org/",
+              "provenance": {
+                "source_repository": "agent-teams-ai/engineering-foundation",
+                "source_repository_id": 1316243988,
+                "source_workflow": ".github/workflows/release.yml",
+                "source_commit": "aa0ce695e5d5f28f03eaeaeb4886244a16f655d0",
+                "workflow_run_id": 34217252017,
+                "workflow_run_attempt": 1,
+                "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.2",
+                "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34217252017",
+                "signature_verified": true
+              },
+              "published_at": "2026-09-08T11:05:14.301Z"
+            },
+            {
+              "name": "@agent-teams/engineering-foundation",
+              "role": "direct",
+              "version": "1.1.0",
+              "integrity": "sha512-BsHAyVYRQEuIACqmC3j23ADOraEH7oLuHMe9Bh8TasaAocGJE7yqEq1m/6FzMi1tLxlJ0Uko67gZu365t9e7pw==",
+              "registry": "https://registry.npmjs.org/",
+              "published_at": "2026-09-07T23:06:47.586Z",
+              "provenance": {
+                "source_repository": "agent-teams-ai/engineering-foundation",
+                "source_repository_id": 1316243988,
+                "source_workflow": ".github/workflows/release.yml",
+                "source_commit": "f7be87586dae11be5641a7e963525b7f63b72338",
+                "workflow_run_id": 34167531297,
+                "workflow_run_attempt": 1,
+                "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.1.0",
+                "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297",
+                "signature_verified": true
+              }
+            }
+          ]
+        }
+      },
+      "incidents": [
+        {
+          "source_entry": {
+            "repository": "agent-teams-ai/agent-teams-token",
+            "repository_id": 1348461381,
+            "source_provenance": {
+              "kind": "original",
+              "parent_repository": null
+            },
+            "governance_ownership": "organization_owned",
+            "repository_lifecycle": "active",
+            "docs_role": "consumer",
+            "protocol_required": true,
+            "admission_status": "admitted",
+            "exact_package_version": "0.2.0",
+            "exact_foundation_version": "0.20.0",
+            "cohort_binding_status": "bound",
+            "desired_cohort_id": "docs-2026-08-28-stable8",
+            "observed_cohort_id": "docs-2026-08-28-stable8",
+            "observed_cohort_record_digest": "sha256:e1ad7395b51d7b912db2181d263104067c712fc0cd13bac91aa5dccbc2590cc4",
+            "observed_cohort_event_digest": "sha256:bc24797129f6fedd4d252f20deebf9762da1093ff7a5dea137c32cb52d12e471",
+            "profile_path": "architecture/foundation/docs-protocol.yaml",
+            "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+            "reusable_workflow_revision": "07d49409cb51f6124ad17673860b812a9d7b5f5b",
+            "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+            "fixed_gate_command": "pnpm docs:protocol:check",
+            "required_check_context": "docs-protocol / docs-protocol-check",
+            "observed_default_branch_evidence": {
+              "default_branch": "main",
+              "revision": "6174b253be76d2d6af151660050e2f545bb98c50",
+              "required_context": "docs-protocol / docs-protocol-check",
+              "integration_id": 15368,
+              "conclusion": "success",
+              "check_run_id": 98744530072,
+              "check_run_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/33138605809/job/98744530072",
+              "workflow_run_id": 33138605809,
+              "workflow_id": 344094656,
+              "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+              "caller_workflow_digest": "sha256:7907195753506e4b0f0e89eb3f6e495bacbd79e9b9913c9f60fc4a07dffb22e5",
+              "observed_at": "2026-08-28T03:23:34Z"
+            },
+            "qualification": {
+              "status": "qualified",
+              "observed_revision": "6174b253be76d2d6af151660050e2f545bb98c50",
+              "evidence_paths": [
+                "package.json",
+                "architecture/foundation/docs-protocol.yaml",
+                ".github/workflows/docs-protocol.yml",
+                "architecture/foundation/docs-protocol-qualification.json",
+                "architecture/foundation/docs-consumer-integration.json",
+                "architecture/foundation/docs-protocol-managed-state.json"
+              ]
+            },
+            "classification_evidence": {
+              "decision": "adopted",
+              "observed_revision": "6174b253be76d2d6af151660050e2f545bb98c50",
+              "evidence_paths": [
+                "package.json",
+                "pnpm-lock.yaml",
+                "architecture/foundation/docs-protocol.yaml",
+                ".github/workflows/docs-protocol.yml",
+                "architecture/foundation/docs-protocol-qualification.json",
+                "architecture/foundation/docs-consumer-integration.json",
+                "architecture/foundation/docs-protocol-managed-state.json"
+              ],
+              "rationale": "The exact Token default branch proves the stable8 managed integration, qualification v2 contract, released-cohort receipt, and required semantic gate on the exact admitted revision.",
+              "v2_qualification_coordinates": {
+                "schema_version": 2,
+                "integration_path": "architecture/foundation/docs-consumer-integration.json",
+                "contract_path": "architecture/foundation/docs-protocol-qualification.json",
+                "gate_command": "pnpm docs:protocol:check",
+                "qualification_command": "agent-teams-docs qualify --consumer . --integration architecture/foundation/docs-consumer-integration.json --json",
+                "receipt_schema_version": 2,
+                "receipt_evidence_class": "released-cohort",
+                "receipt_transport": "qualification_cli_json_stdout",
+                "trusted_structural_check_context": "docs-protocol / trusted-structural",
+                "untrusted_semantic_check_context": "docs-protocol / docs-protocol-check"
+              }
+            },
+            "exemption": null,
+            "required_check_exception_id": null
+          },
+          "source_head": "5bd0551ed253ca20ac84225a93b874347232ce2e",
+          "proof": {
+            "revision": "c3c3f04aa2c869a0b85d1bf1fcd6a02c2a88ac38",
+            "path": "governance/evidence/docs-admission-recovery/pr209-token-legacy-parser.json",
+            "blob": "b01158299944fe84612e64881056620d5a345336"
+          },
+          "owner_decision": {
+            "comment_id": 5598891182,
+            "actor_id": 13103045,
+            "actor_login": "777genius",
+            "body_digest": "sha256:58824aa814c62cdadb41290a91abef2b7730a25f7abc0e84bc19038ec2db5865"
+          }
+        }
+      ]
+    }
+  ]
+}
