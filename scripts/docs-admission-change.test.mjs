@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import YAML from "yaml";
 import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile } from "./verify-docs-admission-change.mjs";
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
@@ -15,6 +16,31 @@ const base = "72e1a4c2c0845655153a0b757aa7c87c34ec8f7e";
 const head = "c".repeat(40); // Synthetic central PR, never published.
 const encode = (value) => Buffer.from(JSON.stringify(value));
 const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  pull_request:\n  merge_group:\n  push:\n\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n  docs-protocol:\n    uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`);
+
+// Canonical workflow branches: only the selected generation executes; the
+// alternative remains visible as skipped in the hosted job's step list.
+const legacyQualification = "Run only the exact installed agent-teams-docs qualify CLI";
+const v2Qualification = "Run Cohort v2 qualification through the trusted base-owned runner";
+function successfulSteps(role, generation) {
+  const step = (name, conclusion = "success") => ({ name, status: "completed", conclusion });
+  if (role === "trusted-qualification") return [
+    step(legacyQualification, generation === 2 ? "skipped" : "success"),
+    step(v2Qualification, generation === 2 ? "success" : "skipped"),
+    step("Confirm current controller authority stayed stable through qualification"),
+  ];
+  if (role === "docs-protocol-check") return [step("Run repository semantic documentation gate")];
+  return [];
+}
+
+test("admission execution fixtures follow canonical legacy and v2 workflow branches", async () => {
+  const workflow = YAML.parse(await readFile(".github/workflows/docs-protocol-check.yml", "utf8"));
+  const steps = workflow.jobs["trusted-qualification"].steps;
+  for (const [name, profile] of [[legacyQualification, "legacy"], [v2Qualification, "cohort-v2"]]) {
+    const matching = steps.filter((step) => step.name === name);
+    assert.equal(matching.length, 1);
+    assert.equal(matching[0].if, `needs.trusted-authorize.outputs.qualification-profile == '${profile}'`);
+  }
+});
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), "central-admission-integration-"));
@@ -212,8 +238,7 @@ function successfulTarget(f, advance = false) {
     ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"].map((role, index) => ({ id: 901 + index,
       run_id: 900, run_attempt: 1, head_sha: targetHead, name: `docs-protocol / ${role}`, status: "completed", conclusion: "success",
       html_url: `https://github.com/${repo}/actions/runs/900/job/${901 + index}`,
-      steps: ["Run only the exact installed agent-teams-docs qualify CLI", "Confirm current controller authority stayed stable through qualification",
-        "Run repository semantic documentation gate"].map((name) => ({ name, status: "completed", conclusion: "success" })) })) : priorOptions.getWorkflowJobs(repo, id, attempt);
+      steps: successfulSteps(role, record.cohort_generation) })) : priorOptions.getWorkflowJobs(repo, id, attempt);
   f.options.readRepositoryFile = async (repo, path, revision) => {
     if (repo !== original.repository) return priorOptions.readRepositoryFile(repo, path, revision);
     const id = revision === targetHead ? targetId : original.observed_cohort_id;
@@ -396,9 +421,7 @@ async function firstBinding(t, generation = 2) {
       return { id: jobId, run_id: evidence.workflow_run_id, run_attempt: 1, head_sha: evidence.revision,
         name: `docs-protocol / ${role}`, status: 'completed', conclusion: 'success',
         html_url: `https://github.com/${repo}/actions/runs/${evidence.workflow_run_id}/job/${jobId}`,
-        steps: ['Run only the exact installed agent-teams-docs qualify CLI',
-          'Confirm current controller authority stayed stable through qualification',
-          'Run repository semantic documentation gate'].map(name => ({ name, status: 'completed', conclusion: 'success' })) };
+        steps: successfulSteps(role, generation) };
     });
   };
   return { f, selected, prior, validate, jobReads: () => jobReads,
@@ -457,4 +480,34 @@ for (const mutation of ['missing jobs', 'failed qualification', 'skipped semanti
     }
     await assert.rejects(b.run(), /target|qualification|semantic|runner|attempt/i);
   });
+}
+
+for (const mode of ["selected-target", "final-observed", "first-binding-legacy", "first-binding-v2"]) {
+  for (const mutation of ["missing", "wrong-generation", "failure", "cancelled", "skipped", "in-progress", "duplicate", "duplicate-skipped"]) {
+    test(`executed qualification rejects ${mutation}: ${mode}`, async (t) => {
+      const generation = mode === "first-binding-legacy" ? 1 : 2;
+      const b = mode.startsWith("first-binding") ? await firstBinding(t, generation) : null;
+      const f = b ? b.f : await fixture(t);
+      if (!b) successfulTarget(f, mode === "final-observed");
+      const selected = b ? b.selected : f.selected;
+      const get = f.options.getWorkflowJobs;
+      f.options.getWorkflowJobs = async (repo, id, attempt) => {
+        const jobs = await get(repo, id, attempt);
+        if (repo !== selected.repository) return jobs;
+        const job = jobs.find((job) => job.name.endsWith("trusted-qualification"));
+        const name = generation === 2 ? v2Qualification : legacyQualification;
+        const executed = job.steps.find((step) => step.name === name);
+        if (mutation === "missing") job.steps = job.steps.filter((step) => step !== executed);
+        else if (mutation === "wrong-generation") {
+          executed.conclusion = "skipped";
+          job.steps.find((step) => step.name === (generation === 2 ? legacyQualification : v2Qualification)).conclusion = "success";
+        } else if (mutation.startsWith("duplicate")) {
+          job.steps.push({ ...executed, conclusion: mutation === "duplicate" ? "success" : "skipped" });
+        } else if (mutation === "in-progress") executed.status = "in_progress";
+        else executed.conclusion = mutation;
+        return jobs;
+      };
+      await assert.rejects(b ? b.run() : f.run(), /target qualification\/semantics did not actually execute successfully/u);
+    });
+  }
 }

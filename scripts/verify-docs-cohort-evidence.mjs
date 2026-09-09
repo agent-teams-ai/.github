@@ -675,9 +675,13 @@ export async function verifyAdmissionRevision(
       const role = job.name.split(" / ").at(-1);
       const required = role === "docs-protocol-check" ? ["Run repository semantic documentation gate"]
         : role === "trusted-qualification" ? ["Confirm current controller authority stayed stable through qualification",
-          ...(record.cohort_generation === 2 ? ["Run only the exact installed agent-teams-docs qualify CLI"] : [])] : [];
-      assert(required.every((name) => job.steps.filter((step) => step.name === name &&
-        step.status === "completed" && step.conclusion === "success").length === 1),
+          record.cohort_generation === 2
+            ? "Run Cohort v2 qualification through the trusted base-owned runner"
+            : "Run only the exact installed agent-teams-docs qualify CLI"] : [];
+      assert(required.every((name) => {
+        const matching = job.steps.filter((step) => step.name === name);
+        return matching.length === 1 && matching[0].status === "completed" && matching[0].conclusion === "success";
+      }),
       `${entry.repository} target qualification/semantics did not actually execute successfully.`);
       if (role === "docs-protocol-check") assert(job.id === check.id && job.html_url === check.html_url,
         `${entry.repository} target semantic job differs from the required check.`);
