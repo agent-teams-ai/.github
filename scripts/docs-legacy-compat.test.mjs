@@ -39,7 +39,8 @@ const json = async (path, base = root) => JSON.parse(await readFile(join(base, p
 const policy = await json("governance/docs-protocol-policy-v2.json");
 const registry = await json("governance/docs-qualified-cohorts.json");
 // Offline fixture time follows the complete registry event history; never a qualification clock.
-const fixtureAsOf = registry.events.map(event => event.effective_at).toSorted().at(-1);
+const fixtureAsOf = registry.events.map(event => event.effective_at)
+  .toSorted((a, b) => Date.parse(a) - Date.parse(b)).at(-1);
 const policySchema = await json("governance/docs-protocol-policy-v2.schema.json", candidate);
 const registrySchema = await json("governance/docs-qualified-cohorts.schema.json", candidate);
 const oldPolicySchema = JSON.parse(git("show", `${LEGACY}:governance/docs-protocol-policy-v2.schema.json`));

@@ -98,17 +98,14 @@ changes, not permission to change central authority in this staging checkout.
 
 ## Required evidence still missing
 
-- [ ] Engineering Foundation verifies published Docs 0.4.1 / Foundation 0.21.0
-  tarball SRI and provenance, exact asset catalog and caller template bytes.
-  Package reuse remains unproven until those assets support this successor.
-- [ ] Verify the published transition catalog bundles the required stable8
-  upgrade origin, with exact immutable Cohort projection, skill and caller
-  digests, canonical agent route and Docs scripts digests. Historical skill and
-  caller files must exist at their content-addressed paths and hash correctly.
-  The existing verifier requires no current source executors. Retain evidence
-  of an executable upgrade and an owned recovery path; do not invent a bundle.
-- [ ] If required assets are absent, prepare and verify a concrete producer draft before seeking version-specific
-  publication approval. This checklist neither chooses a version nor authorizes it.
+- [ ] Verify/reuse the modern managed adapter 0.2.2 (Docs 0.6.0 dependency)
+  stable10 origin, exact historical projection and content-addressed skill/caller.
+  The old Docs 0.4.1 / Foundation 0.21.0 tarball SRI inspection below remains an
+  old-package observation, not a missing modern-origin prerequisite. Do not
+  require an obsolete legacy bridge or a new origin publication.
+- [ ] Bind actual runtime-specific target assets and verify current-authority
+  compatibility, declared transition eligibility and a supported recovery path.
+  Existing origin assets alone do not qualify that target or its closure.
 - [ ] After source review, bind the actual new immutable workflow commit/blob,
   rendered caller digest, schemas, package graph/SRI/provenance and a freshly
   verified content-addressed closure. Reconcile any further fresh-resolution
@@ -146,8 +143,10 @@ review artifact materializes the complete declared-base tree plus that patch;
 compares the complete trees. Historical authority files in that archive are
 source history, never replacement controller data. ROOT owns subsequent commits.
 
-The only script correction derives all three fixture clocks from the maximum
-`effective_at` in the complete input registry. Exact b4b90 produces
+The script correction derives all three fixture clocks from the numeric time maximum
+`effective_at` in the complete input registry, retaining the selected original
+canonical string for whole-second and fractional timestamps without changing
+the event array. Exact b4b90 produces
 `2026-09-09T07:46:42Z`; no real qualification clock is changed. Both PR207 and
 b4b90 fixture snapshots retain their complete authority and pass 9 outer/93
 nested tests. The sealed audit's original 5/9 result remains evidence.
@@ -170,12 +169,25 @@ node materialization-output/check-next-inputs.mjs
 It verifies all ten historical asset pairs, all stable10 package asset digests,
 and exact stable10 caller rendering, then emits `NEXT-INPUTS.json` with an
 explicit HOLD. Its successful exit means inspection passed, never qualification.
+That historical output is preserved unchanged; its missing-modern-origin
+interpretation is superseded by the correction-output next-input interpretation.
+Modern `@agent-teams/docs-protocol-agent-teams@0.2.2`, depending on Docs 0.6.0,
+already owns stable10 at `directTargetBundles[11]`. Its catalog SHA-256 is
+`7d7d5308e5495dc159b34aaaceaf5953e4649a1330a96065585777464d68d06c`.
+Independent review verified all 12 caller/skill pairs and exact stable10 record,
+workflow, package/SRI, QUALIFIED event, route/script digests and declared edges
+against b4b90. Fresh public artifact evidence verifies registry SRI, tarball,
+catalog and individual stable10 bytes. Neither establishes cryptographic
+provenance or Runtime qualification. The published parser separately checks
+origin bytes and allowed target edges; these are distinct requirements.
+
 The next qualification owner must execute these steps in order:
 
-1. Supply a producer-owned stable10 historical projection and content-addressed
-   caller/skill bundle. Verify exact managed-state, caller, route and script
-   bytes against `NEXT-INPUTS.json`, with passing stable10 controls before each
-   missing/forged-origin rejection. Use the published parser, not a copied one.
+1. Verify and reuse that existing modern adapter-owned stable10 historical
+   projection and content-addressed caller/skill bundle. Verify exact managed
+   state, caller, route and script bytes against the retained bindings, with
+   passing stable10 controls before missing/forged-origin rejections. Use the
+   published parser. No new-origin publication prerequisite is implied.
 2. Bind the reviewed actual successor workflow commit and blob, exact target
    assets and package SRI/provenance. Declare `upgrade_from` stable10. No target
    ID or version is assigned here; stable10's own `upgrade_from` stable8 and
@@ -202,3 +214,16 @@ The next qualification owner must execute these steps in order:
 
 Consumer PR69/71 adoption, admission, release, provider operations and registry
 writes remain outside this checkpoint. Stable16 and Foundation PR281 are untouched.
+
+The historical executable candidate suite remains failed at 78/79. Its first
+failure is a stale rollout diagnostic expectation: the RECOMMENDED-wave check
+rejects the unauthorized parallel rollout earlier. A diagnostic-only regex
+replacement still yields 78/79, exposing a stale "Missing expected exception"
+rollback assertion. That fixture explicitly declares `rollback_to` the observed
+cohort; the current validator correctly accepts the supported declared recovery,
+including a suspended source. This is not evidence of clock-induced weakening,
+and one regex fix does not solve the gate. Reconcile executable candidate tests
+separately with the declared-edge contract, preserving real missing-edge
+rejection, supported recovery positives and unsupported/expired target negatives,
+then run complete relevant gates. This small correction modifies neither the
+inner patch nor the historical executable candidate.

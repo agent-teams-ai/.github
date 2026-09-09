@@ -71,8 +71,8 @@ Foundation 0.21.0. The immutable closure digest is
 the captured actual digest is
 `sha256:c7454c52e2310e90d94981a4e6bcb902ef0051ed91183d15a8bbc2ff5406edb7`.
 The staging checklist references external evidence by exact SHA-256, avoiding
-large copied runtime reports in this repository. It records missing published transition and
-historical asset evidence, source materialization commands, and the boundary
+large copied runtime reports in this repository. It records transition qualification inputs, the old-package asset observation,
+source materialization commands, and the boundary
 between local preparation and separately authorized merge/publication.
 Neither this capture nor the existing green backport checks qualify a successor.
 
@@ -83,11 +83,13 @@ Neither this capture nor the existing green backport checks qualify a successor.
    evolution under the existing base-owned successor-check/ruleset process;
    authority changes cannot accompany a lifecycle append to bypass those checks.
    Run the required full repository checks on the supported Node/pnpm toolchain.
-2. Engineering Foundation verifies the exact published asset catalog, caller
-   template, transition catalog and historical assets. The successor must have an
-   executable transition from stable8 and an owned recovery path. Existing package
-   reuse is unproven; if those assets lack the origin, producer release work needs
-   separate approval. No release or package version is invented here.
+2. Engineering Foundation verifies and reuses the existing modern managed
+   adapter 0.2.2 stable10 historical origin, catalog, skill and caller for the
+   intended Docs 0.6.0 route. Old Docs 0.4.1 omits stable10 from its historical
+   catalog; that does not require new origin publication or a legacy bridge.
+   Bind the actual runtime-specific target and qualify its declared transition
+   and supported recovery independently. Token's stable8 adoption path remains
+   separately owned; origin possession grants no target eligibility.
 3. Bind the actual successor workflow commit/blob, rendered caller, exact package
    graph/SRI/provenance, schema coordinates and content-addressed runtime closure
    into a new legacy Cohort. Preserve all prior record/event bytes. Run
@@ -111,3 +113,9 @@ The 2026-09-09 [stable10 checkpoint](qualification-staging/README.md#stable10-ma
 adds exact declared-base source materialization and published-contract inspection.
 Fixture clocks now follow the latest event in the complete registry input;
 this is deterministic offline test time, never a qualification timestamp.
+
+The historical executable candidate remains at 78/79: its first rollout-message
+assertion is stale, and a diagnostic-only regex change exposes a second stale
+assertion rejecting an explicitly declared rollback. One regex fix does not pass
+the gate. Candidate test reconciliation and complete relevant gates remain a
+separate owner obligation; this correction leaves that candidate unchanged.
