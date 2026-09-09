@@ -11,7 +11,7 @@ import { qualifiedCohortProjection } from "./docs-cohort-policy.mjs";
 import { POLICY_PATH, REGISTRY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH,
   recoveryBlob, recoveryDigest, recoveryTarget, reproduceLegacyParserErrors } from "./docs-legacy-admission-recovery.mjs";
 
-const base = "870f62612d3c81d6040b0918be9de48690b39c53";
+const base = "72e1a4c2c0845655153a0b757aa7c87c34ec8f7e";
 const head = "c".repeat(40); // Synthetic central PR, never published.
 const encode = (value) => Buffer.from(JSON.stringify(value));
 const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  pull_request:\n  merge_group:\n  push:\n\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n  docs-protocol:\n    uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`);
@@ -26,6 +26,10 @@ async function fixture(t) {
   const policy = JSON.parse(baseBytes);
   const registryBytes = await readFile(REGISTRY_PATH);
   const registry = JSON.parse(registryBytes);
+  const asOfDate = new Date(Date.parse(registry.events.at(-1).effective_at) + 1_000);
+  const asOf = asOfDate.toISOString().replace(/\.000Z$/u, "Z");
+  const validFrom = new Date(asOfDate.getTime() - 60_000).toISOString().replace(/\.000Z$/u, "Z");
+  const expiresAt = new Date(asOfDate.getTime() + 60_000).toISOString().replace(/\.000Z$/u, "Z");
   const exceptions = await readFile(EXCEPTIONS_PATH);
   const candidates = policy.repositories.filter((row) => ["bound", "rollout_pending"].includes(row.cohort_binding_status));
   const selected = policy.repositories.find((row) => row.repository === "agent-teams-ai/docs-protocol-canary-20260817");
@@ -37,7 +41,7 @@ async function fixture(t) {
   const recordFor = (entry) => registry.cohorts.find((row) => row.cohort_id === entry.observed_cohort_id);
   const entryFor = (repository) => candidates.find((entry) => entry.repository === repository);
   const projectionFor = (entry, id = entry.observed_cohort_id) => {
-    const p = qualifiedCohortProjection(registry, id, { asOf: "2026-09-08T18:00:00Z" });
+    const p = qualifiedCohortProjection(registry, id, { asOf });
     return encode({ ...p, repository: { provider: "github", id: String(entry.repository_id), nameWithOwner: entry.repository },
       cohortAuthority: { channel: p.channel, recordDigest: p.recordDigest, qualificationEventDigest: p.qualificationEventDigest,
         eligibleAfter: p.eligibleAfter, upgradeFrom: p.upgradeFrom, rollbackTo: p.rollbackTo } });
@@ -77,8 +81,8 @@ async function fixture(t) {
     after_policy_blob: recoveryBlob(encode(policy)), registry_blob: recoveryBlob(registryBytes), exceptions_blob: recoveryBlob(exceptions),
     target: recoveryTarget(registry, selected.desired_cohort_id) };
   const proofCoordinate = coord("governance/evidence/docs-admission-recovery/synthetic-integration.json", base, encode(proof));
-  let decisionText = `Authorize central admission recovery synthetic-integration\nRepository: agent-teams-ai/.github (1316243981)\nPR: 999\nPolicy: ${operation.before_policy_blob} -> ${operation.after_policy_blob}\nProof: ${base}:${proofCoordinate.path}@${proofCoordinate.blob}\nExpires: 2026-09-09T00:00:00Z\n`;
-  const authorization = { id: "synthetic-integration", state: "active", valid_from: "2026-09-08T00:00:00Z", expires_at: "2026-09-09T00:00:00Z",
+  let decisionText = `Authorize central admission recovery synthetic-integration\nRepository: agent-teams-ai/.github (1316243981)\nPR: 999\nPolicy: ${operation.before_policy_blob} -> ${operation.after_policy_blob}\nProof: ${base}:${proofCoordinate.path}@${proofCoordinate.blob}\nExpires: ${expiresAt}\n`;
+  const authorization = { id: "synthetic-integration", state: "active", valid_from: validFrom, expires_at: expiresAt,
     controller: execution.controller, pull_number: 999, operation,
     incidents: [{ source_entry: originalCollateral, source_head: sourceHead, proof: proofCoordinate,
       owner_decision: { comment_id: 7, actor_id: 8, actor_login: "synthetic-owner", body_digest: recoveryDigest(Buffer.from(decisionText)) } }] };
@@ -88,7 +92,7 @@ async function fixture(t) {
     base: { sha: base, ref: "main", repo: controller }, head: { sha: head, repo: controller } };
   let controllerCalls = 0;
   const options = {
-    clock: () => "2026-09-08T18:00:00Z", asOf: "2026-09-08T18:00:00Z", execution,
+    clock: () => asOf, asOf, execution,
     verifyController: async (value) => {
       controllerCalls++;
       return verifyAdmissionController(value, async (path) => path.endsWith("/pulls/999") ? centralPull
@@ -132,7 +136,7 @@ async function fixture(t) {
     bindOperation: (kind) => {
       operation.kind = kind; operation.after_policy_blob = recoveryBlob(encode(policy));
       operation.target = recoveryTarget(registry, selected.desired_cohort_id);
-      decisionText = `Authorize central admission recovery synthetic-integration\nRepository: agent-teams-ai/.github (1316243981)\nPR: 999\nPolicy: ${operation.before_policy_blob} -> ${operation.after_policy_blob}\nProof: ${base}:${proofCoordinate.path}@${proofCoordinate.blob}\nExpires: 2026-09-09T00:00:00Z\n`;
+      decisionText = `Authorize central admission recovery synthetic-integration\nRepository: agent-teams-ai/.github (1316243981)\nPR: 999\nPolicy: ${operation.before_policy_blob} -> ${operation.after_policy_blob}\nProof: ${base}:${proofCoordinate.path}@${proofCoordinate.blob}\nExpires: ${expiresAt}\n`;
       authorization.incidents[0].owner_decision.body_digest = recoveryDigest(Buffer.from(decisionText));
     },
     controllerCalls: () => controllerCalls,
