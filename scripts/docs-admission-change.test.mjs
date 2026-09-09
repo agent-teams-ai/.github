@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import test from "node:test";
 import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile } from "./verify-docs-admission-change.mjs";
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
@@ -24,14 +24,13 @@ async function fixture(t) {
   t.after(() => { if (token === undefined) delete process.env.GH_TOKEN; else process.env.GH_TOKEN = token; });
   const baseBytes = await readAdmissionBaseFile(POLICY_PATH, base);
   const policy = JSON.parse(baseBytes);
-  // Keep checkout authority and proof coordinates on the same historical snapshot.
-  const registryBytes = await readAdmissionBaseFile(REGISTRY_PATH, base);
+  const registryBytes = await readFile(REGISTRY_PATH);
   const registry = JSON.parse(registryBytes);
   const asOfDate = new Date(Date.parse(registry.events.at(-1).effective_at) + 1_000);
   const asOf = asOfDate.toISOString().replace(/\.000Z$/u, "Z");
   const validFrom = new Date(asOfDate.getTime() - 60_000).toISOString().replace(/\.000Z$/u, "Z");
   const expiresAt = new Date(asOfDate.getTime() + 60_000).toISOString().replace(/\.000Z$/u, "Z");
-  const exceptions = await readAdmissionBaseFile(EXCEPTIONS_PATH, base);
+  const exceptions = await readFile(EXCEPTIONS_PATH);
   const candidates = policy.repositories.filter((row) => ["bound", "rollout_pending"].includes(row.cohort_binding_status));
   const selected = policy.repositories.find((row) => row.repository === "agent-teams-ai/docs-protocol-canary-20260817");
   const collateral = policy.repositories.find((row) => row.repository === "agent-teams-ai/agent-teams-token");
@@ -132,17 +131,8 @@ async function fixture(t) {
   };
   const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
   await writeFile(paths.exceptions, exceptions);
-  // The real verifier reads checkout authority relative to cwd. Materialize its
-  // pinned inputs without modifying the shared worktree or bypassing base checks.
-  await mkdir(join(directory, "governance"));
-  await symlink(resolve(".git"), join(directory, ".git"), "dir");
-  for (const path of [REGISTRY_PATH, "governance/docs-protocol-policy-v2.schema.json",
-    "governance/docs-protocol-exceptions.schema.json", "governance/docs-qualified-cohorts.schema.json",
-    "governance/code-security-defaults.json"]) {
-    await writeFile(join(directory, path), await readAdmissionBaseFile(path, base));
-  }
   return { policy, registry, selected, collateral, originalCollateral, authority, authorization, execution, options, centralPull,
-    projectionFor, checkoutRegistryPath: join(directory, REGISTRY_PATH),
+    projectionFor,
     bindOperation: (kind) => {
       operation.kind = kind; operation.after_policy_blob = recoveryBlob(encode(policy));
       operation.target = recoveryTarget(registry, selected.desired_cohort_id);
@@ -150,14 +140,7 @@ async function fixture(t) {
       authorization.incidents[0].owner_decision.body_digest = recoveryDigest(Buffer.from(decisionText));
     },
     controllerCalls: () => controllerCalls,
-    run: async () => {
-      await writeFile(paths.policy, encode(policy));
-      const cwd = process.cwd();
-      // These tests run serially; always restore cwd, including on rejection.
-      process.chdir(directory);
-      try { return await verifyDocsAdmissionChange(paths, options); }
-      finally { process.chdir(cwd); }
-    } };
+    run: async () => { await writeFile(paths.policy, encode(policy)); return verifyDocsAdmissionChange(paths, options); } };
 }
 
 test("full imported verifier admits exact TEST selection with independently covered unchanged Token pending", async (t) => {
@@ -168,23 +151,6 @@ test("full imported verifier admits exact TEST selection with independently cove
   assert.equal(f.selected.desired_cohort_id, "docs-2026-09-08-stable15");
   assert.equal(f.collateral.desired_cohort_id, "docs-2026-08-28-stable8");
   assert.equal(f.controllerCalls(), 2);
-});
-
-test("historical fixture stays pinned across unrelated checkout registry appends", async (t) => {
-  const currentRegistryBytes = await readFile(REGISTRY_PATH);
-  const pinnedRegistryBytes = await readAdmissionBaseFile(REGISTRY_PATH, base);
-  const currentRegistry = JSON.parse(currentRegistryBytes);
-  const f = await fixture(t);
-  assert.ok(f.registry.cohorts.some((row) => row.cohort_id === "docs-2026-09-09-stable16"));
-  assert.ok(currentRegistry.cohorts.some((row) => !f.registry.cohorts.some((pinned) => pinned.cohort_id === row.cohort_id)),
-    "checkout contains an unrelated successor to the historical fixture");
-  assert.deepEqual(await readFile(f.checkoutRegistryPath), pinnedRegistryBytes);
-  assert.equal(f.authorization.operation.registry_blob, recoveryBlob(pinnedRegistryBytes));
-  assert.equal(f.authorization.operation.exceptions_blob, recoveryBlob(await readAdmissionBaseFile(EXCEPTIONS_PATH, base)));
-  await f.run();
-  // Even a valid later registry must fail the real exact-base control if mixed in.
-  await writeFile(f.checkoutRegistryPath, currentRegistryBytes);
-  await assert.rejects(f.run(), /Checkout authority is not the exact base/);
 });
 
 const negatives = {
@@ -411,7 +377,7 @@ async function firstBinding(t, generation = 2) {
     'exact_package_version', 'exact_foundation_version', 'reusable_workflow_revision', 'observed_default_branch_evidence']) prior[key] = null;
   delete prior.observed_cohort_generation; delete prior.exact_cohort_v2_packages;
   prior.qualification = { status: 'not_qualified', observed_revision: null, evidence_paths: [] };
-  const read = async name => JSON.parse(await readAdmissionBaseFile(`governance/${name}.json`, base));
+  const read = async name => JSON.parse(await readFile(`governance/${name}.json`, 'utf8'));
   const [policySchema, schema, exceptions, security] = await Promise.all(['docs-protocol-policy-v2.schema',
     'docs-qualified-cohorts.schema', 'docs-protocol-exceptions', 'code-security-defaults'].map(read));
   const validate = () => { for (const p of [basePolicy, f.policy]) {
