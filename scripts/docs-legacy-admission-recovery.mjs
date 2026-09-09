@@ -11,6 +11,17 @@ const DIGEST = /^sha256:[0-9a-f]{64}$/u;
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u;
 const capabilities = new WeakMap();
 const need = (condition, message) => { if (!condition) throw new Error(`Admission recovery: ${message}`); };
+
+function decisiveCheckRuns(checks) {
+  const byExecution = new Map();
+  for (const check of checks.filter(({ conclusion }) => conclusion !== "skipped")) {
+    const run = /\/actions\/runs\/(\d+)\/job\/\d+$/u.exec(check.html_url ?? "")?.[1];
+    const key = run === undefined ? `check:${check.id}` : `run:${run}`;
+    const retained = byExecution.get(key);
+    if (retained === undefined || check.id > retained.id) byExecution.set(key, check);
+  }
+  return [...byExecution.values()];
+}
 const equal = (actual, expected, label) => need(isDeepStrictEqual(actual, expected), `${label} differs`);
 const positive = (n) => Number.isSafeInteger(n) && n > 0;
 export const recoveryBlob = (bytes) => createHash("sha1")
@@ -439,8 +450,8 @@ export async function verifyRecoveryIncident(capability, entry, head, execution,
   const jobs = await adapters.getWorkflowJobs(entry.repository, run.id, run.run_attempt);
   equal(jobs, proof.jobs, "exact failed run/attempt jobs");
   verifyLegacyFailureJobs(jobs, { ...proof.run, repository: entry.repository }, proof.parser_job_id);
-  const checks = (await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
-    check.name === evidence.required_context && check.app?.id === evidence.integration_id);
+  const checks = decisiveCheckRuns((await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
+    check.name === evidence.required_context && check.app?.id === evidence.integration_id));
   const semantic = jobs.find((job) => job.name.split(" / ").at(-1) === "docs-protocol-check");
   need(checks.length === 1 && checks[0].head_sha === head && checks[0].conclusion === "failure" &&
     checks[0].id === semantic.id && checks[0].html_url === semantic.html_url, "missing/ambiguous/wrong failed required check");
