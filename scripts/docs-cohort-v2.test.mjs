@@ -331,7 +331,7 @@ test("accepts receipt v3 only with an immutable envelope and never substitutes c
       "exact-package-integrities", "schema-bindings-3-2-1", "runtime-closure-digest"],
   };
   const canonical = (value) => Array.isArray(value) ? `[${value.map(canonical).join(",")}]` :
-    value !== null && typeof value === "object" ? `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b))
+    value !== null && typeof value === "object" ? `{${Object.entries(value).sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)))
       .map(([key, entry]) => `${JSON.stringify(key)}:${canonical(entry)}`).join(",")}}` : JSON.stringify(value);
   const receipt = { ...body, receiptDigest: `sha256:${createHash("sha256").update(canonical(body)).digest("hex")}` };
   const envelopeBody = {
@@ -391,4 +391,152 @@ test("accepts receipt v3 only with an immutable envelope and never substitutes c
     receipt, executionEnvelope, record, qualificationEvent: qualification,
   }),
     /envelope digest binding/u);
+});
+
+// OFFLINE conformance fixture ONLY, not a hosted receipt or trusted execution proof.
+// Captured unmodified from installed @agent-teams/docs-protocol-agent-teams@0.2.3
+// public ./qualification runDocsProtocolQualificationV3 using the Canary stable17
+// profile and closure82 lock. No managed command, hash mock, or receipt re-signing.
+// The literal bytes and digest are an independent producer oracle for this test.
+const publicV3ReceiptSource = `{
+  "schemaVersion": 3,
+  "cohortAdmissible": true,
+  "profileSchemaVersion": 3,
+  "cohort": {
+    "schemaVersion": 2,
+    "cohortId": "docs-2026-09-09-stable17",
+    "recordDigest": "sha256:ec499aa9d9c40f996040c73c29d9c051cfb1325a532b8e2d851b803a234cbe24",
+    "qualificationEventDigest": "sha256:942e4eac460621ab889a945990af080f1cbcdcbdc2497f9b891f11e31b544d44"
+  },
+  "packages": [
+    {
+      "key": "repositoryMutation",
+      "name": "@agent-teams/repository-mutation",
+      "version": "0.2.0",
+      "integrity": "sha512-a02kzLlWtQjPAG2fFo/HyC+T6D+hW+FJ+aNCYoTLuTdKqeuL50hIvSnQLMUbGajWBb4nAvaINvW2jvmJ+Qku0g=="
+    },
+    {
+      "key": "documentAuthoring",
+      "name": "@agent-teams/document-authoring",
+      "version": "0.3.0",
+      "integrity": "sha512-LdNT8VHPQxXvuyXsCblFSeCmbEEZcXwiCTY1E+c0ZEWWJG0V2qoi95F8fHAwI4ngZLDmLr/yzHGyDqwkd9GBrA=="
+    },
+    {
+      "key": "docsProtocol",
+      "name": "@agent-teams/docs-protocol",
+      "version": "0.6.0",
+      "integrity": "sha512-xSlc0DFTGh0jed9581LoToHAXwxxZMhzlItbPeoc67YNBSDxLCP8XNwK0LCMs4w8MLqY6silJDtpzsHFw2XSVg=="
+    },
+    {
+      "key": "docsProtocolAgentTeams",
+      "name": "@agent-teams/docs-protocol-agent-teams",
+      "version": "0.2.3",
+      "integrity": "sha512-06faihpc/s86i/+leI+TmvVPCbVgEC30wSLfYvw4h360rbRNSLgY1pQEeY7W8+pQMi+LdYopt6fkBl0Z7ZGJrg=="
+    },
+    {
+      "key": "engineeringFoundation",
+      "name": "@agent-teams/engineering-foundation",
+      "version": "1.1.1",
+      "integrity": "sha512-tBVsRkm92KN/Um1c2S+3N8DTEBU2Ki7VgfuZWJ/SEhyNwP24ElMQxlSOaV/TrClBsEnjVkDsbGQxLP8jRJqmEw=="
+    }
+  ],
+  "schemas": {
+    "consumerIntegration": 3,
+    "managedState": 2,
+    "docsProtocol": 1
+  },
+  "runtime": {
+    "runtimeClosureDigest": "sha256:e2c56ef5299a33d83e86279151e32eab0eb4ca19e020a02aa65d657cb3fa5054"
+  },
+  "checks": [
+    "profile-v3",
+    "cohort-v2",
+    "five-package-closure",
+    "exact-package-versions",
+    "exact-package-integrities",
+    "schema-bindings-3-2-1",
+    "runtime-closure-digest"
+  ],
+  "receiptDigest": "sha256:484bf81c618827f3bbab556e500f6d22ddaed21be7659f726aa5747a0628d20e"
+}
+`;
+
+test("published adapter 0.2.3 receipt bytes conform independently of key insertion order and receipt locale sorting", (t) => {
+  assert.equal(createHash("sha256").update(publicV3ReceiptSource).digest("hex"),
+    "86a458768f19d050221bb4555c2a6451d9ec7f064c660c40aea677db2eba24c8");
+  const receipt = JSON.parse(publicV3ReceiptSource);
+  const record = current.cohorts.find(({ cohort_id }) => cohort_id === receipt.cohort.cohortId);
+  const qualificationEvent = current.events.find(({ event_digest }) =>
+    event_digest === receipt.cohort.qualificationEventDigest);
+  // Test-only execution coordinates, as in the existing supporting-evidence fixture.
+  // This unchanged envelope digest also pins the existing central digest domain.
+  const executionEnvelope = {
+    "schemaVersion": 1,
+    "domain": "agent-teams.docs-cohort-v2-execution-envelope/v1",
+    "callerSha": "dddddddddddddddddddddddddddddddddddddddd",
+    "checkout": {
+      "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+      "repositoryId": 1336577313,
+      "revision": "dddddddddddddddddddddddddddddddddddddddd"
+    },
+    "workflow": {
+      "repository": "agent-teams-ai/.github",
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "b4b90d89a1ba3429d01e670c9d0a4c7210cd82cf",
+      "blobSha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+      "runId": 456,
+      "runAttempt": 1
+    },
+    "authorizationDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "installEvidenceDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "receiptDigest": "sha256:484bf81c618827f3bbab556e500f6d22ddaed21be7659f726aa5747a0628d20e",
+    "envelopeDigest": "sha256:88efea2961b84bf6f4d5a3438b75ef6333b276877bd94bc11a5690e7af3a4a25"
+  };
+  const verify = (value = receipt, bindings = {}) => verifyDocsCohortV2SupportingEvidence({
+    receipt: value, record, qualificationEvent, executionEnvelope, ...bindings,
+  });
+  assert.equal(verify().centralCanaryEvidenceSatisfied, false);
+  const reverseKeys = (value) => Array.isArray(value) ? value.map(reverseKeys) :
+    value !== null && typeof value === "object" ? Object.fromEntries(Object.entries(value)
+      .reverse().map(([key, entry]) => [key, reverseKeys(entry)])) : value;
+  assert.deepEqual(verify(reverseKeys(receipt)), verify());
+
+  // Changing locale collation of these receipt keys cannot affect its digest.
+  // Delegate every other comparison so central event/envelope domains stay intact.
+  const localeCompare = String.prototype.localeCompare;
+  t.mock.method(String.prototype, "localeCompare", function (right, ...options) {
+    if (["schemas", "schemaVersion"].includes(String(this)) &&
+      ["schemas", "schemaVersion"].includes(String(right))) {
+      throw new Error("Receipt digest must not use locale collation.");
+    }
+    return localeCompare.call(this, right, ...options);
+  });
+  assert.deepEqual(verify(reverseKeys(receipt)), verify());
+  const legacyDigest = structuredClone(receipt);
+  legacyDigest.receiptDigest = "sha256:6d129e2ed02fd9a1897a68cb333a6362e316db2f4f93aafd256296e93aac1d19";
+  assert.throws(() => verify(legacyDigest), /Qualification receipt v3 digest is invalid/u);
+  for (const mutate of [
+    (value) => {value.packages[0].version = "0.2.1";},
+    (value) => {value.packages[0].integrity = INTEGRITY;},
+    (value) => {value.cohort.recordDigest = `sha256:${"a".repeat(64)}`;},
+    (value) => {value.cohort.qualificationEventDigest = `sha256:${"b".repeat(64)}`;},
+    (value) => {value.schemas.managedState = 1;},
+    (value) => {value.runtime.runtimeClosureDigest = `sha256:${"c".repeat(64)}`;},
+    (value) => {value.checks.reverse();},
+    (value) => {value.packages.reverse();},
+    (value) => {value.receiptDigest = "sha256:invalid";},
+  ]) {
+    const tampered = structuredClone(receipt);
+    mutate(tampered);
+    assert.throws(() => verify(tampered), /Qualification receipt v3 digest is invalid/u);
+  }
+  const wrongRecord = structuredClone(record);
+  wrongRecord.packages[0].version = "0.2.1";
+  assert.throws(() => verify(receipt, { record: wrongRecord }), /coordinate .* is not exact/u);
+  const wrongRuntime = structuredClone(record);
+  wrongRuntime.runtime_closure.digest = `sha256:${"c".repeat(64)}`;
+  assert.throws(() => verify(receipt, { record: wrongRuntime }), /schema\/runtime checks differ/u);
+  const wrongEnvelope = structuredClone(executionEnvelope);
+  wrongEnvelope.installEvidenceDigest = `sha256:${"c".repeat(64)}`;
+  assert.throws(() => verify(receipt, { executionEnvelope: wrongEnvelope }), /envelope digest binding/u);
 });
