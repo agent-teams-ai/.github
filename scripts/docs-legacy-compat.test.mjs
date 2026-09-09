@@ -38,6 +38,8 @@ const policyModule = await import(pathToFileURL(join(candidate, "scripts/docs-co
 const json = async (path, base = root) => JSON.parse(await readFile(join(base, path), "utf8"));
 const policy = await json("governance/docs-protocol-policy-v2.json");
 const registry = await json("governance/docs-qualified-cohorts.json");
+// Offline fixture time follows the complete registry event history; never a qualification clock.
+const fixtureAsOf = registry.events.map(event => event.effective_at).toSorted().at(-1);
 const policySchema = await json("governance/docs-protocol-policy-v2.schema.json", candidate);
 const registrySchema = await json("governance/docs-qualified-cohorts.schema.json", candidate);
 const oldPolicySchema = JSON.parse(git("show", `${LEGACY}:governance/docs-protocol-policy-v2.schema.json`));
@@ -78,7 +80,7 @@ function mixed() {
   });
   input.policySchema = policySchema;
   input.registrySchema = registrySchema;
-  input.asOf = "2026-09-08T16:00:00Z";
+  input.asOf = fixtureAsOf;
   return input;
 }
 
@@ -179,11 +181,11 @@ test("current revocation, archived lifecycle and suspended legacy cohort fail cl
 });
 
 test("real stable8 support expires and stable14 is not selectable by Token", () => {
-  const states = policyModule.validateDocsQualifiedCohorts(registry, registrySchema, { asOf: "2026-09-08T16:00:00Z" });
+  const states = policyModule.validateDocsQualifiedCohorts(registry, registrySchema, { asOf: fixtureAsOf });
   const stable8 = states.cohortById.get("docs-2026-08-28-stable8");
   const token = policy.repositories.find(e => e.repository.endsWith("/agent-teams-token"));
   assert(policyModule.isDocsCohortSupportedForExistingBinding(states.stateById.get(stable8.cohort_id),
-    states.supportUntilById.get(stable8.cohort_id), Date.parse("2026-09-08T16:00:00Z"), stable8, token.repository_id));
+    states.supportUntilById.get(stable8.cohort_id), Date.parse(fixtureAsOf), stable8, token.repository_id));
   assert.equal(policyModule.isDocsCohortSupportedForExistingBinding(states.stateById.get(stable8.cohort_id),
     states.supportUntilById.get(stable8.cohort_id), Date.parse("2026-09-29T00:00:00Z"), stable8, token.repository_id), false);
   const stable14 = registry.cohorts.find(e => e.cohort_id.endsWith("stable14"));

@@ -106,3 +106,8 @@ Stable8 support ends at `2026-09-28T16:41:06Z`; the backport does not extend it.
 Stable10 also has the old schema. Stable14's other-canary qualification grants
 Token no eligibility. No network, publishing, lifecycle promotion, GitHub mutation,
 authentication access, Token edit or commit is part of this artifact workflow.
+
+The 2026-09-09 [stable10 checkpoint](qualification-staging/README.md#stable10-materialization-checkpoint-2026-09-09)
+adds exact declared-base source materialization and published-contract inspection.
+Fixture clocks now follow the latest event in the complete registry input;
+this is deterministic offline test time, never a qualification timestamp.

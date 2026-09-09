@@ -136,3 +136,69 @@ No dependency installation or live resolution was performed. This workspace has
 no installed dependencies and Node 24.16.0, below its required 24.18.0; the
 existing dependency-based tests and `pnpm check` were not run here. Documentation
 staging is not a replacement for those source qualification checks.
+
+## Stable10 materialization checkpoint (2026-09-09)
+
+Existing PR207 head is `f87eb6a46e73fca4e6836049a06d1fd23f0d88b8`.
+The accepted inner patch is unchanged. The owned `materialization-output/`
+review artifact materializes the complete declared-base tree plus that patch;
+`sourcehashes.json` binds every candidate file and `candidate-vs-eef92.diff`
+compares the complete trees. Historical authority files in that archive are
+source history, never replacement controller data. ROOT owns subsequent commits.
+
+The only script correction derives all three fixture clocks from the maximum
+`effective_at` in the complete input registry. Exact b4b90 produces
+`2026-09-09T07:46:42Z`; no real qualification clock is changed. Both PR207 and
+b4b90 fixture snapshots retain their complete authority and pass 9 outer/93
+nested tests. The sealed audit's original 5/9 result remains evidence.
+
+Published Docs 0.4.1 and Foundation 0.21.0 were inspected from retained tarballs
+whose SHA-512 matches stable10's recorded SRI. This verifies local byte identity,
+not fresh provenance. Docs' ten historical bundles include stable8 but omit
+stable10; `currentSourceExecutors` is empty. The published `trustedPriorCohort`
+requires exact prior assets and an allowed transition. A same-target positive
+check is not evidence of an upgrade to a new workflow coordinate. Foundation's
+known-file transaction supports exact-preimage replacement and exact-build
+recovery; it does not supply missing Docs historical assets or eligibility.
+
+Run the artifact-only inspection from the delivery root:
+
+```sh
+node materialization-output/check-next-inputs.mjs
+```
+
+It verifies all ten historical asset pairs, all stable10 package asset digests,
+and exact stable10 caller rendering, then emits `NEXT-INPUTS.json` with an
+explicit HOLD. Its successful exit means inspection passed, never qualification.
+The next qualification owner must execute these steps in order:
+
+1. Supply a producer-owned stable10 historical projection and content-addressed
+   caller/skill bundle. Verify exact managed-state, caller, route and script
+   bytes against `NEXT-INPUTS.json`, with passing stable10 controls before each
+   missing/forged-origin rejection. Use the published parser, not a copied one.
+2. Bind the reviewed actual successor workflow commit and blob, exact target
+   assets and package SRI/provenance. Declare `upgrade_from` stable10. No target
+   ID or version is assigned here; stable10's own `upgrade_from` stable8 and
+   empty `rollback_to` do not authorize a successor or recovery.
+3. Qualify an explicit supported recovery target and edge, including exact
+   assets, current-authority parsing and hosted gate. Bare rollback to eef92
+   repeats the incident. If none exists, retain HOLD and own qualified
+   fix-forward. Never replace a build with an active Foundation journal.
+4. Reconcile the retained fast-uri 3.1.6 to 3.1.7 closure drift through fresh
+   qualification. Preserve stable10's immutable closure and the original
+   capture/diagnosis identities above; this run did not resolve dependencies.
+5. In ROOT's later authorized environment, execute clean-source `consumer check`,
+   declared `consumer plan --to "$SUCCESSOR_COHORT_ID" --json`, executable
+   upgrade/recovery qualification, and hosted central CANARY with exact receipt
+   and immutable envelope. All coordinates must already be reviewed and bound;
+   do not substitute these offline fixtures for those executions.
+6. Run `pnpm governance:cohorts:verify -- --cohort "$SUCCESSOR_COHORT_ID"` only
+   in that later qualification. Before proposing the final exact PR merge, run
+   the focused scripts, full-history append-only/authority-evolution gates,
+   `node tools/feature-module-standard/check.mjs`,
+   `node --test tools/feature-module-standard/check.test.mjs`, and `pnpm check`
+   on the supported toolchain. Inspect any historical source-suite mismatch;
+   this bounded clock correction does not silently port unrelated tests/code.
+
+Consumer PR69/71 adoption, admission, release, provider operations and registry
+writes remain outside this checkpoint. Stable16 and Foundation PR281 are untouched.
