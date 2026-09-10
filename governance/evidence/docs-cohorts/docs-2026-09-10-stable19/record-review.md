@@ -28,3 +28,9 @@ adoption pin is not applicable in this governance repository.
 Focused validation: registry schema, record/event digests, historical append-only
 comparison, and existing cohort policy/generation rejection tests. Full repository
 checks and live signature/provenance verification run in hosted PR CI.
+
+The publication attempt 1 ended in release-job failure after publishing. Exact
+same-source attempt 2 completed successfully (release job 102785697392). Both
+changed coordinates explicitly bind that reconciliation using the existing
+schema-supported mechanism; their SLSA origin stays attempt 1. The initial PR
+live verifier rejected missing reconciliation, proving that it fails closed.
