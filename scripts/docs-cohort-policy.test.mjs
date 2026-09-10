@@ -89,6 +89,8 @@ const renderedCallerDigest = () => `sha256:${createHash("sha256").update(
 function policyWithoutLiveCohortBindings() {
   const policy = structuredClone(docsPolicy);
   for (const repository of policy.repositories) {
+    delete repository.desired_cohort_generation;
+    delete repository.v3_qualification_coordinates;
     if (["bootstrap_pending", "rollout_pending", "bound"].includes(
       repository.cohort_binding_status,
     )) {
