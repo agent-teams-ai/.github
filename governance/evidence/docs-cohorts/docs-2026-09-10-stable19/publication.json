@@ -1,0 +1,152 @@
+[
+  {
+    "name": "@agent-teams/engineering-foundation",
+    "version": "1.2.0",
+    "dist": {
+      "shasum": "10f49b66c233b585ce0e4bcf3308807da472ca80",
+      "tarball": "https://registry.npmjs.org/@agent-teams/engineering-foundation/-/engineering-foundation-1.2.0.tgz",
+      "fileCount": 2181,
+      "integrity": "sha512-TBUH9TdTv3RepCbSt9RrIAAEnShYiUDxIotcbkbRkT0HjM+yAzBYNmBlC9qRfPqY3GPutDwTy0uZnPxEesi7vg==",
+      "signatures": [
+        {
+          "sig": "MEUCIAsQCgTQjph8c8Kb2Ist220/5S1BIZmATSCa/Zy57t4FAiEA38dz1/oGV+0KQwdRi3FscvGimnDYqcvI17jyG2wj4NY=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEYCIQDKfBARKk/Y24OW78AqGONKq6luk+7qd4CDWVV1WGCFMwIhAPpKukma0bZ6yYhZRsp8sHj6Z64OCgQFf8Q4L/H+iZFQ"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.2.0",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 3439321
+    },
+    "published_at": "2026-09-10T07:39:35.641Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/engineering-foundation@1.2.0",
+          "digest": {
+            "sha512": "4c1507f53753bf745ea426d2b7d46b2000049d28588940f1228b5c6e46d1913d078ccfb20330583660650bda917cfa98dc63eeb43c13cb4b999cfc447ac8bbbe"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "f6e07cc176553065e8f8d880f42d85f5dad2ddda"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "cryptographicAudit": "pending trusted CI"
+  },
+  {
+    "name": "@agent-teams/docs-protocol-agent-teams",
+    "version": "0.2.4",
+    "dist": {
+      "integrity": "sha512-RS8s0774n5uEptiNuQGC6J2xfMU3Y+ictjdZYxBxoTpP9KQOQgnoHdLm8RhKhwz/2EKnO4Rijk8kSZWAaEcUUw==",
+      "shasum": "fe3290f70e4e88c8ebff744cec82c35d7abd9533",
+      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol-agent-teams/-/docs-protocol-agent-teams-0.2.4.tgz",
+      "fileCount": 369,
+      "unpackedSize": 1226954,
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.4",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "signatures": [
+        {
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
+          "sig": "MEUCIA48c+xWtICfeBrWCiZPdY9elm6oS+1wzCk/2GvMnX62AiEA+UzrDmDjhmQTc1LOC6NMUqTa3J7EeY4sF7Z2rIRK5n8="
+        }
+      ]
+    },
+    "published_at": "2026-09-10T07:18:45.783Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/docs-protocol-agent-teams@0.2.4",
+          "digest": {
+            "sha512": "452f2cd3bef89f9b84a6d88db90182e89db17cc53763e89cb63759631071a13a4ff4a40e4209e81dd2e6f1184a870cffd842a73b84628e4f2449958068471453"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "f6e07cc176553065e8f8d880f42d85f5dad2ddda"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "cryptographicAudit": "pending trusted CI"
+  }
+]
