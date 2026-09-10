@@ -1,0 +1,21 @@
+{
+  "observed_at": "2026-09-09T23:56:29.942Z",
+  "cwd": "/tmp/ef-fixed-runner-cohort-stage-20260910-artifacts/candidate",
+  "review_only_dependency_resolution": true,
+  "node": "v24.18.0",
+  "source_root": "/var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910",
+  "verifier": "/var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/scripts/verify-docs-cohort-evidence.mjs",
+  "verifier_sha256": "8fb6c804c9465a5aed38fd5e0e47471d0c37505f0f221f97e2ce8b9274341204",
+  "network_and_subprocesses": "disabled by review guard",
+  "live_command_executed": false,
+  "node_modules_error": {
+    "code": "ENOENT",
+    "message": "ENOENT: no such file or directory, readlink '/var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/node_modules'"
+  },
+  "canonical_import": "FAIL",
+  "error": {
+    "code": "ENOENT",
+    "message": "ENOENT: no such file or directory, access 'CODE_OF_CONDUCT.md'",
+    "stack": "Error: ENOENT: no such file or directory, access 'CODE_OF_CONDUCT.md'\n    at async access (node:internal/fs/promises:607:10)\n    at async Promise.all (index 0)\n    at async file:///var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/scripts/check-community-files.mjs:47:1"
+  }
+}

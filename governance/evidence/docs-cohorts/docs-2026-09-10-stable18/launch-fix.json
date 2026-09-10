@@ -1,0 +1,8 @@
+{
+  "B1": "full exact757 source cwd and identical closure read verified",
+  "B2": "normal pinned frozen ignore-scripts install, direct canonical import passes without dependency hook",
+  "candidateUnchanged": true,
+  "sourceStatus": "",
+  "scriptSha256": "5eb85b52539ac9da5e2d7775ed7cf1e3a1027db2a6180e7860e12143dce5b276",
+  "publicVerificationExecuted": false
+}
