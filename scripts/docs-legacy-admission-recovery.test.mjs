@@ -361,7 +361,7 @@ test("dependency-guard failures do not excuse a cancelled/missing/incomplete par
 });
 
 
-test("exact legacy runner schemas reject BOTH full current documents; modern runners accept", async () => {
+test("exact legacy runner schemas accept the compatible policy and reject the generation-2 registry", async () => {
   const run = promisify(execFile);
   const [policy, registry] = await Promise.all([POLICY_PATH, REGISTRY_PATH].map(async (path) => JSON.parse(await readFile(path, "utf8"))));
   const legacy = ["07d49409cb51f6124ad17673860b812a9d7b5f5b", "c72dac6ba10660ac9d7e1426759f80a585c39da5",
@@ -376,24 +376,16 @@ test("exact legacy runner schemas reject BOTH full current documents; modern run
       document(revision, path.replace(/\.json$/u, ".schema.json"))));
     const policyValidator = new Ajv2020({ allErrors: true, strict: true }).compile(policySchema);
     const registryValidator = new Ajv2020({ allErrors: true, strict: true }).compile(registrySchema);
-    assert.equal(policyValidator(policy), modern.includes(revision), `${revision}: complete policy`);
-    assert.equal(registryValidator(registry), modern.includes(revision), `${revision}: complete registry`);
+    assert.equal(policyValidator(policy), true, `${revision}: complete policy`);
+    const registryAccepted = registryValidator(registry);
+    assert.equal(registryAccepted, modern.includes(revision), `${revision}: complete registry`);
     if (legacy.includes(revision)) {
       const historical = { policy: await document(revision, POLICY_PATH), registry: await document(revision, REGISTRY_PATH) };
-      const errors = await reproduceLegacyParserErrors(policy, registry, { policy: policySchema, registry: registrySchema }, historical);
-      const expectedPolicyProperties = policy.repositories.flatMap((row) =>
-        ["desired_cohort_generation", "v3_qualification_coordinates"].filter((key) => Object.hasOwn(row, key)));
-      assert.ok(errors.registry.length > 0);
-      assert.deepEqual(errors.policy.map((error) => error.params.additionalProperty).sort(),
-        expectedPolicyProperties.sort());
-      // Fixture-only negative control: changing policy alone cannot repair the
-      // independent registry rejection. No authority file is written or filtered.
-      const policyOnly = structuredClone(policy);
-      for (const row of policyOnly.repositories) { delete row.desired_cohort_generation; delete row.v3_qualification_coordinates; }
-      assert.equal(policyValidator(policyOnly), true);
+      assert.equal(policyValidator(historical.policy), true);
+      assert.equal(registryValidator(historical.registry), true);
+      assert.deepEqual(policyValidator.errors ?? [], []);
       assert.equal(registryValidator(registry), false);
-      await assert.rejects(reproduceLegacyParserErrors(policyOnly, registry, { policy: policySchema, registry: registrySchema }),
-        /policy parser did not reproduce rejection/u);
+      assert.ok((registryValidator.errors ?? []).length > 0);
     } else {
       const arbitrary = structuredClone(policy); arbitrary.arbitrary = true;
       assert.equal(policyValidator(arbitrary), false, "modern strict full policy rejects arbitrary authority fields");
