@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-09-09T23:55:42.813Z",
+  "node": "v24.18.0",
+  "source_root": "/var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910",
+  "verifier": "/var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/scripts/verify-docs-cohort-evidence.mjs",
+  "verifier_sha256": "8fb6c804c9465a5aed38fd5e0e47471d0c37505f0f221f97e2ce8b9274341204",
+  "network_and_subprocesses": "disabled by review guard",
+  "live_command_executed": false,
+  "node_modules_error": {
+    "code": "ENOENT",
+    "message": "ENOENT: no such file or directory, readlink '/var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/node_modules'"
+  },
+  "canonical_import": "FAIL",
+  "error": {
+    "code": "ERR_MODULE_NOT_FOUND",
+    "message": "Cannot find package 'yaml' imported from /var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/scripts/verify-docs-cohort-evidence.mjs",
+    "stack": "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'yaml' imported from /var/data/sandboxes/ef-resume-20260907/TEST-ef-fixed-runner-cohort-stage-20260910/scripts/verify-docs-cohort-evidence.mjs\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:859:18)\n    at defaultResolve (node:internal/modules/esm/resolve:992:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)\n    at #resolve (node:internal/modules/esm/loader:683:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33)"
+  }
+}

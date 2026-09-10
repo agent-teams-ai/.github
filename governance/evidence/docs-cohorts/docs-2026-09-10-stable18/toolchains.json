@@ -1,0 +1,16 @@
+[
+  {
+    "wrapper": "/tmp/ef-stable18-live-qualification-20260910/pnpm-v1",
+    "target": "/var/data/sandboxes/ef-resume-20260907/TEST-consumer111-m1-20260909/corepack-cache/v1/pnpm/11.18.0/bin/pnpm.cjs",
+    "version": "11.18.0",
+    "wrapperSha256": "c7928d4cf9ecc33c4aba4ee9fa10900c26a0d0715cc5f1ebc957268d7a5bc992",
+    "targetSha256": "67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad"
+  },
+  {
+    "wrapper": "/tmp/ef-stable18-live-qualification-20260910/pnpm-v2",
+    "target": "/root/.cache/node/corepack/v1/pnpm/11.20.0/bin/pnpm.cjs",
+    "version": "11.20.0",
+    "wrapperSha256": "8dee14c5a968a97ad7fa467df05f3769d1024d04a8ca5efac52acd7c507f3362",
+    "targetSha256": "67b035e322203961795e8e34ca63a08c37a4386eda94107fb3d28f3246d882ad"
+  }
+]
