@@ -7479,6 +7479,72 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:c03c5ba65b6cd6f09e0ebabfef1b02e26d85601a9d5cdf3743922602756a8752",
       "event_digest": "sha256:5dfc82cfcb9f6be5484369ce4a39ff23dd6f4b74836f9fc5a164a4bf6dd56e18"
+    },
+    {
+      "sequence": 132,
+      "cohort_id": "docs-2026-09-10-stable18",
+      "state": "CANARY",
+      "effective_at": "2026-09-10T04:14:54Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/4b7f4650728140eaa7d40fc97b052b18604fc50c",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278/job/102742231904",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1336577313,
+          "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+          "merge_revision": "4b7f4650728140eaa7d40fc97b052b18604fc50c",
+          "observed_cohort_id": "docs-2026-09-10-stable18",
+          "observed_record_digest": "sha256:a156140015084e74459f1bc8dc6c61dfad9bf5d8f85cfbcba8cfdd7700f1867a",
+          "observed_event_digest": "sha256:5dfc82cfcb9f6be5484369ce4a39ff23dd6f4b74836f9fc5a164a4bf6dd56e18",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 102742231904,
+          "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278/job/102742231904",
+          "workflow_run_id": 34436269278,
+          "workflow_id": 336150203,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125"
+        }
+      ],
+      "previous_event_digest": "sha256:5dfc82cfcb9f6be5484369ce4a39ff23dd6f4b74836f9fc5a164a4bf6dd56e18",
+      "event_digest": "sha256:2c6d7d5401abd25f5f81ab2ec79e09c91fd9e6f70a45f7c6f47de103525f9515"
+    },
+    {
+      "sequence": 133,
+      "cohort_id": "docs-2026-08-31-stable10",
+      "state": "SUPERSEDED",
+      "effective_at": "2026-09-10T04:14:55Z",
+      "support_until": "2026-10-10T04:14:55Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/4b7f4650728140eaa7d40fc97b052b18604fc50c",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278/job/102742231904",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:2c6d7d5401abd25f5f81ab2ec79e09c91fd9e6f70a45f7c6f47de103525f9515",
+      "event_digest": "sha256:45dd5f9e3a7a437d38777d1b084963fe6ccbfd08ea0db141f84edd02b4244ca7"
+    },
+    {
+      "sequence": 134,
+      "cohort_id": "docs-2026-09-10-stable18",
+      "state": "RECOMMENDED",
+      "effective_at": "2026-09-10T04:14:56Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/4b7f4650728140eaa7d40fc97b052b18604fc50c",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278/job/102742231904",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:45dd5f9e3a7a437d38777d1b084963fe6ccbfd08ea0db141f84edd02b4244ca7",
+      "event_digest": "sha256:292e9e358a3b294bf6376e1b44c21606a09b39e6f314b1da3ffe52ecd5c576a1"
     }
   ]
 }
