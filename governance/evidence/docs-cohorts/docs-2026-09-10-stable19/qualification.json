@@ -1,0 +1,17 @@
+{
+  "cohort_id": "docs-2026-09-10-stable19",
+  "status": "public_package_verified_only",
+  "controllerRevision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+  "proposalRevision": "90c9a0efe0dafbf3bf9cb2d6a41881394cea3352",
+  "recordDigest": "sha256:4dab45bfb69bc75ab63180f22e18ad036ed87107f11d2edd843c5f1f82b5f5bf",
+  "runtimeClosureDigest": "sha256:25f934b80126c6319c1f666bc76c072fab35afcc81bf42b40d2cdfb835ef24fc",
+  "workflowRunId": 34472700619,
+  "workflowRunUrl": "https://github.com/agent-teams-ai/.github/actions/runs/34472700619",
+  "checkRunId": 102856079121,
+  "conclusion": "success",
+  "completedAt": "2026-09-10T11:44:33Z",
+  "logSha256": "a30c6d5a3c1996b0ab208bc6cc81ca31895c39abb6af77e007501ae6cc9ec3ed",
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false
+}
