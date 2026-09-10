@@ -1,2 +1,0 @@
-Organization defaults verified: 39 files
-{"canonicalImport":"PASS","cwd":"/var/data/sandboxes/ef-resume-20260907/TEST-stable18-live-verifier-20260910","closureBytesMatch":true,"closureFileSha256":"e2c56ef5299a33d83e86279151e32eab0eb4ca19e020a02aa65d657cb3fa5054","networkAndSubprocess":"blocked","dependencyHook":false}

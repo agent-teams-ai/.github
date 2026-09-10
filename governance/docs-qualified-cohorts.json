@@ -7442,12 +7442,12 @@
         "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34347359535/job/102452030671",
         "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/docs-protocol-agent-teams%400.2.3",
         "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/qualification.json",
-        "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/qualification.log",
+        "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/qualification.log.json",
         "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/record-review.md"
       ],
       "canary_evidence": [],
       "previous_event_digest": "sha256:18df7c44d28aa81b376e1e2091079e1db3ff7ad5358d0fb3c90b731857f11645",
-      "event_digest": "sha256:30fa64c8b6d9f13959047f8da67dc240deeae3f2f17985b2f05d2e0661d2ae17"
+      "event_digest": "sha256:c03c5ba65b6cd6f09e0ebabfef1b02e26d85601a9d5cdf3743922602756a8752"
     },
     {
       "sequence": 131,
@@ -7473,12 +7473,12 @@
         "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34347359535/job/102452030671",
         "https://github.com/agent-teams-ai/engineering-foundation/releases/tag/%40agent-teams/docs-protocol-agent-teams%400.2.3",
         "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/qualification.json",
-        "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/qualification.log",
+        "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/qualification.log.json",
         "governance/evidence/docs-cohorts/docs-2026-09-10-stable18/record-review.md"
       ],
       "canary_evidence": [],
-      "previous_event_digest": "sha256:30fa64c8b6d9f13959047f8da67dc240deeae3f2f17985b2f05d2e0661d2ae17",
-      "event_digest": "sha256:19ad1d294a801eb4e1d54257d1ae6afc770ebe00fa1d101c60f51ddaccb84c1f"
+      "previous_event_digest": "sha256:c03c5ba65b6cd6f09e0ebabfef1b02e26d85601a9d5cdf3743922602756a8752",
+      "event_digest": "sha256:5dfc82cfcb9f6be5484369ce4a39ff23dd6f4b74836f9fc5a164a4bf6dd56e18"
     }
   ]
 }

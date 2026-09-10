@@ -22,13 +22,13 @@
   "generalConsumerEligibility": false,
   "evidenceFiles": [
     "live-result.json",
-    "run-live.sh",
+    "run-live.sh.json",
     "launch-intent.json",
     "launch-fix.json",
-    "preflight.log",
+    "preflight.log.json",
     "toolchains.json",
     "verifier-install-result.json",
-    "qualification.log",
+    "qualification.log.json",
     "original-cwd-review.json",
     "original-dependency-review.json"
   ],
