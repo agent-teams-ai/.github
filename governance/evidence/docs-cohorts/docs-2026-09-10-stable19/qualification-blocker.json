@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "cohortId": "docs-2026-09-10-stable19",
+  "status": "blocked_transition_catalog",
+  "headRevision": "1a80f39ef5958df1a43c79e2ea40add10e4f9b46",
+  "workflowRunId": 34453238490,
+  "workflowRunUrl": "https://github.com/agent-teams-ai/.github/actions/runs/34453238490",
+  "requiredContext": "trusted-validation",
+  "conclusion": "failure",
+  "reason": "Published docs-protocol-agent-teams@0.2.4 does not bundle required upgrade origin docs-2026-09-10-stable18",
+  "publishedTransitionOrigins": [
+    "docs-2026-08-17-rc1",
+    "docs-2026-08-17-rc7",
+    "docs-2026-08-17-rc9",
+    "docs-2026-08-18-rc1",
+    "docs-2026-08-18-rc2",
+    "docs-2026-08-18-rc3",
+    "docs-2026-08-23-stable1",
+    "docs-2026-08-24-stable2",
+    "docs-2026-08-25-stable3",
+    "docs-2026-08-28-stable8",
+    "docs-2026-08-28-stable9.1",
+    "docs-2026-08-31-stable10"
+  ],
+  "failedLogSha256": "785503718e7c95fcd7937f4c3a5c4ba4b3a3e1733ec87ce0e32cf1d11c0ead72",
+  "qualified": false,
+  "canaryExecuted": false,
+  "requiredRemediation": "Publish a policy successor bundling the exact qualified stable18 projection and historical assets, then prepare a new exact package tuple and runtime closure."
+}

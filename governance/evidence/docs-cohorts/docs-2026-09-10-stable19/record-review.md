@@ -34,3 +34,12 @@ same-source attempt 2 completed successfully (release job 102785697392). Both
 changed coordinates explicitly bind that reconciliation using the existing
 schema-supported mechanism; their SLSA origin stays attempt 1. The initial PR
 live verifier rejected missing reconciliation, proving that it fails closed.
+
+## Qualification blocked
+
+Trusted run 34453238490 passed the package checks before rejecting the published
+transition catalog: policy 0.2.4 does not bundle stable18. The cohort therefore
+remains PUBLISHED_UNQUALIFIED. The exact stable18 migration edge is preserved;
+it cannot be removed to claim a fleet upgrade. A producer policy successor must
+bundle stable18's exact qualified projection and historical assets before a
+new package tuple can qualify. See qualification-blocker.json.
