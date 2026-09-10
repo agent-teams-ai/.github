@@ -100,10 +100,7 @@
     {
       "repository": "agent-teams-ai/agent-runtime",
       "repository_id": 1314129620,
-      "source_provenance": {
-        "kind": "original",
-        "parent_repository": null
-      },
+      "source_provenance": { "kind": "original", "parent_repository": null },
       "governance_ownership": "organization_owned",
       "repository_lifecycle": "active",
       "docs_role": "consumer",
@@ -194,10 +191,7 @@
     {
       "repository": "agent-teams-ai/agent-teams-orchestrator",
       "repository_id": 1310245598,
-      "source_provenance": {
-        "kind": "original",
-        "parent_repository": null
-      },
+      "source_provenance": { "kind": "original", "parent_repository": null },
       "governance_ownership": "organization_owned",
       "repository_lifecycle": "active",
       "docs_role": "consumer",
@@ -474,10 +468,7 @@
     {
       "repository": "agent-teams-ai/extension-foundation",
       "repository_id": 1333298097,
-      "source_provenance": {
-        "kind": "original",
-        "parent_repository": null
-      },
+      "source_provenance": { "kind": "original", "parent_repository": null },
       "governance_ownership": "organization_owned",
       "repository_lifecycle": "active",
       "docs_role": "consumer",
