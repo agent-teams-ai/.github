@@ -78,15 +78,15 @@
   },
   {
     "name": "@agent-teams/docs-protocol-agent-teams",
-    "version": "0.2.5",
+    "version": "0.2.4",
     "dist": {
-      "integrity": "sha512-ORSM0oJVIPD1MCT+pc2/LF5pNCKbhNqCcraXR9CdsZqPj09jfnBy58tCBm7sTHxpGA5gzE0fXktUQ5nrbRaE1Q==",
-      "shasum": "cc40c2d8d75ecbf99bb1ef97550a8231e2f87eda",
-      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol-agent-teams/-/docs-protocol-agent-teams-0.2.5.tgz",
-      "fileCount": 371,
-      "unpackedSize": 1243674,
+      "integrity": "sha512-RS8s0774n5uEptiNuQGC6J2xfMU3Y+ictjdZYxBxoTpP9KQOQgnoHdLm8RhKhwz/2EKnO4Rijk8kSZWAaEcUUw==",
+      "shasum": "fe3290f70e4e88c8ebff744cec82c35d7abd9533",
+      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol-agent-teams/-/docs-protocol-agent-teams-0.2.4.tgz",
+      "fileCount": 369,
+      "unpackedSize": 1226954,
       "attestations": {
-        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.5",
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.4",
         "provenance": {
           "predicateType": "https://slsa.dev/provenance/v1"
         }
@@ -94,18 +94,18 @@
       "signatures": [
         {
           "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
-          "sig": "MEQCIGgRcOax3oPXea1wNGSCco8+K6EHpJpc9hK+/Fj8w7JpAiBJKy+anltGQPvrGmDyglnxepZAX+tQPsbk7XOYxv1JBg=="
+          "sig": "MEUCIA48c+xWtICfeBrWCiZPdY9elm6oS+1wzCk/2GvMnX62AiEA+UzrDmDjhmQTc1LOC6NMUqTa3J7EeY4sF7Z2rIRK5n8="
         }
       ]
     },
-    "published_at": "2026-09-10T11:36:06.586Z",
+    "published_at": "2026-09-10T07:18:45.783Z",
     "provenanceStatement": {
       "_type": "https://in-toto.io/Statement/v1",
       "subject": [
         {
-          "name": "pkg:npm/%40agent-teams/docs-protocol-agent-teams@0.2.5",
+          "name": "pkg:npm/%40agent-teams/docs-protocol-agent-teams@0.2.4",
           "digest": {
-            "sha512": "39148cd2825520f0f53024fea5cdbf2c5e6934229b84da8272b69747d09db19a8f8f4f637e7072e7cb42066eec4c7c69180e60cc4d1f5e4b544399eb6d1684d5"
+            "sha512": "452f2cd3bef89f9b84a6d88db90182e89db17cc53763e89cb63759631071a13a4ff4a40e4209e81dd2e6f1184a870cffd842a73b84628e4f2449958068471453"
           }
         }
       ],
@@ -131,7 +131,7 @@
             {
               "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
               "digest": {
-                "gitCommit": "7f00da53a30e0b51d12070dba74778f67029e5ea"
+                "gitCommit": "f6e07cc176553065e8f8d880f42d85f5dad2ddda"
               }
             }
           ]
@@ -141,7 +141,7 @@
             "id": "https://github.com/actions/runner/github-hosted"
           },
           "metadata": {
-            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34470837047/attempts/1"
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395/attempts/1"
           }
         }
       }

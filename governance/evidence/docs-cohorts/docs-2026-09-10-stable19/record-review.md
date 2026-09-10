@@ -2,14 +2,14 @@
 
 Generation 2 retains the accepted five coordinates, three exact roots, seven
 managed edges, schema tuple and workflow authority. Only Engineering Foundation
-1.2.0 and Docs Protocol Agent Teams 0.2.4 replace stable18 coordinates. The other
+1.2.0 and Docs Protocol Agent Teams 0.2.5 replace stable18 coordinates. The other
 three package coordinates preserve their immutable publication identities.
 Every historical record and event remains unchanged.
 
 Publication metadata, downloaded tarball SRI, SLSA statement coordinates and
 published asset digests were freshly observed. The exact pnpm 11.20.0 isolated
 lockfile-only resolution contains 82 packages and binds closure digest
-`sha256:7b42c061ef73e3dd4b1d4a5241b2f547cfc0a7f8b67c634a3116d2e58bd662eb`.
+`sha256:25f934b80126c6319c1f666bc76c072fab35afcc81bf42b40d2cdfb835ef24fc`.
 The trusted base-owned PR workflow must cryptographically audit all five packages
 and live-check provenance, closure and workflow before qualification.
 `publication.json` alone does not claim verified signatures or qualification.
@@ -29,17 +29,12 @@ Focused validation: registry schema, record/event digests, historical append-onl
 comparison, and existing cohort policy/generation rejection tests. Full repository
 checks and live signature/provenance verification run in hosted PR CI.
 
-The publication attempt 1 ended in release-job failure after publishing. Exact
-same-source attempt 2 completed successfully (release job 102785697392). Both
-changed coordinates explicitly bind that reconciliation using the existing
-schema-supported mechanism; their SLSA origin stays attempt 1. The initial PR
-live verifier rejected missing reconciliation, proving that it fails closed.
+Engineering Foundation publication attempt 1 failed after publishing; successful
+same-source attempt 2 (release job 102785697392) remains explicitly bound as
+reconciliation. Adapter 0.2.5 binds successful run 34470837047 attempt 1.
 
-## Qualification blocked
-
-Trusted run 34453238490 passed the package checks before rejecting the published
-transition catalog: policy 0.2.4 does not bundle stable18. The cohort therefore
-remains PUBLISHED_UNQUALIFIED. The exact stable18 migration edge is preserved;
-it cannot be removed to claim a fleet upgrade. A producer policy successor must
-bundle stable18's exact qualified projection and historical assets before a
-new package tuple can qualify. See qualification-blocker.json.
+The earlier unmerged 0.2.4 proposal failed because its transition catalog omitted
+stable18. Its observations and rejection remain in publication-024-attempt.json
+and qualification-blocker.json as historical evidence. Published adapter 0.2.5
+now bundles stable18. This new proposal awaits fresh trusted qualification;
+no failed lifecycle event was merged or rewritten.
