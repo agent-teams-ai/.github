@@ -38,3 +38,8 @@ stable18. Its observations and rejection remain in publication-024-attempt.json
 and qualification-blocker.json as historical evidence. Published adapter 0.2.5
 now bundles stable18. This new proposal awaits fresh trusted qualification;
 no failed lifecycle event was merged or rewritten.
+
+Trusted run 34472700619 on proposal 90c9a0efe0dafbf3bf9cb2d6a41881394cea3352
+completed successfully at 2026-09-10T11:44:33Z. VERIFIED and QUALIFIED now bind
+that exact hosted evidence. This qualifies public packages and their transition
+catalog; it does not replace the separate TEST consumer CANARY check.

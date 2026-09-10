@@ -7795,6 +7795,60 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:292e9e358a3b294bf6376e1b44c21606a09b39e6f314b1da3ffe52ecd5c576a1",
       "event_digest": "sha256:2aab1e4b7ad2579cd2aadb6051d0f8b8f1b7e8b21a0fe3f2815c2f2efb80e146"
+    },
+    {
+      "sequence": 136,
+      "cohort_id": "docs-2026-09-10-stable19",
+      "state": "VERIFIED",
+      "effective_at": "2026-09-10T11:44:33Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297/attempts/1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.0",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34470837047",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.5",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34470837047/attempts/1",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.2.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395/attempts/1",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml",
+        "https://github.com/agent-teams-ai/.github/actions/runs/34472700619",
+        "https://github.com/agent-teams-ai/.github/actions/runs/34472700619/job/102856079121",
+        "governance/evidence/docs-cohorts/docs-2026-09-10-stable19/qualification.json"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:2aab1e4b7ad2579cd2aadb6051d0f8b8f1b7e8b21a0fe3f2815c2f2efb80e146",
+      "event_digest": "sha256:fae9ed3ee02b732dbdeef32aa7453e844a6cf1574f953e7f5fdeb84d5aeb4a29"
+    },
+    {
+      "sequence": 137,
+      "cohort_id": "docs-2026-09-10-stable19",
+      "state": "QUALIFIED",
+      "effective_at": "2026-09-10T11:44:33Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34167531297/attempts/1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.0",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34470837047",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.5",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34470837047/attempts/1",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.2.0",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34447580395/attempts/1",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml",
+        "https://github.com/agent-teams-ai/.github/actions/runs/34472700619",
+        "https://github.com/agent-teams-ai/.github/actions/runs/34472700619/job/102856079121",
+        "governance/evidence/docs-cohorts/docs-2026-09-10-stable19/qualification.json"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:fae9ed3ee02b732dbdeef32aa7453e844a6cf1574f953e7f5fdeb84d5aeb4a29",
+      "event_digest": "sha256:30385945e581851788e955d406f4e7264c731f3a29a8b9cff4c3ecce1c3bd05a"
     }
   ]
 }
