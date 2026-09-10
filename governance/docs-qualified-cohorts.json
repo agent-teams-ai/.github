@@ -7849,6 +7849,72 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:fae9ed3ee02b732dbdeef32aa7453e844a6cf1574f953e7f5fdeb84d5aeb4a29",
       "event_digest": "sha256:30385945e581851788e955d406f4e7264c731f3a29a8b9cff4c3ecce1c3bd05a"
+    },
+    {
+      "sequence": 138,
+      "cohort_id": "docs-2026-09-10-stable19",
+      "state": "CANARY",
+      "effective_at": "2026-09-10T12:01:40Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446/job/102861505179",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/f25528ac4f19fd76b0fbbe6f2f5e90ae1b0f7633",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34473793919"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1336577313,
+          "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+          "merge_revision": "f25528ac4f19fd76b0fbbe6f2f5e90ae1b0f7633",
+          "observed_cohort_id": "docs-2026-09-10-stable19",
+          "observed_record_digest": "sha256:4dab45bfb69bc75ab63180f22e18ad036ed87107f11d2edd843c5f1f82b5f5bf",
+          "observed_event_digest": "sha256:30385945e581851788e955d406f4e7264c731f3a29a8b9cff4c3ecce1c3bd05a",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 102861505179,
+          "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446/job/102861505179",
+          "workflow_run_id": 34474174446,
+          "workflow_id": 336150203,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125"
+        }
+      ],
+      "previous_event_digest": "sha256:30385945e581851788e955d406f4e7264c731f3a29a8b9cff4c3ecce1c3bd05a",
+      "event_digest": "sha256:19fbe78f43275d21db22f1f80df973c3328ba3b5f548d4db488fd07eb8cb6947"
+    },
+    {
+      "sequence": 139,
+      "cohort_id": "docs-2026-09-10-stable18",
+      "state": "SUPERSEDED",
+      "effective_at": "2026-09-10T12:01:41Z",
+      "support_until": "2026-10-10T12:01:41Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446/job/102861505179",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/f25528ac4f19fd76b0fbbe6f2f5e90ae1b0f7633",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34473793919"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:19fbe78f43275d21db22f1f80df973c3328ba3b5f548d4db488fd07eb8cb6947",
+      "event_digest": "sha256:aefa78ca1df85ee3c52acd6bfe39922d24b856bfd667cfca8a8810fe7d61ea47"
+    },
+    {
+      "sequence": 140,
+      "cohort_id": "docs-2026-09-10-stable19",
+      "state": "RECOMMENDED",
+      "effective_at": "2026-09-10T12:01:42Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446/job/102861505179",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/commit/f25528ac4f19fd76b0fbbe6f2f5e90ae1b0f7633",
+        "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34473793919"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:aefa78ca1df85ee3c52acd6bfe39922d24b856bfd667cfca8a8810fe7d61ea47",
+      "event_digest": "sha256:d99ec0320df7a1aa10a9e9ef411a66fb191513943cdd70d63947f98e9cbcdf80"
     }
   ]
 }
