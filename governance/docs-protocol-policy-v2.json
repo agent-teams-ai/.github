@@ -108,8 +108,8 @@
       "admission_status": "admitted",
       "exact_package_version": "0.6.0",
       "exact_foundation_version": "1.1.1",
-      "cohort_binding_status": "bound",
-      "desired_cohort_id": "docs-2026-09-10-stable18",
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-09-10-stable19",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
         "profile_schema_version": 3,
@@ -199,8 +199,8 @@
       "admission_status": "admitted",
       "exact_package_version": "0.6.0",
       "exact_foundation_version": "1.1.1",
-      "cohort_binding_status": "bound",
-      "desired_cohort_id": "docs-2026-09-10-stable18",
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-09-10-stable19",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
         "profile_schema_version": 3,
@@ -376,8 +376,8 @@
       "protocol_required": true,
       "admission_status": "admitted",
       "exact_package_version": "0.6.0",
-      "exact_foundation_version": "1.1.1",
-      "cohort_binding_status": "rollout_pending",
+      "exact_foundation_version": "1.2.0",
+      "cohort_binding_status": "bound",
       "desired_cohort_id": "docs-2026-09-10-stable19",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
@@ -388,17 +388,17 @@
         "execution_envelope_schema_version": 1,
         "evidence_class": "cohort-v2-supporting-canary"
       },
-      "observed_cohort_id": "docs-2026-09-10-stable18",
+      "observed_cohort_id": "docs-2026-09-10-stable19",
       "observed_cohort_generation": 2,
       "exact_cohort_v2_packages": {
         "repository_mutation": "0.2.0",
         "document_authoring": "0.3.0",
         "docs_protocol": "0.6.0",
-        "docs_protocol_agent_teams": "0.2.3",
-        "engineering_foundation": "1.1.1"
+        "docs_protocol_agent_teams": "0.2.5",
+        "engineering_foundation": "1.2.0"
       },
-      "observed_cohort_record_digest": "sha256:a156140015084e74459f1bc8dc6c61dfad9bf5d8f85cfbcba8cfdd7700f1867a",
-      "observed_cohort_event_digest": "sha256:5dfc82cfcb9f6be5484369ce4a39ff23dd6f4b74836f9fc5a164a4bf6dd56e18",
+      "observed_cohort_record_digest": "sha256:4dab45bfb69bc75ab63180f22e18ad036ed87107f11d2edd843c5f1f82b5f5bf",
+      "observed_cohort_event_digest": "sha256:30385945e581851788e955d406f4e7264c731f3a29a8b9cff4c3ecce1c3bd05a",
       "profile_path": "architecture/foundation/docs-protocol.yaml",
       "caller_workflow_path": ".github/workflows/docs-protocol.yml",
       "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
@@ -407,21 +407,21 @@
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
         "default_branch": "main",
-        "revision": "4b7f4650728140eaa7d40fc97b052b18604fc50c",
+        "revision": "f25528ac4f19fd76b0fbbe6f2f5e90ae1b0f7633",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 102742231904,
-        "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34436269278/job/102742231904",
-        "workflow_run_id": 34436269278,
+        "check_run_id": 102861505179,
+        "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34474174446/job/102861505179",
+        "workflow_run_id": 34474174446,
         "workflow_id": 336150203,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
-        "observed_at": "2026-09-10T04:14:55Z"
+        "observed_at": "2026-09-10T12:01:40Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "4b7f4650728140eaa7d40fc97b052b18604fc50c",
+        "observed_revision": "f25528ac4f19fd76b0fbbe6f2f5e90ae1b0f7633",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
@@ -476,8 +476,8 @@
       "admission_status": "admitted",
       "exact_package_version": "0.6.0",
       "exact_foundation_version": "1.1.1",
-      "cohort_binding_status": "bound",
-      "desired_cohort_id": "docs-2026-09-10-stable18",
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-09-10-stable19",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
         "profile_schema_version": 3,
