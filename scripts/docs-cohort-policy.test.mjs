@@ -90,6 +90,8 @@ function policyWithoutLiveCohortBindings() {
   const policy = structuredClone(docsPolicy);
   for (const repository of policy.repositories) {
     delete repository.desired_cohort_generation;
+    delete repository.observed_cohort_generation;
+    delete repository.exact_cohort_v2_packages;
     delete repository.v3_qualification_coordinates;
     if (["bootstrap_pending", "rollout_pending", "bound"].includes(
       repository.cohort_binding_status,
