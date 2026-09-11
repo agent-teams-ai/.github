@@ -377,8 +377,8 @@
       "admission_status": "admitted",
       "exact_package_version": "0.6.0",
       "exact_foundation_version": "1.2.0",
-      "cohort_binding_status": "bound",
-      "desired_cohort_id": "docs-2026-09-10-stable19",
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-09-11-stable20",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
         "profile_schema_version": 3,
