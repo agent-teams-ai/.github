@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "cohortId": "docs-2026-09-11-stable20",
+  "status": "blocked_transition_catalog",
+  "headRevision": "bb1630cd71d9ecefc9edff447b002f5e9d7f35a8",
+  "workflowRunId": 34561372725,
+  "workflowRunUrl": "https://github.com/agent-teams-ai/.github/actions/runs/34561372725",
+  "requiredContext": "trusted-validation",
+  "conclusion": "failure",
+  "reason": "docs-2026-09-11-stable20 transition catalog does not bundle required upgrade origin docs-2026-09-10-stable19",
+  "publishedTransitionOrigins": [
+    "docs-2026-08-17-rc1",
+    "docs-2026-08-17-rc7",
+    "docs-2026-08-17-rc9",
+    "docs-2026-08-18-rc1",
+    "docs-2026-08-18-rc2",
+    "docs-2026-08-18-rc3",
+    "docs-2026-08-23-stable1",
+    "docs-2026-08-24-stable2",
+    "docs-2026-08-25-stable3",
+    "docs-2026-08-28-stable8",
+    "docs-2026-08-28-stable9.1",
+    "docs-2026-08-31-stable10",
+    "docs-2026-09-10-stable18"
+  ],
+  "qualified": false,
+  "canaryExecuted": false,
+  "requiredRemediation": "Publish a policy successor bundling the exact qualified stable19 transition origin, then bind the exact package tuple and runtime closure to the fixed publication."
+}
