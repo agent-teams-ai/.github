@@ -1,38 +1,38 @@
 [
   {
     "name": "@agent-teams/docs-protocol-agent-teams",
-    "version": "0.2.7",
+    "version": "0.2.6",
     "dist": {
-      "shasum": "826a6c61961dcdb6b19ffedd72558d589e4d1d2f",
-      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol-agent-teams/-/docs-protocol-agent-teams-0.2.7.tgz",
+      "shasum": "2c48e70e8428ad2c77018249f87a656b5f6e0d74",
+      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol-agent-teams/-/docs-protocol-agent-teams-0.2.6.tgz",
       "fileCount": 371,
-      "integrity": "sha512-YhgXKwsq2JlFisS+vaXBriDvbD+8wEQErMJqZCRaE4DEaZ+z+AWMgVYbpe4lTv2Zkexl4CCkVB74U3LqyUwegg==",
+      "integrity": "sha512-GjOZqWgWZq4GOBaUFSEa5ZDjh2B0rU1mg/lTRxblsl2sDXX4RMyn9xbZgPB8zjwWn3eSQukdP1O5d3qsVL4Pqw==",
       "signatures": [
         {
-          "sig": "MEUCIQCVxMYVfx3WxJ8I9hF7YRIMpF9fxAOS4Twp6zHPEYXApwIgJjG7Nto0h99UXLSkrozqjPlBdbQwKOLxXC26D3Jlr8g=",
+          "sig": "MEUCIQDtmhqMvQBVz9A5Urm0Oz6f8LWZTOGlpNihBaECEs4E6AIgYEK1Xl3XT6S8Rz+UKRHj+mNjaYePe1Y73JwV4x9NLuQ=",
           "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
         },
         {
           "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U",
-          "sig": "MEUCIQDYH9wk0XxwiXVg0iTnkPasbiV37vHNkgGXJWS8qh8FHwIgFRweWxM3srw7oY3nDL/D8N3tsiil5rbyYouXD8euBio="
+          "sig": "MEYCIQCzUTITexHtThR4rVq1Lr3tlIuq6cC85s3vl20vzJTJOQIhAO4dvT3X454uExEp2t9hi2KjBMOO1yI08tdfcaJbwW2n"
         }
       ],
       "attestations": {
-        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.7",
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.6",
         "provenance": {
           "predicateType": "https://slsa.dev/provenance/v1"
         }
       },
-      "unpackedSize": 1257660
+      "unpackedSize": 1246292
     },
-    "published_at": "2026-09-11T06:06:52.340Z",
+    "published_at": "2026-09-11T04:09:05.617Z",
     "provenanceStatement": {
       "_type": "https://in-toto.io/Statement/v1",
       "subject": [
         {
-          "name": "pkg:npm/%40agent-teams/docs-protocol-agent-teams@0.2.7",
+          "name": "pkg:npm/%40agent-teams/docs-protocol-agent-teams@0.2.6",
           "digest": {
-            "sha512": "6218172b0b2ad899458ac4bebda5c1ae20ef6c3fbcc04404acc26a64245a1380c4699fb3f8058c81561ba5ee254efd9991ec65e020a4541ef85372eac94c1e82"
+            "sha512": "1a3399a9681666ae0638169415211ae590e3876074ad4d6683f9534716e5b25dac0d75f844cca7f716d980f07cce3c169f779242e91d3f53b9777aac54be0fab"
           }
         }
       ],
@@ -58,7 +58,7 @@
             {
               "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
               "digest": {
-                "gitCommit": "b7bc66ff1e94f2af609895a47ecb5c25f0da89e6"
+                "gitCommit": "0f8b40460e09caf4dbc45181ad4a2e5127f3a311"
               }
             }
           ]
@@ -68,7 +68,7 @@
             "id": "https://github.com/actions/runner/github-hosted"
           },
           "metadata": {
-            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34567076603/attempts/1"
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/34559581211/attempts/1"
           }
         }
       }
