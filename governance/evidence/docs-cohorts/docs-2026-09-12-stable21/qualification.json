@@ -1,0 +1,35 @@
+{
+  "cohort_id": "docs-2026-09-12-stable21",
+  "status": "public_package_verified_only",
+  "same_tuple_as": "docs-2026-09-11-stable20",
+  "upgrade_from": [
+    "docs-2026-09-10-stable18",
+    "docs-2026-09-10-stable19"
+  ],
+  "rollback_to": [
+    "docs-2026-09-10-stable18",
+    "docs-2026-09-10-stable19"
+  ],
+  "canary_repositories": [
+    {
+      "repository_id": 1319378484,
+      "repository": "agent-teams-ai/agent-teams-platform"
+    },
+    {
+      "repository_id": 1348461381,
+      "repository": "agent-teams-ai/agent-teams-token"
+    }
+  ],
+  "recordDigest": "sha256:bf5220b191c7339533d21acd9b79594c274567ff0f515b72c4818863819ca92a",
+  "runtimeClosureDigest": "sha256:ac3ca2c5d7aaed71fa64b0ee3c101b48056c24935bada544529403cef608d711",
+  "publicationEventDigest": "sha256:6885491e2ccb325ce34116c1ea2067a53cc776ca694bc87e951056a02782f32c",
+  "qualificationEventDigest": "sha256:4608734de08ad19ab6f787448d73bf92990115668c9d3d34cff5bba134efdc3b",
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false,
+  "notes": [
+    "Same exact npm tuple and runtime closure as stable20.",
+    "Selectability is QUALIFIED-only for Platform and Token canary identities so stable20 stays RECOMMENDED.",
+    "Adapter 0.2.7 transition catalog already bundles stable18 and stable19 origins."
+  ]
+}
