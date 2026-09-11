@@ -169,7 +169,7 @@
       "repository": "agent-teams-ai/agent-teams-token", "repository_id": 1348461381,
       "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
       "docs_role": "consumer", "protocol_required": true, "admission_status": "admitted",
-      "exact_package_version": "0.6.0", "exact_foundation_version": "1.1.1", "cohort_binding_status": "bound", "desired_cohort_id": "docs-2026-09-10-stable18", "desired_cohort_generation": 2,
+      "exact_package_version": "0.6.0", "exact_foundation_version": "1.1.1", "cohort_binding_status": "rollout_pending", "desired_cohort_id": "docs-2026-09-12-stable21", "desired_cohort_generation": 2,
       "v3_qualification_coordinates": { "profile_schema_version": 3, "cohort_schema_version": 2, "managed_state_schema_version": 2, "receipt_schema_version": 3, "execution_envelope_schema_version": 1, "evidence_class": "cohort-v2-supporting-canary" },
       "observed_cohort_id": "docs-2026-09-10-stable18", "observed_cohort_generation": 2,
       "exact_cohort_v2_packages": { "repository_mutation": "0.2.0", "document_authoring": "0.3.0", "docs_protocol": "0.6.0", "docs_protocol_agent_teams": "0.2.3", "engineering_foundation": "1.1.1" },
