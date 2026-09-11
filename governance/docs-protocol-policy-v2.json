@@ -475,8 +475,8 @@
       "protocol_required": true,
       "admission_status": "admitted",
       "exact_package_version": "0.6.0",
-      "exact_foundation_version": "1.1.1",
-      "cohort_binding_status": "rollout_pending",
+      "exact_foundation_version": "1.2.0",
+      "cohort_binding_status": "bound",
       "desired_cohort_id": "docs-2026-09-10-stable19",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
@@ -487,17 +487,17 @@
         "execution_envelope_schema_version": 1,
         "evidence_class": "cohort-v2-supporting-canary"
       },
-      "observed_cohort_id": "docs-2026-09-10-stable18",
+      "observed_cohort_id": "docs-2026-09-10-stable19",
       "observed_cohort_generation": 2,
       "exact_cohort_v2_packages": {
         "repository_mutation": "0.2.0",
         "document_authoring": "0.3.0",
         "docs_protocol": "0.6.0",
-        "docs_protocol_agent_teams": "0.2.3",
-        "engineering_foundation": "1.1.1"
+        "docs_protocol_agent_teams": "0.2.5",
+        "engineering_foundation": "1.2.0"
       },
-      "observed_cohort_record_digest": "sha256:a156140015084e74459f1bc8dc6c61dfad9bf5d8f85cfbcba8cfdd7700f1867a",
-      "observed_cohort_event_digest": "sha256:5dfc82cfcb9f6be5484369ce4a39ff23dd6f4b74836f9fc5a164a4bf6dd56e18",
+      "observed_cohort_record_digest": "sha256:4dab45bfb69bc75ab63180f22e18ad036ed87107f11d2edd843c5f1f82b5f5bf",
+      "observed_cohort_event_digest": "sha256:30385945e581851788e955d406f4e7264c731f3a29a8b9cff4c3ecce1c3bd05a",
       "profile_path": "architecture/foundation/docs-protocol.yaml",
       "caller_workflow_path": ".github/workflows/docs-protocol.yml",
       "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
@@ -506,21 +506,21 @@
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
         "default_branch": "main",
-        "revision": "19eb364284c4249a9aca628994c9f4957bbbb7cc",
+        "revision": "534669e3ca0210073c0302c389e75247945c87e0",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 102755842306,
-        "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/34440895778/job/102755842306",
-        "workflow_run_id": 34440895778,
+        "check_run_id": 103110335841,
+        "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/34549757689/job/103110335841",
+        "workflow_run_id": 34549757689,
         "workflow_id": 336590767,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
-        "observed_at": "2026-09-10T05:28:08Z"
+        "observed_at": "2026-09-11T01:17:35Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "19eb364284c4249a9aca628994c9f4957bbbb7cc",
+        "observed_revision": "534669e3ca0210073c0302c389e75247945c87e0",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
