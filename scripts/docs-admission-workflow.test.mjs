@@ -5,6 +5,8 @@ import path from "node:path";
 import test from "node:test";
 import { recoveryBlob, POLICY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH } from "./docs-legacy-admission-recovery.mjs";
 
+const INVENTORY_PATH = "governance/organization-repository-inventory.json";
+
 const workflow = await readFile(new URL("../.github/workflows/docs-admission-evidence.yml", import.meta.url), "utf8");
 const block = workflow.split("          script: |\n")[1].split("      - uses: actions/checkout@")[0];
 const source = block.split("\n").map((line) => line.slice(12)).join("\n");
@@ -43,7 +45,7 @@ async function fixture(mutate = () => {}) {
     repo: { owner: "agent-teams-ai", repo: ".github" }, payload: { pull_request: pull } };
   const state = { context, files: [{ filename: POLICY_PATH, status: "modified", sha: recoveryBlob(Buffer.from(`synthetic:${POLICY_PATH}`)) }],
     live: structuredClone(pull), branch: pull.base.sha, contentShaWrong: false, contentCalls: 0,
-    headFiles: { [POLICY_PATH]: `synthetic:${POLICY_PATH}`, [EXCEPTIONS_PATH]: `synthetic:${EXCEPTIONS_PATH}`, "README.md": "unchanged" },
+    headFiles: { [POLICY_PATH]: `synthetic:${POLICY_PATH}`, [EXCEPTIONS_PATH]: `synthetic:${EXCEPTIONS_PATH}`, [INVENTORY_PATH]: `synthetic:${INVENTORY_PATH}`, "README.md": "unchanged" },
     mutateTree: () => {}, comparisonStatus: "ahead",
     afterMaterialize: () => {}, controller: { ...identity, default_branch: "main", archived: false, disabled: false } };
   const oldTree = gitTree({ ...state.headFiles, [POLICY_PATH]: "prior-policy" });
@@ -58,7 +60,7 @@ async function fixture(mutate = () => {}) {
     repos: { compareCommits: async () => ({ data: { status: state.comparisonStatus, base_commit: { sha: pull.base.sha },
       merge_base_commit: { sha: pull.base.sha }, behind_by: 0, ahead_by: 1, total_commits: 1 } }), get: async () => ({ data: state.controller }), getBranch: async () => ({ data: { commit: { sha: state.branch } } }),
       getContent: async ({ path: filePath, ref }) => {
-        assert.equal(ref, pull.head.sha); assert.ok([POLICY_PATH, EXCEPTIONS_PATH].includes(filePath));
+        assert.equal(ref, pull.head.sha); assert.ok([POLICY_PATH, EXCEPTIONS_PATH, INVENTORY_PATH].includes(filePath));
         state.contentCalls++;
         const content = Buffer.from(`synthetic:${filePath}`);
         if (state.contentCalls === 2) state.afterMaterialize();
@@ -85,7 +87,8 @@ test("materializes only exact data and binds live central/base/head execution", 
   const result = await fixture();
   assert.deepEqual(result.failures, []);
   assert.equal(result.outputs.get("mode"), "admission");
-  assert.equal(result.writes.size, 3);
+  assert.equal(result.writes.size, 4);
+  assert.ok(result.outputs.get("inventory-path"));
   const execution = JSON.parse(result.writes.get(result.outputs.get("execution-path")));
   assert.deepEqual(execution.changed_files, [POLICY_PATH]);
   assert.equal(execution.execution_base, "a".repeat(40));
@@ -149,4 +152,7 @@ test("ordinary code-only no-op is not reported as trusted recovery", async () =>
   assert.equal(result.contentCalls, 0);
   assert.match(workflow, /ref: \$\{\{ github.event.pull_request.base.sha \}\}/u);
   assert.match(workflow, /DOCS_ADMISSION_EXECUTION_PATH:/u);
+  assert.match(workflow, /DOCS_ADMISSION_INVENTORY_PATH:/u);
+  assert.match(workflow, /const inventoryPath = "governance\/organization-repository-inventory\.json"/u);
+  assert.match(workflow, /allowedData = new Set\(\[policyPath, exceptionsPath, inventoryPath\]\)/u);
 });

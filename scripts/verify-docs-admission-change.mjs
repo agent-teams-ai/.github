@@ -5,7 +5,7 @@ import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { isDeepStrictEqual } from "node:util";
-import { loadJson, validateDocsProtocolPolicy } from "./governance-policy.mjs";
+import { loadJson, validateDocsProtocolPolicy, validateGovernanceReferences, validateOrganizationRepositoryInventory } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences, validateDocsProtocolExceptions } from "./docs-cohort-policy.mjs";
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { POLICY_PATH, REGISTRY_PATH,
@@ -68,6 +68,16 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   validateDocsProtocolPolicy(basePolicy, policySchema);
   validateDocsProtocolExceptions(exceptions, exceptionsSchema);
   validateDocsGovernanceReferences(registry, exceptions, policy, security);
+  if (paths.inventory) {
+    const inventory = JSON.parse(await readFile(paths.inventory));
+    const [inventorySchema, ledger, actions] = await Promise.all([
+      loadJson("governance/organization-repository-inventory.schema.json"),
+      loadJson("governance/executable-spec-qualification.json"),
+      loadJson("governance/actions-policy.json"),
+    ]);
+    validateOrganizationRepositoryInventory(inventory, inventorySchema);
+    validateGovernanceReferences(ledger, security, actions, inventory, policy);
+  }
   const execution = paths.execution ? await loadJson(paths.execution) : overrides.execution;
   need(execution, "Trusted admission requires materialized execution coordinates.");
   const verifyController = overrides.verifyController ?? verifyAdmissionController;
@@ -103,7 +113,8 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const policy = process.env.DOCS_ADMISSION_POLICY_PATH;
   const exceptions = process.env.DOCS_ADMISSION_EXCEPTIONS_PATH;
+  const inventory = process.env.DOCS_ADMISSION_INVENTORY_PATH;
   const execution = process.env.DOCS_ADMISSION_EXECUTION_PATH;
-  need(policy && exceptions && execution, "Trusted admission verification requires materialized policy, exceptions and execution paths.");
-  console.log(JSON.stringify(await verifyDocsAdmissionChange({ policy, exceptions, execution })));
+  need(policy && exceptions && inventory && execution, "Trusted admission verification requires materialized policy, exceptions, inventory and execution paths.");
+  console.log(JSON.stringify(await verifyDocsAdmissionChange({ policy, exceptions, inventory, execution })));
 }
