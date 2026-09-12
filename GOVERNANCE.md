@@ -19,6 +19,19 @@ Architecture decisions begin as proposed. They become accepted only after the
 repository's documented approval authority confirms them. Pull request merge is
 not itself proof of product approval unless the repository explicitly says so.
 
+## Shared Engineering Practices
+
+The [Engineering Quality Standard](docs/engineering-quality-standard.md) is the
+maintained common-practice baseline for planning, implementation and review.
+Repository AGENTS.md and CLAUDE.md files link to it explicitly; GitHub does not
+supply those instructions to every agent automatically. Product-specific rules,
+commands and conformance evidence remain owned by each repository.
+
+This baseline is not another version of the immutable Feature Module Standard.
+It does not alter accepted ADRs, adopt a successor or change a consumer pin.
+Changes to versioned architecture requirements follow their existing publication
+and consumer-adoption processes. Linking a policy never certifies existing code.
+
 ## Feature Module Standard Ownership
 
 The organization owns the immutable language-neutral Feature Module Standard
