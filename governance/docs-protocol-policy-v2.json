@@ -1,10 +1,10 @@
 {
   "$schema": "./docs-protocol-policy-v2.schema.json",
   "schema_version": 3,
-  "snapshot_revision": "2026-08-27.2",
-  "observed_at": "2026-08-27",
+  "snapshot_revision": "2026-09-12.1",
+  "observed_at": "2026-09-12",
   "organization": "agent-teams-ai",
-  "inventory_snapshot_revision": "2026-08-27.1",
+  "inventory_snapshot_revision": "2026-09-12.1",
   "continuous_audit": false,
   "protocol": {
     "package": "@agent-teams/docs-protocol",
@@ -36,9 +36,9 @@
   },
   "admission": {
     "expected_repository_count": 12,
-    "owned_repository_count": 10,
-    "external_repository_count": 2,
-    "fork_source_count": 2,
+    "owned_repository_count": 11,
+    "external_repository_count": 1,
+    "fork_source_count": 1,
     "new_owned_repository_status": "pending_classification",
     "qualification_evidence_required": true,
     "live_drift_audit": {
@@ -534,6 +534,17 @@
       "required_check_exception_id": null
     },
     {
+      "repository": "agent-teams-ai/get-modular", "repository_id": 1350689977,
+      "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
+      "docs_role": "pending_classification", "protocol_required": false, "admission_status": "pending_classification",
+      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "not_applicable", "desired_cohort_id": null, "observed_cohort_id": null,
+      "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
+      "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
+      "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
+      "classification_evidence": { "decision": "pending_onboarding", "observed_revision": "6c2f1b9eca03d94ee0f45ce53e5285c5b6736d1a", "evidence_paths": ["package.json", "foundation.config.yaml", "architecture/foundation/source-dependencies.yaml", "docs/architecture/common-assembly.md"], "rationale": "Get Modular is an organization-owned portable Foundation consumer without a managed Docs Protocol adapter. It is not the transferred universal-agent-plugins fork (repository id 1350689977 vs 1341702671). Foundation 1.2.0 and source v3 are already on the default branch. Managed cohort binding and adapter-owned documentation protocol admission remain pending onboarding on the portable path.", "v2_qualification_coordinates": null },
+      "exemption": null, "required_check_exception_id": null
+    },
+    {
       "repository": "agent-teams-ai/uap-external-submission-fixture", "repository_id": 1341702691,
       "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
       "docs_role": "not_applicable", "protocol_required": false, "admission_status": "not_applicable",
@@ -546,13 +557,13 @@
     },
     {
       "repository": "agent-teams-ai/universal-agent-plugins", "repository_id": 1341702671,
-      "source_provenance": { "kind": "fork", "parent_repository": "777genius/universal-agent-plugins" }, "governance_ownership": "external", "repository_lifecycle": "active",
+      "source_provenance": { "kind": "fork", "parent_repository": "777genius/universal-agent-plugins" }, "governance_ownership": "external", "repository_lifecycle": "deleted",
       "docs_role": "not_applicable", "protocol_required": false, "admission_status": "exception",
       "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "not_applicable", "desired_cohort_id": null, "observed_cohort_id": null,
       "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
       "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
       "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
-      "classification_evidence": { "decision": "not_applicable_external_fork", "observed_revision": "c897dd01b794e3c3686160eb1f519ca9a453a20a", "evidence_paths": ["SOURCES.md", "README.md"], "rationale": "The upstream-owned external fork is outside organization-specific documentation protocol adoption.", "v2_qualification_coordinates": null },
+      "classification_evidence": { "decision": "not_applicable_external_fork", "observed_revision": "c897dd01b794e3c3686160eb1f519ca9a453a20a", "evidence_paths": ["SOURCES.md", "README.md"], "rationale": "The upstream-owned external fork left the organization (GitHub 404 on 2026-09-12) and is retained only as a deleted tombstone. It must not receive organization-specific documentation machinery or be treated as a live consumer.", "v2_qualification_coordinates": null },
       "exemption": { "id": "external-fork-docs-protocol", "reason": "Upstream fork is not an Agent Teams-owned product and must not receive organization-specific documentation machinery.", "review_triggers": ["fork_detached", "ownership_changed", "organization_specific_docs_added"] },
       "required_check_exception_id": null
     }
