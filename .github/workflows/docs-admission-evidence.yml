@@ -26,9 +26,10 @@ jobs:
             const pull = context.payload.pull_request;
             const policyPath = "governance/docs-protocol-policy-v2.json";
             const exceptionsPath = "governance/docs-protocol-exceptions.json";
+            const inventoryPath = "governance/organization-repository-inventory.json";
             const recoveryPath = "governance/docs-admission-recovery.json";
             const recoveryEvidencePrefix = "governance/evidence/docs-admission-recovery/";
-            const allowedData = new Set([policyPath, exceptionsPath]);
+            const allowedData = new Set([policyPath, exceptionsPath, inventoryPath]);
             const allowedEvidence = /^governance\/evidence\/docs-admission\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
             const hardAuthority = new Set([
               ".github/workflows/docs-admission-evidence.yml",
