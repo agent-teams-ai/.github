@@ -1,0 +1,90 @@
+name: Trusted Docs Admission Inventory Cutover V1
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-admission-inventory-cutover-v1:
+    name: trusted-admission-inventory-cutover-v1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pull = context.payload.pull_request;
+            const workflowPath = ".github/workflows/docs-admission-inventory-cutover-v1.yml";
+            const testPath = "scripts/docs-admission-inventory-cutover-v1.test.mjs";
+            const authorityPrefixes = [".github/workflows/", "scripts/"];
+            const installAuthorityNames = new Set([
+              ".node-version", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            // Immutable after merge. This successor cannot authorize its own
+            // introduction or later mutation; it only accepts the reviewed
+            // admission inventory-allowlist slice.
+            const expected = new Map([
+              [".github/workflows/docs-admission-evidence.yml", { status: "modified", sha: "91de7bbd7bf4188c86d78bc0aaa62f7d444fdf7d" }],
+              ["scripts/docs-admission-workflow.test.mjs", { status: "modified", sha: "d1a906bb77cd03e6ce9a5734349bb14ffd19d6af" }],
+              ["scripts/verify-docs-admission-change.mjs", { status: "modified", sha: "e3f0f3d2e065b7c0ae324481a3056b7955a0702d" }]
+            ]);
+            const isAuthorityPath = (path) => path === workflowPath || path === testPath ||
+              authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1) {
+              core.setFailed("Admission inventory cutover PR changed_files must be a positive safe integer.");
+              return;
+            }
+            const changed = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull.number,
+              per_page: 100
+            });
+            if (changed.length !== pull.changed_files ||
+                new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
+              core.setFailed("Paginated admission inventory cutover evidence is incomplete or duplicated.");
+              return;
+            }
+            const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            if (!changed.some((file) => allPaths(file).some(isAuthorityPath))) {
+              core.setOutput("mode", "noop");
+              return;
+            }
+            if (pull.head.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed("Admission inventory cutover changes from forks are not eligible.");
+              return;
+            }
+            const invalid = changed.filter((file) => {
+              const identity = expected.get(file.filename);
+              return file.previous_filename !== undefined || identity === undefined ||
+                identity.status !== file.status || identity.sha !== file.sha;
+            });
+            if (changed.length !== expected.size || invalid.length > 0 ||
+                changed.some(({ filename }) => !expected.has(filename))) {
+              core.setFailed("This successor accepts only the exact reviewed admission inventory-allowlist slice.");
+              return;
+            }
+            const controller = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (pull.base.ref !== controller.data.default_branch) {
+              core.setFailed("Admission inventory cutover PR must target the live default branch.");
+              return;
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            if (branch.data.commit.sha !== pull.base.sha) {
+              core.setFailed("Admission inventory cutover PR base is stale; update it before cutover.");
+              return;
+            }
+            core.setOutput("mode", "authority");
