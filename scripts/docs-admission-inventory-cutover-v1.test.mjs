@@ -113,4 +113,5 @@ test("keeps the additive successor base-owned and non-executing", () => {
   assert.match(workflow, /pull-requests: read/u);
   assert.doesNotMatch(workflow, /actions\/checkout|\brun:/u);
   assert.doesNotMatch(workflow, /secrets\.|pull_request\.head\.sha|getContent/u);
+  assert.match(workflow, /branch: controller\.data\.default_branch/u);
 });

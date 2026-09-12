@@ -81,7 +81,8 @@ jobs:
             }
             const branch = await github.rest.repos.getBranch({
               owner: context.repo.owner,
-              repo: context.repo.repo
+              repo: context.repo.repo,
+              branch: controller.data.default_branch
             });
             if (branch.data.commit.sha !== pull.base.sha) {
               core.setFailed("Admission inventory cutover PR base is stale; update it before cutover.");
