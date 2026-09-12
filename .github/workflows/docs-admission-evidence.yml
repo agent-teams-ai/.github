@@ -26,9 +26,10 @@ jobs:
             const pull = context.payload.pull_request;
             const policyPath = "governance/docs-protocol-policy-v2.json";
             const exceptionsPath = "governance/docs-protocol-exceptions.json";
+            const inventoryPath = "governance/organization-repository-inventory.json";
             const recoveryPath = "governance/docs-admission-recovery.json";
             const recoveryEvidencePrefix = "governance/evidence/docs-admission-recovery/";
-            const allowedData = new Set([policyPath, exceptionsPath]);
+            const allowedData = new Set([policyPath, exceptionsPath, inventoryPath]);
             const allowedEvidence = /^governance\/evidence\/docs-admission\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
             const hardAuthority = new Set([
               ".github/workflows/docs-admission-evidence.yml",
@@ -96,7 +97,7 @@ jobs:
               return file.status !== "added" || file.previous_filename !== undefined;
             });
             if (forbidden.length > 0) {
-              core.setFailed("Admission PRs may modify only the exact policy/exception data and add inert admission evidence; renames and deletes are forbidden.");
+              core.setFailed("Admission PRs may modify only the exact policy, exception, and inventory data and add inert admission evidence; renames and deletes are forbidden.");
               return;
             }
             const controller = await github.rest.repos.get({ owner: context.repo.owner, repo: context.repo.repo });
@@ -215,8 +216,11 @@ jobs:
             }
             const policyOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-policy.json");
             const exceptionsOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-exceptions.json");
+            const inventoryOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-inventory.json");
             const executionOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-execution.json");
-            const [policy, exceptions] = await Promise.all([loadHead(policyPath), loadHead(exceptionsPath)]);
+            const [policy, exceptions, inventory] = await Promise.all([
+              loadHead(policyPath), loadHead(exceptionsPath), loadHead(inventoryPath)
+            ]);
             await stablePull();
             const finalBranch = await github.rest.repos.getBranch({ owner: context.repo.owner, repo: context.repo.repo,
               branch: controller.data.default_branch });
@@ -227,11 +231,13 @@ jobs:
             await Promise.all([
               fs.writeFile(policyOutput, policy, { flag: "wx" }),
               fs.writeFile(exceptionsOutput, exceptions, { flag: "wx" }),
+              fs.writeFile(inventoryOutput, inventory, { flag: "wx" }),
               fs.writeFile(executionOutput, JSON.stringify(execution), { flag: "wx" })
             ]);
             core.setOutput("mode", "admission");
             core.setOutput("policy-path", policyOutput);
             core.setOutput("exceptions-path", exceptionsOutput);
+            core.setOutput("inventory-path", inventoryOutput);
             core.setOutput("execution-path", executionOutput);
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.materialize.outputs.mode == 'admission'
@@ -259,5 +265,6 @@ jobs:
           DOCS_GOVERNANCE_READ_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN }}
           DOCS_ADMISSION_POLICY_PATH: ${{ steps.materialize.outputs.policy-path }}
           DOCS_ADMISSION_EXCEPTIONS_PATH: ${{ steps.materialize.outputs.exceptions-path }}
+          DOCS_ADMISSION_INVENTORY_PATH: ${{ steps.materialize.outputs.inventory-path }}
           DOCS_ADMISSION_EXECUTION_PATH: ${{ steps.materialize.outputs.execution-path }}
         run: node scripts/verify-docs-admission-change.mjs
