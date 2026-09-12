@@ -4,10 +4,16 @@ Thank you for contributing to Agent Teams projects.
 
 ## Before You Start
 
+Read the [Engineering Quality Standard](docs/engineering-quality-standard.md)
+for shared practices, then apply the target repository's specific contracts
+and verification requirements.
+
 1. Read the target repository's `README.md`, `AGENTS.md`, and architecture
    documentation.
-2. Discuss changes that alter public contracts, bounded-context ownership,
-   security boundaries, persistence semantics, or release policy before coding.
+2. Before coding, identify applicable accepted decisions for changes to public
+   contracts, bounded-context ownership, security boundaries, persistence
+   semantics, or release policy. Resolve new or conflicting decisions through
+   the target repository's documented authority.
 3. If the repository adopts the organization Feature Module Standard, read its
    local adoption profile for scope, extensions, deviations, and exact gates.
 4. Work on a short-lived branch with a conventional prefix such as `feat/`,

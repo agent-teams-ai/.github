@@ -12,6 +12,8 @@ release procedures remain in the owning repository.
 
 ## Shared Files
 
+- [Engineering Quality Standard](docs/engineering-quality-standard.md) - common Clean Architecture, SOLID, DDD and DRY practices; repository agent files link here explicitly.
+
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.
 - `SECURITY.md` - private vulnerability reporting policy.
