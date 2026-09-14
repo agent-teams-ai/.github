@@ -174,8 +174,10 @@ async function verifyPackage(packageEntry, adapters, verifiedEntry) {
       `${specifier} live release workflow run does not bind exact attempt/path/SHA/success.`);
     return;
   }
-  assert(bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, "failure"),
-    `${specifier} reconciled origin release attempt must bind an exact terminal failure.`);
+  const originConclusion = workflowRun.conclusion;
+  assert(["failure", "cancelled"].includes(originConclusion) &&
+    bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, originConclusion),
+  `${specifier} reconciled origin release attempt must bind an exact terminal unsuccessful result.`);
   const originJobs = await adapters.getWorkflowAttemptJobs(
     packageEntry.provenance.source_repository,
     packageEntry.provenance.workflow_run_id,
@@ -186,10 +188,11 @@ async function verifyPackage(packageEntry, adapters, verifiedEntry) {
     Number.isSafeInteger(originReleaseJobs[0].id) && originReleaseJobs[0].id > 0 &&
     originReleaseJobs[0].run_attempt === packageEntry.provenance.workflow_run_attempt &&
     originReleaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
-    originReleaseJobs[0].status === "completed" && originReleaseJobs[0].conclusion === "failure" &&
+    originReleaseJobs[0].status === "completed" &&
+    originReleaseJobs[0].conclusion === originConclusion &&
     originReleaseJobs[0].html_url ===
       `${packageEntry.provenance.workflow_run_url}/job/${originReleaseJobs[0].id}`,
-  `${specifier} reconciled origin must have exactly one failed release job.`);
+  `${specifier} reconciled origin must have exactly one matching terminal unsuccessful release job.`);
   assert(reconciliation.workflow_run_attempt > packageEntry.provenance.workflow_run_attempt,
     `${specifier} reconciliation attempt must be strictly later than its failed origin.`);
   const reconciledRun = await adapters.getWorkflowRun(
