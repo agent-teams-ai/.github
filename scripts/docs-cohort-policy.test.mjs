@@ -1618,6 +1618,28 @@ test("v2 verifies failed origins reconciled by a later exact successful release"
   ), /strictly later/iu);
 });
 
+test("v2 verifies cancelled origins reconciled by a later exact successful release", async () => {
+  const { registry: candidate, record, adapters } = cohortV2EvidenceFixture();
+  for (const entry of record.packages) {
+    entry.provenance.reconciliation = { workflow_run_attempt: 2, release_job_id: 777 };
+  }
+  record.record_digest = cohortRecordDigest(record);
+  const getWorkflowRun = adapters.getWorkflowRun;
+  const getWorkflowAttemptJobs = adapters.getWorkflowAttemptJobs;
+  adapters.getWorkflowRun = async (repository, runId, attempt) => {
+    const run = await getWorkflowRun(repository, runId, attempt);
+    return repository === "agent-teams-ai/engineering-foundation" && attempt === 1
+      ? { ...run, conclusion: "cancelled" } : run;
+  };
+  adapters.getWorkflowAttemptJobs = async (repository, runId, attempt) => {
+    const jobs = await getWorkflowAttemptJobs(repository, runId, attempt);
+    return attempt === 1 ? jobs.map((job) => ({ ...job, conclusion: "cancelled" })) : jobs;
+  };
+  await assert.doesNotReject(verifyDocsCohortEvidence(
+    candidate, registrySchema, record.cohort_id, adapters,
+  ));
+});
+
 test("binds a recovered package release to immutable failed and successful attempts", async () => {
   const candidate = reconciledRegistry();
   const record = candidate.cohorts[0];
@@ -1648,47 +1670,47 @@ test("fails closed for invalid recovered package release evidence", async (conte
   const cases = [
     ["successful origin", {
       run: (run, attempt) => attempt === 1 ? { ...run, conclusion: "success" } : run,
-      message: /origin release attempt.*failure/iu,
+      message: /origin release attempt.*terminal unsuccessful/iu,
     }],
-    ["cancelled origin", {
+    ["cancelled origin with failed job", {
       run: (run, attempt) => attempt === 1 ? { ...run, conclusion: "cancelled" } : run,
-      message: /origin release attempt.*failure/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["wrong origin branch", {
       run: (run, attempt) => attempt === 1 ? { ...run, head_branch: "release" } : run,
-      message: /origin release attempt.*failure/iu,
+      message: /origin release attempt.*terminal unsuccessful/iu,
     }],
     ["wrong origin job SHA", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], head_sha: "9".repeat(40) }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["wrong origin job name", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], name: "publish" }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["wrong origin job attempt", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], run_attempt: 2 }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["duplicate origin release job", {
       jobs: (jobs, attempt) => attempt === 1 ? [...jobs, { ...jobs[0], id: 701 }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["incomplete origin job", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], status: "in_progress" }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["successful origin job", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], conclusion: "success" }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["skipped origin job", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], conclusion: "skipped" }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["wrong origin job URL", {
       jobs: (jobs, attempt) => attempt === 1 ? [{ ...jobs[0], html_url: "https://example.com/job/700" }] : jobs,
-      message: /exactly one failed release job/iu,
+      message: /matching terminal unsuccessful release job/iu,
     }],
     ["mutable latest run", {
       run: (run, attempt) => attempt === 2 ? { ...run, run_attempt: 3 } : run,
