@@ -1,0 +1,14 @@
+{
+  "cohort_id": "docs-2026-09-15-stable23",
+  "status": "public_package_verified_only",
+  "recordDigest": "sha256:287fca0b66c212e93d865b3a54fcb681eda12f4f8954c077a59148a348a361c9",
+  "runtimeClosureDigest": "sha256:6e768aa2e3be45c358d27d6a8a234f10806ba9ac22f1a003b36396ecc41ae157",
+  "qualificationEventDigest": "sha256:d65de3c1885c948dcdfa9b7fe79e9638ed74542ac32b85097ece90b5e02866d9",
+  "verifier": "scripts/verify-docs-cohort-evidence.mjs#verifyDocsCohortEvidence",
+  "verifierSha256": "101fec12a5972258df4e63fd9a70fa6c8edde3db8282322c0c957b5815111cfa",
+  "completedAt": "2026-09-15T00:15:08Z",
+  "conclusion": "success",
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false
+}
