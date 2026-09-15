@@ -1,0 +1,22 @@
+{
+  "cohort_id": "docs-2026-09-15-stable24",
+  "status": "reused_stable23_package_evidence_pending_live_verification",
+  "recordDigest": "sha256:e5cd6960b1ef5aa812deba33448ddafa9729fc6a3c9de72e46494068cc06ac7c",
+  "runtimeClosureDigest": "sha256:6e768aa2e3be45c358d27d6a8a234f10806ba9ac22f1a003b36396ecc41ae157",
+  "qualificationEventDigest": "sha256:6e6292c895425d451609757d9e327d314fd12badfa5d42aca80402ba59bde588",
+  "sourceCohort": "docs-2026-09-15-stable23",
+  "sourceRecordDigest": "sha256:287fca0b66c212e93d865b3a54fcb681eda12f4f8954c077a59148a348a361c9",
+  "sourceEvidence": "governance/evidence/docs-cohorts/docs-2026-09-15-stable23/qualification.json",
+  "sourceRevision": "d827558293dab6bd16ee0276f457a4441539fcad",
+  "evidenceBasis": "All stable23 package, provenance, dependency, runtime closure, workflow, schema and asset bindings are unchanged. Existing public-package evidence is reused; no new live-verifier success is claimed.",
+  "transitionEvidence": {
+    "origin": "docs-2026-09-11-stable20",
+    "catalogDigest": "sha256:ab84cf314a24f9f32a3baabce0c814699366af6c2a4aeb91e59327bb6783606f",
+    "verification": "Locally retained 0.2.8 package assets match all four central SHA-256 digests. Every bundled projection equals central immutable authority and historical skill/caller bytes match their digests. This is deterministic byte evidence, not a fresh registry or provenance audit."
+  },
+  "liveVerificationPerformed": false,
+  "requiredBeforeMerge": "Base-owned pull_request_target verifyChangedDocsCohortEvidence must freshly verify publication, signatures, provenance, published transition bundles, runtime closure and protected workflow authority.",
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false
+}
