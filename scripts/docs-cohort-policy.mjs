@@ -726,7 +726,7 @@ export function validateDocsProtocolExceptions(value, schema, options = {}) {
     assert(exception.review_after < exception.expires_at,
       `${exception.id} review date must precede expiry.`);
     assert(asOf <= exception.expires_at, `${exception.id} expired and must be reviewed or removed.`);
-    assert(asOf < exception.review_after, `${exception.id} review is due before continued use.`);
+    assert(asOf <= exception.review_after, `${exception.id} review is due before continued use.`);
   }
 }
 
