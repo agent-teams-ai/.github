@@ -817,6 +817,9 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   );
   const activeInventory = inventory.repositories.filter(({ archived }) => !archived);
   const archivedInventory = inventory.repositories.filter(({ archived }) => archived);
+  const deletedProtocolById = new Map(docsProtocol.repositories
+    .filter(({ repository_lifecycle: lifecycle }) => lifecycle === "deleted")
+    .map((record) => [record.repository_id, record]));
   assert(ledger.snapshot_date <= inventory.observed_at,
     "Executable-spec ledger observation must not postdate the organization inventory.");
   const activeLedger = new Map(ledger.repositories.map((record) => [record.repository, record]));
@@ -825,14 +828,17 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   );
   for (const ledgerRecord of activeLedger.values()) {
     const record = inventoryByRepository.get(ledgerRecord.repository);
+    const deletedRecord = deletedProtocolById.get(ledgerRecord.repository_id);
+    const isDeletedTombstone = !record && deletedRecord?.repository === ledgerRecord.repository;
     assert(
-      record && !record.archived && ledgerRecord.repository_id === record.id &&
-        ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch,
+      (record && !record.archived && ledgerRecord.repository_id === record.id &&
+        ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch) ||
+      isDeletedTombstone,
       `${ledgerRecord.repository} active ledger identity must match the organization inventory.`,
     );
     assert(
       ledgerRecord.gate_contract.remote_required_checks.status !==
-        "unavailable_free_private_repository" || record.visibility === "private",
+        "unavailable_free_private_repository" || record?.visibility === "private" || isDeletedTombstone,
       `${ledgerRecord.repository} private-repository ruleset unavailability requires private inventory visibility.`,
     );
   }
@@ -847,8 +853,10 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     .filter(({ created_at }) => created_at.slice(0, 10) <= ledger.snapshot_date)
     .map((record) => [record.repository, record]));
   const historicalLedger = new Map([...activeLedger, ...archivedLedger]);
-  assert(historicalLedger.size === known.size && [...known].every(([repository, record]) =>
-    historicalLedger.get(repository)?.repository_id === record.id),
+  assert([...known].every(([repository, record]) =>
+    historicalLedger.get(repository)?.repository_id === record.id) &&
+    [...historicalLedger.values()].every((record) => known.has(record.repository) ||
+      deletedProtocolById.get(record.repository_id)?.repository === record.repository),
   "Ledger scope must exactly match repository identities created by its dated organization snapshot.");
   const activeDocsProtocol = docsProtocol.repositories.filter(
     ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
