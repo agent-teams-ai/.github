@@ -13,8 +13,8 @@
       "authority_exception_id": "platform-private-required-checks-github-free",
       "tracking_reference": "governance/docs-protocol-policy-v2.json",
       "status": "active",
-      "last_reviewed_at": "2026-08-16",
-      "review_after": "2026-09-16",
+      "last_reviewed_at": "2026-09-16",
+      "review_after": "2026-10-16",
       "expires_at": "2026-11-16",
       "review_triggers": ["billing_plan_changed", "repository_visibility_changed", "ruleset_capability_changed"]
     }
