@@ -1,17 +1,15 @@
 {
   "$schema": "./organization-repository-inventory.schema.json",
   "schema_version": 2,
-  "snapshot_revision": "2026-09-12.1",
-  "observed_at": "2026-09-12",
+  "snapshot_revision": "2026-09-16.1",
+  "observed_at": "2026-09-16",
   "continuous_audit": false,
   "organization": "agent-teams-ai",
   "verification": "human_reviewed_dated_api_snapshot",
   "endpoint": "https://api.github.com/orgs/agent-teams-ai/repos?type=all&per_page=100",
-  "fork_evidence_endpoints": [
-    "https://api.github.com/repos/agent-teams-ai/craig-meeting-gateway"
-  ],
+  "fork_evidence_endpoints": [],
   "checksum_algorithm": "sha256-internal-consistency(sorted(repository + NUL + id + NUL + created_at + NUL + archived + NUL + visibility + NUL + default_branch + NUL + is_fork + NUL + json(fork_parent) + LF))",
-  "checksum_sha256": "3a4a41e19764fb2058c37b0065e6bd6ea7d44c1d18afc2649f0ab5c9221d36f5",
+  "checksum_sha256": "35e368b919f4afddf17173a1f88d9c24f00f6286d08df24eecab5d4cb9a93a80",
   "repositories": [
     {
       "repository": "agent-teams-ai/.github",
@@ -48,7 +46,7 @@
       "id": 1348461381,
       "created_at": "2026-08-27T12:25:49Z",
       "archived": false,
-      "visibility": "private",
+      "visibility": "public",
       "default_branch": "main",
       "is_fork": false,
       "fork_parent": null
@@ -72,16 +70,6 @@
       "default_branch": "main",
       "is_fork": false,
       "fork_parent": null
-    },
-    {
-      "repository": "agent-teams-ai/craig-meeting-gateway",
-      "id": 1319652670,
-      "created_at": "2026-08-01T22:07:42Z",
-      "archived": false,
-      "visibility": "public",
-      "default_branch": "master",
-      "is_fork": true,
-      "fork_parent": "CraigChat/craig"
     },
     {
       "repository": "agent-teams-ai/docs-protocol-canary-20260817",

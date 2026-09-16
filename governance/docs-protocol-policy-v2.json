@@ -1,10 +1,10 @@
 {
   "$schema": "./docs-protocol-policy-v2.schema.json",
   "schema_version": 3,
-  "snapshot_revision": "2026-09-12.1",
-  "observed_at": "2026-09-12",
+  "snapshot_revision": "2026-09-16.1",
+  "observed_at": "2026-09-16",
   "organization": "agent-teams-ai",
-  "inventory_snapshot_revision": "2026-09-12.1",
+  "inventory_snapshot_revision": "2026-09-16.1",
   "continuous_audit": false,
   "protocol": {
     "package": "@agent-teams/docs-protocol",
@@ -35,10 +35,10 @@
     }
   },
   "admission": {
-    "expected_repository_count": 12,
+    "expected_repository_count": 11,
     "owned_repository_count": 11,
-    "external_repository_count": 1,
-    "fork_source_count": 1,
+    "external_repository_count": 0,
+    "fork_source_count": 0,
     "new_owned_repository_status": "pending_classification",
     "qualification_evidence_required": true,
     "live_drift_audit": {
@@ -329,7 +329,7 @@
       "repository_id": 1319652670,
       "source_provenance": { "kind": "fork", "parent_repository": "CraigChat/craig" },
       "governance_ownership": "external",
-      "repository_lifecycle": "active",
+      "repository_lifecycle": "deleted",
       "docs_role": "not_applicable",
       "protocol_required": false,
       "admission_status": "exception",
@@ -354,7 +354,7 @@
       },
       "exemption": {
         "id": "external-fork-docs-protocol",
-        "reason": "Upstream fork is not an Agent Teams-owned product and must not receive organization-specific documentation machinery.",
+        "reason": "The upstream-owned fork left the organization (GitHub 404 on 2026-09-16) and is retained only as a deleted tombstone. It must not receive organization-specific documentation machinery or be treated as a live consumer.",
         "review_triggers": [
           "fork_detached",
           "ownership_changed",
