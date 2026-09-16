@@ -779,18 +779,22 @@ test("treats eligible_after as informational and rejects future-dated lifecycle 
 });
 
 test("validates expiring enumerable exceptions at a declared date", () => {
+  const boundary = structuredClone(exceptions);
+  boundary.exceptions[0].last_reviewed_at = "2026-08-16";
+  boundary.exceptions[0].review_after = "2026-09-16";
+  boundary.exceptions[0].expires_at = "2026-11-16";
   assert.doesNotThrow(() => validateDocsProtocolExceptions(
-    structuredClone(exceptions),
+    structuredClone(boundary),
     exceptionsSchema,
-    { asOf: "2026-08-16" },
+    { asOf: "2026-09-16" },
   ));
   assert.throws(() => validateDocsProtocolExceptions(
-    structuredClone(exceptions),
+    structuredClone(boundary),
     exceptionsSchema,
     { asOf: "2026-11-17" },
   ), /expired/u);
   assert.throws(() => validateDocsProtocolExceptions(
-    structuredClone(exceptions),
+    structuredClone(boundary),
     exceptionsSchema,
     { asOf: "2026-09-17" },
   ), /review is due/u);
