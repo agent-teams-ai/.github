@@ -792,7 +792,7 @@ test("validates expiring enumerable exceptions at a declared date", () => {
   assert.throws(() => validateDocsProtocolExceptions(
     structuredClone(exceptions),
     exceptionsSchema,
-    { asOf: "2026-09-16" },
+    { asOf: "2026-09-17" },
   ), /review is due/u);
 });
 
