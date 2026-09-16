@@ -117,7 +117,7 @@ test("rejects an internally inconsistent organization inventory entry", () => {
 });
 
 test("requires fork evidence endpoints to cover every current fork", () => {
-  const changed = clone(inventory); changed.fork_evidence_endpoints.pop();
+  const changed = clone(inventory); changed.fork_evidence_endpoints.push("https://api.github.com/repos/agent-teams-ai/deleted-fork");
   assert.throws(() => validateOrganizationRepositoryInventory(changed, inventorySchema), /exactly cover every current fork/u);
 });
 
@@ -1211,6 +1211,26 @@ test("requires the canonical GitHub SHA-pinning API field", () => {
 
 test("accepts cross-policy required-check exception references", () => {
   assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory), clone(docsProtocol)));
+});
+
+test("requires a deleted policy tombstone for historical ledger identities absent from inventory", () => {
+  const changedInventory = clone(inventory);
+  changedInventory.repositories = changedInventory.repositories.filter(
+    ({ repository }) => repository !== "agent-teams-ai/craig-meeting-gateway",
+  );
+  const changed = clone(docsProtocol);
+  const tombstone = changed.repositories.find(
+    ({ repository }) => repository === "agent-teams-ai/craig-meeting-gateway",
+  );
+  tombstone.repository_lifecycle = "deleted";
+  assert.doesNotThrow(
+    () => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), changedInventory, changed),
+  );
+  tombstone.repository_lifecycle = "active";
+  assert.throws(
+    () => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), changedInventory, changed),
+    /active ledger identity must match/u,
+  );
 });
 
 test("rejects an archived repository in the active ledger despite exact historical identity coverage", () => {
