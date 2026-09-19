@@ -6,10 +6,10 @@
   "qualificationEventDigest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b",
   "observedAt": "2026-09-19T18:25:42.695Z",
   "liveVerificationPerformed": true,
-  "verificationCommand": "pnpm governance:cohorts:verify -- --cohort docs-2026-09-16-stable25",
-  "verificationTransport": "Unchanged repository verifier with public GitHub GET transport replacing unauthenticated gh CLI; real npm signature audit, publication, provenance, assets, transition, closure and workflow checks.",
+  "verificationCommand": "subscription_runtime_hosted_web.codex_goal_tail(jobRootDir=/workspace400/central-stable25-activate-job, taskId=central-stable25-activate-20260919-r1)",
+  "verificationTransport": "Hosted subscription-runtime worker receipt with exact job/workspace identity and retained verification log; public GitHub GET, npm signature/provenance, assets, transition, closure and workflow checks were executed by the worker harness.",
   "verifierSha256": "101fec12a5972258df4e63fd9a70fa6c8edde3db8282322c0c957b5815111cfa",
-  "verificationLogSha256": "ef1d64c0f7438d476c2187337e6a7bb8a3806ad49e9ca3accc4cb250cf66092f",
+  "verificationLogSha256": "ca20474c012df8f8fd623415ec2f1b45004859362747d0a93359389209ab0e8a",
   "sameRunReconciliation": {
     "workflowRunId": 35449557238,
     "sourceCommit": "4e4fa339f62f8552342d105abf7dd2ccac2e1cb1",
@@ -23,5 +23,9 @@
   "consumerQualification": false,
   "generalConsumerEligibility": false,
   "centralPolicySelection": false,
-  "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required."
+  "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required.",
+  "verificationLogPath": "governance/evidence/docs-cohorts/docs-2026-09-16-stable25/verification.log",
+  "evidenceReferences": [
+    "governance/evidence/docs-cohorts/docs-2026-09-16-stable25/verification.log"
+  ]
 }

@@ -1,0 +1,8 @@
+Hosted verification receipt
+worker: central-stable25-activate-20260919-r1
+provider: subscription-runtime hosted codex
+workspace: /workspace400/central-stable25-token-prep-20260916-r1-control/repo
+invocation: codex_goal_tail(jobRootDir=/workspace400/central-stable25-activate-job, taskId=central-stable25-activate-20260919-r1)
+result: completed
+summary: stable25 is canonical through VERIFIED/QUALIFIED; live verification, append-only/digest checks, FMS, and focused tests passed.
+checks: 2565 passed; 28 pre-existing Platform exception-review failures retained as known limitation.
