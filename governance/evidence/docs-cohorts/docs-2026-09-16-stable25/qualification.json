@@ -1,0 +1,27 @@
+{
+  "cohort_id": "docs-2026-09-16-stable25",
+  "status": "qualified",
+  "recordDigest": "sha256:105c34ecc7fc422939b43daaca513f9ce630ce69d4a2820d39423fcdc13dcc61",
+  "runtimeClosureDigest": "sha256:87cb5e3495848f453c1ac0e4dc8caa7d66828f0cab270cefd46d73dee2ea341a",
+  "qualificationEventDigest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b",
+  "observedAt": "2026-09-19T18:25:42.695Z",
+  "liveVerificationPerformed": true,
+  "verificationCommand": "pnpm governance:cohorts:verify -- --cohort docs-2026-09-16-stable25",
+  "verificationTransport": "Unchanged repository verifier with public GitHub GET transport replacing unauthenticated gh CLI; real npm signature audit, publication, provenance, assets, transition, closure and workflow checks.",
+  "verifierSha256": "101fec12a5972258df4e63fd9a70fa6c8edde3db8282322c0c957b5815111cfa",
+  "verificationLogSha256": "ef1d64c0f7438d476c2187337e6a7bb8a3806ad49e9ca3accc4cb250cf66092f",
+  "sameRunReconciliation": {
+    "workflowRunId": 35449557238,
+    "sourceCommit": "4e4fa339f62f8552342d105abf7dd2ccac2e1cb1",
+    "originatingAttempt": 1,
+    "originatingConclusion": "failure",
+    "successfulAttempt": 2,
+    "releaseJobId": 105938213546
+  },
+  "transitionBundlesVerified": 16,
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false,
+  "centralPolicySelection": false,
+  "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required."
+}
