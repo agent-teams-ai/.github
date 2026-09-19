@@ -60,13 +60,14 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
     ]);
   const policy = JSON.parse(policyBytes);
   const basePolicy = JSON.parse(basePolicyBytes);
+  const clock = overrides.clock ?? now;
   const exceptions = JSON.parse(exceptionsBytes);
   const registry = JSON.parse(registryBytes);
   // Neither document is projected or relaxed. Existing reference/lifecycle,
   // migration-edge, single-canary and repository-eligibility rules run first.
   validateDocsProtocolPolicy(policy, policySchema);
   validateDocsProtocolPolicy(basePolicy, policySchema);
-  validateDocsProtocolExceptions(exceptions, exceptionsSchema);
+  validateDocsProtocolExceptions(exceptions, exceptionsSchema, { asOf: clock().slice(0, 10) });
   validateDocsGovernanceReferences(registry, exceptions, policy, security);
   if (paths.inventory) {
     const inventory = JSON.parse(await readFile(paths.inventory));
@@ -82,7 +83,6 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   need(execution, "Trusted admission requires materialized execution coordinates.");
   const verifyController = overrides.verifyController ?? verifyAdmissionController;
   const readBaseFile = overrides.readBaseFile ?? readAdmissionBaseFile;
-  const clock = overrides.clock ?? now;
   await verifyController(execution);
   need(isDeepStrictEqual(await readBaseFile(POLICY_PATH, execution.base), basePolicyBytes) &&
     isDeepStrictEqual(await readBaseFile(REGISTRY_PATH, execution.base), registryBytes), "Checkout authority is not the exact base.");
