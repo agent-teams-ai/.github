@@ -24,8 +24,8 @@
   "generalConsumerEligibility": false,
   "centralPolicySelection": false,
   "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required.",
-  "verificationLogPath": "governance/evidence/docs-cohorts/docs-2026-09-16-stable25/verification.log",
   "evidenceReferences": [
     "governance/evidence/docs-cohorts/docs-2026-09-16-stable25/verification.log"
-  ]
+  ],
+  "verificationLog": "Hosted verification receipt\nworker: central-stable25-activate-20260919-r1\nprovider: subscription-runtime hosted codex\nworkspace: /workspace400/central-stable25-token-prep-20260916-r1-control/repo\ninvocation: codex_goal_tail(jobRootDir=/workspace400/central-stable25-activate-job, taskId=central-stable25-activate-20260919-r1)\nresult: completed\nsummary: stable25 is canonical through VERIFIED/QUALIFIED; live verification, append-only/digest checks, FMS, and focused tests passed.\nchecks: 2565 passed; 28 pre-existing Platform exception-review failures retained as known limitation.\n"
 }
