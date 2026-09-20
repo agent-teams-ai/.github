@@ -1,0 +1,31 @@
+{
+  "cohort_id": "docs-2026-09-16-stable25",
+  "status": "qualified",
+  "recordDigest": "sha256:105c34ecc7fc422939b43daaca513f9ce630ce69d4a2820d39423fcdc13dcc61",
+  "runtimeClosureDigest": "sha256:87cb5e3495848f453c1ac0e4dc8caa7d66828f0cab270cefd46d73dee2ea341a",
+  "qualificationEventDigest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b",
+  "observedAt": "2026-09-19T18:25:42.695Z",
+  "liveVerificationPerformed": true,
+  "verificationCommand": "subscription_runtime_hosted_web.codex_goal_tail(jobRootDir=/workspace400/central-stable25-activate-job, taskId=central-stable25-activate-20260919-r1)",
+  "verificationTransport": "Hosted subscription-runtime worker receipt with exact job/workspace identity and retained verification log; public GitHub GET, npm signature/provenance, assets, transition, closure and workflow checks were executed by the worker harness.",
+  "verifierSha256": "101fec12a5972258df4e63fd9a70fa6c8edde3db8282322c0c957b5815111cfa",
+  "verificationLogSha256": "ca20474c012df8f8fd623415ec2f1b45004859362747d0a93359389209ab0e8a",
+  "sameRunReconciliation": {
+    "workflowRunId": 35449557238,
+    "sourceCommit": "4e4fa339f62f8552342d105abf7dd2ccac2e1cb1",
+    "originatingAttempt": 1,
+    "originatingConclusion": "failure",
+    "successfulAttempt": 2,
+    "releaseJobId": 105938213546
+  },
+  "transitionBundlesVerified": 16,
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false,
+  "centralPolicySelection": false,
+  "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required.",
+  "evidenceReferences": [
+    "governance/evidence/docs-cohorts/docs-2026-09-16-stable25/verification.log"
+  ],
+  "verificationLog": "Hosted verification receipt\nworker: central-stable25-activate-20260919-r1\nprovider: subscription-runtime hosted codex\nworkspace: /workspace400/central-stable25-token-prep-20260916-r1-control/repo\ninvocation: codex_goal_tail(jobRootDir=/workspace400/central-stable25-activate-job, taskId=central-stable25-activate-20260919-r1)\nresult: completed\nsummary: stable25 is canonical through VERIFIED/QUALIFIED; live verification, append-only/digest checks, FMS, and focused tests passed.\nchecks: 2565 passed; 28 pre-existing Platform exception-review failures retained as known limitation.\n"
+}

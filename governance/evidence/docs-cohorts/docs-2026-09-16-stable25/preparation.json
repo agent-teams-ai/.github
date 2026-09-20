@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "kind": "docs_cohort_preparation",
+  "status": "pending_package_publication",
+  "prepared_from": {
+    "repository": "agent-teams-ai/.github",
+    "repository_id": 1316243981,
+    "revision": "2daa5d186a1022c4f0b65165bf73a27e7530f9cf"
+  },
+  "cohort": {
+    "cohort_generation": 2,
+    "cohort_id": "docs-2026-09-16-stable25",
+    "channel": "stable",
+    "planned_packages": [
+      {
+        "name": "@agent-teams/repository-mutation",
+        "role": "transitive",
+        "version": "0.2.0"
+      },
+      {
+        "name": "@agent-teams/document-authoring",
+        "role": "transitive",
+        "version": "0.3.0"
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "role": "direct",
+        "version": "0.6.0"
+      },
+      {
+        "name": "@agent-teams/docs-protocol-agent-teams",
+        "role": "direct",
+        "version": "0.2.9"
+      },
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "role": "direct",
+        "version": "1.4.0"
+      }
+    ],
+    "upgrade_from": [
+      "docs-2026-09-12-stable21"
+    ],
+    "rollback_to": [
+      "docs-2026-09-12-stable21"
+    ],
+    "canary_repositories": [
+      {
+        "repository_id": 1348461381,
+        "repository": "agent-teams-ai/agent-teams-token"
+      }
+    ],
+    "package_publication_pattern": "docs-2026-09-15-stable23",
+    "consumer_transition_pattern": "docs-2026-09-15-stable24"
+  },
+  "origin": {
+    "cohort_id": "docs-2026-09-12-stable21",
+    "record_digest": "sha256:bf5220b191c7339533d21acd9b79594c274567ff0f515b72c4818863819ca92a",
+    "qualification_event_digest": "sha256:4608734de08ad19ab6f787448d73bf92990115668c9d3d34cff5bba134efdc3b"
+  },
+  "admission": {
+    "repository": "agent-teams-ai/agent-teams-token",
+    "repository_id": 1348461381,
+    "visibility": "public",
+    "current_binding_status": "bound",
+    "current_desired_cohort_id": "docs-2026-09-12-stable21",
+    "current_observed_cohort_id": "docs-2026-09-12-stable21",
+    "future_selection_status": "rollout_pending_after_qualification",
+    "consumer_repository_change_included": false,
+    "central_policy_selection_included": false,
+    "central_observation_included": false
+  },
+  "gates": {
+    "registry_record_present": false,
+    "lifecycle_event_present": false,
+    "publication_evidence_complete": false,
+    "consumer_qualification_complete": false,
+    "active": false,
+    "observable": false,
+    "required_before_registry_append": [
+      "exact npm publication metadata and SRI for every changed coordinate",
+      "signed provenance and successful or reconciled release evidence",
+      "published adapter assets and a stable21 transition bundle",
+      "exact runtime closure v2 projection",
+      "fresh live central cohort verification"
+    ],
+    "required_before_policy_selection": [
+      "stable25 immutable record and PUBLISHED_UNQUALIFIED event appended",
+      "stable25 VERIFIED and QUALIFIED events appended",
+      "trusted exact-head cohort validation passed"
+    ],
+    "required_before_observation": [
+      "Token consumes the exact stable25 tuple and managed projection",
+      "Token qualification and semantic checks pass on its default branch",
+      "trusted central admission evidence binds the exact Token revision"
+    ]
+  }
+}
