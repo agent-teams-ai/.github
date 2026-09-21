@@ -36,7 +36,7 @@ function decisiveCheckRuns(checks) {
     const retained = byExecution.get(key);
     if (retained === undefined || check.id > retained.id) byExecution.set(key, check);
   }
-  return [...byExecution.values()];
+  return [...byExecution.values()].sort((left, right) => left.id - right.id);
 }
 
 async function command(program, args, options = {}) {
@@ -863,18 +863,22 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
           check.head_sha === head && check.name === evidence.required_context &&
           check.app?.id === evidence.integration_id));
         if (head === evidence.revision) {
-          assert(matches.length === 1 && matches[0].conclusion === "success" &&
-            matches[0].id === evidence.check_run_id && matches[0].html_url === evidence.check_run_url,
-          `${entry.repository} current default-branch head requires exactly one successful admitted check.`);
-          currentChecks.push({ repository: entry.repository, revision: head, check: structuredClone(matches[0]) });
+          const admitted = matches.find(({ id }) => id === evidence.check_run_id);
+          assert(admitted?.html_url === evidence.check_run_url && admitted.conclusion === "success",
+            `${entry.repository} current default-branch head is missing its exact successful admitted check.`);
+          assert(matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
+            `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
+          currentChecks.push({ repository: entry.repository, revision: head,
+            checks: structuredClone(matches) });
         } else if (matches.length === 1 && matches[0].conclusion === "failure" && overrides.recovery) {
           rowResult = await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, head,
             overrides.recovery.execution, adapters);
         } else {
-          assert(matches.length === 1 && matches[0].conclusion === "success",
-            `${entry.repository} current default-branch head requires exactly one successful admitted check.`);
-          const [check] = matches;
-          currentChecks.push({ repository: entry.repository, revision: head, check: structuredClone(check) });
+          assert(matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
+            `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
+          const check = matches.at(-1);
+          currentChecks.push({ repository: entry.repository, revision: head,
+            checks: structuredClone(matches) });
           // Select from the current committed projection, then validate its exact
           // binding. Historical policy fields are never temporarily rewritten.
           const bytes = await adapters.readRepositoryFile(entry.repository,
@@ -924,13 +928,13 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       `${snapshot.repository} admitted check changed during the fleet admission audit.`);
   }
   // Historical identity lookup above deliberately tolerates later executions.
-  // Current success must instead remain unique across the complete context/App set.
+  // Current success instead binds the complete decisive context/App set.
   for (const snapshot of currentChecks) {
     const matches = decisiveCheckRuns((await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter((check) =>
-      check.head_sha === snapshot.revision && check.name === snapshot.check.name &&
-      check.app?.id === snapshot.check.app.id));
-    assert(matches.length === 1 && isDeepStrictEqual(matches[0], snapshot.check),
-      `${snapshot.repository} current admitted check became missing, ambiguous or changed during the fleet admission audit.`);
+      check.head_sha === snapshot.revision && check.name === snapshot.checks[0].name &&
+      check.app?.id === snapshot.checks[0].app.id));
+    assert(isDeepStrictEqual(matches, snapshot.checks),
+      `${snapshot.repository} complete decisive admitted check set changed during the fleet admission audit.`);
   }
   for (const pending of report.recovery_pending) {
     const entry = candidates.find((row) => row.repository_id === pending.repository_id);
