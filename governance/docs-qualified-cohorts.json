@@ -9819,6 +9819,69 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:a58aa3c74dbf772c5191dc0f92672774c44b96cc6b0ff7c07ab39dc399955bb3",
       "event_digest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b"
+    },
+    {
+      "cohort_id": "docs-2026-09-16-stable25",
+      "state": "CANARY",
+      "effective_at": "2026-09-21T04:08:00Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266/job/106209045907",
+        "https://github.com/agent-teams-ai/agent-teams-token/commit/55e910c8636608036f845156c1a09c92aeb70729"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1348461381,
+          "repository": "agent-teams-ai/agent-teams-token",
+          "merge_revision": "55e910c8636608036f845156c1a09c92aeb70729",
+          "observed_cohort_id": "docs-2026-09-16-stable25",
+          "observed_record_digest": "sha256:105c34ecc7fc422939b43daaca513f9ce630ce69d4a2820d39423fcdc13dcc61",
+          "observed_event_digest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 106209045907,
+          "check_run_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266/job/106209045907",
+          "workflow_run_id": 35559219266,
+          "workflow_id": 344094656,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125"
+        }
+      ],
+      "sequence": 162,
+      "previous_event_digest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b",
+      "event_digest": "sha256:9f0a2a8973b805e8cec5aa8c761a9851bb6f02c87caafe6ee8ff491e1a25cca0"
+    },
+    {
+      "cohort_id": "docs-2026-09-11-stable20",
+      "state": "SUPERSEDED",
+      "effective_at": "2026-09-21T04:08:00Z",
+      "support_until": "2026-10-21T04:08:00Z",
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266/job/106209045907",
+        "https://github.com/agent-teams-ai/agent-teams-token/commit/55e910c8636608036f845156c1a09c92aeb70729"
+      ],
+      "canary_evidence": [],
+      "sequence": 163,
+      "previous_event_digest": "sha256:9f0a2a8973b805e8cec5aa8c761a9851bb6f02c87caafe6ee8ff491e1a25cca0",
+      "event_digest": "sha256:58c684ab88a29c6802f97ec8543dab617389c1aed051941e4cafb7024192dc1b"
+    },
+    {
+      "cohort_id": "docs-2026-09-16-stable25",
+      "state": "RECOMMENDED",
+      "effective_at": "2026-09-21T04:08:00Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266",
+        "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35559219266/job/106209045907",
+        "https://github.com/agent-teams-ai/agent-teams-token/commit/55e910c8636608036f845156c1a09c92aeb70729"
+      ],
+      "canary_evidence": [],
+      "sequence": 164,
+      "previous_event_digest": "sha256:58c684ab88a29c6802f97ec8543dab617389c1aed051941e4cafb7024192dc1b",
+      "event_digest": "sha256:044d3b6058b3368413a5a6d908d2207866bf2f85fcd79731dd978b60c18c9caf"
     }
   ]
 }
