@@ -2147,6 +2147,14 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
       qualificationEventDigest: qualification.event_digest,
     },
   }));
+  const repeatedExactSuccess = {
+    id: evidence.check_run_id - 1,
+    head_sha: evidence.revision,
+    name: evidence.required_context,
+    app: { id: evidence.integration_id },
+    conclusion: "success",
+    html_url: `https://github.com/${consumer.repository}/actions/runs/122/job/${evidence.check_run_id - 1}`,
+  };
   const adapters = {
     asOf: "2026-08-18T00:00:00Z",
     getRepository: async () => ({
@@ -2156,7 +2164,7 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
       private: false,
     }),
     getDefaultBranchHead: async () => evidence.revision,
-    getCheckRuns: async () => [{
+    getCheckRuns: async () => [repeatedExactSuccess, {
       id: evidence.check_run_id,
       head_sha: evidence.revision,
       name: evidence.required_context,
@@ -2183,6 +2191,29 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
   assert.deepEqual((await verifyDocsAdmissionEvidence(
     policy, candidateRegistry, registrySchema, adapters,
   )).historical_verified, [consumer.repository_id]);
+  for (const conclusion of ["failure", "cancelled", "neutral"]) {
+    await assert.rejects(verifyDocsAdmissionEvidence(
+      policy, candidateRegistry, registrySchema, {
+        ...adapters,
+        getCheckRuns: async () => [
+          ...(await adapters.getCheckRuns()),
+          { ...repeatedExactSuccess, id: repeatedExactSuccess.id - 1, conclusion,
+            html_url: `https://github.com/${consumer.repository}/actions/runs/121/job/${repeatedExactSuccess.id - 1}` },
+        ],
+      },
+    ), /every decisive admitted check to succeed/u);
+  }
+  let exactCheckReads = 0;
+  await assert.rejects(verifyDocsAdmissionEvidence(
+    policy, candidateRegistry, registrySchema, {
+      ...adapters,
+      getCheckRuns: async () => {
+        exactCheckReads += 1;
+        const checks = await adapters.getCheckRuns();
+        return exactCheckReads < 4 ? checks : checks.slice(1);
+      },
+    },
+  ), /complete decisive admitted check set changed/u);
   const priorJobToken = process.env.GH_TOKEN;
   const priorCredential = process.env.DOCS_GOVERNANCE_READ_TOKEN;
   delete process.env.GH_TOKEN;
@@ -2231,6 +2262,11 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
     conclusion: "success",
     html_url: `https://github.com/${consumer.repository}/actions/runs/321/job/654`,
   };
+  const repeatedCurrentSuccess = {
+    ...currentCheck,
+    id: currentCheck.id - 1,
+    html_url: `https://github.com/${consumer.repository}/actions/runs/320/job/${currentCheck.id - 1}`,
+  };
   const advancedAdapters = {
     ...adapters,
     getDefaultBranchHead: async () => currentRevision,
@@ -2238,7 +2274,7 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
       ancestor === evidence.revision && descendant === currentRevision,
     getCheckRuns: async (_repository, revision) => revision === evidence.revision
       ? adapters.getCheckRuns()
-      : [currentCheck],
+      : [currentCheck, repeatedCurrentSuccess],
     getWorkflowRun: async (_repository, runId) => runId === evidence.workflow_run_id
       ? adapters.getWorkflowRun()
       : {
@@ -2268,7 +2304,15 @@ test("live-verifies admitted default-branch evidence against consumer bytes", as
         ? adapters.getCheckRuns()
         : [],
     },
-  ), /exactly one successful admitted check/u);
+  ), /every decisive admitted check to succeed/u);
+  await assert.rejects(verifyDocsAdmissionEvidence(
+    policy, candidateRegistry, registrySchema, {
+      ...advancedAdapters,
+      getCheckRuns: async (_repository, revision) => revision === evidence.revision
+        ? adapters.getCheckRuns()
+        : [currentCheck, { ...repeatedCurrentSuccess, conclusion: "failure" }],
+    },
+  ), /every decisive admitted check to succeed/u);
 });
 
 test("emergency suspension and withdrawal remain available while npm and GitHub are offline", async () => {
