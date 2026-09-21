@@ -37,6 +37,32 @@ that existing code conforms. Keep legacy gaps, exclusions, accepted deviations
 and unqualified behavior explicit in their existing owner records. This document
 does not require unrelated legacy migrations or create an exemption for new code.
 
+## Early product advantage
+
+Owner direction recorded on 2026-09-21: Agent Teams products should earn an
+early advantage through demonstrated reliability, clear architectural
+boundaries and predictable user outcomes, even when reference products such as
+OpenClaw offer more features. Feature-count parity is not the primary objective.
+
+For each selected product slice, state the concrete guarantee and demonstrate
+it at the boundary where it matters: safe recovery without duplicate effects,
+bounded overload with working cancellation, tenant isolation, or honest progress
+and failure reporting. Choose the guarantees relevant to that slice; this is
+not a mandatory list of new subsystems for every task.
+
+Use source-backed competitor evidence to refine existing owners and acceptance
+tests. Preserve successful protections as counterevidence and distinguish a
+defect from a deliberate product tradeoff. Do not invent weaknesses or claim
+superiority from documentation, technology names or unqualified prototypes.
+
+Reduce feature scope before weakening an accepted correctness or safety
+invariant. Keep delivery practical: reuse existing contracts and plans, finish
+bounded vertical slices, and add abstractions or gates only for a demonstrated
+risk. This priority introduces no automatic ADR migration, extra approval ritual
+or requirement to build a universal platform before a useful feature.
+
+Repository agent instructions link here; they do not duplicate this priority.
+
 ## Clean Architecture and ownership
 
 - Put invariants and policy with their semantic owner. Application use cases
