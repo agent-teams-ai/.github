@@ -328,23 +328,27 @@ for (const conclusion of ["failure", "skipped"]) {
   });
 }
 
-// Independent review regressions: exercise the imported complete orchestration,
-// including matching contexts on the recorded observation and the final reread.
+// Independent review regressions: exercise repeated PR/push executions on one
+// exact head, mixed conclusions, and mutation during the final reread.
 for (const advance of [false, true]) {
   for (const late of [false, true]) {
     for (const conclusion of ["success", "failure", "cancelled", null]) {
-      test(`current check uniqueness: advance=${advance}, late=${late}, conclusion=${conclusion}`, async (t) => {
+      test(`current repeated check: advance=${advance}, late=${late}, conclusion=${conclusion}`, async (t) => {
         const f = await fixture(t); const { targetHead } = successfulTarget(f, advance);
         const get = f.options.getCheckRuns; let reads = 0;
         f.options.getCheckRuns = async (repo, revision) => {
           const checks = await get(repo, revision);
           if (repo === f.selected.repository && revision === targetHead && ++reads > (late ? (advance ? 2 : 1) : 0)) {
-            return [...checks, { ...checks[0], id: 1904, conclusion,
-              html_url: `https://github.com/${repo}/actions/runs/1900/job/1904` }];
+            return [...checks, { ...checks[0], id: 903, conclusion,
+              html_url: `https://github.com/${repo}/actions/runs/899/job/903` }];
           }
           return checks;
         };
-        await assert.rejects(f.run(), /check|success|ambiguous|execution/i);
+        if (conclusion === "success" && !late) {
+          assert.ok((await f.run()).current_verified.some((row) => row.revision === targetHead));
+        } else {
+          await assert.rejects(f.run(), /check|success|changed|execution/i);
+        }
       });
     }
   }
