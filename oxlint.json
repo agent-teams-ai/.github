@@ -1,12 +1,10 @@
 {
-  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  "categories": {
-    "correctness": "off",
-    "suspicious": "off"
-  },
-  "rules": {
-    "no-eval": "error",
-    "no-implied-eval": "error",
-    "no-new-func": "error"
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": [
+    "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
+  ],
+  "options": {
+    "reportUnusedDisableDirectives": "error",
+    "respectEslintDisableDirectives": false
   }
 }

@@ -4,7 +4,12 @@ import { createHash } from "node:crypto";
 import Ajv2020 from "ajv/dist/2020.js";
 
 function assert(condition, message) {
-  if (!condition) throw new Error(message);
+  if (!condition) {throw new Error(message);}
+}
+
+function isControlCodePoint(character) {
+  const codePoint = character.codePointAt(0);
+  return codePoint <= 0x1F || codePoint === 0x7F;
 }
 
 function validateSchema(value, schema, label) {
@@ -19,8 +24,8 @@ function validateSchema(value, schema, label) {
 }
 
 function isCanonicalRepositoryPath(path) {
-  if (typeof path !== "string" || path !== path.normalize("NFC")) return false;
-  if (path.startsWith("/") || path.includes("\\") || path.includes(":") || /[\u0000-\u001F\u007F]/u.test(path)) {
+  if (typeof path !== "string" || path !== path.normalize("NFC")) {return false;}
+  if (path.startsWith("/") || path.includes("\\") || path.includes(":") || [...path].some(isControlCodePoint)) {
     return false;
   }
   const segments = path.split("/");
@@ -29,7 +34,7 @@ function isCanonicalRepositoryPath(path) {
 
 function coordinateChecksum(entries) {
   const canonical = [...entries]
-    .sort(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
+    .toSorted(({ path: left }, { path: right }) => (left < right ? -1 : left > right ? 1 : 0))
     .map(({ path, git_blob_sha: blob }) => `${path}\0${blob}\n`)
     .join("");
   return createHash("sha256").update(canonical).digest("hex");
@@ -447,7 +452,7 @@ export function validateCodeSecurityDefaults(policy, schema) {
 
 function inventoryChecksum(entries) {
   const canonical = [...entries]
-    .sort(({ repository: left }, { repository: right }) =>
+    .toSorted(({ repository: left }, { repository: right }) =>
       left < right ? -1 : left > right ? 1 : 0)
     .map(({ repository, id, created_at: createdAt, archived, visibility, default_branch: branch, is_fork: fork, fork_parent: parent }) =>
       `${repository}\0${id}\0${createdAt}\0${archived}\0${visibility}\0${branch}\0${fork}\0${JSON.stringify(parent)}\n`)
@@ -472,8 +477,8 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
     );
   }
   const expectedForkEvidenceEndpoints = inventory.repositories.filter(({ is_fork: fork }) => fork)
-    .map(({ repository }) => `https://api.github.com/repos/${repository}`).sort();
-  assert(JSON.stringify([...inventory.fork_evidence_endpoints].sort()) === JSON.stringify(expectedForkEvidenceEndpoints),
+    .map(({ repository }) => `https://api.github.com/repos/${repository}`).toSorted();
+  assert(JSON.stringify(inventory.fork_evidence_endpoints.toSorted()) === JSON.stringify(expectedForkEvidenceEndpoints),
     "Inventory fork evidence endpoints must exactly cover every current fork.");
   assert(
     inventory.checksum_sha256 === inventoryChecksum(inventory.repositories),
@@ -568,7 +573,7 @@ export function validateDocsProtocolPolicy(policy, schema) {
         (record.source_provenance.parent_repository !== null),
       `${record.repository} source provenance kind and parent must agree.`,
     );
-    if (record.classification_evidence != null) {
+    if (record.classification_evidence !== null && record.classification_evidence !== undefined) {
       const decision = record.classification_evidence.decision;
       const pending = ["pending_onboarding", "pending_authority_decision"].includes(decision);
       const notApplicable = ["not_applicable_external_fork", "not_applicable_test_fixture"].includes(decision);
@@ -615,7 +620,7 @@ export function validateDocsProtocolPolicy(policy, schema) {
             !/^0{40}$/u.test(record.reusable_workflow_revision) &&
             record.qualification_evidence_path !== null &&
             !/^(?:\.github|node_modules)(?:\/|$)/u.test(record.qualification_evidence_path) &&
-            /qualification\.json$/u.test(record.qualification_evidence_path) &&
+            record.qualification_evidence_path.endsWith("qualification.json") &&
             record.qualification.observed_revision !== null &&
             !/^0{40}$/u.test(record.qualification.observed_revision) &&
             new Set([
@@ -876,7 +881,7 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       `${record.repository} documentation protocol source provenance must match fork evidence.`,
     );
     if (record.created_at.slice(0, 10) > ledger.snapshot_date) {
-      assert(protocolRecord.classification_evidence != null,
+      assert(protocolRecord.classification_evidence !== null && protocolRecord.classification_evidence !== undefined,
         `${record.repository} created after the prior qualification ledger requires machine-readable classification evidence.`);
     }
     const decision = protocolRecord.classification_evidence?.decision;

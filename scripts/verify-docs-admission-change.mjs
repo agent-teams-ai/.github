@@ -3,8 +3,7 @@
 import { pathToFileURL } from "node:url";
 import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { promisify } from "node:util";
-import { isDeepStrictEqual } from "node:util";
+import { promisify,isDeepStrictEqual } from "node:util";
 import { loadJson, validateDocsProtocolPolicy, validateGovernanceReferences, validateOrganizationRepositoryInventory } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences, validateDocsProtocolExceptions } from "./docs-cohort-policy.mjs";
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
@@ -12,7 +11,7 @@ import { POLICY_PATH, REGISTRY_PATH,
   recoveryBlob, prepareAdmissionRecovery, finishAdmissionRecovery } from "./docs-legacy-admission-recovery.mjs";
 
 const execute = promisify(execFile);
-const need = (condition, message) => { if (!condition) throw new Error(message); };
+const need = (condition, message) => { if (!condition) {throw new Error(message);} };
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/u, "Z");
 async function api(path) {
   const { stdout } = await execute("gh", ["api", path], { encoding: "utf8", timeout: 60_000, maxBuffer: 16 * 1024 * 1024 });
@@ -22,7 +21,7 @@ export async function readAdmissionBaseFile(path, revision) {
   need(/^(?!0{40}$)[0-9a-f]{40}$/u.test(revision) && /^[a-zA-Z0-9_./-]+$/u.test(path) &&
     path.split("/").every((part) => part && part !== "." && part !== ".."), "Invalid base Git coordinate.");
   const { stdout: entry } = await execute("git", ["ls-tree", revision, "--", path], { encoding: "utf8" });
-  if (entry === "") return null;
+  if (entry === "") {return null;}
   const match = /^100644 blob ([0-9a-f]{40})\t([^\n]+)\n$/u.exec(entry);
   need(match && match[2] === path, "Admission authority must be one regular base-owned file.");
   const { stdout } = await execute("git", ["cat-file", "blob", match[1]], { encoding: "buffer", maxBuffer: 8 * 1024 * 1024 });

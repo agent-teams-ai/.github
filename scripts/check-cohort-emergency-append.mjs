@@ -53,7 +53,7 @@ function canonicalJson(value) {
   }
   if (Array.isArray(value)) {return `[${value.map(canonicalJson).join(",")}]`;}
   assert(value !== undefined && typeof value === "object", "Invalid emergency JSON value.");
-  return `{${Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+  return `{${Object.entries(value).toSorted(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
     .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`).join(",")}}`;
 }
 
@@ -148,7 +148,7 @@ function timestamp(value, label) {
 
 function validateCanaryEvidenceShape(evidence, label) {
   assert(evidence !== null && typeof evidence === "object" && !Array.isArray(evidence) &&
-    canonicalJson(Object.keys(evidence).sort()) === canonicalJson(CANARY_KEYS),
+    canonicalJson(Object.keys(evidence).toSorted()) === canonicalJson(CANARY_KEYS),
   `${label} fields are invalid.`);
   assert(Number.isSafeInteger(evidence.repository_id) && evidence.repository_id >= 1 &&
     REPOSITORY.test(evidence.repository) && SHA.test(evidence.merge_revision) &&
@@ -180,7 +180,7 @@ export function validateEmergencyCohortAppend(previous, current, asOf = Date.now
   const timeById = new Map();
   let priorDigest = null;
   for (const [index, event] of currentEvents.entries()) {
-    assert(canonicalJson(Object.keys(event).sort()) === canonicalJson(EVENT_KEYS),
+    assert(canonicalJson(Object.keys(event).toSorted()) === canonicalJson(EVENT_KEYS),
       `Cohort event ${index + 1} has unexpected fields.`);
     assert(Number.isSafeInteger(event.sequence) && event.sequence === index + 1 &&
       COHORT_ID.test(event.cohort_id) && ALL_STATES.has(event.state) &&

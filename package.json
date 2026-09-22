@@ -11,7 +11,8 @@
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
-    "check": "pnpm quality:check && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "precheck": "node scripts/check-quality-scope.mjs",
+    "check": "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
     "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
     "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
     "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
@@ -19,11 +20,12 @@
     "governance:validate": "node scripts/validate-governance.mjs",
     "test": "node --test scripts/*.test.mjs tools/feature-module-standard/check.test.mjs",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json",
-    "quality:scope": "node scripts/check-quality-scope.mjs",
-    "quality:lint": "oxlint --config oxlint.json --deny-warnings --disable-nested-config scripts tools/feature-module-standard",
+    "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
+    "quality:lint": "node scripts/run-quality-lint.mjs",
     "quality:check": "pnpm quality:scope && pnpm quality:lint"
   },
   "devDependencies": {
+    "@agent-teams/engineering-foundation": "1.5.0",
     "ajv": "8.20.0",
     "oxlint": "1.85.0",
     "renovate": "44.24.2",

@@ -1,73 +1,70 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  assertLintPolicy,
-  assertProfile,
-  assertRoutes,
+  assertQualityAdoption,
   classifySourcePath,
+  classifyTrackedPaths,
+  deriveLintPaths,
+  readQualityAdoption,
 } from "./check-quality-scope.mjs";
+import { selectOxlintFiles } from "./run-quality-lint.mjs";
 
-const manifest = {
-  packageManager: "pnpm@11.18.0",
-  devDependencies: { oxlint: "1.85.0" },
-  scripts: {
-    "quality:scope": "node scripts/check-quality-scope.mjs",
-    "quality:lint": "oxlint --config oxlint.json --deny-warnings --disable-nested-config scripts tools/feature-module-standard",
-    "quality:check": "pnpm quality:scope && pnpm quality:lint",
-    test: "node --test scripts/*.test.mjs tools/feature-module-standard/check.test.mjs",
-    check: "pnpm quality:check && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
-  },
-};
-const workflow = "steps:\n  - run: pnpm check\n";
-const config = {
-  $schema: "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  categories: { correctness: "off", suspicious: "off" },
-  rules: { "no-eval": "error", "no-implied-eval": "error", "no-new-func": "error" },
-};
-const profile = {
-  schemaVersion: "consumer-quality-profile-v1",
-  status: "active-equivalent",
-  languages: ["javascript"],
-  sourceRoots: {
-    tooling: ["scripts/**/*.mjs", "tools/feature-module-standard/check.mjs"],
-    tests: ["scripts/**/*.test.mjs", "tools/feature-module-standard/check.test.mjs"],
-  },
-  typedCoverage: false,
-  requiredRoute: "pnpm check",
-  foundationCompatibility: {
-    attemptedVersion: "1.5.0",
-    publicPresetDiagnostics: 352,
-    result: "bounded-incompatible",
-  },
-};
+const accepted = await readQualityAdoption();
 
-test("classifies every current executable owner and rejects a new root", () => {
+test("actual repository adopts the Foundation preset through the canonical route", () => {
+  assertQualityAdoption(accepted);
+});
+
+test("actual tracked source census distinguishes tooling, tests, and authority data", () => {
   assert.equal(classifySourcePath("scripts/validate-governance.mjs"), "tooling");
   assert.equal(classifySourcePath("scripts/governance-policy.test.mjs"), "test");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.mjs"), "tooling");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.test.mjs"), "test");
-  assert.equal(classifySourcePath("governance/policy.json"), "non-source");
+  for (const authority of ["governance/policy.json", ".github/workflows/ci.yml", "GOVERNANCE.md"]) {
+    assert.equal(classifySourcePath(authority), "non-source");
+  }
   assert.equal(classifySourcePath("new-owner/check.mjs"), null);
 });
 
-test("rejects no-op, incomplete, and detached required routes", () => {
-  assert.doesNotThrow(() => assertRoutes(manifest, workflow));
-  assert.throws(() => assertRoutes({ ...manifest, scripts: { ...manifest.scripts, "quality:check": "node -e process.exit(0)" } }, workflow), /composition/u);
-  assert.throws(() => assertRoutes({ ...manifest, scripts: { ...manifest.scripts, "quality:lint": "oxlint scripts" } }, workflow), /source universe/u);
-  assert.throws(() => assertRoutes({ ...manifest, scripts: { ...manifest.scripts, test: "node --test scripts/*.test.mjs" } }, workflow), /FMS/u);
-  assert.throws(() => assertRoutes(manifest, "steps: []"), /CI must execute/u);
+test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
+  const census = assertQualityAdoption(accepted);
+  const paths = deriveLintPaths(census, accepted.profile);
+  assert.equal(paths.length, 17);
+  assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
-test("rejects disabled protected rules, ignores, and copied policy growth", () => {
-  assert.doesNotThrow(() => assertLintPolicy(config));
-  assert.throws(() => assertLintPolicy({ ...config, rules: { ...config.rules, "no-eval": "off" } }), /protected rule|inventory/u);
-  assert.throws(() => assertLintPolicy({ ...config, ignorePatterns: ["scripts/**"] }), /cannot add overrides/u);
-  assert.throws(() => assertLintPolicy({ ...config, rules: { ...config.rules, eqeqeq: "off" } }), /inventory/u);
-});
+const mutations = {
+  "a new unclassified executable source": value => { value.trackedPaths.push("other/new-source.ts"); },
+  "a missing Foundation pin": value => { delete value.manifest.devDependencies["@agent-teams/engineering-foundation"]; },
+  "a ranged Foundation pin": value => { value.manifest.devDependencies["@agent-teams/engineering-foundation"] = "^1.5.0"; },
+  "a local lint rule": value => { value.lintConfig.rules = { "no-eval": "off" }; },
+  "a local lint override": value => { value.lintConfig.overrides = []; },
+  "a local lint ignore": value => { value.lintConfig.ignorePatterns = ["scripts/**"]; },
+  "a replaced public preset": value => { value.lintConfig.extends = ["./local.json"]; },
+  "a false typed claim": value => { value.profile.typedCoverage = true; },
+  "a non-tooling included role": value => { value.profile.lint.includedRoles = ["test"]; },
+  "a removed required route": value => { delete value.manifest.scripts.check; },
+  "a no-op required route": value => { value.manifest.scripts.check = "true"; },
+  "a conditional required route": value => { value.manifest.scripts.check += " || true"; },
+  "a removed existing governance gate": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && pnpm governance:validate", ""); },
+  "a missing FMS test route": value => { value.manifest.scripts.test = "node --test scripts/*.test.mjs"; },
+  "authority JSON misclassified as source": value => { value.trackedPaths.push("governance/authority.ts"); },
+  "a missing CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- run: pnpm test"); },
+  "a conditional CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- if: always()\n        run: pnpm check"); },
+  "a continue-on-error CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- run: pnpm check\n        continue-on-error: true"); },
+};
 
-test("rejects unsupported status and false typed coverage claims", () => {
-  assert.doesNotThrow(() => assertProfile(profile));
-  assert.throws(() => assertProfile({ ...profile, typedCoverage: true }), /cannot claim typed/u);
-  assert.throws(() => assertProfile({ ...profile, status: "active-foundation" }));
-  assert.throws(() => assertProfile({ ...profile, foundationCompatibility: { ...profile.foundationCompatibility, publicPresetDiagnostics: 0 } }));
+for (const [name, mutate] of Object.entries(mutations)) {
+  test(`quality adoption rejects ${name}`, () => {
+    const value = structuredClone(accepted);
+    mutate(value);
+    assert.throws(() => assertQualityAdoption(value), assert.AssertionError);
+  });
+}
+
+test("a changed derived tooling set differs from the actual Oxlint selection", async () => {
+  const census = classifyTrackedPaths(accepted.trackedPaths);
+  const paths = deriveLintPaths(census, accepted.profile);
+  await assert.rejects(() => selectOxlintFiles([...paths, "README.md"]),
+    /selected files differ/u);
 });

@@ -58,11 +58,11 @@ export function validateRenovateDocsCohortRule(config) {
     "@agent-teams/document-authoring",
     "@agent-teams/engineering-foundation",
     "@agent-teams/repository-mutation",
-  ].sort();
+  ].toSorted();
   const matching = (config.packageRules ?? []).filter((rule) =>
     managed.some((name) => rule.matchPackageNames?.includes(name)));
   if (matching.length !== 1 || matching[0] !== config.packageRules.at(-1) ||
-      JSON.stringify([...matching[0].matchPackageNames].sort()) !== JSON.stringify(managed) ||
+      JSON.stringify(matching[0].matchPackageNames.toSorted()) !== JSON.stringify(managed) ||
       matching[0].enabled !== false || matching[0].automerge !== false) {
     throw new Error("Renovate must end with one Cohort rule disabling independent updates for all five v2 coordinates.");
   }
@@ -163,16 +163,10 @@ requireMarkers(pullRequestTemplate, ".github/PULL_REQUEST_TEMPLATE.md", [
   "`pnpm docs:protocol:check` result or explicit `N/A`:",
 ]);
 
-function exactKeys(value, expected) {
-  return value !== null &&
-    typeof value === "object" &&
-    JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...expected].sort());
-}
-
 function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (Array.isArray(value)) {return `[${value.map(canonicalJson).join(",")}]`;}
   if (value !== null && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((key) =>
+    return `{${Object.keys(value).toSorted().map((key) =>
       `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
   }
   return JSON.stringify(value);

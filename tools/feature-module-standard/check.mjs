@@ -93,10 +93,10 @@ function recordKey(record) {
   return `${STANDARD_ID}\0${record.version}`;
 }
 
-export function validateAppendOnlyStandardHistory(current, historicalManifests) {
+export function validateAppendOnlyStandardHistory(current, historicalManifestRecords) {
   const currentByKey = new Map(current.versions.map((record) => [recordKey(record), record]));
-  for (const historical of historicalManifests) {
-    if (historical.standard_id !== STANDARD_ID || !Array.isArray(historical.versions)) continue;
+  for (const historical of historicalManifestRecords) {
+    if (historical.standard_id !== STANDARD_ID || !Array.isArray(historical.versions)) {continue;}
     for (const oldRecord of historical.versions) {
       const currentRecord = currentByKey.get(recordKey(oldRecord));
       assert(currentRecord !== undefined,

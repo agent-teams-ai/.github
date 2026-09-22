@@ -27,8 +27,8 @@ function assert(condition, message) {
 
 function samePermissions(actual, expected) {
   return (
-    JSON.stringify(Object.entries(actual ?? {}).sort()) ===
-    JSON.stringify(Object.entries(expected).sort())
+    JSON.stringify(Object.entries(actual ?? {}).toSorted()) ===
+    JSON.stringify(Object.entries(expected).toSorted())
   );
 }
 

@@ -7,10 +7,10 @@ import { observeStableRepositoryInventory } from "./docs-cohort-policy.mjs";
 
 const execFileAsync = promisify(execFile);
 
-export async function resolveForkParents(repositories, fetchRepository) {
+export async function resolveForkParents(repositories, fetchRepositoryDetail) {
   return Promise.all(repositories.map(async (repository) => {
     if (!repository.fork) {return { ...repository, fork_parent: null };}
-    const detail = await fetchRepository(repository.full_name);
+    const detail = await fetchRepositoryDetail(repository.full_name);
     if (detail.id !== repository.id || detail.full_name !== repository.full_name ||
         detail.fork !== true || typeof detail.parent?.full_name !== "string") {
       throw new Error(`${repository.full_name} individual fork metadata is incomplete or inconsistent.`);
@@ -52,8 +52,8 @@ export function repositoryInventoryDrift(liveRepositories, inventory, policy) {
   const live = new Map(liveRepositories.map((record) => [record.full_name, liveProjection(record)]));
   const declared = new Map(inventory.repositories.map((record) => [record.repository, record]));
   const activePolicy = new Map(policy.repositories.filter(({ repository_lifecycle }) => repository_lifecycle === "active").map((record) => [record.repository, record]));
-  const missingFromSnapshot = [...live.keys()].filter((repository) => !declared.has(repository)).sort();
-  const absentFromOrganization = [...declared.keys()].filter((repository) => !live.has(repository)).sort();
+  const missingFromSnapshot = [...live.keys()].filter((repository) => !declared.has(repository)).toSorted();
+  const absentFromOrganization = [...declared.keys()].filter((repository) => !live.has(repository)).toSorted();
   const structuralChanges = [];
   for (const [repository, observed] of live) {
     const expected = declared.get(repository);
@@ -64,7 +64,7 @@ export function repositoryInventoryDrift(liveRepositories, inventory, policy) {
   }
   const missingClassification = [...live.values()].filter(({ repository, id }) => activePolicy.get(repository)?.repository_id !== id)
     .map(({ repository, id }) => ({ repository, repository_id: id, required_status: "pending_classification" }))
-    .sort((left, right) => left.repository.localeCompare(right.repository));
+    .toSorted((left, right) => left.repository.localeCompare(right.repository));
   return { missingFromSnapshot, absentFromOrganization, structuralChanges, missingClassification };
 }
 

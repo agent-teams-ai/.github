@@ -1,6 +1,6 @@
 {
   "schemaVersion": "consumer-quality-profile-v1",
-  "status": "active-equivalent",
+  "status": "active-foundation",
   "languages": [
     "javascript"
   ],
@@ -16,16 +16,19 @@
   },
   "typedCoverage": false,
   "requiredRoute": "pnpm check",
+  "foundation": {
+    "version": "1.5.0",
+    "publicPreset": "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
+  },
+  "lint": {
+    "configPath": "oxlint.json",
+    "includedRoles": [
+      "tooling"
+    ]
+  },
   "toolchain": {
-    "node": "24",
+    "node": "24.18.0",
     "pnpm": "11.18.0",
     "oxlint": "1.85.0"
-  },
-  "foundationCompatibility": {
-    "attemptedVersion": "1.5.0",
-    "publicPresetDiagnostics": 352,
-    "result": "bounded-incompatible",
-    "fallback": "consumer source admission plus exact protected-rule lint"
-  },
-  "revisitTrigger": "Adopt the public Foundation preset when existing diagnostics can be remediated in a bounded owner slice."
+  }
 }

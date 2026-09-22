@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import { lstat, mkdir, opendir, readFile, realpath, writeFile } from "node:fs/promises";
-import { dirname, join, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import Ajv2020 from "ajv/dist/2020.js";
@@ -729,11 +729,11 @@ function assertRepositoryTree(paths) {
 export function validateQualificationContractV2Structure(integration, contract) {
   assert(integration?.schemaVersion === 2 && canonicalJson(integration.qualification) === canonicalJson({ contractPath: QUALIFICATION_CONTRACT_PATH, gateCommand: "pnpm docs:protocol:check" }),
     "Managed integration v2 must own the exact qualification contract path and semantic gate command.");
-  assert(contract !== null && typeof contract === "object" && !Array.isArray(contract) && canonicalJson(Object.keys(contract).sort()) === canonicalJson(["scenarios", "schemaVersion"]) && contract.schemaVersion === 2 && Array.isArray(contract.scenarios) && contract.scenarios.length >= 1 && contract.scenarios.length <= 32,
+  assert(contract !== null && typeof contract === "object" && !Array.isArray(contract) && canonicalJson(Object.keys(contract).toSorted()) === canonicalJson(["scenarios", "schemaVersion"]) && contract.schemaVersion === 2 && Array.isArray(contract.scenarios) && contract.scenarios.length >= 1 && contract.scenarios.length <= 32,
     "Qualification contract must be one bounded schemaVersion 2 scenarios document.");
   const ids = []; const types = [];
   for (const scenario of contract.scenarios) {
-    assert(scenario !== null && typeof scenario === "object" && !Array.isArray(scenario) && canonicalJson(Object.keys(scenario).sort()) === canonicalJson(["expected", "id", "intent", "type"]) && typeof scenario.id === "string" && scenario.id.length > 0 && typeof scenario.type === "string" && scenario.type.length > 0 && scenario.intent !== null && typeof scenario.intent === "object" && !Array.isArray(scenario.intent) && scenario.expected !== null && typeof scenario.expected === "object" && !Array.isArray(scenario.expected),
+    assert(scenario !== null && typeof scenario === "object" && !Array.isArray(scenario) && canonicalJson(Object.keys(scenario).toSorted()) === canonicalJson(["expected", "id", "intent", "type"]) && typeof scenario.id === "string" && scenario.id.length > 0 && typeof scenario.type === "string" && scenario.type.length > 0 && scenario.intent !== null && typeof scenario.intent === "object" && !Array.isArray(scenario.intent) && scenario.expected !== null && typeof scenario.expected === "object" && !Array.isArray(scenario.expected),
       "Every qualification scenario must have the exact v2 structural envelope.");
     ids.push(scenario.id); types.push(scenario.type);
   }
@@ -1066,7 +1066,7 @@ async function authorizeCommand() {
     "central Cohort registry", 4 * 1024 * 1024);
   const managedProjection = parseJsonStrict(files[MANAGED_PROJECTION_PATH],
     MANAGED_PROJECTION_PATH, JSON_LIMITS[MANAGED_PROJECTION_PATH]);
-  const integrationProfile = parseJsonStrict(files[INTEGRATION_PROFILE_PATH],
+  parseJsonStrict(files[INTEGRATION_PROFILE_PATH],
     INTEGRATION_PROFILE_PATH, JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
   const runtimeClosurePath = registry.cohorts.find(
     ({ cohort_id: cohortId }) => cohortId === managedProjection.cohortId,
@@ -1175,9 +1175,9 @@ async function qualificationInstalledPackageRoot(installRoot, expected) {
     if (!entry.isDirectory()) {continue;}
     try {
       const root = await realpath(join(virtualStore, entry.name, "node_modules", expected.name));
-      const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+      const installedManifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
         `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-      if (manifest.name === expected.name && manifest.version === expected.version) {matches.push(root);}
+      if (installedManifest.name === expected.name && installedManifest.version === expected.version) {matches.push(root);}
     } catch (error) {
       if (error?.code !== "ENOENT") {throw error;}
     }
@@ -1376,9 +1376,9 @@ async function verifyInstallCommand() {
     const direct = join(directory, "node_modules", expected.name);
     try {
       const root = await realpath(direct);
-      const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+      const installedManifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
         `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-      if (manifest.name === expected.name && manifest.version === expected.version) {return root;}
+      if (installedManifest.name === expected.name && installedManifest.version === expected.version) {return root;}
     } catch (error) {
       if (error?.code !== "ENOENT") {throw error;}
     }
@@ -1390,9 +1390,9 @@ async function verifyInstallCommand() {
       const candidate = join(virtualStore, entry.name, "node_modules", expected.name);
       try {
         const root = await realpath(candidate);
-        const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
+        const installedManifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
           `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-        if (manifest.name === expected.name && manifest.version === expected.version) {matches.push(root);}
+        if (installedManifest.name === expected.name && installedManifest.version === expected.version) {matches.push(root);}
       } catch (error) {
         if (error?.code !== "ENOENT") {throw error;}
       }
@@ -1453,18 +1453,18 @@ async function verifyInstallCommand() {
   for (const expected of authorization.expectedPackages) {
     const root = installedRoots.get(expected.name);
     const entries = [];
-    async function visit(current) {
+    async function visitInstalledTree(current) {
       const handle = await opendir(current);
       for await (const entry of handle) {
         const path = join(current, entry.name);
         const repositoryPath = path.slice(root.length + 1).split(sep).join("/");
         assert(entries.length < 20_000, `${expected.name} installed tree exceeds its entry bound.`);
         assert(!entry.isSymbolicLink(), `${expected.name} installed tree contains a symlink.`);
-        if (entry.isDirectory()) { entries.push({ kind: "directory", path: repositoryPath }); await visit(path); }
+        if (entry.isDirectory()) { entries.push({ kind: "directory", path: repositoryPath }); await visitInstalledTree(path); }
         else { assert(entry.isFile(), `${expected.name} installed tree contains a non-file entry.`); entries.push({ kind: "file", path: repositoryPath, absolute: path }); }
       }
     }
-    await visit(root);
+    await visitInstalledTree(root);
     entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
     const hash = createHash("sha256"); let total = 0;
     for (const entry of entries) {

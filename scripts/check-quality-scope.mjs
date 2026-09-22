@@ -1,92 +1,123 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+import { parse as parseYaml } from "yaml";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SOURCE_PATTERN = /\.(?:[cm]?[jt]sx?)$/u;
-const PROTECTED_RULES = ["no-eval", "no-implied-eval", "no-new-func"];
-const CONFIG_SCHEMA = "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json";
-const EXPECTED_CHECK = "pnpm quality:check && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test";
-const EXPECTED_TEST = "node --test scripts/*.test.mjs tools/feature-module-standard/check.test.mjs";
-const EXPECTED_LINT = "oxlint --config oxlint.json --deny-warnings --disable-nested-config scripts tools/feature-module-standard";
+const execFileAsync = promisify(execFile);
+const root = new URL("../", import.meta.url);
+const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"];
+const FOUNDATION_PRESET = "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json";
+const EXPECTED_SCRIPTS = {
+  precheck: "node scripts/check-quality-scope.mjs",
+  check: "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+  "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
+  "quality:lint": "node scripts/run-quality-lint.mjs",
+  "quality:check": "pnpm quality:scope && pnpm quality:lint",
+  test: "node --test scripts/*.test.mjs tools/feature-module-standard/check.test.mjs",
+};
+
+const isTrackedSource = relativePath => SOURCE_SUFFIXES.some(suffix => relativePath.endsWith(suffix));
 
 export function classifySourcePath(relativePath) {
   const normalized = relativePath.replaceAll("\\", "/");
-  if (!SOURCE_PATTERN.test(normalized)) return "non-source";
-  if (/^scripts\/.*\.test\.[cm]?[jt]sx?$/u.test(normalized) ||
-      normalized === "tools/feature-module-standard/check.test.mjs") return "test";
-  if (normalized.startsWith("scripts/") ||
-      normalized === "tools/feature-module-standard/check.mjs") return "tooling";
+  if (!isTrackedSource(normalized)) {return "non-source";}
+  if (/^scripts\/[^/]+\.test\.mjs$/u.test(normalized) ||
+      normalized === "tools/feature-module-standard/check.test.mjs") {return "test";}
+  if (/^scripts\/[^/]+\.mjs$/u.test(normalized) ||
+      normalized === "tools/feature-module-standard/check.mjs") {return "tooling";}
   return null;
 }
 
-export function assertRoutes(manifest, workflowText) {
-  assert.equal(manifest.packageManager, "pnpm@11.18.0", "package manager changed without review");
-  assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint must remain exact");
-  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], undefined,
-    "bounded fallback cannot pretend to execute Foundation");
-  assert.equal(manifest.scripts?.["quality:scope"], "node scripts/check-quality-scope.mjs",
-    "quality source-admission route changed");
-  assert.equal(manifest.scripts?.["quality:lint"], EXPECTED_LINT, "quality lint source universe changed");
-  assert.equal(manifest.scripts?.["quality:check"], "pnpm quality:scope && pnpm quality:lint",
-    "quality composition changed");
-  assert.equal(manifest.scripts?.test, EXPECTED_TEST, "FMS and governance tests must remain in the test route");
-  assert.equal(manifest.scripts?.check, EXPECTED_CHECK, "canonical check route changed");
-  if (!workflowText.includes("- run: pnpm check")) throw new Error("CI must execute the canonical check route");
-}
-
-export function assertLintPolicy(config) {
-  assert.deepEqual(Object.keys(config).sort(), ["$schema", "categories", "rules"],
-    "Oxlint config cannot add overrides or ignore surfaces");
-  assert.equal(config.$schema, CONFIG_SCHEMA, "Oxlint schema changed");
-  assert.deepEqual(config.categories, { correctness: "off", suspicious: "off" },
-    "broad categories are outside the bounded fallback");
-  assert.deepEqual(Object.keys(config.rules).sort(), [...PROTECTED_RULES].sort(),
-    "protected rule inventory changed");
-  for (const rule of PROTECTED_RULES) {
-    if (config.rules[rule] !== "error") throw new Error("protected rule disabled: " + rule);
+export function classifyTrackedPaths(trackedPaths) {
+  const classified = [];
+  const unclassified = [];
+  for (const relativePath of [...new Set(trackedPaths)].toSorted()) {
+    const role = classifySourcePath(relativePath);
+    if (role === null) {unclassified.push(relativePath);}
+    else if (role !== "non-source") {classified.push({ path: relativePath, role });}
   }
+  return { classified, unclassified };
 }
 
-export function assertProfile(profile) {
-  assert.equal(profile.schemaVersion, "consumer-quality-profile-v1");
-  assert.equal(profile.status, "active-equivalent");
-  assert.deepEqual(profile.languages, ["javascript"]);
-  assert.equal(profile.typedCoverage, false, "JavaScript lint cannot claim typed coverage");
-  assert.equal(profile.requiredRoute, "pnpm check");
-  assert.deepEqual(profile.sourceRoots, {
-    tooling: ["scripts/**/*.mjs", "tools/feature-module-standard/check.mjs"],
-    tests: ["scripts/**/*.test.mjs", "tools/feature-module-standard/check.test.mjs"],
+export function deriveLintPaths(census, profile) {
+  return census.classified
+    .filter(entry => profile.lint.includedRoles.includes(entry.role))
+    .map(entry => entry.path)
+    .toSorted();
+}
+
+function assertLintPolicy(config) {
+  assert.deepEqual(Object.keys(config).toSorted(), ["$schema", "extends", "options"].toSorted(),
+    "Oxlint config must contain only schema, one public preset, and suppression options");
+  assert.equal(config.$schema, "./node_modules/oxlint/configuration_schema.json");
+  assert.deepEqual(config.extends, [FOUNDATION_PRESET], "Foundation public Node preset changed");
+  assert.deepEqual(config.options, {
+    reportUnusedDisableDirectives: "error",
+    respectEslintDisableDirectives: false,
   });
-  assert.equal(profile.foundationCompatibility?.attemptedVersion, "1.5.0");
-  assert.equal(profile.foundationCompatibility?.publicPresetDiagnostics, 352);
-  assert.equal(profile.foundationCompatibility?.result, "bounded-incompatible");
 }
 
-function trackedSources() {
-  const output = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" });
-  return output.split("\0").filter(Boolean).filter((entry) => SOURCE_PATTERN.test(entry));
+function assertWorkflow(workflowText) {
+  const workflow = parseYaml(workflowText);
+  const steps = workflow?.jobs?.check?.steps;
+  assert.ok(Array.isArray(steps), "CI check job steps are missing");
+  const requiredSteps = steps.filter(step => step?.run === "pnpm check");
+  assert.equal(requiredSteps.length, 1, "CI check job must contain exactly one pnpm check step");
+  assert.deepEqual(requiredSteps[0], { run: "pnpm check" },
+    "pnpm check step cannot be conditional or continue on error");
 }
 
-function verify() {
-  const manifest = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-  const config = JSON.parse(readFileSync(path.join(root, "oxlint.json"), "utf8"));
-  const profile = JSON.parse(readFileSync(path.join(root, "docs/engineering-quality-profile.json"), "utf8"));
-  const workflow = readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
-  assertRoutes(manifest, workflow);
-  assertLintPolicy(config);
-  assertProfile(profile);
-  const sources = trackedSources();
-  const unclassified = sources.filter((entry) => classifySourcePath(entry) === null);
-  if (unclassified.length > 0) throw new Error("unclassified executable source:\n" + unclassified.join("\n"));
-  const counts = Object.create(null);
-  for (const entry of sources) {
-    const role = classifySourcePath(entry);
-    counts[role] = (counts[role] ?? 0) + 1;
+export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow }) {
+  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.5.0",
+    "Foundation dependency must use the exact released pin");
+  assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint dependency must use the exact pin");
+  for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) {
+    assert.equal(manifest.scripts?.[name], command, `${name} route must stay canonical`);
   }
-  process.stdout.write("central quality scope verified: " + JSON.stringify(counts) + "\n");
+  assert.deepEqual(profile, {
+    schemaVersion: "consumer-quality-profile-v1",
+    status: "active-foundation",
+    languages: ["javascript"],
+    sourceRoots: {
+      tooling: ["scripts/**/*.mjs", "tools/feature-module-standard/check.mjs"],
+      tests: ["scripts/**/*.test.mjs", "tools/feature-module-standard/check.test.mjs"],
+    },
+    typedCoverage: false,
+    requiredRoute: "pnpm check",
+    foundation: { version: "1.5.0", publicPreset: FOUNDATION_PRESET },
+    lint: { configPath: "oxlint.json", includedRoles: ["tooling"] },
+    toolchain: { node: "24.18.0", pnpm: "11.18.0", oxlint: "1.85.0" },
+  }, "quality profile changed");
+  assertLintPolicy(lintConfig);
+  assertWorkflow(workflow);
+  const census = classifyTrackedPaths(trackedPaths);
+  assert.deepEqual(census.unclassified, [], `unclassified executable source: ${census.unclassified.join(", ")}`);
+  assert.ok(census.classified.some(entry => entry.role === "tooling"), "tooling census is empty");
+  assert.ok(census.classified.some(entry => entry.role === "test"), "test census is empty");
+  return census;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) verify();
+export async function readQualityAdoption(base = root) {
+  const readJson = async relativePath => JSON.parse(await readFile(new URL(relativePath, base), "utf8"));
+  const cwd = path.dirname(fileURLToPath(new URL("package.json", base)));
+  const { stdout } = await execFileAsync("git", ["ls-files", "-z"], { cwd, encoding: "utf8" });
+  return {
+    manifest: await readJson("package.json"),
+    profile: await readJson("docs/engineering-quality-profile.json"),
+    lintConfig: await readJson("oxlint.json"),
+    trackedPaths: stdout.split("\0").filter(Boolean),
+    workflow: await readFile(new URL(".github/workflows/ci.yml", base), "utf8"),
+  };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const census = assertQualityAdoption(await readQualityAdoption());
+  const counts = Object.fromEntries(["tooling", "test"].map(role => [
+    role,
+    census.classified.filter(entry => entry.role === role).length,
+  ]));
+  process.stdout.write(`central quality scope verified: ${JSON.stringify(counts)}\n`);
+}

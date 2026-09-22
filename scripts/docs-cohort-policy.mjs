@@ -45,6 +45,21 @@ function assert(condition, message) {
   if (!condition) {throw new Error(message);}
 }
 
+function sha256Digest(source) {
+  return `sha256:${createHash("sha256").update(source).digest("hex")}`;
+}
+
+function cohortRegistryMetadata(registry) {
+  return Object.fromEntries(Object.entries(registry)
+    .filter(([key]) => !["cohorts", "events"].includes(key)));
+}
+
+function stableRepositoryInventory(repositories) {
+  return repositories
+    .map((entry) => structuredClone(entry))
+    .toSorted(({ id: left }, { id: right }) => left - right);
+}
+
 function validateSchema(value, schema, label) {
   const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
   if (validate(value)) {return;}
@@ -67,7 +82,7 @@ function canonicalJson(value) {
   }
   assert(typeof value === "object" && value !== undefined, "Cohort value is not canonical JSON.");
   return `{${Object.entries(value)
-    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .toSorted(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
     .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`)
     .join(",")}}`;
 }
@@ -79,12 +94,11 @@ function digest(domain, body) {
 }
 
 export function canonicalDocsManagedAssetDigests(profile) {
-  const sha256 = (source) => `sha256:${createHash("sha256").update(source).digest("hex")}`;
   return {
-    agentsRouteDigest: sha256(
+    agentsRouteDigest: sha256Digest(
       `<!-- agent-teams-docs:route/v1 begin -->\nUse [${profile.skillPath}](${profile.skillPath}) for documentation.\n<!-- agent-teams-docs:route/v1 end -->`,
     ),
-    docsScriptsDigest: sha256(canonicalJson(Object.fromEntries(
+    docsScriptsDigest: sha256Digest(canonicalJson(Object.fromEntries(
       ["check", "doctor", "find", "info", "new", "recover"].map((command) => [
         `docs:${command}`,
         `agent-teams-docs ${command} --consumer . --profile ${profile.profilePath}`,
@@ -112,7 +126,7 @@ function sortedEdges(snapshot, section, label) {
   assert(source !== null && typeof source === "object" && !Array.isArray(source),
     `${label} ${section} must be one dependency map.`);
   return Object.entries(source)
-    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .toSorted(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
     .map(([name, raw]) => ({
       name,
       locator: registrySnapshotLocator(name, raw, `${label} ${section}.${name}`),
@@ -145,7 +159,7 @@ export function docsRuntimeClosureProjection(lock, expectedPackages) {
     assert(packageEntry?.resolution?.integrity === entry.integrity,
       `${entry.name} runtime closure root integrity differs from the Cohort.`);
     return { name: entry.name, locator };
-  }).sort(({ name: left }, { name: right }) => left < right ? -1 : left > right ? 1 : 0);
+  }).toSorted(({ name: left }, { name: right }) => left < right ? -1 : left > right ? 1 : 0);
 
   const pending = roots.map(({ locator }) => ({ locator, depth: 0 }));
   const visited = new Set();
@@ -200,7 +214,7 @@ export function docsRuntimeClosureAuthority(lock, expectedPackages) {
 export function docsRuntimeClosureEvidence(lock, expectedPackages) {
   const projection = docsRuntimeClosureProjection(lock, expectedPackages);
   const physicalLocators = [...new Set(projection.packages.map(({ locator }) => locator.split("(", 1)[0]))]
-    .sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+    .toSorted((left, right) => left < right ? -1 : left > right ? 1 : 0);
   const pnpmLock = {
     lockfileVersion: RUNTIME_CLOSURE_LOCKFILE_VERSION,
     settings: { autoInstallPeers: true, excludeLinksFromLockfile: false },
@@ -309,8 +323,8 @@ export function docsRuntimeClosureV2Evidence(lock, expectedPackages) {
   }
   managedEdges.sort(({ from: leftFrom, to: leftTo }, { from: rightFrom, to: rightTo }) =>
     leftFrom === rightFrom ? leftTo.localeCompare(rightTo) : leftFrom.localeCompare(rightFrom));
-  const expectedManagedEdges = [...DOCS_COHORT_V2_DEPENDENCY_EDGES]
-    .sort(({ from: leftFrom, to: leftTo }, { from: rightFrom, to: rightTo }) =>
+  const expectedManagedEdges = DOCS_COHORT_V2_DEPENDENCY_EDGES
+    .toSorted(({ from: leftFrom, to: leftTo }, { from: rightFrom, to: rightTo }) =>
       leftFrom === rightFrom ? leftTo.localeCompare(rightTo) : leftFrom.localeCompare(rightFrom));
   assert(canonicalJson(managedEdges) === canonicalJson(expectedManagedEdges),
     "Runtime closure v2 internal dependency edges are not exactly closed.");
@@ -329,7 +343,7 @@ export function docsRuntimeClosureV2Evidence(lock, expectedPackages) {
     packages,
   };
   const physicalLocators = [...new Set(packages.map(({ locator }) => locator.split("(", 1)[0]))]
-    .sort((left, right) => left.localeCompare(right));
+    .toSorted((left, right) => left.localeCompare(right));
   const pnpmLock = {
     lockfileVersion: RUNTIME_CLOSURE_LOCKFILE_VERSION,
     settings: { autoInstallPeers: true, excludeLinksFromLockfile: false },
@@ -492,8 +506,8 @@ function validateCanaryEvidence(event, record, qualifiedEvent) {
   const declaredIds = record.canary_repositories.map(({ repository_id: id }) => id);
   assert(new Set(observedIds).size === observedIds.length,
     `${record.cohort_id} CANARY evidence repository IDs must be unique.`);
-  assert(canonicalJson([...observedIds].sort((left, right) => left - right)) ===
-    canonicalJson([...declaredIds].sort((left, right) => left - right)),
+  assert(canonicalJson(observedIds.toSorted((left, right) => left - right)) ===
+    canonicalJson(declaredIds.toSorted((left, right) => left - right)),
   `${record.cohort_id} CANARY evidence must cover the exact declared canary set.`);
   for (const evidence of event.canary_evidence) {
     const declared = record.canary_repositories.find(
@@ -645,7 +659,7 @@ export function isDocsCohortSupportedForExistingBinding(
 export function docsCohortTransitionKind(observed, desired) {
   if (desired?.upgrade_from.includes(observed?.cohort_id)) {return "upgrade";}
   if (observed?.rollback_to.includes(desired?.cohort_id)) {return "rollback";}
-  return undefined;
+  return;
 }
 
 export function recommendedDocsCohort(registry, options = {}) {
@@ -916,9 +930,7 @@ export function validateDocsGovernanceReferences(
 }
 
 export function assertDocsCohortAppendOnly(previous, current) {
-  const metadata = (registry) => Object.fromEntries(Object.entries(registry)
-    .filter(([key]) => !["cohorts", "events"].includes(key)));
-  assert(canonicalJson(metadata(previous)) === canonicalJson(metadata(current)),
+  assert(canonicalJson(cohortRegistryMetadata(previous)) === canonicalJson(cohortRegistryMetadata(current)),
     "Qualified Docs Cohort top-level metadata cannot change in an append-only lifecycle PR.");
   assert(current.cohorts.length >= previous.cohorts.length,
     "Qualified Docs Cohort records cannot be deleted.");
@@ -948,11 +960,8 @@ export async function collectRepositoryInventoryPages(fetchPage, options = {}) {
 }
 
 export async function observeStableRepositoryInventory(fetchPage, options = {}) {
-  const stable = (repositories) => [...repositories]
-    .map((entry) => structuredClone(entry))
-    .sort(({ id: left }, { id: right }) => left - right);
-  const first = stable(await collectRepositoryInventoryPages(fetchPage, options));
-  const replay = stable(await collectRepositoryInventoryPages(fetchPage, options));
+  const first = stableRepositoryInventory(await collectRepositoryInventoryPages(fetchPage, options));
+  const replay = stableRepositoryInventory(await collectRepositoryInventoryPages(fetchPage, options));
   assert(canonicalJson(first) === canonicalJson(replay),
     "Organization inventory changed during observation; retry for one stable snapshot.");
   return first;

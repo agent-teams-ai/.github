@@ -30,7 +30,7 @@ const REQUIRED_CHECKS = ["info", "find", "check", "doctor", "recover", "preview"
 function fail(message) { throw new Error(message); }
 function isRecord(value) { return value !== null && typeof value === "object" && !Array.isArray(value); }
 function exactKeys(value, keys) {
-  return isRecord(value) && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
+  return isRecord(value) && JSON.stringify(Object.keys(value).toSorted()) === JSON.stringify(keys.toSorted());
 }
 function requireKeys(value, keys, label) {
   if (!exactKeys(value, keys)) { fail(`${label} shape is not closed.`); }
@@ -38,7 +38,7 @@ function requireKeys(value, keys, label) {
 function canonicalJson(value) {
   if (Array.isArray(value)) { return `[${value.map(canonicalJson).join(",")}]`; }
   if (isRecord(value)) {
-    return `{${Object.entries(value).sort(([left], [right]) => Buffer.compare(Buffer.from(left), Buffer.from(right)))
+    return `{${Object.entries(value).toSorted(([left], [right]) => Buffer.compare(Buffer.from(left), Buffer.from(right)))
       .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`).join(",")}}`;
   }
   return JSON.stringify(value);
@@ -98,7 +98,7 @@ async function consumerSnapshot(root, governedRoots) {
       path.split("/").some((segment) => segment === "" || segment === "." || segment === ".."))) {
     fail("Qualification governed roots are not one bounded canonical path set.");
   }
-  const policyRoots = [...new Set(governedRoots)].sort((left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right)));
+  const policyRoots = [...new Set(governedRoots)].toSorted((left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right)));
   const entries = [];
   async function visit(directory) {
     const handle = await opendir(directory);
@@ -346,9 +346,10 @@ export async function verifyQualificationReceipt({ consumerRoot, installRoot, au
     packageManifest(docsRoot, "@agent-teams/docs-protocol"), packageManifest(foundationRoot, "@agent-teams/engineering-foundation"),
   ]);
   for (const [name, packageRootPath] of [["@agent-teams/docs-protocol", docsRoot], ["@agent-teams/engineering-foundation", foundationRoot]]) {
-    const expected = expectedPackages.get(name); const evidence = installedEvidence.get(name);
-    if (canonicalJson({ name: evidence?.name, version: evidence?.version, integrity: evidence?.integrity }) !== canonicalJson(expected) ||
-        evidence.treeDigest !== await packageTreeDigest(packageRootPath, name)) {
+    const expected = expectedPackages.get(name); const installedPackageEvidence = installedEvidence.get(name);
+    if (canonicalJson({ name: installedPackageEvidence?.name, version: installedPackageEvidence?.version,
+      integrity: installedPackageEvidence?.integrity }) !== canonicalJson(expected) ||
+        installedPackageEvidence.treeDigest !== await packageTreeDigest(packageRootPath, name)) {
       fail("Installed package bytes changed after central SRI-bound pre-execution verification.");
     }
   }

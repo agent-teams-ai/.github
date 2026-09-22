@@ -34,9 +34,9 @@ function decisiveCheckRuns(checks) {
     const run = /\/actions\/runs\/(\d+)\/job\/\d+$/u.exec(check.html_url ?? "")?.[1];
     const key = run === undefined ? `check:${check.id}` : `run:${run}`;
     const retained = byExecution.get(key);
-    if (retained === undefined || check.id > retained.id) byExecution.set(key, check);
+    if (retained === undefined || check.id > retained.id) {byExecution.set(key, check);}
   }
-  return [...byExecution.values()].sort((left, right) => left.id - right.id);
+  return [...byExecution.values()].toSorted((left, right) => left.id - right.id);
 }
 
 async function command(program, args, options = {}) {
@@ -83,9 +83,9 @@ async function npmJson(args) {
 }
 
 function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (Array.isArray(value)) {return `[${value.map(canonicalJson).join(",")}]`;}
   if (value !== null && typeof value === "object") {
-    return `{${Object.keys(value).sort().map((key) =>
+    return `{${Object.keys(value).toSorted().map((key) =>
       `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
   }
   return JSON.stringify(value);
@@ -262,8 +262,8 @@ export async function resolvePublishedRuntimeClosure(packages, runOrOptions = co
   const roots = v2 ? packages.filter(({ role }) => role === "direct") : packages;
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-runtime-closure-"));
   try {
-    await withIsolatedNpmOptions({ cwd: root }, async (options) => {
-      const { stdout } = await run(pnpmBinary, ["--version"], options);
+    await withIsolatedNpmOptions({ cwd: root }, async (isolatedOptions) => {
+      const { stdout } = await run(pnpmBinary, ["--version"], isolatedOptions);
       assert(stdout.trim() === expectedPnpmVersion,
         `Runtime closure ${v2 ? "v2" : "v1"} pnpm binary version is not exact.`);
     });
@@ -283,10 +283,10 @@ export async function resolvePublishedRuntimeClosure(packages, runOrOptions = co
         "",
       ].join("\n")),
     ]);
-    await withIsolatedNpmOptions({ cwd: root }, (options) => run(pnpmBinary, [
+    await withIsolatedNpmOptions({ cwd: root }, (isolatedOptions) => run(pnpmBinary, [
         "install", "--dir", root, "--lockfile-only", "--ignore-scripts",
         "--ignore-pnpmfile", "--ignore-workspace",
-      ], options));
+      ], isolatedOptions));
     const lock = YAML.parse(await readFile(join(root, "pnpm-lock.yaml"), "utf8"));
     return v2
       ? docsRuntimeClosureV2Evidence(lock, packages)
@@ -407,7 +407,7 @@ function plainRecord(value, label) {
 }
 
 function hasExactKeys(value, keys) {
-  const observed = Object.keys(value).sort();
+  const observed = Object.keys(value).toSorted();
   return observed.length === keys.length && keys.toSorted().every(
     (key, index) => observed[index] === key,
   );
@@ -703,8 +703,8 @@ export async function verifyAdmissionRevision(
         (role !== "trusted-qualification" || exactStep(qualificationStep,
           integration.schemaVersion === 1 ? "skipped" : "success")),
       `${entry.repository} target qualification/semantics did not actually execute successfully.`);
-      if (role === "docs-protocol-check") assert(job.id === check.id && job.html_url === check.html_url,
-        `${entry.repository} target semantic job differs from the required check.`);
+      if (role === "docs-protocol-check") {assert(job.id === check.id && job.html_url === check.html_url,
+        `${entry.repository} target semantic job differs from the required check.`);}
     }
   }
   return { repository: entry.repository, revision: observation.revision, check: structuredClone(check), run: structuredClone(run) };
@@ -801,7 +801,8 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       ["observed_cohort_id", "observed_cohort_record_digest", "observed_cohort_event_digest",
         "exact_package_version", "exact_foundation_version", "reusable_workflow_revision",
         "observed_default_branch_evidence"].every((field) => prior[field] === null) &&
-      prior.observed_cohort_generation == null && prior.exact_cohort_v2_packages === undefined &&
+      (prior.observed_cohort_generation === null || prior.observed_cohort_generation === undefined) &&
+      prior.exact_cohort_v2_packages === undefined &&
       prior.qualification?.status === "not_qualified" && prior.qualification.observed_revision === null &&
       Array.isArray(prior.qualification.evidence_paths) && prior.qualification.evidence_paths.length === 0;
     const advancing = prior && !firstAdmission && (prior.observed_cohort_id !== entry.observed_cohort_id ||

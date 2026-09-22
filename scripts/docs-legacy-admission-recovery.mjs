@@ -10,7 +10,7 @@ const SHA = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const DIGEST = /^sha256:[0-9a-f]{64}$/u;
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u;
 const capabilities = new WeakMap();
-const need = (condition, message) => { if (!condition) throw new Error(`Admission recovery: ${message}`); };
+const need = (condition, message) => { if (!condition) {throw new Error(`Admission recovery: ${message}`);} };
 
 function decisiveCheckRuns(checks) {
   const byExecution = new Map();
@@ -18,7 +18,7 @@ function decisiveCheckRuns(checks) {
     const run = /\/actions\/runs\/(\d+)\/job\/\d+$/u.exec(check.html_url ?? "")?.[1];
     const key = run === undefined ? `check:${check.id}` : `run:${run}`;
     const retained = byExecution.get(key);
-    if (retained === undefined || check.id > retained.id) byExecution.set(key, check);
+    if (retained === undefined || check.id > retained.id) {byExecution.set(key, check);}
   }
   return [...byExecution.values()];
 }
@@ -30,7 +30,7 @@ export const recoveryDigest = (bytes) => `sha256:${createHash("sha256").update(b
 
 function closed(value, keys, label) {
   need(value !== null && typeof value === "object" && !Array.isArray(value), `${label} must be an object`);
-  equal(Object.keys(value).sort(), keys.split(" ").sort(), `${label} fields`);
+  equal(Object.keys(value).toSorted(), keys.split(" ").toSorted(), `${label} fields`);
 }
 function coordinate(value, label) {
   closed(value, "revision path blob", label);
@@ -120,7 +120,7 @@ function verifyTransition(before, after, record, registry) {
   before.repositories.forEach((row, index) => {
     const next = after.repositories[index];
     need(row.repository_id === next.repository_id && row.repository === next.repository, "identity/order changed");
-    if (!isDeepStrictEqual(row, next)) changed.push([row, next]);
+    if (!isDeepStrictEqual(row, next)) {changed.push([row, next]);}
   });
   need(changed.length === 1 && changed[0][0].repository_id === op.repository_id, "unrelated policy rows changed");
   const [prior, next] = changed[0];
@@ -165,7 +165,7 @@ export async function prepareAdmissionRecovery(input) {
     execution.base !== execution.head && execution.execution_base === execution.base, "stale/unbound execution");
   equal(execution.changed_files, [POLICY_PATH], "complete allowed recovery diff");
   const authorityBytes = await readBaseFile(RECOVERY_AUTHORITY_PATH, execution.base);
-  if (authorityBytes === null) return null;
+  if (authorityBytes === null) {return null;}
   const authority = validateRecoveryAuthority(JSON.parse(authorityBytes.toString("utf8")));
   const beforeBytes = await readBaseFile(POLICY_PATH, execution.base);
   const registryBytes = await readBaseFile(REGISTRY_PATH, execution.base);
@@ -260,7 +260,7 @@ export async function reproduceLegacyParserErrors(policy, registry, schemas, his
   const errors = {};
   for (const [name, document] of [["policy", policy], ["registry", registry]]) {
     const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schemas[name]);
-    if (historical !== undefined) need(validate(historical[name]) === true, `historical ${name} is not source-parser compatible`);
+    if (historical !== undefined) {need(validate(historical[name]) === true, `historical ${name} is not source-parser compatible`);}
     need(validate(document) === false, `legacy ${name} parser did not reproduce rejection`);
     errors[name] = validate.errors;
   }
@@ -294,12 +294,12 @@ export function verifyLegacyFailureJobs(jobs, run, parserJobId) {
     for (const step of job.steps) {
       need(positive(step.number) && step.status === "completed" &&
         ["success", "failure", "skipped"].includes(step.conclusion), "incomplete/cancelled job step");
-      if (step.number < failureNumber) need(step.conclusion === "success", "setup failure before parser/dependency check");
+      if (step.number < failureNumber) {need(step.conclusion === "success", "setup failure before parser/dependency check");}
       if (step.number > failureNumber && !/^(Post |Complete job$)/u.test(step.name)) {
         need(step.conclusion === "skipped", "consumer/qualification code executed after dependency failure");
       }
     }
-    if (role === "trusted-authorize") need(job.id === parserJobId, "wrong trusted parser job identity");
+    if (role === "trusted-authorize") {need(job.id === parserJobId, "wrong trusted parser job identity");}
   }
 }
 

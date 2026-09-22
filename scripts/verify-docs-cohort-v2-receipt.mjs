@@ -27,13 +27,13 @@ function exactObject(value) {return value !== null && typeof value === "object" 
 function canonicalJson(value) {
   if (Array.isArray(value)) {return `[${value.map(canonicalJson).join(",")}]`;}
   if (exactObject(value)) {
-    return `{${Object.entries(value).sort(([left], [right]) => left.localeCompare(right))
+    return `{${Object.entries(value).toSorted(([left], [right]) => left.localeCompare(right))
       .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`).join(",")}}`;
   }
   return JSON.stringify(value);
 }
 function exactKeys(value, keys) {
-  return exactObject(value) && canonicalJson(Object.keys(value).sort()) === canonicalJson([...keys].sort());
+  return exactObject(value) && canonicalJson(Object.keys(value).toSorted()) === canonicalJson(keys.toSorted());
 }
 function sha256(value) {return `sha256:${createHash("sha256").update(value).digest("hex")}`;}
 // Receipt v3 follows the published adapter's UTF-8 key ordering. Keep the
@@ -41,7 +41,7 @@ function sha256(value) {return `sha256:${createHash("sha256").update(value).dige
 function receiptCanonicalJson(value) {
   if (Array.isArray(value)) {return `[${value.map(receiptCanonicalJson).join(",")}]`;}
   if (exactObject(value)) {
-    return `{${Object.entries(value).sort(([left], [right]) =>
+    return `{${Object.entries(value).toSorted(([left], [right]) =>
       Buffer.compare(Buffer.from(left), Buffer.from(right)))
       .map(([key, entry]) => `${JSON.stringify(key)}:${receiptCanonicalJson(entry)}`).join(",")}}`;
   }
