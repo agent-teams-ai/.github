@@ -1,0 +1,179 @@
+name: Trusted Quality Authority Evolution V1
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-quality-authority-evolution-v1:
+    name: trusted-quality-authority-evolution-v1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const repository = "agent-teams-ai/.github";
+            const workflowPath = ".github/workflows/quality-authority-evolution-v1.yml";
+            const testPath = "scripts/quality-authority-evolution-v1.test.mjs";
+            const successorPaths = [workflowPath, testPath];
+            const authorityPrefixes = [".github/", "scripts/", "tools/"];
+            const activationAuthorityPaths = new Set([
+              "docs/engineering-quality-profile.json", "docs/engineering-quality.md", "oxlint.json"
+            ]);
+            const installAuthorityNames = new Set([
+              ".node-version", ".nvmrc", ".yarnrc.yml", "yarn.lock", "package-lock.json", "npm-shrinkwrap.json", ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml",
+              "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"
+            ]);
+            const isAuthorityPath = (path) => authorityPrefixes.some((prefix) => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              activationAuthorityPaths.has(path) ||
+              installAuthorityNames.has(path.split("/").at(-1));
+            // Complete dcf3222..376b93d activation diff, excluding this base-owned successor.
+            const allowed = new Map([
+              ["docs/engineering-quality-profile.json", { status: "added", sha: "49dbc437d164d08247cb9db7860384e4bd980bc8", baseSha: null }],
+              ["docs/engineering-quality.md", { status: "added", sha: "0c36b59b105d3d2d6fd9431b344bbdbd8519130d", baseSha: null }],
+              ["oxlint.json", { status: "added", sha: "84f173d395b7e25bf4acf3f22be12338e2f2d554", baseSha: null }],
+              ["package.json", { status: "modified", sha: "b4bee381c864b24ee01f3da9a47582f304a61514", baseSha: "b908c9a336c726e003f3f73fbbf33f9ff3fd90fb" }],
+              ["pnpm-lock.yaml", { status: "modified", sha: "df452a9eb24ed934162c830410245ef35731ee26", baseSha: "ce5fec0e9365f41ed2888d233d1903ea4a991358" }],
+              ["scripts/check-cohort-emergency-append.mjs", { status: "modified", sha: "7c734f158a352e4089adebb389fa1ac3e515eb43", baseSha: "162474538dbc3dcb9f754994e553288ad06fb5e8" }],
+              ["scripts/check-community-files.mjs", { status: "modified", sha: "b43b247a4b727974ef878ff09abc05cd17f22d0e", baseSha: "5a21286b881c83a6ab2203731ec17411f12f6ca8" }],
+              ["scripts/check-quality-scope.mjs", { status: "added", sha: "105403b63038c5a1076c6754abe66a75275e2915", baseSha: null }],
+              ["scripts/check-quality-scope.test.mjs", { status: "added", sha: "d15245de99c00f3acdaef128922e718c12314ab9", baseSha: null }],
+              ["scripts/check-reviewrouter-workflow.mjs", { status: "modified", sha: "675e24a4664a81eb78066ed0cae87ebd82e6cc75", baseSha: "6ee7a0610b2b16c6fd189035debb42ae38481f66" }],
+              ["scripts/docs-admission-recovery.test.mjs", { status: "modified", sha: "18012acf474757f593bf9ff393bee3503dd724d2", baseSha: "46d6a9f55c2691d180b0289c4e4fa2cc19f293ed" }],
+              ["scripts/docs-cohort-policy.mjs", { status: "modified", sha: "27ea96fe6822ffd806875086d8b59e4178e278d1", baseSha: "a4068654c6966158cd4b64f45011a0479d640a32" }],
+              ["scripts/docs-legacy-admission-recovery.mjs", { status: "modified", sha: "46928e5809c07913d95aa5d44cd3b5b7e7bee7d4", baseSha: "7a700471d2064c60b27685d4cd41f605ee56db17" }],
+              ["scripts/governance-policy.mjs", { status: "modified", sha: "2785168e13065fd6ade4927550ddfed1f2029ff9", baseSha: "45f80438e050431cea6c9f589b04dc14b1b3ca63" }],
+              ["scripts/observe-org-repository-inventory.mjs", { status: "modified", sha: "79b40e076243caab7126395c501814d7231c8d73", baseSha: "63e6697e586698d88c49f0f70add173e3c92dd47" }],
+              ["scripts/run-quality-lint.mjs", { status: "added", sha: "f9fb7c5b846f37af42928636db8e58a0961d75c7", baseSha: null }],
+              ["scripts/verify-docs-admission-change.mjs", { status: "modified", sha: "d09d970050c2f970b5a1f373b0f360f9551deb95", baseSha: "1bf455f2ca5bf97440e62b2ff4eaa6c36aa2212b" }],
+              ["scripts/verify-docs-cohort-evidence.mjs", { status: "modified", sha: "3d23f26f13fd3d9ad0e80d12f807d933b7991878", baseSha: "fba985a230c710aba355b15a0360f464ad961ff0" }],
+              ["scripts/verify-docs-cohort-v2-receipt.mjs", { status: "modified", sha: "9f947073bb3bc1a0f1b5c9aa59eeba6e0f4add7c", baseSha: "96f4600e06bcb0b9c7fbf51da2bfe06c6e968489" }],
+              ["scripts/verify-docs-consumer-gate.mjs", { status: "modified", sha: "ef293a0d0098b8bd7c700ddd8c98968d10a8e9d9", baseSha: "48f326515fb47ce0b41e49596bc2467020e9655b" }],
+              ["scripts/verify-docs-qualification-receipt.mjs", { status: "modified", sha: "f8e857b5d52fde3f313a396fdbc2342e050a054b", baseSha: "bbeedf26d12dd3b4b6c8ab681d37f348069a0e37" }],
+              ["tools/feature-module-standard/check.mjs", { status: "modified", sha: "0cba631b8e97947144760ce7b2b74398fcd60569", baseSha: "7cff11712708cccf01fb37be586a801156b78963" }]
+            ]);
+            const fail = (message) => { core.setFailed(message); return false; };
+            const shaPattern = /^[0-9a-f]{40}$/u;
+            const pull = context.payload.pull_request;
+            if (`${context.repo.owner}/${context.repo.repo}` !== repository || !pull ||
+                !Number.isSafeInteger(pull.number) ||
+                !shaPattern.test(pull.base?.sha) || !shaPattern.test(pull.head?.sha)) {
+              fail("Invalid central repository, pull request identity, or revision.");
+              return;
+            }
+            const [owner, repo] = repository.split("/");
+            const live = (await github.rest.pulls.get({ owner, repo, pull_number: pull.number })).data;
+            if (pull.base?.repo?.full_name !== repository || pull.head?.repo?.full_name !== repository ||
+                live?.base?.repo?.full_name !== repository || live?.head?.repo?.full_name !== repository ||
+                live.base.sha !== pull.base.sha || live.head.sha !== pull.head.sha ||
+                live.base.ref !== pull.base.ref) {
+              fail("The event must describe the immutable live unforked central pull request.");
+              return;
+            }
+            const controller = (await github.rest.repos.get({ owner, repo })).data;
+            if (typeof controller?.default_branch !== "string" || !controller.default_branch ||
+                pull.base.ref !== controller.default_branch) {
+              fail("The pull request must target the central repository default branch.");
+              return;
+            }
+            const branch = (await github.rest.repos.getBranch({
+              owner, repo, branch: controller.default_branch
+            })).data;
+            if (branch?.commit?.sha !== pull.base.sha) {
+              fail("The default branch moved after this pull request base was established.");
+              return;
+            }
+            const terminalTypes = new Set(["blob", "commit"]);
+            const validEntry = (entry) => {
+              if (!entry || typeof entry.path !== "string" || entry.path.length === 0 ||
+                  entry.path.startsWith("/") || entry.path.endsWith("/") ||
+                  entry.path.split("/").some((part) => !part || part === "." || part === "..") ||
+                  !shaPattern.test(entry.sha)) return false;
+              if (entry.type === "tree") return entry.mode === "040000";
+              if (entry.type === "commit") return entry.mode === "160000";
+              return entry.type === "blob" && new Set(["100644", "100755", "120000"]).has(entry.mode);
+            };
+            const trees = new Map();
+            for (const revision of [pull.base.sha, pull.head.sha]) {
+              const response = (await github.rest.git.getTree({
+                owner, repo, tree_sha: revision, recursive: "true"
+              })).data;
+              if (response?.truncated !== false || !Array.isArray(response.tree) ||
+                  !response.tree.every(validEntry) ||
+                  new Set(response.tree.map(({ path }) => path)).size !== response.tree.length) {
+                fail("A complete, well-formed, duplicate-free repository tree is required for each immutable revision.");
+                return;
+              }
+              trees.set(revision, response.tree);
+            }
+            const terminalMap = (tree) => new Map(tree
+              .filter(({ type }) => terminalTypes.has(type))
+              .map((entry) => [entry.path, entry]));
+            const baseTree = terminalMap(trees.get(pull.base.sha));
+            const headTree = terminalMap(trees.get(pull.head.sha));
+            const sameEntry = (left, right) => left !== undefined && right !== undefined &&
+              left.type === right.type && left.mode === right.mode && left.sha === right.sha;
+            const changedPaths = [...new Set([...baseTree.keys(), ...headTree.keys()])]
+              .filter((path) => !sameEntry(baseTree.get(path), headTree.get(path)))
+              .sort();
+            if (changedPaths.length === 0) {
+              fail("The immutable revisions contain no terminal entry changes.");
+              return;
+            }
+            const succeedIfStable = async (mode) => {
+              const current = (await github.rest.pulls.get({ owner, repo, pull_number: pull.number })).data;
+              const currentController = (await github.rest.repos.get({ owner, repo })).data;
+              if (currentController?.default_branch !== controller.default_branch ||
+                  currentController.default_branch !== pull.base.ref) {
+                fail("The central repository default branch changed during authority classification.");
+                return;
+              }
+              const currentBranch = (await github.rest.repos.getBranch({
+                owner, repo, branch: currentController.default_branch
+              })).data;
+              if (current?.base?.repo?.full_name !== repository ||
+                  current?.head?.repo?.full_name !== repository ||
+                  current.base.sha !== live.base.sha || current.head.sha !== live.head.sha ||
+                  current.base.ref !== live.base.ref ||
+                  currentBranch?.commit?.sha !== branch.commit.sha ||
+                  currentBranch.commit.sha !== pull.base.sha) {
+                fail("The live pull request or default branch moved during authority classification.");
+                return;
+              }
+              core.setOutput("mode", mode);
+            };
+            const touchesAuthority = changedPaths.some(isAuthorityPath);
+            if (!touchesAuthority) {
+              await succeedIfStable("noop");
+              return;
+            }
+            const exact = changedPaths.length === allowed.size && changedPaths.every((path) => allowed.has(path));
+            if (!exact) {
+              fail("Only the complete exact activation candidate is authorized; partial, mixed, renamed, extra, or self-modifying slices are forbidden.");
+              return;
+            }
+            const regular = (entry, sha) => entry?.type === "blob" && entry.mode === "100644" && entry.sha === sha;
+            for (const [path, identity] of allowed) {
+              const baseEntry = baseTree.get(path);
+              const headEntry = headTree.get(path);
+              if ((identity.baseSha === null ? baseEntry !== undefined : !regular(baseEntry, identity.baseSha)) ||
+                  !regular(headEntry, identity.sha)) {
+                fail(`Exact regular-file blob identity required for ${path}.`);
+                return;
+              }
+            }
+            for (const path of successorPaths) {
+              const baseEntry = baseTree.get(path);
+              const headEntry = headTree.get(path);
+              if (!regular(baseEntry, baseEntry?.sha) || !regular(headEntry, baseEntry.sha)) {
+                fail("The base-owned successor workflow and test must remain byte-identical regular files.");
+                return;
+              }
+            }
+            await succeedIfStable("authority");
