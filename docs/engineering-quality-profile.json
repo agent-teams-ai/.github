@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "consumer-quality-profile-v1",
+  "status": "active-equivalent",
+  "languages": [
+    "javascript"
+  ],
+  "sourceRoots": {
+    "tooling": [
+      "scripts/**/*.mjs",
+      "tools/feature-module-standard/check.mjs"
+    ],
+    "tests": [
+      "scripts/**/*.test.mjs",
+      "tools/feature-module-standard/check.test.mjs"
+    ]
+  },
+  "typedCoverage": false,
+  "requiredRoute": "pnpm check",
+  "toolchain": {
+    "node": "24",
+    "pnpm": "11.18.0",
+    "oxlint": "1.85.0"
+  },
+  "foundationCompatibility": {
+    "attemptedVersion": "1.5.0",
+    "publicPresetDiagnostics": 352,
+    "result": "bounded-incompatible",
+    "fallback": "consumer source admission plus exact protected-rule lint"
+  },
+  "revisitTrigger": "Adopt the public Foundation preset when existing diagnostics can be remediated in a bounded owner slice."
+}

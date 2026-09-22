@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { isDeepStrictEqual } from "node:util";
+import { compileFunction } from "node:vm";
 import { verifyRecoveryIncident } from "./docs-legacy-admission-recovery.mjs";
 
 // Execute the actual admission functions without installing unrelated Renovate
@@ -15,13 +16,14 @@ const section = (start, end) => {
   assert.ok(offset >= 0 && limit > offset, `Missing source section ${start}`);
   return source.slice(offset, limit);
 };
-const makeVerifier = new Function("assert", "createHash", "validateDocsQualifiedCohorts", "isDeepStrictEqual", "qualifiedCohortProjection", "verifyRecoveryIncident",
+const makeVerifier = compileFunction(
   `const defaultIsCommitAncestor = () => { throw new Error("Unmocked ancestry adapter"); };
    ${section("function decisiveCheckRuns(", "\n}\n") + "\n}"}
    ${section("function workflowRunIdFromCheck(", "\n}\n") + "\n}"}
    ${section("function sha256(", "function plainRecord(")}
    ${section("export async function verifyAdmissionRevision(", "export async function verifyDocsCohortEvidence(").replaceAll("export ", "")}
-   return verifyDocsAdmissionEvidence;`);
+   return verifyDocsAdmissionEvidence;`,
+  ["assert", "createHash", "validateDocsQualifiedCohorts", "isDeepStrictEqual", "qualifiedCohortProjection", "verifyRecoveryIncident"]);
 const digest = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 
 function fixture() {
