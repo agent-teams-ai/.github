@@ -15,7 +15,7 @@ const base = "a".repeat(40), head = "b".repeat(40);
 const forwardBase = "c".repeat(40), installed = "d".repeat(40), forwardHead = "e".repeat(40);
 const fixtureNow = Date.parse("2026-09-24T12:00:00Z");
 const requiredContexts = ["check", "trusted-admission-evidence", "trusted-authority-evolution",
-  "trusted-admission-authority-evolution-v1", "trusted-cohort-authority-evolution-v8", "trusted-validation"];
+  "trusted-admission-authority-evolution-v1", "trusted-platform-recovery-installation-r317", "trusted-validation"];
 function protectionSnapshot() {
   return { rulesets: [{ summary: { id: 19979783, name: "Protect main", enforcement: "active" },
     detail: { id: 19979783, name: "Protect main", target: "branch", enforcement: "active",
@@ -249,6 +249,15 @@ test("minimum protection permits a future additional required check and unordere
   checks.reverse(); checks.push({ context: "future-stronger-check", integration_id: 15368 });
   f.rebindProtections();
   assert.equal((await f.run()).status, "exact_candidate_verified");
+});
+test("legacy V8 alone cannot authorize I after the successor cutover", async () => {
+  const f = fixture("I");
+  const checks = f.protections.rulesets[0].detail.rules.find((r) => r.type === "required_status_checks")
+    .parameters.required_status_checks;
+  checks.splice(checks.findIndex((check) => check.context === "trusted-platform-recovery-installation-r317"), 1);
+  checks.push({ context: "trusted-cohort-authority-evolution-v8", integration_id: 15368 });
+  f.rebindProtections();
+  await assert.rejects(f.run(), /required check trusted-platform-recovery-installation-r317/u);
 });
 test("legacy strict field cannot mask a disabled live ruleset policy", async () => {
   const f = fixture("I");
