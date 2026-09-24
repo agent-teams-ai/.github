@@ -317,7 +317,7 @@ export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
     need(Buffer.isBuffer(bytes) && recoveryBlob(bytes) === expected, `E source ${path} blob differs`);
   }
   const checks = await api.getSourceChecks();
-  const check = selectLatestFailedSourceCheck(checks, row.observed_default_branch_evidence.required_context,
+  selectLatestFailedSourceCheck(checks, row.observed_default_branch_evidence.required_context,
     proof.semantic_job_id, proof.run_id);
   const sourceRun = await api.getSourceRun(proof.run_id);
   need(sourceRun?.id === proof.run_id && sourceRun.run_attempt === proof.attempt &&
