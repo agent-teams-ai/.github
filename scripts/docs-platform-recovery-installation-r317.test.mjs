@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { INSTALLATION_PATHS, validateAcceptedInstallation,
-  verifyInstallationTransition, parseIncidentJson,
+import { INSTALLATION_PATHS, validateAcceptedInstallation, classifyInstallationPR,
+  verifyInstallationTransition, parseIncidentJson, selectLatestFailedSourceCheck,
   validateStagedIRecord, readEffectiveProtections } from "./verify-docs-platform-recovery-installation-r317.mjs";
 
 const digest = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
@@ -14,6 +14,29 @@ const repo = { id: 1316243981, full_name: "agent-teams-ai/.github", default_bran
 const base = "a".repeat(40), head = "b".repeat(40);
 const forwardBase = "c".repeat(40), installed = "d".repeat(40), forwardHead = "e".repeat(40);
 const fixtureNow = Date.parse("2026-09-24T12:00:00Z");
+test("E accepts historical check runs but requires the latest decisive failed job", () => {
+  const source = "a3ce96e00df2f9958fbd614e7fa6cb965f83cab8";
+  const context = "docs-protocol / docs-protocol-check";
+  const check = (id, run, conclusion = "failure") => ({ id, name: context, head_sha: source,
+    app: { id: 15368 }, conclusion,
+    html_url: `https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/${run}/job/${id}` });
+  const historical = [check(11, 101), check(12, 102), check(13, 103)];
+  assert.equal(selectLatestFailedSourceCheck(historical, context, 13, 103).id, 13);
+  assert.throws(() => selectLatestFailedSourceCheck(historical, context, 12, 102), /latest decisive/u);
+  assert.throws(() => selectLatestFailedSourceCheck([...historical, check(14, 104, "success")],
+    context, 13, 103), /latest decisive/u);
+});
+test("installed guard noops for ordinary changes and retains authority coverage", () => {
+  const file = (filename, previous_filename) => ({ filename, previous_filename });
+  assert.equal(classifyInstallationPR([file("docs/README.md")], 1), "noop");
+  assert.equal(classifyInstallationPR([file("governance/docs-protocol-policy-v2.json")], 1), "noop");
+  for (const path of [INSTALLATION_PATHS.E[1], INSTALLATION_PATHS.I[0],
+    ".github/workflows/other.yml", "scripts/other.mjs", "governance/new.schema.json", "pnpm-lock.yaml"]) {
+    assert.equal(classifyInstallationPR([file(path)], 1), "guarded");
+    assert.equal(classifyInstallationPR([file("docs/renamed.md", path)], 1), "guarded");
+  }
+  assert.throws(() => classifyInstallationPR([file("docs/README.md")], 2), /inventory/u);
+});
 const requiredContexts = ["check", "trusted-admission-evidence", "trusted-authority-evolution",
   "trusted-admission-authority-evolution-v1", "trusted-platform-recovery-installation-r317", "trusted-validation"];
 function protectionSnapshot() {

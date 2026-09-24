@@ -48,7 +48,24 @@ const I = [
   "scripts/verify-docs-cohort-evidence.mjs",
 ];
 export const INSTALLATION_PATHS = Object.freeze({ G, E, I });
+const INSTALL_AUTHORITY_NAMES = new Set([".node-version", ".nvmrc", ".yarnrc.yml", "yarn.lock",
+  "package-lock.json", "npm-shrinkwrap.json", ".npmrc", ".pnpmfile.cjs", "package.json",
+  "pnpm-lock.yaml", "pnpm-workspace.yaml", "renovate-config.json", "renovate.json"]);
+const isAuthorityPath = (path) => G.includes(path) || E.includes(path) || I.includes(path) ||
+  [".github/", "scripts/", "tools/"].some((prefix) => path.startsWith(prefix)) ||
+  (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+  INSTALL_AUTHORITY_NAMES.has(path.split("/").at(-1));
 const need = (ok, message) => { if (!ok) { throw new Error(`r317 installation: ${message}`); } };
+export function classifyInstallationPR(files, changedFiles) {
+  need(Number.isSafeInteger(changedFiles) && changedFiles >= 1 && changedFiles <= 3000 &&
+    Array.isArray(files) && files.length === changedFiles &&
+    new Set(files.map((file) => file?.filename)).size === files.length &&
+    files.every((file) => typeof file?.filename === "string" && file.filename.length > 0 &&
+      (file.previous_filename === undefined || typeof file.previous_filename === "string")),
+  "incomplete or invalid PR file inventory");
+  return files.some((file) => [file.filename, file.previous_filename].filter(Boolean).some(isAuthorityPath))
+    ? "guarded" : "noop";
+}
 const sha256 = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 const blob = (bytes) => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 const name = (item) => item.path.split("/").at(-1);
@@ -245,6 +262,21 @@ async function verifySide(expected, actual, api, label) {
   need(Buffer.isBuffer(bytes) && bytes.length === expected.bytes && blob(bytes) === expected.blob &&
     sha256(bytes) === expected.sha256, `${label} content digest differs`);
 }
+export function selectLatestFailedSourceCheck(checks, context, semanticJobId, runId) {
+  const matching = Array.isArray(checks) ? checks.filter((item) =>
+    item.name === context && item.head_sha === SOURCE_HEAD && item.app?.id === 15368 &&
+    item.conclusion !== "skipped") : [];
+  need(matching.length > 0 && matching.every((item) => Number.isSafeInteger(item.id) && item.id > 0) &&
+    new Set(matching.map((item) => item.id)).size === matching.length,
+  "E failed required check is missing/duplicate");
+  const check = matching.find((item) => item.id === semanticJobId);
+  need(check && check.id === Math.max(...matching.map((item) => item.id)),
+    "E proof does not identify the latest decisive required check");
+  need(check.conclusion === "failure" &&
+    check.html_url === `https://github.com/${PLATFORM}/actions/runs/${runId}/job/${check.id}`,
+  "E failed check context/App/job/run differs");
+  return check;
+}
 export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
   const decision = decisionBytes.toString("utf8");
   need(decision.startsWith("# ADR-0007:") && /^Status: Accepted$/mu.test(decision),
@@ -285,14 +317,8 @@ export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
     need(Buffer.isBuffer(bytes) && recoveryBlob(bytes) === expected, `E source ${path} blob differs`);
   }
   const checks = await api.getSourceChecks();
-  need(Array.isArray(checks) && checks.filter((check) =>
-    check.name === row.observed_default_branch_evidence.required_context).length === 1,
-  "E failed required check is missing/duplicate");
-  const check = checks.find((item) => item.name === row.observed_default_branch_evidence.required_context);
-  need(check.id === proof.semantic_job_id && check.app?.id === 15368 && check.head_sha === SOURCE_HEAD &&
-    check.conclusion === "failure" &&
-    check.html_url === `https://github.com/${PLATFORM}/actions/runs/${proof.run_id}/job/${check.id}`,
-  "E failed check context/App/job/run differs");
+  const check = selectLatestFailedSourceCheck(checks, row.observed_default_branch_evidence.required_context,
+    proof.semantic_job_id, proof.run_id);
   const sourceRun = await api.getSourceRun(proof.run_id);
   need(sourceRun?.id === proof.run_id && sourceRun.run_attempt === proof.attempt &&
     sourceRun.workflow_id === proof.workflow_id && sourceRun.head_sha === SOURCE_HEAD && sourceRun.head_branch === "main" &&
@@ -561,20 +587,10 @@ export async function readEffectiveProtections(read = gh) {
   return { rulesets, classic_branch_protection };
 }
 async function run() {
-  const id = process.env.DOCS_R317_ACCEPTED_TUPLE_COMMENT_ID;
-  need(/^[1-9][0-9]{0,15}$/u.test(id ?? ""), "independently accepted tuple comment is unbound");
   const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, "utf8"));
   event.execution_base = process.env.GITHUB_SHA;
   event.run_id = Number(process.env.GITHUB_RUN_ID);
   event.run_attempt = Number(process.env.GITHUB_RUN_ATTEMPT);
-  const comment = await gh(`repos/${REPO}/issues/comments/${id}`);
-  need(comment.id === Number(id) && comment.user?.type === "User" &&
-    comment.issue_url === `https://api.github.com/repos/${REPO}/issues/${event.pull_request?.number}`,
-  "accepted decision comment identity differs");
-  const accepted = parseIncidentJson(Buffer.from(comment.body ?? ""), "accepted tuple");
-  need(comment.user.id === accepted.owner_id && comment.user.login === accepted.owner_login &&
-    accepted.decision_comment_id === Number(id),
-    "decision author differs from accepted tuple");
   const api = {
     getDecisionComment: (commentId) => gh(`repos/${REPO}/issues/comments/${commentId}`),
     getRepository: () => gh(`repos/${REPO}`),
@@ -634,6 +650,27 @@ async function run() {
       return Buffer.from(item.content.replace(/\s/gu, ""), "base64");
     },
   };
+  const live = await api.getPull(event.pull_request?.number);
+  const controller = await api.getRepository();
+  need(event.repository?.id === REPO_ID && event.repository.full_name === REPO &&
+    live?.state === "open" && tuple(event.pull_request) === tuple(live) &&
+    live.base?.repo?.id === REPO_ID && live.head?.repo?.id === REPO_ID &&
+    live.base.ref === controller.default_branch &&
+    await api.getBranchHead(controller.default_branch) === live.base.sha,
+  "noop or guarded PR is not the current protected controller tuple");
+  const pages = await api.getPullFiles(live.number);
+  const mode = classifyInstallationPR(pages.flat(), live.changed_files);
+  if (mode === "noop") { console.log(JSON.stringify({ status: "noop" })); return; }
+  const id = process.env.DOCS_R317_ACCEPTED_TUPLE_COMMENT_ID;
+  need(/^[1-9][0-9]{0,15}$/u.test(id ?? ""), "independently accepted tuple comment is unbound");
+  const comment = await gh(`repos/${REPO}/issues/comments/${id}`);
+  need(comment.id === Number(id) && comment.user?.type === "User" &&
+    comment.issue_url === `https://api.github.com/repos/${REPO}/issues/${live.number}`,
+  "accepted decision comment identity differs");
+  const accepted = parseIncidentJson(Buffer.from(comment.body ?? ""), "accepted tuple");
+  need(comment.user.id === accepted.owner_id && comment.user.login === accepted.owner_login &&
+    accepted.decision_comment_id === Number(id),
+    "decision author differs from accepted tuple");
   console.log(JSON.stringify(await verifyInstallationTransition(event, accepted, api)));
 }
 if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) { await run(); }
