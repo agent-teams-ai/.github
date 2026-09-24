@@ -114,6 +114,12 @@ same workflow identity, caller bytes, and managed Cohort projection. Unrelated
 consumer commits therefore require no central JSON rewrite; force-pushes,
 missing or ambiguous checks, and managed-state drift fail closed.
 
+ADR-0008 proposes a change-scoped exception to this current-head requirement:
+an exact policy-only PR would require current success for changed consumer rows,
+report unchanged rows as `current_not_evaluated`, and run a separate full-fleet
+audit daily and on demand. Until its authority transition is installed, the
+fleet-wide requirement above remains the active rule.
+
 ## Existing exceptions
 
 `craig-meeting-gateway` is an upstream external fork and is not modified by this

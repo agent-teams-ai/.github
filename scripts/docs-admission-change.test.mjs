@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 import YAML from "yaml";
 import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile } from "./verify-docs-admission-change.mjs";
-import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
+import { currentAdmissionScope, verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences } from "./docs-cohort-policy.mjs";
 import { assertDocsCohortAppendOnly, cohortRecordDigest, cohortEventDigest, validateDocsQualifiedCohorts, qualifiedCohortProjection } from "./docs-cohort-policy.mjs";
@@ -119,6 +119,8 @@ async function fixture(t) {
     base: { sha: base, ref: "main", repo: controller }, head: { sha: head, repo: controller } };
   let controllerCalls = 0;
   const options = {
+    // Imported incident/recovery cases retain complete-fleet semantics.
+    fullFleetCurrent: true,
     clock: () => asOf, asOf, execution, basePolicyBytes: baseBytes,
     verifyController: async (value) => {
       controllerCalls++;
@@ -490,9 +492,54 @@ async function firstBinding(t, generation = 2, schemaVersion = generation === 2 
         steps: successfulSteps(role, generation, schemaVersion) };
     });
   };
-  return { f, selected, prior, validate, jobReads: () => jobReads,
-    run: () => verifyDocsAdmissionEvidence(f.policy, f.registry, schema, { ...f.options, basePolicy }) };
+  return { f, selected, prior, basePolicy, validate, jobReads: () => jobReads,
+    run: (changed_files) => verifyDocsAdmissionEvidence(f.policy, f.registry, schema,
+      { ...f.options, basePolicy, ...(changed_files ? { recovery: { execution: { changed_files } } } : {}) }) };
 }
+
+test("policy admission checks changed consumer while direct fleet audit still catches collateral failure", async t => {
+  const b = await firstBinding(t);
+  b.f.options.fullFleetCurrent = false;
+  const collateral = b.f.policy.repositories.find(row => row.repository === "agent-teams-ai/agent-teams-platform");
+  const newHead = "e".repeat(40);
+  const getHead = b.f.options.getDefaultBranchHead;
+  const getChecks = b.f.options.getCheckRuns;
+  b.f.options.getDefaultBranchHead = async repo => repo === collateral.repository ? newHead : getHead(repo);
+  b.f.options.getCheckRuns = async (repo, revision) => repo === collateral.repository && revision === newHead
+    ? [{ id: 999, head_sha: newHead, name: collateral.required_check_context,
+      app: { id: collateral.observed_default_branch_evidence.integration_id }, conclusion: "failure",
+      html_url: `https://github.com/${repo}/actions/runs/999/job/999` }]
+    : getChecks(repo, revision);
+  const result = await b.run([POLICY_PATH]);
+  assert.deepEqual(result.current_verified.map(row => row.repository_id), [b.selected.repository_id]);
+  assert.ok(result.current_not_evaluated.some(row => row.repository_id === collateral.repository_id));
+  await assert.rejects(b.run(), /current default-branch head requires every decisive admitted check to succeed/u);
+});
+
+test("trusted policy-only PR scopes current checks after live controller validation", async t => {
+  const f = await fixture(t);
+  f.options.fullFleetCurrent = false;
+  const result = await f.run();
+  assert.deepEqual(result.current_verified.map(row => row.repository_id), [f.selected.repository_id]);
+  assert.equal(result.current_not_evaluated.length, 5);
+  assert.deepEqual(result.recovery_pending, []);
+  assert.equal(f.controllerCalls(), 2);
+});
+
+test("affected-row scope fails closed on global, nonconsumer and incomplete changes", async t => {
+  const b = await firstBinding(t);
+  const id = b.selected.repository_id;
+  assert.deepEqual([...currentAdmissionScope(b.f.policy, b.basePolicy, [POLICY_PATH])], [id]);
+  for (const changed of [undefined, [], [POLICY_PATH, "governance/docs-protocol-exceptions.json"]]) {
+    assert.equal(currentAdmissionScope(b.f.policy, b.basePolicy, changed), null);
+  }
+  const global = structuredClone(b.f.policy);
+  global.schema_version = 999;
+  assert.equal(currentAdmissionScope(global, b.basePolicy, [POLICY_PATH]), null);
+  const removed = structuredClone(b.f.policy);
+  removed.repositories.pop();
+  assert.equal(currentAdmissionScope(removed, b.basePolicy, [POLICY_PATH]), null);
+});
 
 for (const generation of [1, 2]) {
   test(`bootstrap positive generation ${generation}: six current successes and zero recovery pending`, async t => {
