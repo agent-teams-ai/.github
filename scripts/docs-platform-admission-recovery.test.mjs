@@ -1,23 +1,45 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import { selectLatestFailedSourceCheck } from "./verify-docs-platform-recovery-installation-r317.mjs";
 import { recoveryBlob, recoveryDigest, recoveryTarget } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY, platformRecoveryDecisionText,
   validatePlatformPolicyTransition, validatePlatformRecoveryRecord, verifyPlatformAdmissionRecovery,
   verifyPlatformRecoveryCandidateEvidence } from "./docs-platform-admission-recovery.mjs";
 
-const [policyBytes, registryBytes, exceptionsBytes] = await Promise.all([
-  readFile("governance/docs-protocol-policy-v2.json"),
-  readFile("governance/docs-qualified-cohorts.json"),
-  readFile("governance/docs-protocol-exceptions.json"),
-]);
+// Exact files from the incident's central controller snapshot. The compressed
+// copies keep this test independent of moving main and of Git history in CI.
+const historicalSnapshot = "a9521f1f54a9ea836da6ade82344a3c9baded356";
+assert.equal(PLATFORM_RECOVERY.historical_base, historicalSnapshot);
+assert.equal(PLATFORM_RECOVERY.controller_snapshot_sha, historicalSnapshot);
+const historicalFiles = {
+  "governance/docs-protocol-policy-v2.json": ["policy.json.gz", "1c038fc38acc50078bb2983a6294a10d279b6195f4d91896bcea04586a7925df", "55717f3171b0359b4eedba338f616ae72d943496"],
+  "governance/docs-qualified-cohorts.json": ["cohorts.json.gz", "ca396a280154093f7c122378ed5937a203e53df74548f8046ffb5bcfd9ef7100", "18f59fc7312d78782f65b5f40dcc3774695211af"],
+  "governance/docs-protocol-exceptions.json": ["exceptions.json.gz", "10657f44d0a80adbdf725cf8cebf123086b4dd10790bb09562388f2172c53bae", "ac336b865d697b62c938623f2960864e85f7698a"],
+  "scripts/verify-docs-consumer-gate.mjs": ["runner.mjs.gz", "91193d8ad4c7c24d481c8d1697e330497ebdeed502cc9491a646ad6419dddc74", "ef293a0d0098b8bd7c700ddd8c98968d10a8e9d9"],
+  ".github/workflows/docs-protocol-check.yml": ["controller.yml.gz", "ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6", "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"],
+};
+const controllerData = Object.fromEntries(await Promise.all(Object.entries(historicalFiles)
+  .map(async ([path, [name, digest, blob]]) => {
+    const bytes = gunzipSync(await readFile(new URL(`./fixtures/platform-recovery-a9521f1f/${name}`, import.meta.url)));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), digest, `${path}@${historicalSnapshot} SHA-256`);
+    assert.equal(recoveryBlob(bytes), blob, `${path}@${historicalSnapshot} Git blob`);
+    return [path, bytes];
+  })));
+const policyBytes = controllerData["governance/docs-protocol-policy-v2.json"];
+const registryBytes = controllerData["governance/docs-qualified-cohorts.json"];
+const exceptionsBytes = controllerData["governance/docs-protocol-exceptions.json"];
+assert.equal(recoveryBlob(policyBytes), PLATFORM_RECOVERY.before_policy_blob);
+assert.equal(recoveryBlob(registryBytes), PLATFORM_RECOVERY.registry_blob);
+assert.equal(recoveryBlob(exceptionsBytes), PLATFORM_RECOVERY.exceptions_blob);
 const base = JSON.parse(policyBytes);
 const baseBytes = policyBytes;
 const after = Buffer.from(policyBytes.toString("utf8").replace(
   '"cohort_binding_status": "bound",\n      "desired_cohort_id": "docs-2026-09-15-stable23"',
   '"cohort_binding_status": "rollout_pending",\n      "desired_cohort_id": "docs-2026-09-24-stable28"'));
+assert.equal(recoveryBlob(after), PLATFORM_RECOVERY.after_policy_blob);
 const failure = { run_id: 1001, attempt: 1, workflow_id: 1002, authorize_job_id: 1003,
   semantic_job_id: 1004, diagnostic_digest: `sha256:${"1".repeat(64)}` };
 const record = {
@@ -121,13 +143,8 @@ test("active route rejects an absent independently accepted execution decision",
   /independently accepted execution decision/u);
 });
 
-const runnerBytes = execFileSync("git", ["show", `${PLATFORM_RECOVERY.historical_base}:scripts/verify-docs-consumer-gate.mjs`]);
-const controllerBytes = execFileSync("git", ["show", `${PLATFORM_RECOVERY.historical_base}:.github/workflows/docs-protocol-check.yml`]);
-const controllerData = Object.fromEntries([
-  "governance/docs-protocol-policy-v2.json",
-  "governance/docs-qualified-cohorts.json",
-  "governance/docs-protocol-exceptions.json",
-].map((path) => [path, execFileSync("git", ["show", `${PLATFORM_RECOVERY.controller_snapshot_sha}:${path}`])]));
+const runnerBytes = controllerData["scripts/verify-docs-consumer-gate.mjs"];
+const controllerBytes = controllerData[".github/workflows/docs-protocol-check.yml"];
 function hostedFixture() {
   const [r, i] = altered(() => {});
   const selected = recoveryTarget(JSON.parse(registryBytes), PLATFORM_RECOVERY.selected);

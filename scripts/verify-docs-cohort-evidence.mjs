@@ -18,7 +18,7 @@ import {
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
 import { loadJson } from "./governance-policy.mjs";
-import { verifyRecoveryIncident } from "./docs-legacy-admission-recovery.mjs";
+import { POLICY_PATH, verifyRecoveryIncident } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY } from "./docs-platform-admission-recovery.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -45,6 +45,27 @@ function decisiveCheckRuns(checks) {
     if (retained === undefined || check.id > retained.id) {byExecution.set(key, check);}
   }
   return [...byExecution.values()].toSorted((left, right) => left.id - right.id);
+}
+
+export function currentAdmissionScope(policy, basePolicy, changedFiles) {
+  // A direct fleet audit has no exact PR/base tuple and always checks every HEAD.
+  if (!basePolicy || !Array.isArray(changedFiles) ||
+    changedFiles.length !== 1 || changedFiles[0] !== POLICY_PATH) {return null;}
+  const { repositories: currentRows, ...currentGlobal } = policy;
+  const { repositories: baseRows, ...baseGlobal } = basePolicy;
+  if (!Array.isArray(currentRows) || !Array.isArray(baseRows) ||
+    currentRows.length !== baseRows.length || !isDeepStrictEqual(currentGlobal, baseGlobal)) {return null;}
+  const changed = new Set();
+  for (let i = 0; i < currentRows.length; i += 1) {
+    const row = currentRows[i], prior = baseRows[i];
+    if (row?.repository_id !== prior?.repository_id || row?.repository !== prior?.repository) {return null;}
+    if (!isDeepStrictEqual(row, prior)) {
+      if (row.repository_lifecycle !== "active" || row.docs_role !== "consumer" ||
+        !["bound", "rollout_pending"].includes(row.cohort_binding_status)) {return null;}
+      changed.add(row.repository_id);
+    }
+  }
+  return changed.size > 0 ? changed : null;
 }
 
 async function command(program, args, options = {}) {
@@ -798,7 +819,11 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     assert(typeof process.env.GH_TOKEN === "string" && process.env.GH_TOKEN.length > 0,
       "Live admission verification requires a job-scoped GH_TOKEN.");
   }
-  const report = { historical_verified: [], current_verified: [], recovery_pending: [] };
+  // An installed Platform incident authority requires a complete remaining-fleet
+  // audit, even when the PR would otherwise qualify for changed-row admission.
+  const currentScope = overrides.fullFleetCurrent === true || overrides.platformRecovery
+    ? null : currentAdmissionScope(policy, overrides.basePolicy, overrides.recovery?.execution?.changed_files);
+  const report = { historical_verified: [], current_verified: [], current_not_evaluated: [], recovery_pending: [] };
   const platformAdapters = {
     ...adapters,
     evaluateRemainingFleet: async (scope) => {
@@ -809,7 +834,7 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       const remaining = { ...policy, repositories: policy.repositories.filter((row) =>
         row.repository_id !== 1319378484) };
       const audit = await verifyDocsAdmissionEvidence(remaining, registry, schema,
-        { ...overrides, platformRecovery: undefined });
+        { ...overrides, fullFleetCurrent: true, platformRecovery: undefined });
       const expected = remaining.repositories.filter((row) => row.repository_lifecycle === "active" &&
         row.docs_role === "consumer" && ["bound", "rollout_pending"].includes(row.cohort_binding_status));
       assert(audit.historical_verified.length === expected.length &&
@@ -886,6 +911,11 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
         `${entry.repository} admission revision is not an ancestor of the current default-branch head.`);
       assert(!(advancing || firstAdmission) || head === evidence.revision, `${entry.repository} observed advancement is not the current target default head.`);
       rowResult = { repository_id: entry.repository_id, revision: head, cohort_id: entry.observed_cohort_id };
+      if (currentScope && !currentScope.has(entry.repository_id)) {
+        rowResult.status = "current_not_evaluated";
+        stableHead = await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch) === head;
+        continue;
+      }
       {
         const matches = decisiveCheckRuns((await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
           check.head_sha === head && check.name === evidence.required_context &&
@@ -949,9 +979,11 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     }
     verifiedHeads.push({ repository: entry.repository, branch: evidence.default_branch,
       head: rowResult.source_head ?? rowResult.revision });
-    assert(rowResult?.status === undefined || rowResult.status === "recovery_pending",
-      `${entry.repository} returned an unrecognized current classification.`);
-    report[rowResult.status === "recovery_pending" ? "recovery_pending" : "current_verified"].push(rowResult);
+    assert(rowResult?.status === undefined || rowResult.status === "recovery_pending" ||
+      (rowResult.status === "current_not_evaluated" && currentScope && !currentScope.has(entry.repository_id)),
+    `${entry.repository} returned an unrecognized current classification.`);
+    report[rowResult.status === "recovery_pending" ? "recovery_pending" :
+      rowResult.status === "current_not_evaluated" ? "current_not_evaluated" : "current_verified"].push(rowResult);
     assert(stableHead,
       `${entry.repository} default-branch head changed repeatedly during live admission verification.`);
   }

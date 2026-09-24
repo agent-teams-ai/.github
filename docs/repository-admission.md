@@ -107,12 +107,14 @@ observing that Cohort; this is explicit remediation state, while consumer gates
 fail closed.
 
 `observed_default_branch_evidence` is the immutable admission snapshot, not a
-copy of every later consumer HEAD. On each admission-policy change, trusted CI
-re-verifies that snapshot, proves it is an ancestor of a stable current default
-branch HEAD, and binds that HEAD to exactly one successful required check, the
-same workflow identity, caller bytes, and managed Cohort projection. Unrelated
-consumer commits therefore require no central JSON rewrite; force-pushes,
-missing or ambiguous checks, and managed-state drift fail closed.
+copy of every later consumer HEAD. Trusted CI re-verifies that snapshot,
+repository identity, ancestry and stable current default-branch HEAD for every
+admitted consumer. For an exact policy-only PR, ADR-0008 also requires current
+Docs success and execution proof for changed consumer rows; unchanged rows are
+reported as `current_not_evaluated`. Other PR shapes and the daily/on-demand
+fleet audit require current success for every consumer. Unrelated consumer
+commits need no central JSON rewrite, and a failed current check is never
+reported as success.
 
 ## Existing exceptions
 

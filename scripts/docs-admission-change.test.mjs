@@ -6,7 +6,7 @@ import test from "node:test";
 import YAML from "yaml";
 import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile,
   reconcileLegacyPending } from "./verify-docs-admission-change.mjs";
-import { verifyDocsAdmissionEvidence, requirePlatformPending } from "./verify-docs-cohort-evidence.mjs";
+import { currentAdmissionScope, verifyDocsAdmissionEvidence, requirePlatformPending } from "./verify-docs-cohort-evidence.mjs";
 import { PLATFORM_RECOVERY } from "./docs-platform-admission-recovery.mjs";
 import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences } from "./docs-cohort-policy.mjs";
@@ -149,6 +149,8 @@ async function fixture(t) {
     head: { sha: head, ref: "synthetic-selection", repo: controller } };
   let controllerCalls = 0;
   const options = {
+    // Imported incident/recovery cases retain complete-fleet semantics.
+    fullFleetCurrent: true,
     clock: () => asOf, asOf, execution, basePolicyBytes: baseBytes,
     verifyController: async (value) => {
       controllerCalls++;
@@ -266,6 +268,7 @@ test("real legacy recovery report reconciles while a Platform pending row remain
 });
 test("production fleet composition routes the latest failed Platform check and rejects a later success", async (t) => {
   const f = await fixture(t);
+  f.options.fullFleetCurrent = false;
   const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
   const originalChecks = f.options.getCheckRuns;
   const originalGet = f.options.getDefaultBranchHead;
@@ -282,20 +285,44 @@ test("production fleet composition routes the latest failed Platform check and r
     ? f.collateral.observed_default_branch_evidence.revision :
       (repository === platform.repository ? PLATFORM_RECOVERY.source_head : originalGet(repository, branch));
   let clockCalls = 0;
+  let rejectRemainingFleet = false;
+  let remainingFleetFailure = false;
+  const collateralHead = "e".repeat(40);
+  const successfulChecks = f.options.getCheckRuns;
+  const successfulHead = f.options.getDefaultBranchHead;
+  f.options.getCheckRuns = async (repository, revision) => remainingFleetFailure &&
+    repository === f.collateral.repository && revision === collateralHead
+    ? [{ ...((await successfulChecks(repository, f.collateral.observed_default_branch_evidence.revision))[0]),
+      id: 999, head_sha: collateralHead, conclusion: "failure" }]
+    : successfulChecks(repository, revision);
+  f.options.getDefaultBranchHead = async (repository, branch) => remainingFleetFailure &&
+    repository === f.collateral.repository ? collateralHead : successfulHead(repository, branch);
   const schema = JSON.parse(await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base));
-  const report = await verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
-    ...f.options, platformRecovery: { verify: async (entry, sourceHead, adapters) => {
+  const verifyPlatform = async (entry, sourceHead, adapters) => {
       assert.equal(entry.repository_id, PLATFORM_RECOVERY.repository_id);
       assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
       assert.match(await adapters.currentTime(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u);
+      if (rejectRemainingFleet) remainingFleetFailure = true;
+      await adapters.evaluateRemainingFleet({ platform_repository_id: entry.repository_id,
+        changed_repository_id: f.selected.repository_id });
       clockCalls++;
       return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
         semantics: "unverified", qualification: "unverified" };
-    } },
+  };
+  const report = await verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+    ...f.options, platformRecovery: { verify: verifyPlatform },
   });
   assert.equal(report.recovery_pending.length, 1);
   assert.equal(report.recovery_pending[0].repository_id, PLATFORM_RECOVERY.repository_id);
+  assert.equal(report.current_verified.length, 5);
+  assert.deepEqual(report.current_not_evaluated, []);
   assert.ok(clockCalls >= 2);
+  rejectRemainingFleet = true;
+  await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+    ...f.options, platformRecovery: { verify: verifyPlatform },
+  }), /current default-branch head requires every decisive admitted check to succeed/u);
+  rejectRemainingFleet = false;
+  remainingFleetFailure = false;
   checks.push(sourceCheck(15, 105, "success"));
   await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
     ...f.options, platformRecovery: { verify: async () => {
@@ -726,9 +753,54 @@ async function firstBinding(t, generation = 2, schemaVersion = generation === 2 
         steps: successfulSteps(role, generation, schemaVersion) };
     });
   };
-  return { f, selected, prior, validate, jobReads: () => jobReads,
-    run: () => verifyDocsAdmissionEvidence(f.policy, f.registry, schema, { ...f.options, basePolicy }) };
+  return { f, selected, prior, basePolicy, validate, jobReads: () => jobReads,
+    run: (changed_files) => verifyDocsAdmissionEvidence(f.policy, f.registry, schema,
+      { ...f.options, basePolicy, ...(changed_files ? { recovery: { execution: { changed_files } } } : {}) }) };
 }
+
+test("policy admission checks changed consumer while direct fleet audit still catches collateral failure", async t => {
+  const b = await firstBinding(t);
+  b.f.options.fullFleetCurrent = false;
+  const collateral = b.f.policy.repositories.find(row => row.repository === "agent-teams-ai/agent-teams-platform");
+  const newHead = "e".repeat(40);
+  const getHead = b.f.options.getDefaultBranchHead;
+  const getChecks = b.f.options.getCheckRuns;
+  b.f.options.getDefaultBranchHead = async repo => repo === collateral.repository ? newHead : getHead(repo);
+  b.f.options.getCheckRuns = async (repo, revision) => repo === collateral.repository && revision === newHead
+    ? [{ id: 999, head_sha: newHead, name: collateral.required_check_context,
+      app: { id: collateral.observed_default_branch_evidence.integration_id }, conclusion: "failure",
+      html_url: `https://github.com/${repo}/actions/runs/999/job/999` }]
+    : getChecks(repo, revision);
+  const result = await b.run([POLICY_PATH]);
+  assert.deepEqual(result.current_verified.map(row => row.repository_id), [b.selected.repository_id]);
+  assert.ok(result.current_not_evaluated.some(row => row.repository_id === collateral.repository_id));
+  await assert.rejects(b.run(), /current default-branch head requires every decisive admitted check to succeed/u);
+});
+
+test("trusted policy-only PR scopes current checks after live controller validation", async t => {
+  const f = await fixture(t);
+  f.options.fullFleetCurrent = false;
+  const result = await f.run();
+  assert.deepEqual(result.current_verified.map(row => row.repository_id), [f.selected.repository_id]);
+  assert.equal(result.current_not_evaluated.length, 5);
+  assert.deepEqual(result.recovery_pending, []);
+  assert.equal(f.controllerCalls(), 2);
+});
+
+test("affected-row scope fails closed on global, nonconsumer and incomplete changes", async t => {
+  const b = await firstBinding(t);
+  const id = b.selected.repository_id;
+  assert.deepEqual([...currentAdmissionScope(b.f.policy, b.basePolicy, [POLICY_PATH])], [id]);
+  for (const changed of [undefined, [], [POLICY_PATH, "governance/docs-protocol-exceptions.json"]]) {
+    assert.equal(currentAdmissionScope(b.f.policy, b.basePolicy, changed), null);
+  }
+  const global = structuredClone(b.f.policy);
+  global.schema_version = 999;
+  assert.equal(currentAdmissionScope(global, b.basePolicy, [POLICY_PATH]), null);
+  const removed = structuredClone(b.f.policy);
+  removed.repositories.pop();
+  assert.equal(currentAdmissionScope(removed, b.basePolicy, [POLICY_PATH]), null);
+});
 
 for (const generation of [1, 2]) {
   test(`bootstrap positive generation ${generation}: six current successes and zero recovery pending`, async t => {
