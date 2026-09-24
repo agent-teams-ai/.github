@@ -275,6 +275,33 @@ test("independently accepted synthetic installation remains recovery_pending aft
   assert.equal(f.state.fleetReads, 1);
   assert.equal(f.state.permissionReads, 4);
 });
+for (const [label, expireAt] of [
+  ["final execution-comment reread", "comment"],
+  ["final execution-permission reread", "permission"],
+]) {
+  test(`installed route rejects exact expiry during ${label}`, async () => {
+    const f = hostedFixture();
+    if (expireAt === "comment") {
+      const read = f.adapters.getDecisionComment;
+      let reads = 0;
+      f.adapters.getDecisionComment = async (...args) => {
+        const result = await read(...args);
+        if (args[1] === f.r.execution_decision_id && ++reads === 2) {
+          f.state.clock = f.r.expires_at;
+        }
+        return result;
+      };
+    } else {
+      const read = f.adapters.getCollaboratorPermission;
+      f.adapters.getCollaboratorPermission = async (...args) => {
+        const result = await read(...args);
+        if (f.state.permissionReads === 4) { f.state.clock = f.r.expires_at; }
+        return result;
+      };
+    }
+    await assert.rejects(f.runInstalled(), /expired, revoked/u);
+  });
+}
 for (const [label, mutate, pattern] of [
   ["execution decision replay", (f) => { f.state.executionComment.body = JSON.stringify({
     ...f.i.accepted_execution, head: "c".repeat(40) }); }, /stale or replayed/u],

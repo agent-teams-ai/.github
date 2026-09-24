@@ -48,21 +48,61 @@ const I = [
   "scripts/verify-docs-cohort-evidence.mjs",
 ];
 export const INSTALLATION_PATHS = Object.freeze({ G, E, I });
-const need = (ok, message) => { if (!ok) throw new Error(`r317 installation: ${message}`); };
+const need = (ok, message) => { if (!ok) { throw new Error(`r317 installation: ${message}`); } };
 const sha256 = (bytes) => `sha256:${createHash("sha256").update(bytes).digest("hex")}`;
 const blob = (bytes) => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+const name = (item) => item.path.split("/").at(-1);
+const treeSortKey = (item) => Buffer.from(name(item) + (item.type === "tree" ? "/" : ""));
+const tuple = (item) => JSON.stringify([item?.id, item?.number, item?.state, item?.merged, item?.draft,
+  item?.base?.sha, item?.base?.ref, item?.base?.repo?.id, item?.head?.sha, item?.head?.ref,
+  item?.head?.repo?.id, item?.changed_files, item?.commits, item?.updated_at]);
+const REQUIRED_CONTEXTS = new Set(["check", "trusted-admission-evidence", "trusted-authority-evolution",
+  "trusted-admission-authority-evolution-v1", "trusted-cohort-authority-evolution-v8", "trusted-validation"]);
+export function verifyMinimumProtections(snapshot) {
+  const matches = snapshot?.rulesets?.filter((entry) => entry?.detail?.id === 19979783);
+  need(matches?.length === 1, "required Protect main ruleset is missing");
+  const { summary, detail } = matches[0];
+  need(summary?.id === detail.id && summary.name === "Protect main" &&
+    summary.enforcement === "active" && detail.name === "Protect main" &&
+    detail.target === "branch" && detail.enforcement === "active" &&
+    Array.isArray(detail.bypass_actors) && detail.bypass_actors.length === 0 &&
+    Array.isArray(detail.conditions?.ref_name?.include) &&
+    detail.conditions.ref_name.include.includes("~DEFAULT_BRANCH") &&
+    Array.isArray(detail.conditions.ref_name.exclude) && detail.conditions.ref_name.exclude.length === 0 &&
+    Array.isArray(detail.rules), "required Protect main scope or enforcement weakened");
+  const types = new Map();
+  for (const rule of detail.rules) {
+    need(typeof rule?.type === "string" && !types.has(rule.type), "duplicate protection rule type");
+    types.set(rule.type, rule);
+  }
+  for (const type of ["deletion", "non_fast_forward", "required_linear_history", "pull_request"]) {
+    need(types.has(type), `required ${type} protection is missing`);
+  }
+  const checks = types.get("required_status_checks")?.parameters;
+  need(checks?.strict_required_status_checks === true && Array.isArray(checks.required_status_checks),
+    "strict required status checks are missing");
+  const contexts = new Map();
+  for (const check of checks.required_status_checks) {
+    need(typeof check?.context === "string" && !contexts.has(check.context),
+      "duplicate or invalid required check context");
+    contexts.set(check.context, check.integration_id);
+  }
+  for (const context of REQUIRED_CONTEXTS) {
+    need(contexts.get(context) === 15368, `required check ${context} or integration differs`);
+  }
+}
 export function parseIncidentJson(bytes, label, limit = 1024 * 1024) {
   need(Buffer.isBuffer(bytes) && bytes.length <= limit, `${label} missing or exceeds byte limit`);
   const source = bytes.toString("utf8");
   need(Buffer.from(source).equals(bytes), `${label} is not exact UTF-8`);
   let offset = 0;
-  const space = () => { while (/\s/u.test(source[offset] ?? "")) offset += 1; };
+  const space = () => { while (/\s/u.test(source[offset] ?? "")) { offset += 1; } };
   function string() {
     const start = offset++; need(source[start] === '"', `${label} string is invalid`);
     while (offset < source.length) {
       const c = source[offset];
       if (c === '"') { offset += 1; return JSON.parse(source.slice(start, offset)); }
-      if (c === "\\") offset += 2;
+      if (c === "\\") { offset += 2; }
       else { need(c.charCodeAt(0) >= 0x20, `${label} contains control character`); offset += 1; }
     }
     throw new Error(`${label} unterminated string`);
@@ -107,11 +147,11 @@ function identity(repo) {
 }
 function manifestRow(row) {
   closed(row, ["path", "status", "old", "new"], "manifest row");
-  need(typeof row.path === "string" && /^[a-zA-Z0-9_.\/-]+$/u.test(row.path) &&
+  need(typeof row.path === "string" && /^[a-zA-Z0-9_./-]+$/u.test(row.path) &&
     row.path.split("/").every((part) => part && part !== "." && part !== ".."), "invalid manifest path");
   need(["added", "modified", "removed"].includes(row.status), "invalid manifest status");
   for (const [side, value] of [["old", row.old], ["new", row.new]]) {
-    if (value === null) continue;
+    if (value === null) { continue; }
     closed(value, ["type", "mode", "blob", "bytes", "sha256"], `${side} identity`);
     need(value.type === "blob" && value.mode === "100644" && SHA.test(value.blob) &&
       Number.isSafeInteger(value.bytes) && value.bytes >= 0 && DIGEST.test(value.sha256),
@@ -133,7 +173,7 @@ export function validateAcceptedInstallation(accepted, now) {
     accepted.repository === REPO && accepted.repository_id === REPO_ID &&
     Number.isSafeInteger(accepted.pull_number) && accepted.pull_number > 0 &&
     Number.isSafeInteger(accepted.pull_id) && accepted.pull_id > 0 && accepted.branch === "main" &&
-    typeof accepted.head_ref === "string" && /^[a-zA-Z0-9_.\/-]+$/u.test(accepted.head_ref) &&
+    typeof accepted.head_ref === "string" && /^[a-zA-Z0-9_./-]+$/u.test(accepted.head_ref) &&
     SHA.test(accepted.base) && SHA.test(accepted.head) && accepted.base !== accepted.head &&
     SHA.test(accepted.guard_blob) && SHA.test(accepted.guard_test_blob) && SHA.test(accepted.verifier_blob) &&
     Number.isSafeInteger(accepted.run_id) && accepted.run_id > 0 &&
@@ -170,7 +210,8 @@ export function verifiedTree(revision, snapshot) {
   "incomplete or mismatched immutable commit/tree identity");
   const all = new Map();
   for (const entry of tree.tree) {
-    need(typeof entry?.path === "string" && !/[\x00-\x1f\x7f]/u.test(entry.path) &&
+    need(typeof entry?.path === "string" && ![...entry.path].some((character) =>
+      character.charCodeAt(0) <= 0x1f || character.charCodeAt(0) === 0x7f) &&
       entry.path.split("/").every((part) => part && part !== "." && part !== "..") &&
       !all.has(entry.path) && SHA.test(entry.sha) &&
       ((entry.type === "tree" && entry.mode === "040000") ||
@@ -180,16 +221,14 @@ export function verifiedTree(revision, snapshot) {
     all.set(entry.path, entry);
   }
   const children = new Map([["", []]]);
-  for (const item of all.values()) if (item.type === "tree") children.set(item.path, []);
+  for (const item of all.values()) { if (item.type === "tree") { children.set(item.path, []); } }
   for (const item of all.values()) {
     const parent = item.path.includes("/") ? item.path.slice(0, item.path.lastIndexOf("/")) : "";
     need(children.has(parent), "missing immutable-tree parent");
     children.get(parent).push(item);
   }
-  const name = (item) => item.path.split("/").at(-1);
-  const key = (item) => Buffer.from(name(item) + (item.type === "tree" ? "/" : ""));
   for (const [path, items] of children) {
-    items.sort((a, b) => Buffer.compare(key(a), key(b)));
+    items.sort((a, b) => Buffer.compare(treeSortKey(a), treeSortKey(b)));
     const bytes = Buffer.concat(items.flatMap((item) => [
       Buffer.from(`${item.mode.replace(/^0/u, "")} ${name(item)}\0`), Buffer.from(item.sha, "hex")
     ]));
@@ -254,18 +293,18 @@ export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
     check.conclusion === "failure" &&
     check.html_url === `https://github.com/${PLATFORM}/actions/runs/${proof.run_id}/job/${check.id}`,
   "E failed check context/App/job/run differs");
-  const run = await api.getSourceRun(proof.run_id);
-  need(run?.id === proof.run_id && run.run_attempt === proof.attempt &&
-    run.workflow_id === proof.workflow_id && run.head_sha === SOURCE_HEAD && run.head_branch === "main" &&
-    run.event === "push" && run.path === row.caller_workflow_path && run.status === "completed" &&
-    run.conclusion === "failure" && run.repository?.id === PLATFORM_ID &&
-    run.repository?.full_name === PLATFORM && run.referenced_workflows?.length === 1 &&
-    run.referenced_workflows[0].sha === row.reusable_workflow_revision &&
-    run.referenced_workflows[0].path ===
+  const sourceRun = await api.getSourceRun(proof.run_id);
+  need(sourceRun?.id === proof.run_id && sourceRun.run_attempt === proof.attempt &&
+    sourceRun.workflow_id === proof.workflow_id && sourceRun.head_sha === SOURCE_HEAD && sourceRun.head_branch === "main" &&
+    sourceRun.event === "push" && sourceRun.path === row.caller_workflow_path && sourceRun.status === "completed" &&
+    sourceRun.conclusion === "failure" && sourceRun.repository?.id === PLATFORM_ID &&
+    sourceRun.repository?.full_name === PLATFORM && sourceRun.referenced_workflows?.length === 1 &&
+    sourceRun.referenced_workflows[0].sha === row.reusable_workflow_revision &&
+    sourceRun.referenced_workflows[0].path ===
       `agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@${row.reusable_workflow_revision}`,
   "E failed run/attempt/source workflow differs");
   const jobs = await api.getSourceJobs(proof.run_id, proof.attempt);
-  verifyLegacyFailureJobs(jobs, { id: run.id, attempt: run.run_attempt, head: SOURCE_HEAD,
+  verifyLegacyFailureJobs(jobs, { id: sourceRun.id, attempt: sourceRun.run_attempt, head: SOURCE_HEAD,
     repository: PLATFORM }, proof.authorize_job_id);
   need(jobs.find((job) => job.name?.split(" / ").at(-1) === "docs-protocol-check")?.id ===
     proof.semantic_job_id, "E semantic job identity differs");
@@ -279,7 +318,7 @@ export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
   "E controller snapshot or unique generation diagnostic differs");
   need(await api.getSourceHead() === SOURCE_HEAD &&
     JSON.stringify(await api.getSourceChecks()) === JSON.stringify(checks) &&
-    JSON.stringify(await api.getSourceRun(proof.run_id)) === JSON.stringify(run),
+    JSON.stringify(await api.getSourceRun(proof.run_id)) === JSON.stringify(sourceRun),
   "E source/check/run changed during guard proof");
 }
 export function validateStagedIRecord(bytes) {
@@ -320,9 +359,6 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
   "wrong event repository/action");
   const liveRepo = await api.getRepository(); identity(liveRepo);
   const pull = await api.getPull(accepted.pull_number);
-  const tuple = (item) => JSON.stringify([item?.id, item?.number, item?.state, item?.merged, item?.draft,
-    item?.base?.sha, item?.base?.ref, item?.base?.repo?.id, item?.head?.sha, item?.head?.ref,
-    item?.head?.repo?.id, item?.changed_files, item?.commits, item?.updated_at]);
   need(tuple(event.pull_request) === tuple(pull) && pull.id === accepted.pull_id &&
     pull.number === accepted.pull_number && pull.state === "open" && pull.merged === false &&
     pull.draft === false && pull.base.repo?.full_name === REPO && pull.head.repo?.full_name === REPO &&
@@ -338,9 +374,10 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
     decision.user?.login === accepted.owner_login && decision.user?.type === "User" &&
     decision.issue_url === `https://api.github.com/repos/${REPO}/issues/${accepted.pull_number}` &&
     decision.body === JSON.stringify(accepted), "accepted decision bytes/identity differ");
-  let retainedForward;
+  let retainedForward, retainedForwardComment, mergedForwardPull, mergedForwardPullSnapshot;
   if (accepted.direction === "inverse") {
     const retained = await api.getDecisionComment(accepted.forward_decision_comment_id);
+    retainedForwardComment = JSON.stringify(retained);
     need(retained?.id === accepted.forward_decision_comment_id &&
       retained.user?.type === "User" && retained.user.id === accepted.owner_id &&
       retained.user.login === accepted.owner_login &&
@@ -354,7 +391,6 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
       forward.repository_id === REPO_ID && forward.decision_comment_id === retained.id &&
       retained.issue_url === `https://api.github.com/repos/${REPO}/issues/${forward.pull_number}` &&
       forward.owner_id === accepted.owner_id && forward.owner_login === accepted.owner_login &&
-      forward.head === accepted.base &&
       forward.guard_blob === accepted.guard_blob && forward.guard_test_blob === accepted.guard_test_blob &&
       forward.verifier_blob === accepted.verifier_blob &&
       forward.manifest.length === accepted.manifest.length &&
@@ -364,6 +400,18 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
           JSON.stringify(row.new) === JSON.stringify(inverse.old) &&
           JSON.stringify(row.old) === JSON.stringify(inverse.new);
       }), "inverse does not restore retained trusted forward bytes");
+    mergedForwardPull = await api.getPull(forward.pull_number);
+    need(mergedForwardPull?.id === forward.pull_id &&
+      mergedForwardPull.number === forward.pull_number && mergedForwardPull.state === "closed" &&
+      mergedForwardPull.merged === true && mergedForwardPull.draft === false &&
+      mergedForwardPull.base?.ref === "main" && mergedForwardPull.base.repo?.id === REPO_ID &&
+      mergedForwardPull.base.repo?.full_name === REPO &&
+      mergedForwardPull.head?.sha === forward.head && mergedForwardPull.head.ref === forward.head_ref &&
+      mergedForwardPull.head.repo?.id === REPO_ID && mergedForwardPull.head.repo?.full_name === REPO &&
+      SHA.test(mergedForwardPull.merge_commit_sha) && mergedForwardPull.merge_commit_sha !== forward.base &&
+      typeof mergedForwardPull.merged_at === "string" && Number.isFinite(Date.parse(mergedForwardPull.merged_at)),
+    "retained forward PR has no bound merged installation");
+    mergedForwardPullSnapshot = JSON.stringify(mergedForwardPull);
   }
   need(await api.getBranchHead("main") === accepted.base && event.execution_base === accepted.base,
     "execution did not use live protected base");
@@ -371,6 +419,7 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
   need(comparison?.status === "ahead" && comparison.merge_base_commit?.sha === accepted.base &&
     comparison.behind_by === 0 && comparison.ahead_by > 0, "head is not a same-base descendant");
   const protections = await api.getEffectiveProtections();
+  verifyMinimumProtections(protections);
   need(sha256(Buffer.from(JSON.stringify(protections))) === accepted.expected_protections_digest,
     "effective protection snapshot changed");
   const owner = await api.getCollaboratorPermission(accepted.owner_login);
@@ -401,14 +450,32 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
     await verifySide(row.new, newFiles.get(row.path), api, `${row.path} new`);
   }
   if (retainedForward) {
-    const forwardComparison = await api.compare(retainedForward.base, accepted.base);
+    const installed = mergedForwardPull.merge_commit_sha;
+    const forwardComparison = await api.compare(retainedForward.base, installed);
     need(forwardComparison?.status === "ahead" &&
       forwardComparison.merge_base_commit?.sha === retainedForward.base &&
       forwardComparison.behind_by === 0 && forwardComparison.ahead_by > 0,
-    "retained forward base is not an ancestor of inverse base");
+    "retained forward base is not an ancestor of installed commit");
+    if (installed !== accepted.base) {
+      const installedComparison = await api.compare(installed, accepted.base);
+      need(installedComparison?.status === "ahead" &&
+        installedComparison.merge_base_commit?.sha === installed &&
+        installedComparison.behind_by === 0 && installedComparison.ahead_by > 0,
+      "installed forward commit is not an ancestor of inverse base");
+    }
     const forwardBase = verifiedTree(retainedForward.base, await api.getTree(retainedForward.base));
+    const installedFiles = verifiedTree(installed, await api.getTree(installed));
+    const installedChanged = [...new Set([...forwardBase.keys(), ...installedFiles.keys()])]
+      .filter((path) => {
+        const old = forwardBase.get(path), next = installedFiles.get(path);
+        return old?.sha !== next?.sha || old?.mode !== next?.mode || old?.type !== next?.type;
+      }).toSorted();
+    need(JSON.stringify(installedChanged) ===
+      JSON.stringify(retainedForward.manifest.map((row) => row.path)),
+    "merged installation tree differs from forward manifest");
     for (const row of retainedForward.manifest) {
       await verifySide(row.old, forwardBase.get(row.path), api, `${row.path} retained forward old`);
+      await verifySide(row.new, installedFiles.get(row.path), api, `${row.path} installed forward new`);
       await verifySide(row.new, oldFiles.get(row.path), api, `${row.path} retained forward new`);
     }
   }
@@ -432,10 +499,18 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
   "base guard/workflow test/verifier bytes differ from accepted tuple");
   const finalOwner = await api.getCollaboratorPermission(accepted.owner_login);
   need(JSON.stringify(finalOwner) === JSON.stringify(owner), "owner authority changed during verification");
+  if (retainedForward) {
+    need(JSON.stringify(await api.getDecisionComment(accepted.forward_decision_comment_id)) ===
+      retainedForwardComment &&
+      JSON.stringify(await api.getPull(retainedForward.pull_number)) === mergedForwardPullSnapshot,
+    "retained forward authorization or merged provenance changed during verification");
+  }
+  const finalProtections = await api.getEffectiveProtections();
+  verifyMinimumProtections(finalProtections);
   need(JSON.stringify(await api.getDecisionComment(accepted.decision_comment_id)) === JSON.stringify(decision) &&
     tuple(await api.getPull(accepted.pull_number)) === tuple(pull) &&
     await api.getBranchHead("main") === accepted.base &&
-    sha256(Buffer.from(JSON.stringify(await api.getEffectiveProtections()))) ===
+    sha256(Buffer.from(JSON.stringify(finalProtections))) ===
       accepted.expected_protections_digest && instant(accepted.deadline) > Date.now(),
   "final PR/base/protection/deadline reread changed");
   return { stage: accepted.stage, direction: accepted.direction, manifest_digest: accepted.manifest_digest,
@@ -452,7 +527,7 @@ export async function readEffectiveProtections(read = gh) {
     const rows = await read(`repos/${REPO}/rulesets?includes_parents=true&per_page=100&page=${page}`);
     need(Array.isArray(rows) && rows.length <= 100, "invalid effective ruleset page");
     summaries.push(...rows);
-    if (rows.length < 100) break;
+    if (rows.length < 100) { break; }
     need(page < 100, "effective ruleset pagination exceeded bound");
   }
   need(new Set(summaries.map((row) => row.id)).size === summaries.length &&
@@ -473,7 +548,7 @@ export async function readEffectiveProtections(read = gh) {
     need(classic_branch_protection && typeof classic_branch_protection === "object" &&
       !Array.isArray(classic_branch_protection), "invalid classic branch protection");
   } catch (error) {
-    if (error?.status !== 404) throw error;
+    if (error?.status !== 404) { throw error; }
     classic_branch_protection = null;
   }
   return { rulesets, classic_branch_protection };
@@ -527,7 +602,7 @@ async function run() {
       try { return await gh(path); }
       catch (error) {
         if (path === `repos/${REPO}/branches/main/protection` &&
-          /HTTP 404\b/u.test(error?.stderr ?? "")) error.status = 404;
+          /HTTP 404\b/u.test(error?.stderr ?? "")) { error.status = 404; }
         throw error;
       }
     }),
@@ -537,7 +612,7 @@ async function run() {
       for (let page = 1; page <= 31; page += 1) {
         const rows = await gh(`repos/${REPO}/pulls/${number}/files?per_page=100&page=${page}`);
         need(Array.isArray(rows), "invalid PR files API page"); pages.push(rows);
-        if (rows.length < 100) return pages;
+        if (rows.length < 100) { return pages; }
       }
       throw new Error("PR file pagination exceeded bound");
     },
@@ -554,4 +629,4 @@ async function run() {
   };
   console.log(JSON.stringify(await verifyInstallationTransition(event, accepted, api)));
 }
-if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) await run();
+if (process.argv[1] && new URL(import.meta.url).pathname === process.argv[1]) { await run(); }

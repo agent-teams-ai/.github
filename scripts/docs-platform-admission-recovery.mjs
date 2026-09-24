@@ -120,7 +120,7 @@ export function validatePlatformRecoveryRecord(record, input, incident = PLATFOR
   closed(accepted, "controller pull_number pull_id branch head_ref base head direction manifest_digest guard_blob guard_test_blob verifier_blob decision_id run_id run_attempt deadline", "accepted execution");
   equal(accepted.controller, execution.controller, "accepted central identity");
   need(accepted.pull_number === record.central_pull && positive(accepted.pull_id) &&
-    accepted.branch === "main" && /^[a-zA-Z0-9_.\/-]+$/u.test(accepted.head_ref) &&
+    accepted.branch === "main" && /^[a-zA-Z0-9_./-]+$/u.test(accepted.head_ref) &&
     accepted.direction === "forward" &&
     SHA.test(accepted.base) && SHA.test(accepted.head) && accepted.base !== accepted.head &&
     DIGEST.test(accepted.manifest_digest) && SHA.test(accepted.guard_blob) &&
@@ -257,6 +257,9 @@ export async function verifyPlatformAdmissionRecovery(record, input, adapters, e
   need(finalPermission.permission === "admin" && finalPermission.user?.id === decision.user.id &&
     finalPermission.user?.login === decision.user.login,
   "execution decision actor lost current admin authority");
+  const finalTime = await adapters.currentTime();
+  need(typeof finalTime === "string" && time(finalTime) >= time(input.asOf), "final clock regressed");
+  validatePlatformRecoveryRecord(record, { ...input, accepted_execution: accepted, asOf: finalTime }, incident);
   return { ...result, status: "recovery_pending" };
 }
 
