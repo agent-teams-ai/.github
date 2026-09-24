@@ -23,7 +23,7 @@ const historicalFiles = {
 };
 const controllerData = Object.fromEntries(await Promise.all(Object.entries(historicalFiles)
   .map(async ([path, [name, digest, blob]]) => {
-    const bytes = gunzipSync(await readFile(new URL(`./fixtures/platform-recovery-a9521f1f/${name}`, import.meta.url)));
+    const bytes = gunzipSync(await readFile(new URL(`./fixtures/platform-recovery-a9521f1f/${name}`, import.meta.url)), { maxOutputLength: 1024 * 1024 });
     assert.equal(createHash("sha256").update(bytes).digest("hex"), digest, `${path}@${historicalSnapshot} SHA-256`);
     assert.equal(recoveryBlob(bytes), blob, `${path}@${historicalSnapshot} Git blob`);
     return [path, bytes];

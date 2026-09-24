@@ -331,10 +331,24 @@ test("production fleet composition routes the latest failed Platform check and r
   }), /requires every decisive admitted check to succeed/u);
 });
 
+function stagedSyntheticPlatformRecord(record) {
+  Object.assign(record, { schema_version: 1, id: "platform-a3-admission-cycle", state: "active",
+    central_pull: PLATFORM_RECOVERY.central_pull, before_policy_blob: PLATFORM_RECOVERY.before_policy_blob,
+    after_policy_blob: PLATFORM_RECOVERY.after_policy_blob, registry_blob: PLATFORM_RECOVERY.registry_blob,
+    exceptions_blob: PLATFORM_RECOVERY.exceptions_blob,
+    proof: { revision: "a".repeat(40), path: "governance/evidence/docs-admission-recovery/platform-a3.json",
+      blob: "b".repeat(40) },
+    failure: { run_id: 71, attempt: 1, workflow_id: 72, authorize_job_id: 73, semantic_job_id: 74,
+      diagnostic_digest: recoveryDigest(Buffer.from("synthetic diagnostic")) } });
+  record.owner_decision = { comment_id: 11, actor_id: 8, actor_login: "synthetic-owner",
+    body_digest: recoveryDigest(Buffer.from("synthetic owner decision")) };
+  record.execution_decision_id = 12;
+  return record;
+}
+
 function installSyntheticPlatform(f, record, accepted) {
   const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
-  record.owner_decision = { comment_id: 11, actor_id: 8, actor_login: "synthetic-owner" };
-  record.execution_decision_id = 12;
+  stagedSyntheticPlatformRecord(record);
   const state = {
     ownerComment: { id: 11, user: { id: 8, login: "synthetic-owner", type: "User" }, body: "owner decision" },
     executionComment: { id: 12, user: { id: 8, login: "synthetic-owner", type: "User" }, body: "execution decision" },
@@ -785,6 +799,65 @@ test("trusted policy-only PR scopes current checks after live controller validat
   assert.equal(result.current_not_evaluated.length, 5);
   assert.deepEqual(result.recovery_pending, []);
   assert.equal(f.controllerCalls(), 2);
+});
+
+test("checked-in unbound Platform authority leaves an unrelated policy-only PR scoped", async t => {
+  const f = await fixture(t);
+  f.options.fullFleetCurrent = false;
+  const template = await readFile("governance/docs-platform-admission-recovery.json");
+  assert.equal(JSON.parse(template).state, "unbound");
+  let authorityBytes = template;
+  const readBase = f.options.readBaseFile;
+  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
+    ? authorityBytes : readBase(path, revision);
+  const platform = f.policy.repositories.find(row => row.repository_id === PLATFORM_RECOVERY.repository_id);
+  const getHead = f.options.getDefaultBranchHead;
+  const getChecks = f.options.getCheckRuns;
+  f.options.getDefaultBranchHead = (repository, branch) => repository === platform.repository
+    ? PLATFORM_RECOVERY.source_head : getHead(repository, branch);
+  f.options.getCheckRuns = (repository, revision) => repository === platform.repository &&
+    revision === PLATFORM_RECOVERY.source_head
+    ? [{ id: 71, head_sha: revision, name: platform.observed_default_branch_evidence.required_context,
+      app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
+      html_url: `https://github.com/${repository}/actions/runs/71/job/71` }]
+    : getChecks(repository, revision);
+  const report = await f.run();
+  assert.deepEqual(report.current_verified.map(row => row.repository_id), [f.selected.repository_id]);
+  assert.ok(report.current_not_evaluated.some(row => row.repository_id === platform.repository_id));
+  assert.deepEqual(report.recovery_pending, []);
+  assert.equal(f.controllerCalls(), 2);
+  authorityBytes = encode({ ...JSON.parse(template), proof: { revision: "f".repeat(40) } });
+  await assert.rejects(f.run(), /unbound authority is not the exact inert template/u);
+  authorityBytes = encode({ ...JSON.parse(template), state: "retired" });
+  await assert.rejects(f.run(), /malformed or unsupported state/u);
+});
+
+test("active Platform authority still expands an unrelated policy-only PR to the remaining fleet", async t => {
+  const f = await fixture(t);
+  f.options.fullFleetCurrent = false;
+  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const active = stagedSyntheticPlatformRecord({ valid_from: stamp(-1_000), expires_at: stamp(60_000) });
+  const readBase = f.options.readBaseFile;
+  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
+    ? encode(active) : readBase(path, revision);
+  const getHead = f.options.getDefaultBranchHead;
+  f.options.getDefaultBranchHead = (repository, branch) => repository === f.collateral.repository
+    ? f.collateral.observed_default_branch_evidence.revision : getHead(repository, branch);
+  const report = await f.run();
+  assert.equal(report.current_verified.length, 6);
+  assert.ok(report.current_verified.some(row => row.repository_id === PLATFORM_RECOVERY.repository_id));
+  assert.deepEqual(report.current_not_evaluated, []);
+  const unrelated = f.policy.repositories.find(row => row.repository === "agent-teams-ai/agent-runtime");
+  const failedHead = "f".repeat(40);
+  f.options.getDefaultBranchHead = (repository, branch) => repository === unrelated.repository
+    ? failedHead : getHead(repository, branch);
+  const getChecks = f.options.getCheckRuns;
+  f.options.getCheckRuns = async (repository, revision) => repository === unrelated.repository &&
+    revision === failedHead
+    ? [{ ...((await getChecks(repository, unrelated.observed_default_branch_evidence.revision))[0]),
+      head_sha: failedHead, conclusion: "failure" }]
+    : getChecks(repository, revision);
+  await assert.rejects(f.run(), /Admission recovery: uncovered failure or changed source head/u);
 });
 
 test("affected-row scope fails closed on global, nonconsumer and incomplete changes", async t => {

@@ -10,11 +10,14 @@ import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { POLICY_PATH, REGISTRY_PATH,
   recoveryBlob, prepareAdmissionRecovery, finishAdmissionRecovery } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY_AUTHORITY_PATH, verifyPlatformAdmissionRecovery } from "./docs-platform-admission-recovery.mjs";
-import { parseIncidentJson } from "./verify-docs-platform-recovery-installation-r317.mjs";
+import { parseIncidentJson, validateStagedIRecord } from "./verify-docs-platform-recovery-installation-r317.mjs";
 
 const execute = promisify(execFile);
 const need = (condition, message) => { if (!condition) {throw new Error(message);} };
 const now = () => new Date().toISOString().replace(/\.\d{3}Z$/u, "Z");
+// This exact base-owned template carries no incident authority. A changed or
+// embellished unbound record must never disable an installed recovery.
+const UNBOUND_PLATFORM_AUTHORITY_BLOB = "9c08e7c5587c1a2607dbb15cc97dc90d59acd57a";
 async function api(path) {
   const { stdout } = await execute("gh", ["api", path], { encoding: "utf8", timeout: 60_000, maxBuffer: 16 * 1024 * 1024 });
   return JSON.parse(stdout);
@@ -122,11 +125,20 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   // The only consumable incident record is a regular file in the exact base.
   // A PR-head record, candidate fixture or same-PR authority cannot enable it.
   const platformRecordBytes = await readBaseFile(PLATFORM_RECOVERY_AUTHORITY_PATH, execution.base);
+  const platformRecord = platformRecordBytes === null ? null :
+    parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority");
+  if (platformRecord?.state === "unbound") {
+    need(recoveryBlob(platformRecordBytes) === UNBOUND_PLATFORM_AUTHORITY_BLOB,
+      "Platform unbound authority is not the exact inert template.");
+  } else if (platformRecord !== null) {
+    need(platformRecord.state === "active", "Platform recovery authority has malformed or unsupported state.");
+    validateStagedIRecord(platformRecordBytes, Date.parse(clock()));
+  }
   let platformValidity;
-  const platformRecovery = platformRecordBytes === null ? undefined : {
+  const platformRecovery = platformRecord?.state !== "active" ? undefined : {
     verify: async (entry, sourceHead, adapters) => {
       platformValidity = undefined;
-      const record = parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority");
+      const record = platformRecord;
       // Retain the exact comments accepted by this verifier pass for the outer checkpoint.
       const comments = new Map();
       const getDecisionComment = (repository, id) => adapters.getDecisionComment(repository, id);
