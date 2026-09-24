@@ -4,10 +4,10 @@
   "recordDigest": "sha256:f8b9f9016d52defab4e70b39a9d99b33a09763f190e484e9691f3d464a10f26f",
   "runtimeClosureDigest": "sha256:8f3d6342829167644bfbfb25e5829d8f0d503605380a7adab1c81ab2f1172b70",
   "qualificationEventDigest": "sha256:2db2793370aa5e90abb44915b73265f5c36f2be82e06d92a0c764d1d9b451e53",
-  "observedAt": "2026-09-24T05:54:36Z",
-  "liveVerificationPerformed": false,
+  "observedAt": "2026-09-24T06:00:52Z",
+  "liveVerificationPerformed": true,
   "verificationCommand": "node scripts/verify-docs-cohort-evidence.mjs --cohort docs-2026-09-24-stable28",
-  "verificationTransport": "Local orchestrator verification using authenticated GitHub CLI, npm registry signatures and provenance, published adapter assets, exact pnpm 11.20.0 runtime closure, reusable workflow authority and append-only lifecycle validation.",
+  "verificationTransport": "Isolated hosted verification on codex-workers-eu-01-old using authenticated GitHub CLI, npm 11.19.1 registry signatures and provenance, published adapter assets, pinned pnpm 11.18.0/11.20.0 runtime closure, reusable workflow authority and append-only lifecycle validation.",
   "transitionBundlesVerified": 18,
   "canaryExecuted": false,
   "consumerQualification": false,
@@ -15,6 +15,6 @@
   "centralPolicySelection": false,
   "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required.",
   "verifierSha256": "4e1604f1e59445fb7049dc6e9e7ac13fc52afc35f5b1cfd8117c2aaac2ed4b54",
-  "verificationLogSha256": null,
-  "verificationLog": "Pending independent live verification."
+  "verificationLogSha256": "38d58ead52abc328a29b0cac1ce8a7bde0b461ce02ab73954e3d8d87c87cf141",
+  "verificationLog": "Organization defaults verified: 39 files\nQualified Docs Cohort evidence verified: docs-2026-09-24-stable28\n"
 }
