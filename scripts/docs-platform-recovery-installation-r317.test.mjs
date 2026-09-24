@@ -86,7 +86,14 @@ function fixture(stage = "E", direction = "forward") {
     verifier = body("base-owned verifier\n");
   const oldFiles = new Map([[INSTALLATION_PATHS.G[0], guard], [INSTALLATION_PATHS.G[1], guardTest],
     [INSTALLATION_PATHS.G[2], verifier]]);
-  const acceptedProof = body("synthetic accepted E proof\n");
+  const failure = { run_id: 1, attempt: 1, workflow_id: 2, authorize_job_id: 3,
+    semantic_job_id: 4, diagnostic_digest: digest(Buffer.from("synthetic log")) };
+  const acceptedProof = body(JSON.stringify({ schema_version: 1, repository_id: 1319378484,
+    source_head: "a3ce96e00df2f9958fbd614e7fa6cb965f83cab8",
+    selected_cohort: "docs-2026-09-16-stable25",
+    profile_blob: "81daa0ccde2d9075374f70ac7f8281f751e9e4c0",
+    caller_blob: "240d13c9528dc56a869bb13e9a7d3712d875484f",
+    projection_blob: "ed4e08d2be259269e308b2a38c1a6a3aaf3f0951", ...failure }));
   if (stage === "I") {
     oldFiles.set(INSTALLATION_PATHS.E[0], body("# ADR-0007: Synthetic\nStatus: Accepted\n"));
     oldFiles.set(INSTALLATION_PATHS.E[1], acceptedProof);
@@ -94,22 +101,28 @@ function fixture(stage = "E", direction = "forward") {
   const newFiles = new Map(oldFiles);
   const addedInI = new Set(["governance/docs-platform-admission-recovery.json",
     "scripts/docs-platform-admission-recovery.mjs", "scripts/docs-platform-admission-recovery.test.mjs"]);
+  const record = { schema_version: 1, id: "platform-a3-admission-cycle", state: "active",
+    valid_from: "2026-09-24T00:00:00Z", expires_at: "2026-09-25T00:00:00Z",
+    central_pull: 314, execution_decision_id: 8317,
+    before_policy_blob: "55717f3171b0359b4eedba338f616ae72d943496",
+    after_policy_blob: "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad",
+    registry_blob: "18f59fc7312d78782f65b5f40dcc3774695211af",
+    exceptions_blob: "ac336b865d697b62c938623f2960864e85f7698a",
+    proof: { revision: base, path: "governance/evidence/docs-admission-recovery/platform-a3.json",
+      blob: acceptedProof.blob }, owner_decision: { comment_id: 1, actor_id: 42,
+      actor_login: "synthetic-owner", body_digest: "" }, failure };
+  const ownerBody = `Authorize Platform admission cycle recovery ${record.id}\n` +
+    `Central PR: ${record.central_pull}\n` +
+    `Central policy: ${record.before_policy_blob} -> ${record.after_policy_blob}\n` +
+    "Platform source: a3ce96e00df2f9958fbd614e7fa6cb965f83cab8\n" +
+    `Failed run: ${failure.run_id}/${failure.attempt}/${failure.authorize_job_id}\n` +
+    `Proof: ${record.proof.revision}:${record.proof.path}@${record.proof.blob}\n` +
+    `Expires: ${record.expires_at}\n`;
+  record.owner_decision.body_digest = digest(Buffer.from(ownerBody));
   const manifest = INSTALLATION_PATHS[stage].toSorted().map((path) => {
     const old = stage === "E" || (stage === "I" && addedInI.has(path)) ? null : body(`old:${path}`);
-    const next = body(path === "governance/docs-platform-admission-recovery.json" ? JSON.stringify({
-      schema_version: 1, id: "platform-a3-admission-cycle", state: "active",
-      valid_from: "2026-09-24T00:00:00Z", expires_at: "2026-09-25T00:00:00Z",
-      central_pull: 314, execution_decision_id: 8317,
-      before_policy_blob: "55717f3171b0359b4eedba338f616ae72d943496",
-      after_policy_blob: "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad",
-      registry_blob: "18f59fc7312d78782f65b5f40dcc3774695211af",
-      exceptions_blob: "ac336b865d697b62c938623f2960864e85f7698a",
-      proof: { revision: base, path: "governance/evidence/docs-admission-recovery/platform-a3.json",
-        blob: acceptedProof.blob }, owner_decision: { comment_id: 1, actor_id: 42,
-        actor_login: "synthetic-owner", body_digest: digest(Buffer.from("synthetic decision")) },
-      failure: { run_id: 1, attempt: 1, workflow_id: 2, authorize_job_id: 3,
-        semantic_job_id: 4, diagnostic_digest: digest(Buffer.from("synthetic log")) },
-    }) : `new:${path}`);
+    const next = body(path === "governance/docs-platform-admission-recovery.json" ?
+      JSON.stringify(record) : `new:${path}`);
     if (old) oldFiles.set(path, old);
     newFiles.set(path, next);
     const forward = { path, status: old ? "modified" : "added", old, new: next };
@@ -148,11 +161,13 @@ function fixture(stage = "E", direction = "forward") {
     base: { sha: forwardBase, ref: "main", repo },
     head: { sha: forwardHead, ref: retainedForward.head_ref, repo } };
   const api = {
-    getDecisionComment: async (id) => ({ id, user: { id: 42,
-      login: "synthetic-owner", type: "User" },
-      body: JSON.stringify(id === 9317 ? retainedForward : accepted),
-      issue_url: `https://api.github.com/repos/${repo.full_name}/issues/${id === 9317 ?
-        retainedForward.pull_number : accepted.pull_number}` }),
+    getDecisionComment: async (id) => {
+      if (![1, 8317, 9317].includes(id) || (id === 9317 && !retainedForward)) return null;
+      return { id, user: { id: 42, login: "synthetic-owner", type: "User" },
+        body: id === 1 ? ownerBody : JSON.stringify(id === 9317 ? retainedForward : accepted),
+        issue_url: `https://api.github.com/repos/${repo.full_name}/issues/${id === 1 ? 314 :
+          id === 9317 ? retainedForward.pull_number : accepted.pull_number}` };
+    },
     getRepository: async () => repo,
     getPull: async (number) => number === 317 ? pull : forwardPull,
     getBranchHead: async () => base,
@@ -171,8 +186,16 @@ function fixture(stage = "E", direction = "forward") {
     },
   };
   const rebind = () => { accepted.manifest_digest = digest(Buffer.from(JSON.stringify(accepted.manifest))); };
+  const changeIRecord = (change) => {
+    const row = accepted.manifest.find((item) => item.path === "governance/docs-platform-admission-recovery.json");
+    const next = structuredClone(record); change(next);
+    const bytes = Buffer.from(JSON.stringify(next));
+    row.new = body(bytes);
+    originalNew.set(row.path, row.new);
+    rebind();
+  };
   return { event, accepted, api, pull, forwardPull, before, after, bodies, protections, rebind,
-    clock,
+    clock, changeIRecord,
     rebindProtections: () => { accepted.expected_protections_digest =
       digest(Buffer.from(JSON.stringify(protections))); },
     run: () => verifyInstallationTransition(event, accepted, api, () => clock.now) };
@@ -183,6 +206,85 @@ for (const [stage, direction] of [["I", "forward"], ["I", "inverse"]]) {
     assert.equal((await f.run()).status, "exact_candidate_verified");
   });
 }
+for (const [label, change, pattern] of [
+  ["different failed run", (r) => { r.failure.run_id += 1; }, /I failure coordinates differ/u],
+  ["unrelated proof revision", (r) => { r.proof.revision = "f".repeat(40); },
+    /I proof revision is not an ancestor/u],
+  ["nonexistent owner comment", (r) => { r.owner_decision.comment_id = 9999; },
+    /I owner decision is not independently accepted/u],
+  ["owner body digest mismatch", (r) => { r.owner_decision.body_digest = digest(Buffer.from("forged")); },
+    /I owner decision is not independently accepted/u],
+]) {
+  test(`I forward rejects ${label}`, async () => {
+    const f = fixture("I", "forward"); f.changeIRecord(change);
+    if (label === "unrelated proof revision") {
+      const compare = f.api.compare;
+      f.api.compare = async (from, to) => from === "f".repeat(40) && to === base ?
+        { status: "diverged" } : compare(from, to);
+    }
+    await assert.rejects(f.run(), pattern);
+  });
+}
+test("I forward rejects an ancestral revision lacking the exact E bytes", async () => {
+  const f = fixture("I", "forward");
+  const revision = "f".repeat(40);
+  f.changeIRecord((r) => { r.proof.revision = revision; });
+  const get = f.api.getTree;
+  f.api.getTree = async (sha) => sha === revision ? gitTree(new Map([
+    ...f.before, [INSTALLATION_PATHS.E[1], id(Buffer.from("different E proof"))]]), sha) : get(sha);
+  await assert.rejects(f.run(), /I proof revision does not contain the exact base-owned E bytes/u);
+});
+test("I forward rejects E decision bytes that do not match their Git blob", async () => {
+  const f = fixture("I", "forward");
+  const decisionSha = f.before.get(INSTALLATION_PATHS.E[0]).blob;
+  const get = f.api.getBlob;
+  f.api.getBlob = async (sha) => sha === decisionSha ?
+    Buffer.from("# ADR-0007: Forged\nStatus: Accepted\n") : get(sha);
+  await assert.rejects(f.run(), /I E decision Git blob bytes differ/u);
+});
+test("I forward rejects changed owner comment or revoked current authority", async () => {
+  for (const change of [
+    (f) => { const get = f.api.getDecisionComment; f.api.getDecisionComment = async (id) =>
+      id === 1 ? { ...await get(id), body: "revoked" } : get(id); },
+    (f) => { const get = f.api.getDecisionComment; f.api.getDecisionComment = async (id) =>
+      id === 1 ? { ...await get(id), user: { id: 99, login: "synthetic-owner", type: "User" } } : get(id); },
+    (f) => { const get = f.api.getCollaboratorPermission;
+      let reads = 0;
+      f.api.getCollaboratorPermission = async (login) => ++reads === 2 ?
+        { ...await get(login), permission: "read" } : get(login); },
+  ]) {
+    const f = fixture("I", "forward"); change(f);
+    await assert.rejects(f.run(), /I owner decision|admin authority/u);
+  }
+});
+test("I forward rejects owner comment revoked at final checkpoint", async () => {
+  const f = fixture("I", "forward");
+  const get = f.api.getDecisionComment; let reads = 0;
+  f.api.getDecisionComment = async (id) => {
+    const comment = await get(id);
+    return id === 1 && ++reads === 2 ? { ...comment, body: "revoked" } : comment;
+  };
+  await assert.rejects(f.run(), /I owner decision changed during verification/u);
+});
+test("I forward rejects executable installed G path with unchanged blob SHA", async () => {
+  const f = fixture("I", "forward");
+  const path = INSTALLATION_PATHS.G[0];
+  f.before.set(path, { ...f.before.get(path), mode: "100755" });
+  f.after.set(path, { ...f.after.get(path), mode: "100755" });
+  await assert.rejects(f.run(), /base guard\/workflow test\/verifier bytes differ/u);
+});
+test("I inverse rejects executable G at merged installation even when retained base agrees", async () => {
+  const f = fixture("I", "inverse");
+  const path = INSTALLATION_PATHS.G[0];
+  const get = f.api.getTree;
+  f.api.getTree = async (revision) => {
+    if (revision !== forwardBase && revision !== installed) return get(revision);
+    const files = new Map(revision === forwardBase ? f.after : f.before);
+    files.set(path, { ...files.get(path), mode: "100755" });
+    return gitTree(files, revision);
+  };
+  await assert.rejects(f.run(), /installed G path type\/mode\/blob differs/u);
+});
 test("inverse accepts a distinct squash merge commit bound to the forward PR", async () => {
   const f = fixture("I", "inverse");
   assert.notEqual(f.forwardPull.merge_commit_sha, forwardHead);

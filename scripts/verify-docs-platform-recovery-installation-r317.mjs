@@ -491,6 +491,10 @@ export async function verifyInstallationTransition(event, accepted, api, clock =
     }
     const forwardBase = verifiedTree(retainedForward.base, await api.getTree(retainedForward.base));
     const installedFiles = verifiedTree(installed, await api.getTree(installed));
+    need(G.every((path, index) => installedFiles.get(path)?.type === "blob" &&
+      installedFiles.get(path)?.mode === "100644" && installedFiles.get(path)?.sha ===
+        [accepted.guard_blob, accepted.guard_test_blob, accepted.verifier_blob][index]),
+    "installed G path type/mode/blob differs from accepted tuple");
     const installedChanged = [...new Set([...forwardBase.keys(), ...installedFiles.keys()])]
       .filter((path) => {
         const old = forwardBase.get(path), next = installedFiles.get(path);
@@ -510,7 +514,7 @@ export async function verifyInstallationTransition(event, accepted, api, clock =
     const adr = accepted.manifest.find((row) => row.path.endsWith("/0007-platform-admission-cycle-recovery.md"));
     await verifyStagedEProof(await api.getBlob(proof.new.blob), await api.getBlob(adr.new.blob), api);
   }
-  let authorityBytes;
+  let authorityBytes, authorityEvidence;
   if (accepted.stage === "I" && accepted.direction === "forward") {
     const authority = accepted.manifest.find((row) => row.path === "governance/docs-platform-admission-recovery.json");
     authorityBytes = await api.getBlob(authority.new.blob);
@@ -519,11 +523,55 @@ export async function verifyInstallationTransition(event, accepted, api, clock =
       oldFiles.get(E[0])?.type === "blob" && oldFiles.get(E[0])?.mode === "100644" &&
       oldFiles.get(E[1])?.type === "blob" && oldFiles.get(E[1])?.mode === "100644",
     "I base does not own exact accepted E proof and decision");
-    await (api.verifyHostedProof ?? verifyStagedEProof)(await api.getBlob(record.proof.blob),
-      await api.getBlob(oldFiles.get(E[0]).sha), api);
+    if (record.proof.revision !== accepted.base) {
+      const ancestry = await api.compare(record.proof.revision, accepted.base);
+      need(ancestry?.status === "ahead" && ancestry.merge_base_commit?.sha === record.proof.revision &&
+        ancestry.behind_by === 0 && ancestry.ahead_by > 0,
+      "I proof revision is not an ancestor of the protected base");
+    }
+    const proofTree = record.proof.revision === accepted.base ? oldFiles :
+      verifiedTree(record.proof.revision, await api.getTree(record.proof.revision));
+    need(proofTree.get(record.proof.path)?.mode === "100644" &&
+      proofTree.get(record.proof.path)?.sha === record.proof.blob &&
+      proofTree.get(E[0])?.mode === "100644" && proofTree.get(E[0])?.sha === oldFiles.get(E[0]).sha,
+    "I proof revision does not contain the exact base-owned E bytes");
+    const proofBytes = await api.getBlob(record.proof.blob);
+    need(Buffer.isBuffer(proofBytes) && blob(proofBytes) === record.proof.blob,
+      "I proof Git blob bytes differ");
+    const decisionBytes = await api.getBlob(oldFiles.get(E[0]).sha);
+    need(Buffer.isBuffer(decisionBytes) && blob(decisionBytes) === oldFiles.get(E[0]).sha,
+      "I E decision Git blob bytes differ");
+    await (api.verifyHostedProof ?? verifyStagedEProof)(proofBytes, decisionBytes, api);
+    const proof = parseIncidentJson(proofBytes, "verified E incident proof");
+    need(Object.keys(record.failure).every((key) => record.failure[key] === proof[key]),
+      "I failure coordinates differ from independently verified E proof");
+    const ownerDecision = await api.getDecisionComment(record.owner_decision.comment_id);
+    // Match the existing Platform recovery owner's exact decision contract.
+    const ownerBody = `Authorize Platform admission cycle recovery ${record.id}\n` +
+      `Central PR: ${record.central_pull}\n` +
+      `Central policy: ${record.before_policy_blob} -> ${record.after_policy_blob}\n` +
+      `Platform source: ${SOURCE_HEAD}\n` +
+      `Failed run: ${record.failure.run_id}/${record.failure.attempt}/${record.failure.authorize_job_id}\n` +
+      `Proof: ${record.proof.revision}:${record.proof.path}@${record.proof.blob}\n` +
+      `Expires: ${record.expires_at}\n`;
+    need(record.owner_decision.comment_id !== accepted.decision_comment_id &&
+      ownerDecision?.id === record.owner_decision.comment_id &&
+      ownerDecision.user?.id === record.owner_decision.actor_id &&
+      ownerDecision.user?.login === record.owner_decision.actor_login &&
+      ownerDecision.user?.type === "User" && ownerDecision.body === ownerBody &&
+      sha256(Buffer.from(ownerBody)) === record.owner_decision.body_digest &&
+      ownerDecision.issue_url === `https://api.github.com/repos/${REPO}/issues/${record.central_pull}`,
+    "I owner decision is not independently accepted for this exact record");
+    const ownerPermission = await api.getCollaboratorPermission(record.owner_decision.actor_login);
+    need(ownerPermission?.permission === "admin" &&
+      ownerPermission.user?.id === record.owner_decision.actor_id &&
+      ownerPermission.user?.login === record.owner_decision.actor_login,
+    "I decision actor lacks current admin authority");
+    authorityEvidence = { record, ownerDecision, ownerPermission };
   }
-  need(oldFiles.get(G[0])?.sha === accepted.guard_blob && oldFiles.get(G[1])?.sha === accepted.guard_test_blob &&
-    oldFiles.get(G[2])?.sha === accepted.verifier_blob,
+  need(G.every((path, index) => oldFiles.get(path)?.type === "blob" &&
+    oldFiles.get(path)?.mode === "100644" && oldFiles.get(path)?.sha ===
+      [accepted.guard_blob, accepted.guard_test_blob, accepted.verifier_blob][index]),
   "base guard/workflow test/verifier bytes differ from accepted tuple");
   const finalOwner = await api.getCollaboratorPermission(accepted.owner_login);
   need(JSON.stringify(finalOwner) === JSON.stringify(owner), "owner authority changed during verification");
@@ -538,6 +586,14 @@ export async function verifyInstallationTransition(event, accepted, api, clock =
   const finalDecision = await api.getDecisionComment(accepted.decision_comment_id);
   const finalPull = await api.getPull(accepted.pull_number);
   const finalHead = await api.getBranchHead("main");
+  if (authorityBytes) {
+    need(JSON.stringify(await api.getDecisionComment(authorityEvidence.record.owner_decision.comment_id)) ===
+      JSON.stringify(authorityEvidence.ownerDecision),
+    "I owner decision changed during verification");
+    const finalDecisionOwner = await api.getCollaboratorPermission(authorityEvidence.record.owner_decision.actor_login);
+    need(JSON.stringify(finalDecisionOwner) === JSON.stringify(authorityEvidence.ownerPermission) &&
+      finalDecisionOwner?.permission === "admin", "I owner authority changed during verification");
+  }
   const finalNow = clock();
   if (authorityBytes) { validateStagedIRecord(authorityBytes, finalNow); }
   need(JSON.stringify(finalDecision) === JSON.stringify(decision) &&
