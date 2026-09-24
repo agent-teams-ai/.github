@@ -270,6 +270,18 @@ test("binds three roots, two transitives, seven exact internal edges, and runtim
   }))), /dependency edges are not exactly closed/u);
 });
 
+test("rejects a second managed version hidden in the runtime closure", () => {
+  const bad = lock();
+  const oldVersion = "0.9.0";
+  const name = "@agent-teams/repository-mutation";
+  bad.snapshots[`@agent-teams/engineering-foundation@${VERSION}`].dependencies[name] = oldVersion;
+  bad.packages[`${name}@${oldVersion}`] = { resolution: { integrity: INTEGRITY } };
+  bad.snapshots[`${name}@${oldVersion}`] = {};
+  assert.throws(() => docsRuntimeClosureV2Evidence(bad, DOCS_COHORT_V2_PACKAGES.map((entry) => ({
+    ...entry, version: VERSION, integrity: INTEGRITY,
+  }))), /unqualified managed version/u);
+});
+
 test("projects schema tuple 3/2/1 and docs-protocol-agent-teams-owned v2 assets", () => {
   const { registry, record } = fixture();
   const projection = qualifiedCohortProjection(registry, record.cohort_id, {

@@ -295,6 +295,12 @@ export function docsRuntimeClosureV2Evidence(lock, expectedPackages) {
     visited.add(locator);
     assert(visited.size <= RUNTIME_CLOSURE_MAX_PACKAGES, "Runtime closure v2 exceeds its package bound.");
     const physicalLocator = locator.split("(", 1)[0];
+    for (const coordinate of expectedPackages) {
+      if (physicalLocator.startsWith(`${coordinate.name}@`)) {
+        assert(physicalLocator === `${coordinate.name}@${coordinate.version}`,
+          `Runtime closure v2 contains unqualified managed version: ${physicalLocator}`);
+      }
+    }
     const packageEntry = lock.packages[physicalLocator];
     const snapshot = lock.snapshots[locator];
     assert(packageEntry !== null && typeof packageEntry === "object" && !Array.isArray(packageEntry) &&
