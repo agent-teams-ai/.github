@@ -1,0 +1,20 @@
+{
+  "cohort_id": "docs-2026-09-24-stable28",
+  "status": "qualified",
+  "recordDigest": "sha256:f8b9f9016d52defab4e70b39a9d99b33a09763f190e484e9691f3d464a10f26f",
+  "runtimeClosureDigest": "sha256:8f3d6342829167644bfbfb25e5829d8f0d503605380a7adab1c81ab2f1172b70",
+  "qualificationEventDigest": "sha256:2db2793370aa5e90abb44915b73265f5c36f2be82e06d92a0c764d1d9b451e53",
+  "observedAt": "2026-09-24T05:54:36Z",
+  "liveVerificationPerformed": false,
+  "verificationCommand": "node scripts/verify-docs-cohort-evidence.mjs --cohort docs-2026-09-24-stable28",
+  "verificationTransport": "Local orchestrator verification using authenticated GitHub CLI, npm registry signatures and provenance, published adapter assets, exact pnpm 11.20.0 runtime closure, reusable workflow authority and append-only lifecycle validation.",
+  "transitionBundlesVerified": 18,
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false,
+  "centralPolicySelection": false,
+  "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required.",
+  "verifierSha256": "4e1604f1e59445fb7049dc6e9e7ac13fc52afc35f5b1cfd8117c2aaac2ed4b54",
+  "verificationLogSha256": null,
+  "verificationLog": "Pending independent live verification."
+}
