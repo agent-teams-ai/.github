@@ -1,6 +1,6 @@
 # ADR-0008: Change-scoped Docs admission and full fleet audit
 
-Status: Proposed; enforcement transition pending
+Status: Accepted; active on Central main at `adda2a7f325ba3308c725135a50cf818422e9abb`
 
 Date: 2026-09-24
 
@@ -31,7 +31,8 @@ checks every current consumer. A daily and manually dispatchable workflow runs
 that audit on protected `main`; failures remain actionable but do not make an
 unrelated policy selection impossible.
 
-This changes the fleet-wide admission invariant of ADR-0001 deliberately.
+This supersedes only ADR-0001's fleet-wide current-success requirement for
+exact policy-only PRs. It does not relax historical or structural admission.
 Historical evidence and current operational health are reported separately;
 the latter is not silently inferred from a scoped PR admission. Existing
 accepted ADR bytes remain unchanged for auditability.
@@ -39,6 +40,7 @@ accepted ADR bytes remain unchanged for auditability.
 ## Rollback and enforcement
 
 Revert the scoped classifier and workflow together to restore full-fleet
-admission. This candidate is not active until the protected authority checks
-and ruleset transition have independently accepted its exact source bytes.
+admission. PR #318 was integrated by fast-forward of the reviewed exact head;
+the original six required contexts, strict policy, pull-request rule and
+no-bypass configuration were restored after the transition.
 No failed or missing required check may be treated as a passing check.
