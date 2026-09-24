@@ -260,6 +260,7 @@ export async function verifyPlatformAdmissionRecovery(record, input, adapters, e
   const finalTime = await adapters.currentTime();
   need(typeof finalTime === "string" && time(finalTime) >= time(input.asOf), "final clock regressed");
   validatePlatformRecoveryRecord(record, { ...input, accepted_execution: accepted, asOf: finalTime }, incident);
+  input.onVerifiedExecution?.(accepted);
   return { ...result, status: "recovery_pending" };
 }
 

@@ -266,6 +266,58 @@ test("production fleet composition supplies a fresh clock to Platform recovery",
   assert.ok(clockCalls >= 2);
 });
 
+for (const crossing of ["final controller reread", "fleet head reread"]) {
+  test(`outer admission rejects Platform expiry during ${crossing}`, async (t) => {
+    const f = await fixture(t);
+    const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
+    const start = Date.parse(f.options.asOf);
+    const stamp = (offset) => new Date(start + offset).toISOString().replace(/\.000Z$/u, "Z");
+    const record = { valid_from: stamp(-1_000), expires_at: stamp(crossing === "fleet head reread" ? 30_000 : 60_000) };
+    const accepted = { deadline: stamp(crossing === "final controller reread" ? 30_000 : 60_000) };
+    let currentTime = f.options.asOf;
+    f.options.clock = () => currentTime;
+    const readBaseFile = f.options.readBaseFile;
+    f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
+      ? encode(record) : readBaseFile(path, revision);
+    const getChecks = f.options.getCheckRuns;
+    f.options.getCheckRuns = (repository, revision) => repository === platform.repository &&
+      revision === PLATFORM_RECOVERY.source_head ? [{ id: 71, head_sha: revision,
+        name: platform.observed_default_branch_evidence.required_context,
+        app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
+        html_url: `https://github.com/${repository}/actions/runs/71/job/71` }] : getChecks(repository, revision);
+    const getHead = f.options.getDefaultBranchHead;
+    let verified = false, finalPlatformReads = 0;
+    f.options.getDefaultBranchHead = async (repository, branch) => {
+      const result = repository === f.collateral.repository
+        ? f.collateral.observed_default_branch_evidence.revision
+        : repository === platform.repository ? PLATFORM_RECOVERY.source_head : await getHead(repository, branch);
+      if (repository === platform.repository && verified && ++finalPlatformReads === 2 &&
+        crossing === "fleet head reread") { currentTime = record.expires_at; }
+      return result;
+    };
+    f.options.verifyPlatformRecovery = async (_record, input, _adapters, entry, sourceHead) => {
+      assert.equal(entry.repository_id, platform.repository_id);
+      assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
+      input.onVerifiedExecution(accepted);
+      verified = true;
+      return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
+        semantics: "unverified", qualification: "unverified" };
+    };
+    if (crossing === "final controller reread") {
+      const verify = f.options.verifyController;
+      let calls = 0;
+      f.options.verifyController = async (...args) => {
+        const result = await verify(...args);
+        if (++calls === 2) { currentTime = accepted.deadline; }
+        return result;
+      };
+    }
+    await assert.rejects(f.run(), /Platform authority or execution expired/u);
+    assert.equal(verified, true);
+    if (crossing === "fleet head reread") { assert.ok(finalPlatformReads >= 2); }
+  });
+}
+
 test("historical fixture stays pinned across unrelated checkout registry appends", async (t) => {
   const pinnedRegistryBytes = await readAdmissionBaseFile(REGISTRY_PATH, base);
   const f = await fixture(t);

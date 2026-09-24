@@ -13,6 +13,7 @@ const repo = { id: 1316243981, full_name: "agent-teams-ai/.github", default_bran
   archived: false, disabled: false };
 const base = "a".repeat(40), head = "b".repeat(40);
 const forwardBase = "c".repeat(40), installed = "d".repeat(40), forwardHead = "e".repeat(40);
+const fixtureNow = Date.parse("2026-09-24T12:00:00Z");
 const requiredContexts = ["check", "trusted-admission-evidence", "trusted-authority-evolution",
   "trusted-admission-authority-evolution-v1", "trusted-cohort-authority-evolution-v8", "trusted-validation"];
 function protectionSnapshot() {
@@ -55,6 +56,7 @@ function gitTree(files, revision) {
   return { commit: { sha: revision, tree: { sha } }, tree: { sha, truncated: false, tree: entries } };
 }
 function fixture(stage = "E", direction = "forward") {
+  const clock = { now: fixtureNow };
   const bodies = new Map();
   const body = (name) => { const bytes = Buffer.from(name); bodies.set(blob(bytes), bytes); return id(bytes); };
   const guard = body("base-owned guard workflow\n"), guardTest = body("base-owned guard test\n"),
@@ -102,7 +104,7 @@ function fixture(stage = "E", direction = "forward") {
     guard_test_blob: guardTest.blob, verifier_blob: verifier.blob,
     run_id: 7317, run_attempt: 2, decision_comment_id: 8317,
     owner_id: 42, owner_login: "synthetic-owner",
-    deadline: new Date(Date.now() + 3600_000).toISOString().replace(/\.\d{3}Z$/u, "Z"),
+    deadline: "2026-09-24T13:00:00Z",
     expected_protections_digest: digest(Buffer.from(JSON.stringify(protections))),
     forward_decision_comment_id: direction === "inverse" ? 9317 : null };
   const retainedForward = direction === "inverse" ? { ...structuredClone(accepted),
@@ -147,9 +149,10 @@ function fixture(stage = "E", direction = "forward") {
   };
   const rebind = () => { accepted.manifest_digest = digest(Buffer.from(JSON.stringify(accepted.manifest))); };
   return { event, accepted, api, pull, forwardPull, before, after, bodies, protections, rebind,
+    clock,
     rebindProtections: () => { accepted.expected_protections_digest =
       digest(Buffer.from(JSON.stringify(protections))); },
-    run: () => verifyInstallationTransition(event, accepted, api) };
+    run: () => verifyInstallationTransition(event, accepted, api, () => clock.now) };
 }
 for (const [stage, direction] of [["I", "forward"], ["I", "inverse"]]) {
   test(`synthetic exact ${stage} ${direction} tuple verifies from base`, async () => {
@@ -204,6 +207,16 @@ test("inverse rejects changed merged PR provenance at final checkpoint", async (
     return pull;
   };
   await assert.rejects(f.run(), /merged provenance changed/u);
+});
+test("I forward rejects authority expiry while hosted proof is verified", async () => {
+  const f = fixture("I", "forward");
+  f.accepted.deadline = "2026-09-25T01:00:00Z";
+  const verify = f.api.verifyHostedProof;
+  f.api.verifyHostedProof = async (...args) => {
+    await verify(...args);
+    f.clock.now = Date.parse("2026-09-25T00:00:00Z");
+  };
+  await assert.rejects(f.run(), /I authority remains unbound/u);
 });
 test("owner digest cannot authorize a missing or weakened Protect main contract", async () => {
   const changes = [
@@ -290,7 +303,7 @@ test("guard workflow checks out only protected base and has no PR-head execution
   assert.match(workflow, /DOCS_R317_ACCEPTED_TUPLE_COMMENT_ID/u);
 });
 test("unbound accepted tuple is rejected without creating authority", () => {
-  assert.throws(() => validateAcceptedInstallation(null, Date.now()), /accepted tuple/u);
+  assert.throws(() => validateAcceptedInstallation(null, fixtureNow), /accepted tuple/u);
   assert.throws(() => parseIncidentJson(Buffer.from('{"a":1,"a":2}'), "proof"), /duplicate key/u);
   assert.throws(() => validateStagedIRecord(Buffer.from('{"schema_version":1,"state":"unbound"}')),
     /I authority record fields differ/u);

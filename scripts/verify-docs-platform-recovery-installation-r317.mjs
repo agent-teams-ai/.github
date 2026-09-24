@@ -321,7 +321,7 @@ export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
     JSON.stringify(await api.getSourceRun(proof.run_id)) === JSON.stringify(sourceRun),
   "E source/check/run changed during guard proof");
 }
-export function validateStagedIRecord(bytes) {
+export function validateStagedIRecord(bytes, now = Date.now()) {
   const record = parseIncidentJson(bytes, "I authority record");
   closed(record, ["schema_version", "id", "state", "valid_from", "expires_at", "central_pull",
     "execution_decision_id",
@@ -335,7 +335,7 @@ export function validateStagedIRecord(bytes) {
   need(record.schema_version === 1 && record.state === "active" && record.central_pull === 314 &&
     Number.isSafeInteger(record.execution_decision_id) && record.execution_decision_id > 0 &&
     record.id === "platform-a3-admission-cycle" && end > start && end - start <= 7 * 86400_000 &&
-    Date.now() >= start && Date.now() < end &&
+    now >= start && now < end &&
     record.before_policy_blob === SNAPSHOT_BLOBS["governance/docs-protocol-policy-v2.json"] &&
     record.after_policy_blob === "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad" &&
     record.registry_blob === SNAPSHOT_BLOBS["governance/docs-qualified-cohorts.json"] &&
@@ -352,8 +352,8 @@ export function validateStagedIRecord(bytes) {
   "I authority remains unbound or embeds its own base commit");
   return record;
 }
-export async function verifyInstallationTransition(event, accepted, api, now = Date.now()) {
-  validateAcceptedInstallation(accepted, now);
+export async function verifyInstallationTransition(event, accepted, api, clock = Date.now) {
+  validateAcceptedInstallation(accepted, clock());
   need(event?.action && ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(event.action) &&
     event.repository?.id === REPO_ID && event.repository.full_name === REPO,
   "wrong event repository/action");
@@ -484,9 +484,11 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
     const adr = accepted.manifest.find((row) => row.path.endsWith("/0007-platform-admission-cycle-recovery.md"));
     await verifyStagedEProof(await api.getBlob(proof.new.blob), await api.getBlob(adr.new.blob), api);
   }
+  let authorityBytes;
   if (accepted.stage === "I" && accepted.direction === "forward") {
     const authority = accepted.manifest.find((row) => row.path === "governance/docs-platform-admission-recovery.json");
-    const record = validateStagedIRecord(await api.getBlob(authority.new.blob));
+    authorityBytes = await api.getBlob(authority.new.blob);
+    const record = validateStagedIRecord(authorityBytes, clock());
     need(oldFiles.get(record.proof.path)?.sha === record.proof.blob &&
       oldFiles.get(E[0])?.type === "blob" && oldFiles.get(E[0])?.mode === "100644" &&
       oldFiles.get(E[1])?.type === "blob" && oldFiles.get(E[1])?.mode === "100644",
@@ -507,11 +509,16 @@ export async function verifyInstallationTransition(event, accepted, api, now = D
   }
   const finalProtections = await api.getEffectiveProtections();
   verifyMinimumProtections(finalProtections);
-  need(JSON.stringify(await api.getDecisionComment(accepted.decision_comment_id)) === JSON.stringify(decision) &&
-    tuple(await api.getPull(accepted.pull_number)) === tuple(pull) &&
-    await api.getBranchHead("main") === accepted.base &&
+  const finalDecision = await api.getDecisionComment(accepted.decision_comment_id);
+  const finalPull = await api.getPull(accepted.pull_number);
+  const finalHead = await api.getBranchHead("main");
+  const finalNow = clock();
+  if (authorityBytes) { validateStagedIRecord(authorityBytes, finalNow); }
+  need(JSON.stringify(finalDecision) === JSON.stringify(decision) &&
+    tuple(finalPull) === tuple(pull) &&
+    finalHead === accepted.base &&
     sha256(Buffer.from(JSON.stringify(finalProtections))) ===
-      accepted.expected_protections_digest && instant(accepted.deadline) > Date.now(),
+      accepted.expected_protections_digest && instant(accepted.deadline) > finalNow,
   "final PR/base/protection/deadline reread changed");
   return { stage: accepted.stage, direction: accepted.direction, manifest_digest: accepted.manifest_digest,
     base: accepted.base, head: accepted.head, status: "exact_candidate_verified" };

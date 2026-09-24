@@ -106,12 +106,18 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   // The only consumable incident record is a regular file in the exact base.
   // A PR-head record, candidate fixture or same-PR authority cannot enable it.
   const platformRecordBytes = await readBaseFile(PLATFORM_RECOVERY_AUTHORITY_PATH, execution.base);
+  let platformValidity;
   const platformRecovery = platformRecordBytes === null ? undefined : {
-    verify: (entry, sourceHead, adapters) => verifyPlatformAdmissionRecovery(
-      parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority"), {
+    verify: async (entry, sourceHead, adapters) => {
+      const record = parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority");
+      const result = await (overrides.verifyPlatformRecovery ?? verifyPlatformAdmissionRecovery)(record, {
         asOf: clock(), execution, accepted_execution: null,
         basePolicyBytes, proposedPolicyBytes: policyBytes, registryBytes, exceptionsBytes,
-      }, adapters, entry, sourceHead),
+        onVerifiedExecution: (accepted) => { platformValidity = { record, accepted }; },
+      }, adapters, entry, sourceHead);
+      need(platformValidity, "Platform verifier did not retain accepted execution validity.");
+      return result;
+    },
   };
   const report = await verifyDocsAdmissionEvidence(policy, registry, registrySchema, {
     ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution }, platformRecovery,
@@ -124,6 +130,15 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
     reconcileLegacyPending(report);
   }
   report.execution = execution;
+  if (platformValidity) {
+    const finalTime = clock();
+    const asOf = Date.parse(finalTime);
+    need(typeof finalTime === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u.test(finalTime) &&
+      Number.isFinite(asOf) && asOf >= Date.parse(platformValidity.record.valid_from) &&
+      asOf < Date.parse(platformValidity.record.expires_at) &&
+      asOf < Date.parse(platformValidity.accepted.deadline),
+    "Platform authority or execution expired after final admission rereads.");
+  }
   return report;
 }
 
