@@ -57,7 +57,7 @@ const tuple = (item) => JSON.stringify([item?.id, item?.number, item?.state, ite
   item?.base?.sha, item?.base?.ref, item?.base?.repo?.id, item?.head?.sha, item?.head?.ref,
   item?.head?.repo?.id, item?.changed_files, item?.commits, item?.updated_at]);
 const REQUIRED_CONTEXTS = new Set(["check", "trusted-admission-evidence", "trusted-authority-evolution",
-  "trusted-admission-authority-evolution-v1", "trusted-cohort-authority-evolution-v8", "trusted-validation"]);
+  "trusted-admission-authority-evolution-v1", "trusted-platform-recovery-installation-r317", "trusted-validation"]);
 export function verifyMinimumProtections(snapshot) {
   const matches = snapshot?.rulesets?.filter((entry) => entry?.detail?.id === 19979783);
   need(matches?.length === 1, "required Protect main ruleset is missing");
