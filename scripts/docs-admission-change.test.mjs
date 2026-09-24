@@ -264,16 +264,18 @@ test("real legacy recovery report reconciles while a Platform pending row remain
   assert.equal(report.recovery_pending.length, 2);
   assert.deepEqual(report.recovery_pending.at(-1), platform);
 });
-test("production fleet composition supplies a fresh clock to Platform recovery", async (t) => {
+test("production fleet composition routes the latest failed Platform check and rejects a later success", async (t) => {
   const f = await fixture(t);
   const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
   const originalChecks = f.options.getCheckRuns;
   const originalGet = f.options.getDefaultBranchHead;
+  const sourceCheck = (id, run, conclusion) => ({ id, head_sha: PLATFORM_RECOVERY.source_head,
+    name: platform.observed_default_branch_evidence.required_context,
+    app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion,
+    html_url: `https://github.com/${platform.repository}/actions/runs/${run}/job/${id}` });
+  const checks = [sourceCheck(11, 101, "success"), sourceCheck(13, 103, "failure")];
   f.options.getCheckRuns = async (repository, revision) => repository === platform.repository &&
-    revision === PLATFORM_RECOVERY.source_head ? [{ id: 71, head_sha: revision,
-      name: platform.observed_default_branch_evidence.required_context,
-      app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
-      html_url: `https://github.com/${repository}/actions/runs/71/job/71` }] : originalChecks(repository, revision);
+    revision === PLATFORM_RECOVERY.source_head ? structuredClone(checks) : originalChecks(repository, revision);
   // The collateral legacy row remains successful here so this directly exercises
   // the production fleet adapter without a synthetic recovery capability.
   f.options.getDefaultBranchHead = async (repository, branch) => repository === f.collateral.repository
@@ -294,6 +296,12 @@ test("production fleet composition supplies a fresh clock to Platform recovery",
   assert.equal(report.recovery_pending.length, 1);
   assert.equal(report.recovery_pending[0].repository_id, PLATFORM_RECOVERY.repository_id);
   assert.ok(clockCalls >= 2);
+  checks.push(sourceCheck(15, 105, "success"));
+  await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+    ...f.options, platformRecovery: { verify: async () => {
+      throw new Error("Platform recovery must not run after a later success.");
+    } },
+  }), /requires every decisive admitted check to succeed/u);
 });
 
 function installSyntheticPlatform(f, record, accepted) {

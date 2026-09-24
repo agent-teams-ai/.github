@@ -898,8 +898,10 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
             `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
           currentChecks.push({ repository: entry.repository, revision: head,
             checks: structuredClone(matches) });
-        } else if (matches.length === 1 && matches[0].conclusion === "failure" &&
+        } else if (matches.at(-1)?.conclusion === "failure" &&
           entry.repository_id === 1319378484 && overrides.platformRecovery) {
+          // Route the latest decisive failure; the Platform verifier binds its
+          // exact check and run to the base-owned incident proof.
           rowResult = requirePlatformPending(await overrides.platformRecovery.verify(entry, head, platformAdapters), entry, head);
         } else if (matches.length === 1 && matches[0].conclusion === "failure" && overrides.recovery) {
           rowResult = await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, head,
