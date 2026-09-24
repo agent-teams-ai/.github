@@ -266,6 +266,50 @@ test("production fleet composition supplies a fresh clock to Platform recovery",
   assert.ok(clockCalls >= 2);
 });
 
+function installSyntheticPlatform(f, record, accepted) {
+  const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
+  record.owner_decision = { comment_id: 11, actor_id: 8, actor_login: "synthetic-owner" };
+  record.execution_decision_id = 12;
+  const state = {
+    ownerComment: { id: 11, user: { id: 8, login: "synthetic-owner", type: "User" }, body: "owner decision" },
+    executionComment: { id: 12, user: { id: 8, login: "synthetic-owner", type: "User" }, body: "execution decision" },
+    permission: { permission: "admin", user: { id: 8, login: "synthetic-owner" } },
+    verifierCalls: 0, commentReads: 0, permissionReads: 0,
+  };
+  const readBaseFile = f.options.readBaseFile;
+  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
+    ? encode(record) : readBaseFile(path, revision);
+  const getChecks = f.options.getCheckRuns;
+  f.options.getCheckRuns = (repository, revision) => repository === platform.repository &&
+    revision === PLATFORM_RECOVERY.source_head ? [{ id: 71, head_sha: revision,
+      name: platform.observed_default_branch_evidence.required_context,
+      app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
+      html_url: `https://github.com/${repository}/actions/runs/71/job/71` }] : getChecks(repository, revision);
+  const getHead = f.options.getDefaultBranchHead;
+  f.options.getDefaultBranchHead = async (repository, branch) => repository === f.collateral.repository
+    ? f.collateral.observed_default_branch_evidence.revision
+    : repository === platform.repository ? PLATFORM_RECOVERY.source_head : getHead(repository, branch);
+  f.options.getDecisionComment = async (_repository, id) => {
+    state.commentReads++;
+    return id === 11 ? state.ownerComment : id === 12 ? state.executionComment : null;
+  };
+  f.options.getCollaboratorPermission = async () => {
+    state.permissionReads++;
+    return state.permission;
+  };
+  f.options.verifyPlatformRecovery = async (_record, input, adapters, entry, sourceHead) => {
+    assert.equal(entry.repository_id, platform.repository_id);
+    assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
+    await adapters.getDecisionComment("agent-teams-ai/.github", 11);
+    await adapters.getDecisionComment("agent-teams-ai/.github", 12);
+    input.onVerifiedExecution(accepted);
+    state.verifierCalls++;
+    return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
+      semantics: "unverified", qualification: "unverified" };
+  };
+  return { state, platform };
+}
+
 for (const crossing of ["final controller reread", "fleet head reread"]) {
   test(`outer admission rejects Platform expiry during ${crossing}`, async (t) => {
     const f = await fixture(t);
@@ -276,32 +320,14 @@ for (const crossing of ["final controller reread", "fleet head reread"]) {
     const accepted = { deadline: stamp(crossing === "final controller reread" ? 30_000 : 60_000) };
     let currentTime = f.options.asOf;
     f.options.clock = () => currentTime;
-    const readBaseFile = f.options.readBaseFile;
-    f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
-      ? encode(record) : readBaseFile(path, revision);
-    const getChecks = f.options.getCheckRuns;
-    f.options.getCheckRuns = (repository, revision) => repository === platform.repository &&
-      revision === PLATFORM_RECOVERY.source_head ? [{ id: 71, head_sha: revision,
-        name: platform.observed_default_branch_evidence.required_context,
-        app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
-        html_url: `https://github.com/${repository}/actions/runs/71/job/71` }] : getChecks(repository, revision);
+    const { state } = installSyntheticPlatform(f, record, accepted);
     const getHead = f.options.getDefaultBranchHead;
-    let verified = false, finalPlatformReads = 0;
+    let finalPlatformReads = 0;
     f.options.getDefaultBranchHead = async (repository, branch) => {
-      const result = repository === f.collateral.repository
-        ? f.collateral.observed_default_branch_evidence.revision
-        : repository === platform.repository ? PLATFORM_RECOVERY.source_head : await getHead(repository, branch);
-      if (repository === platform.repository && verified && ++finalPlatformReads === 2 &&
+      const result = await getHead(repository, branch);
+      if (repository === platform.repository && state.verifierCalls > 0 && ++finalPlatformReads === 2 &&
         crossing === "fleet head reread") { currentTime = record.expires_at; }
       return result;
-    };
-    f.options.verifyPlatformRecovery = async (_record, input, _adapters, entry, sourceHead) => {
-      assert.equal(entry.repository_id, platform.repository_id);
-      assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
-      input.onVerifiedExecution(accepted);
-      verified = true;
-      return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
-        semantics: "unverified", qualification: "unverified" };
     };
     if (crossing === "final controller reread") {
       const verify = f.options.verifyController;
@@ -313,9 +339,58 @@ for (const crossing of ["final controller reread", "fleet head reread"]) {
       };
     }
     await assert.rejects(f.run(), /Platform authority or execution expired/u);
-    assert.equal(verified, true);
+    assert.equal(state.verifierCalls, 2);
     if (crossing === "fleet head reread") { assert.ok(finalPlatformReads >= 2); }
   });
+}
+
+test("outer admission retains Platform recovery after final authorization rereads", async (t) => {
+  const f = await fixture(t);
+  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const { state } = installSyntheticPlatform(f,
+    { valid_from: stamp(-1_000), expires_at: stamp(60_000) }, { deadline: stamp(60_000) });
+  const report = await f.run();
+  assert.equal(report.recovery_pending.some((row) => row.repository_id === PLATFORM_RECOVERY.repository_id), true);
+  assert.equal(state.verifierCalls, 2);
+  assert.equal(state.commentReads, 6);
+  assert.equal(state.permissionReads, 2);
+});
+
+for (const crossing of ["fleet head reread", "final controller reread"]) {
+  for (const revoked of ["owner comment", "execution comment", "admin permission"]) {
+    test(`outer admission rejects ${revoked} revocation during ${crossing}`, async (t) => {
+      const f = await fixture(t);
+      const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+      const { state, platform } = installSyntheticPlatform(f,
+        { valid_from: stamp(-1_000), expires_at: stamp(60_000) }, { deadline: stamp(60_000) });
+      let revokedDuringAwait = false;
+      const revoke = () => {
+        revokedDuringAwait = true;
+        if (revoked === "owner comment") state.ownerComment = { ...state.ownerComment, body: "revoked" };
+        if (revoked === "execution comment") state.executionComment = { ...state.executionComment, body: "revoked" };
+        if (revoked === "admin permission") state.permission = { ...state.permission, permission: "read" };
+      };
+      if (crossing === "fleet head reread") {
+        const getHead = f.options.getDefaultBranchHead;
+        f.options.getDefaultBranchHead = async (repository, branch) => {
+          const result = await getHead(repository, branch);
+          if (repository === platform.repository && state.verifierCalls === 2 && !revokedDuringAwait) { revoke(); }
+          return result;
+        };
+      } else {
+        const verify = f.options.verifyController;
+        f.options.verifyController = async (...args) => {
+          const result = await verify(...args);
+          if (f.controllerCalls() === 2) { revoke(); }
+          return result;
+        };
+      }
+      await assert.rejects(f.run(), revoked === "admin permission"
+        ? /lost current admin authority after the fleet audit/u : /decision comments changed after the fleet audit/u);
+      assert.equal(state.verifierCalls, 2);
+      assert.equal(revokedDuringAwait, true);
+    });
+  }
 }
 
 test("historical fixture stays pinned across unrelated checkout registry appends", async (t) => {

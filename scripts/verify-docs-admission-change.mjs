@@ -109,12 +109,41 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   let platformValidity;
   const platformRecovery = platformRecordBytes === null ? undefined : {
     verify: async (entry, sourceHead, adapters) => {
+      platformValidity = undefined;
       const record = parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority");
+      // Retain the exact comments accepted by this verifier pass for the outer checkpoint.
+      const comments = new Map();
+      const getDecisionComment = (repository, id) => adapters.getDecisionComment(repository, id);
+      const getCollaboratorPermission = (repository, login) =>
+        adapters.getCollaboratorPermission(repository, login);
+      const observedAdapters = { ...adapters, getDecisionComment: async (repository, id) => {
+        const comment = await getDecisionComment(repository, id);
+        if (repository === execution.controller.repository &&
+          [record.owner_decision?.comment_id, record.execution_decision_id].includes(id) && !comments.has(id)) {
+          comments.set(id, structuredClone(comment));
+        }
+        return comment;
+      } };
       const result = await (overrides.verifyPlatformRecovery ?? verifyPlatformAdmissionRecovery)(record, {
         asOf: clock(), execution, accepted_execution: null,
         basePolicyBytes, proposedPolicyBytes: policyBytes, registryBytes, exceptionsBytes,
-        onVerifiedExecution: (accepted) => { platformValidity = { record, accepted }; },
-      }, adapters, entry, sourceHead);
+        onVerifiedExecution: (accepted) => {
+          need(comments.has(record.owner_decision?.comment_id) && comments.has(record.execution_decision_id),
+            "Platform verifier did not retain both accepted decision comments.");
+          const ownerComment = comments.get(record.owner_decision.comment_id);
+          const executionComment = comments.get(record.execution_decision_id);
+          need(ownerComment?.id === record.owner_decision.comment_id &&
+            ownerComment.user?.id === record.owner_decision.actor_id &&
+            ownerComment.user?.login === record.owner_decision.actor_login &&
+            executionComment?.id === record.execution_decision_id &&
+            executionComment.user?.id === record.owner_decision.actor_id &&
+            executionComment.user?.login === record.owner_decision.actor_login,
+          "Platform accepted decision identities were not retained.");
+          platformValidity = { record: structuredClone(record), accepted: structuredClone(accepted),
+            ownerComment, executionComment,
+            getDecisionComment, getCollaboratorPermission };
+        },
+      }, observedAdapters, entry, sourceHead);
       need(platformValidity, "Platform verifier did not retain accepted execution validity.");
       return result;
     },
@@ -131,12 +160,28 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   }
   report.execution = execution;
   if (platformValidity) {
+    // GitHub reads are sequential observations; repeat authorization after all
+    // fleet and controller awaits, then check time without another await.
+    const { record, accepted, ownerComment, executionComment,
+      getDecisionComment, getCollaboratorPermission } = platformValidity;
+    const repo = execution.controller.repository;
+    need(isDeepStrictEqual(await getDecisionComment(repo, record.owner_decision.comment_id), ownerComment) &&
+      isDeepStrictEqual(await getDecisionComment(repo, record.execution_decision_id), executionComment),
+    "Platform decision comments changed after the fleet audit.");
+    for (const actor of [record.owner_decision, {
+      actor_id: executionComment.user?.id, actor_login: executionComment.user?.login,
+    }]) {
+      const permission = await getCollaboratorPermission(repo, actor.actor_login);
+      need(permission?.permission === "admin" && permission.user?.id === actor.actor_id &&
+        permission.user?.login === actor.actor_login,
+      "Platform decision actor lost current admin authority after the fleet audit.");
+    }
     const finalTime = clock();
     const asOf = Date.parse(finalTime);
     need(typeof finalTime === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u.test(finalTime) &&
-      Number.isFinite(asOf) && asOf >= Date.parse(platformValidity.record.valid_from) &&
-      asOf < Date.parse(platformValidity.record.expires_at) &&
-      asOf < Date.parse(platformValidity.accepted.deadline),
+      Number.isFinite(asOf) && asOf >= Date.parse(record.valid_from) &&
+      asOf < Date.parse(record.expires_at) &&
+      asOf < Date.parse(accepted.deadline),
     "Platform authority or execution expired after final admission rereads.");
   }
   return report;
