@@ -10,7 +10,7 @@ import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { POLICY_PATH, REGISTRY_PATH,
   recoveryBlob, prepareAdmissionRecovery, finishAdmissionRecovery } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY_AUTHORITY_PATH, verifyPlatformAdmissionRecovery } from "./docs-platform-admission-recovery.mjs";
-import { parseIncidentJson, validateStagedIRecord } from "./verify-docs-platform-recovery-installation-r317.mjs";
+import { parseIncidentJson, validateIRecordStructure, validateStagedIRecord } from "./verify-docs-platform-recovery-installation-r317.mjs";
 
 const execute = promisify(execFile);
 const need = (condition, message) => { if (!condition) {throw new Error(message);} };
@@ -125,18 +125,23 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   // The only consumable incident record is a regular file in the exact base.
   // A PR-head record, candidate fixture or same-PR authority cannot enable it.
   const platformRecordBytes = await readBaseFile(PLATFORM_RECOVERY_AUTHORITY_PATH, execution.base);
-  const platformRecord = platformRecordBytes === null ? null :
-    parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority");
+  let platformRecord;
+  if (platformRecordBytes !== null) {
+    platformRecord = parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority");
+    need(platformRecord !== null && typeof platformRecord === "object" && !Array.isArray(platformRecord),
+      "base-owned Platform recovery authority must be an object.");
+  }
   if (platformRecord?.state === "unbound") {
     need(recoveryBlob(platformRecordBytes) === UNBOUND_PLATFORM_AUTHORITY_BLOB,
       "Platform unbound authority is not the exact inert template.");
-  } else if (platformRecord !== null) {
+  } else if (platformRecord !== undefined) {
     need(platformRecord.state === "active", "Platform recovery authority has malformed or unsupported state.");
-    validateStagedIRecord(platformRecordBytes, Date.parse(clock()));
+    validateIRecordStructure(platformRecordBytes);
   }
   let platformValidity;
   const platformRecovery = platformRecord?.state !== "active" ? undefined : {
     verify: async (entry, sourceHead, adapters) => {
+      validateStagedIRecord(platformRecordBytes, Date.parse(clock()));
       platformValidity = undefined;
       const record = platformRecord;
       // Retain the exact comments accepted by this verifier pass for the outer checkpoint.

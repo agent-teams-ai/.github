@@ -830,6 +830,45 @@ test("checked-in unbound Platform authority leaves an unrelated policy-only PR s
   await assert.rejects(f.run(), /unbound authority is not the exact inert template/u);
   authorityBytes = encode({ ...JSON.parse(template), state: "retired" });
   await assert.rejects(f.run(), /malformed or unsupported state/u);
+  for (const bytes of ["null", "[]", "42", "true", '"text"']) {
+    authorityBytes = Buffer.from(bytes);
+    await assert.rejects(f.run(), /base-owned Platform recovery authority must be an object/u);
+  }
+  authorityBytes = Buffer.from("{bad");
+  await assert.rejects(f.run(), /base-owned Platform recovery authority/u);
+});
+
+test("expired active Platform authority audits the full healthy fleet without consuming recovery", async t => {
+  const f = await fixture(t);
+  f.options.fullFleetCurrent = false;
+  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const active = stagedSyntheticPlatformRecord({ valid_from: stamp(-60_000), expires_at: stamp(-1_000) });
+  const readBase = f.options.readBaseFile;
+  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
+    ? encode(active) : readBase(path, revision);
+  const getHead = f.options.getDefaultBranchHead;
+  f.options.getDefaultBranchHead = (repository, branch) => repository === f.collateral.repository
+    ? f.collateral.observed_default_branch_evidence.revision : getHead(repository, branch);
+  const report = await f.run();
+  assert.equal(report.current_verified.length, 6);
+  assert.deepEqual(report.current_not_evaluated, []);
+  assert.deepEqual(report.recovery_pending, []);
+});
+
+test("expired active Platform authority refuses incident recovery", async t => {
+  const f = await fixture(t);
+  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const { state, platform } = installSyntheticPlatform(f,
+    { valid_from: stamp(-60_000), expires_at: stamp(-1_000) }, { deadline: stamp(60_000) });
+  const getChecks = f.options.getCheckRuns;
+  let platformCheckReads = 0;
+  f.options.getCheckRuns = (repository, revision) => {
+    if (repository === platform.repository) platformCheckReads++;
+    return getChecks(repository, revision);
+  };
+  await assert.rejects(f.run(), /I authority remains unbound or embeds its own base commit/u);
+  assert.ok(platformCheckReads > 0);
+  assert.equal(state.verifierCalls, 0);
 });
 
 test("active Platform authority still expands an unrelated policy-only PR to the remaining fleet", async t => {

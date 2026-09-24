@@ -347,7 +347,7 @@ export async function verifyStagedEProof(proofBytes, decisionBytes, api) {
     JSON.stringify(await api.getSourceRun(proof.run_id)) === JSON.stringify(sourceRun),
   "E source/check/run changed during guard proof");
 }
-export function validateStagedIRecord(bytes, now = Date.now()) {
+export function validateIRecordStructure(bytes) {
   const record = parseIncidentJson(bytes, "I authority record");
   closed(record, ["schema_version", "id", "state", "valid_from", "expires_at", "central_pull",
     "execution_decision_id",
@@ -361,7 +361,6 @@ export function validateStagedIRecord(bytes, now = Date.now()) {
   need(record.schema_version === 1 && record.state === "active" && record.central_pull === 314 &&
     Number.isSafeInteger(record.execution_decision_id) && record.execution_decision_id > 0 &&
     record.id === "platform-a3-admission-cycle" && end > start && end - start <= 7 * 86400_000 &&
-    now >= start && now < end &&
     record.before_policy_blob === SNAPSHOT_BLOBS["governance/docs-protocol-policy-v2.json"] &&
     record.after_policy_blob === "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad" &&
     record.registry_blob === SNAPSHOT_BLOBS["governance/docs-qualified-cohorts.json"] &&
@@ -376,6 +375,12 @@ export function validateStagedIRecord(bytes, now = Date.now()) {
       Number.isSafeInteger(record.failure[key]) && record.failure[key] > 0) &&
     DIGEST.test(record.failure.diagnostic_digest),
   "I authority remains unbound or embeds its own base commit");
+  return record;
+}
+export function validateStagedIRecord(bytes, now = Date.now()) {
+  const record = validateIRecordStructure(bytes);
+  need(now >= Date.parse(record.valid_from) && now < Date.parse(record.expires_at),
+    "I authority remains unbound or embeds its own base commit");
   return record;
 }
 export async function verifyInstallationTransition(event, accepted, api, clock = Date.now) {
