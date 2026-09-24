@@ -42,18 +42,18 @@ function decisiveCheckRuns(checks) {
 export function currentAdmissionScope(policy, basePolicy, changedFiles) {
   // A direct fleet audit has no exact PR/base tuple and always checks every HEAD.
   if (!basePolicy || !Array.isArray(changedFiles) ||
-    changedFiles.length !== 1 || changedFiles[0] !== POLICY_PATH) return null;
+    changedFiles.length !== 1 || changedFiles[0] !== POLICY_PATH) {return null;}
   const { repositories: currentRows, ...currentGlobal } = policy;
   const { repositories: baseRows, ...baseGlobal } = basePolicy;
   if (!Array.isArray(currentRows) || !Array.isArray(baseRows) ||
-    currentRows.length !== baseRows.length || !isDeepStrictEqual(currentGlobal, baseGlobal)) return null;
+    currentRows.length !== baseRows.length || !isDeepStrictEqual(currentGlobal, baseGlobal)) {return null;}
   const changed = new Set();
   for (let i = 0; i < currentRows.length; i += 1) {
     const row = currentRows[i], prior = baseRows[i];
-    if (row?.repository_id !== prior?.repository_id || row?.repository !== prior?.repository) return null;
+    if (row?.repository_id !== prior?.repository_id || row?.repository !== prior?.repository) {return null;}
     if (!isDeepStrictEqual(row, prior)) {
       if (row.repository_lifecycle !== "active" || row.docs_role !== "consumer" ||
-        !["bound", "rollout_pending"].includes(row.cohort_binding_status)) return null;
+        !["bound", "rollout_pending"].includes(row.cohort_binding_status)) {return null;}
       changed.add(row.repository_id);
     }
   }
