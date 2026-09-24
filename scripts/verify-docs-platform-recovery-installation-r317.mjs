@@ -79,7 +79,7 @@ export function verifyMinimumProtections(snapshot) {
     need(types.has(type), `required ${type} protection is missing`);
   }
   const checks = types.get("required_status_checks")?.parameters;
-  need(checks?.strict_required_status_checks === true && Array.isArray(checks.required_status_checks),
+  need(checks?.strict_required_status_checks_policy === true && Array.isArray(checks.required_status_checks),
     "strict required status checks are missing");
   const contexts = new Map();
   for (const check of checks.required_status_checks) {

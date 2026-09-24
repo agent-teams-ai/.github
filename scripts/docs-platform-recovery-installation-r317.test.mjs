@@ -22,7 +22,7 @@ function protectionSnapshot() {
       conditions: { ref_name: { include: ["~DEFAULT_BRANCH"], exclude: [] } }, bypass_actors: [],
       rules: ["deletion", "non_fast_forward", "required_linear_history", "pull_request"]
         .map((type) => ({ type })).concat([{ type: "required_status_checks", parameters: {
-          strict_required_status_checks: true,
+          strict_required_status_checks_policy: true,
           required_status_checks: requiredContexts.map((context) => ({ context, integration_id: 15368 })) } }]) } }],
   classic_branch_protection: null };
 }
@@ -228,7 +228,7 @@ test("owner digest cannot authorize a missing or weakened Protect main contract"
       .map((type) => (p) => { p.rulesets[0].detail.rules =
         p.rulesets[0].detail.rules.filter((r) => r.type !== type); }),
     (p) => { p.rulesets[0].detail.rules.find((r) => r.type === "required_status_checks")
-      .parameters.strict_required_status_checks = false; },
+      .parameters.strict_required_status_checks_policy = false; },
     ...requiredContexts.flatMap((context) => [
       (p) => { const checks = p.rulesets[0].detail.rules.find((r) => r.type === "required_status_checks")
         .parameters.required_status_checks;
@@ -249,6 +249,15 @@ test("minimum protection permits a future additional required check and unordere
   checks.reverse(); checks.push({ context: "future-stronger-check", integration_id: 15368 });
   f.rebindProtections();
   assert.equal((await f.run()).status, "exact_candidate_verified");
+});
+test("legacy strict field cannot mask a disabled live ruleset policy", async () => {
+  const f = fixture("I");
+  const parameters = f.protections.rulesets[0].detail.rules.find((rule) =>
+    rule.type === "required_status_checks").parameters;
+  parameters.strict_required_status_checks_policy = false;
+  parameters.strict_required_status_checks = true;
+  f.rebindProtections();
+  await assert.rejects(f.run(), /strict required status checks are missing/u);
 });
 test("E cannot pass with unbound decision and proof templates", async () => {
   const f = fixture("E", "forward");
