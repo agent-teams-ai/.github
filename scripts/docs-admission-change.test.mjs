@@ -4,8 +4,10 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import YAML from "yaml";
-import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile } from "./verify-docs-admission-change.mjs";
-import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
+import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile,
+  reconcileLegacyPending } from "./verify-docs-admission-change.mjs";
+import { verifyDocsAdmissionEvidence, requirePlatformPending } from "./verify-docs-cohort-evidence.mjs";
+import { PLATFORM_RECOVERY } from "./docs-platform-admission-recovery.mjs";
 import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences } from "./docs-cohort-policy.mjs";
 import { assertDocsCohortAppendOnly, cohortRecordDigest, cohortEventDigest, validateDocsQualifiedCohorts, qualifiedCohortProjection } from "./docs-cohort-policy.mjs";
@@ -15,6 +17,32 @@ import { POLICY_PATH, REGISTRY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH,
 const base = "72e1a4c2c0845655153a0b757aa7c87c34ec8f7e";
 const head = "c".repeat(40); // Synthetic central PR, never published.
 const encode = (value) => Buffer.from(JSON.stringify(value));
+test("legacy reconciliation retains complete mixed legacy and Platform pending report", () => {
+  const legacy = { repository_id: 1314012020, source_head: "a".repeat(40), status: "recovery_pending" };
+  const platform = { repository_id: PLATFORM_RECOVERY.repository_id,
+    source_head: PLATFORM_RECOVERY.source_head, status: "recovery_pending",
+    semantics: "unverified", qualification: "unverified" };
+  const report = { recovery_pending: [legacy, platform], recovery: { recovery_pending: [{
+    repository_id: legacy.repository_id, source_head: legacy.source_head }] } };
+  assert.equal(reconcileLegacyPending(report), report);
+  assert.deepEqual(report.recovery_pending, [legacy, platform]);
+  report.recovery.recovery_pending[0].source_head = "b".repeat(40);
+  assert.throws(() => reconcileLegacyPending(report), /Legacy pending source changed/u);
+});
+test("candidate-only evidence and forged current status cannot become current_verified", () => {
+  const entry = { repository_id: PLATFORM_RECOVERY.repository_id };
+  const head = PLATFORM_RECOVERY.source_head;
+  for (const status of ["candidate_evidence_only", "current_verified", undefined]) {
+    assert.throws(() => requirePlatformPending({ repository_id: entry.repository_id, source_head: head,
+      status, semantics: "unverified", qualification: "unverified" }, entry, head), /remain recovery_pending/u);
+  }
+  assert.throws(() => requirePlatformPending({ repository_id: entry.repository_id,
+    source_head: "f".repeat(40), status: "recovery_pending", semantics: "unverified",
+    qualification: "unverified" }, entry, head), /remain recovery_pending/u);
+  assert.deepEqual(requirePlatformPending({ repository_id: entry.repository_id, source_head: head,
+    status: "recovery_pending", semantics: "unverified", qualification: "unverified" }, entry, head).status,
+  "recovery_pending");
+});
 const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  pull_request:\n  merge_group:\n  push:\n\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n  docs-protocol:\n    uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`);
 
 // Historical runners expose only the legacy CLI. Current v2 runners also
@@ -194,6 +222,48 @@ test("full imported verifier admits exact TEST selection with independently cove
   assert.equal(f.selected.desired_cohort_id, "docs-2026-09-08-stable15");
   assert.equal(f.collateral.desired_cohort_id, "docs-2026-08-28-stable8");
   assert.equal(f.controllerCalls(), 2);
+});
+test("real legacy recovery report reconciles while a Platform pending row remains in the fleet", async (t) => {
+  const f = await fixture(t);
+  const report = await f.run();
+  const platform = { repository_id: PLATFORM_RECOVERY.repository_id,
+    source_head: PLATFORM_RECOVERY.source_head, status: "recovery_pending",
+    semantics: "unverified", qualification: "unverified" };
+  report.recovery_pending.push(platform);
+  assert.equal(reconcileLegacyPending(report), report);
+  assert.equal(report.recovery_pending.length, 2);
+  assert.deepEqual(report.recovery_pending.at(-1), platform);
+});
+test("production fleet composition supplies a fresh clock to Platform recovery", async (t) => {
+  const f = await fixture(t);
+  const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
+  const originalChecks = f.options.getCheckRuns;
+  const originalGet = f.options.getDefaultBranchHead;
+  f.options.getCheckRuns = async (repository, revision) => repository === platform.repository &&
+    revision === PLATFORM_RECOVERY.source_head ? [{ id: 71, head_sha: revision,
+      name: platform.observed_default_branch_evidence.required_context,
+      app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
+      html_url: `https://github.com/${repository}/actions/runs/71/job/71` }] : originalChecks(repository, revision);
+  // The collateral legacy row remains successful here so this directly exercises
+  // the production fleet adapter without a synthetic recovery capability.
+  f.options.getDefaultBranchHead = async (repository, branch) => repository === f.collateral.repository
+    ? f.collateral.observed_default_branch_evidence.revision :
+      (repository === platform.repository ? PLATFORM_RECOVERY.source_head : originalGet(repository, branch));
+  let clockCalls = 0;
+  const schema = JSON.parse(await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base));
+  const report = await verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+    ...f.options, platformRecovery: { verify: async (entry, sourceHead, adapters) => {
+      assert.equal(entry.repository_id, PLATFORM_RECOVERY.repository_id);
+      assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
+      assert.match(await adapters.currentTime(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u);
+      clockCalls++;
+      return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
+        semantics: "unverified", qualification: "unverified" };
+    } },
+  });
+  assert.equal(report.recovery_pending.length, 1);
+  assert.equal(report.recovery_pending[0].repository_id, PLATFORM_RECOVERY.repository_id);
+  assert.ok(clockCalls >= 2);
 });
 
 test("historical fixture stays pinned across unrelated checkout registry appends", async (t) => {

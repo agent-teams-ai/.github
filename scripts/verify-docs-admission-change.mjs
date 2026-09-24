@@ -9,6 +9,8 @@ import { validateDocsGovernanceReferences, validateDocsProtocolExceptions } from
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { POLICY_PATH, REGISTRY_PATH,
   recoveryBlob, prepareAdmissionRecovery, finishAdmissionRecovery } from "./docs-legacy-admission-recovery.mjs";
+import { PLATFORM_RECOVERY_AUTHORITY_PATH, verifyPlatformAdmissionRecovery } from "./docs-platform-admission-recovery.mjs";
+import { parseIncidentJson } from "./verify-docs-platform-recovery-installation-r317.mjs";
 
 const execute = promisify(execFile);
 const need = (condition, message) => { if (!condition) {throw new Error(message);} };
@@ -47,6 +49,13 @@ export async function verifyAdmissionController(execution, read = api) {
   const branch = await read(`repos/${repo}/branches/${controller.default_branch}`);
   need(branch.commit?.sha === execution.base, "Live central default head changed during admission verification.");
   return execution;
+}
+export function reconcileLegacyPending(report) {
+  const pending = report.recovery_pending.filter((row) => row.repository_id !== 1319378484)
+    .map((row) => ({ repository_id: row.repository_id, source_head: row.source_head }));
+  need(isDeepStrictEqual(report.recovery.recovery_pending, pending),
+    "Legacy pending source changed during retry.");
+  return report;
 }
 
 export async function verifyDocsAdmissionChange(paths, overrides = {}) {
@@ -94,16 +103,25 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
     need(capability, "Current source failed without trusted base incident authorization.");
     return capability;
   };
+  // The only consumable incident record is a regular file in the exact base.
+  // A PR-head record, candidate fixture or same-PR authority cannot enable it.
+  const platformRecordBytes = await readBaseFile(PLATFORM_RECOVERY_AUTHORITY_PATH, execution.base);
+  const platformRecovery = platformRecordBytes === null ? undefined : {
+    verify: (entry, sourceHead, adapters) => verifyPlatformAdmissionRecovery(
+      parseIncidentJson(platformRecordBytes, "base-owned Platform recovery authority"), {
+        asOf: clock(), execution, accepted_execution: null,
+        basePolicyBytes, proposedPolicyBytes: policyBytes, registryBytes, exceptionsBytes,
+      }, adapters, entry, sourceHead),
+  };
   const report = await verifyDocsAdmissionEvidence(policy, registry, registrySchema, {
-    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution },
+    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution }, platformRecovery,
   });
   // Controller and authority are re-read after the whole fleet, including
   // unrelated rows; a moving base never reuses an earlier result.
   await verifyController(execution);
   if (capability) {
     report.recovery = finishAdmissionRecovery(capability, execution, clock());
-    need(isDeepStrictEqual(report.recovery.recovery_pending, report.recovery_pending.map((row) =>
-      ({ repository_id: row.repository_id, source_head: row.source_head }))), "Pending source changed during retry.");
+    reconcileLegacyPending(report);
   }
   report.execution = execution;
   return report;

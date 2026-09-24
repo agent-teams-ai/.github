@@ -28,6 +28,7 @@ jobs:
             const exceptionsPath = "governance/docs-protocol-exceptions.json";
             const inventoryPath = "governance/organization-repository-inventory.json";
             const recoveryPath = "governance/docs-admission-recovery.json";
+            const platformRecoveryPath = "governance/docs-platform-admission-recovery.json";
             const recoveryEvidencePrefix = "governance/evidence/docs-admission-recovery/";
             const allowedData = new Set([policyPath, exceptionsPath, inventoryPath]);
             const allowedEvidence = /^governance\/evidence\/docs-admission\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
@@ -72,7 +73,8 @@ jobs:
             const changesAdmission = changed.some((file) =>
               allPaths(file).some((entry) => allowedData.has(entry)));
             if (changed.some((file) => allPaths(file).some((entry) =>
-              entry === recoveryPath || entry.startsWith(recoveryEvidencePrefix)))) {
+              entry === recoveryPath || entry === platformRecoveryPath ||
+                entry.startsWith(recoveryEvidencePrefix)))) {
               core.setFailed("Recovery authority additions, revocations and proof changes require a separately trusted exact staging transition; this data gate cannot authorize them.");
               return;
             }
@@ -225,9 +227,15 @@ jobs:
             const finalBranch = await github.rest.repos.getBranch({ owner: context.repo.owner, repo: context.repo.repo,
               branch: controller.data.default_branch });
             if (finalBranch.data.commit.sha !== pull.base.sha) throw new Error("Controller moved during materialization.");
+            need(/^[1-9][0-9]*$/u.test(process.env.GITHUB_RUN_ATTEMPT ?? ""),
+              "Invalid trusted GITHUB_RUN_ATTEMPT.");
             const execution = { controller: { repository: controllerName, repository_id: controllerId },
-              pull_number: pull.number, base: pull.base.sha, head: pull.head.sha, execution_base: context.sha,
+              pull_number: pull.number, pull_id: pull.id, head_ref: pull.head.ref,
+              run_id: context.runId, run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+              base: pull.base.sha, head: pull.head.sha, execution_base: context.sha,
               changed_files: changed.map((file) => file.filename).sort() };
+            need(Number.isSafeInteger(execution.run_attempt) && execution.run_attempt > 0,
+              "Invalid trusted GITHUB_RUN_ATTEMPT.");
             await Promise.all([
               fs.writeFile(policyOutput, policy, { flag: "wx" }),
               fs.writeFile(exceptionsOutput, exceptions, { flag: "wx" }),

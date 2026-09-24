@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { recoveryBlob, POLICY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH } from "./docs-legacy-admission-recovery.mjs";
+import { PLATFORM_RECOVERY_AUTHORITY_PATH } from "./docs-platform-admission-recovery.mjs";
 
 const INVENTORY_PATH = "governance/organization-repository-inventory.json";
 
@@ -42,6 +43,7 @@ async function fixture(mutate = () => {}) {
     base: { repo: identity, sha: "a".repeat(40), ref: "main" },
     head: { repo: identity, sha: "b".repeat(40), ref: "synthetic-selection" } };
   const context = { eventName: "pull_request_target", sha: pull.base.sha, ref: "refs/heads/main",
+    runId: 3117,
     repo: { owner: "agent-teams-ai", repo: ".github" }, payload: { pull_request: pull } };
   const state = { context, files: [{ filename: POLICY_PATH, status: "modified", sha: recoveryBlob(Buffer.from(`synthetic:${POLICY_PATH}`)) }],
     live: structuredClone(pull), branch: pull.base.sha, contentShaWrong: false, contentCalls: 0,
@@ -78,7 +80,8 @@ async function fixture(mutate = () => {}) {
   };
   try {
     await execute(context, github, { setFailed: (message) => failures.push(message), setOutput: (key, value) => outputs.set(key, value) },
-      requireMock, { env: { RUNNER_TEMP: "/synthetic-runner" } });
+      requireMock, { env: { RUNNER_TEMP: "/synthetic-runner",
+        GITHUB_RUN_ATTEMPT: state.runAttempt ?? "1" } });
   } catch (error) { failures.push(error.message); }
   return { ...state, writes, outputs, failures };
 }
@@ -94,12 +97,27 @@ test("materializes only exact data and binds live central/base/head execution", 
   assert.equal(execution.execution_base, "a".repeat(40));
   assert.equal(execution.head, "b".repeat(40));
   assert.equal(execution.pull_number, 88);
+  assert.equal(execution.pull_id, 55);
+  assert.equal(execution.head_ref, "synthetic-selection");
+  assert.equal(execution.run_id, 3117);
+  assert.equal(execution.run_attempt, 1);
 });
+for (const runAttempt of ["", "0", "1.5", "1e0", " 1", "NaN", "9007199254740992"]) {
+  test(`materializer rejects invalid GITHUB_RUN_ATTEMPT ${JSON.stringify(runAttempt)}`, async () => {
+    const result = await fixture((state) => { state.runAttempt = runAttempt; });
+    assert.match(result.failures.join("\n"), /Invalid trusted GITHUB_RUN_ATTEMPT/u);
+    assert.equal(result.writes.size, 0);
+  });
+}
 
 for (const mutation of [
   (s) => { s.files[0] = { filename: RECOVERY_AUTHORITY_PATH, status: "added" }; },
   (s) => { s.files[0] = { filename: RECOVERY_AUTHORITY_PATH, status: "modified" }; },
   (s) => { s.files[0] = { filename: "README.md", previous_filename: RECOVERY_AUTHORITY_PATH, status: "renamed" }; },
+  (s) => { s.files[0] = { filename: PLATFORM_RECOVERY_AUTHORITY_PATH, status: "added" }; },
+  (s) => { s.files[0] = { filename: PLATFORM_RECOVERY_AUTHORITY_PATH, status: "modified" }; },
+  (s) => { s.files[0] = { filename: PLATFORM_RECOVERY_AUTHORITY_PATH, status: "removed" }; },
+  (s) => { s.files[0] = { filename: "README.md", previous_filename: PLATFORM_RECOVERY_AUTHORITY_PATH, status: "renamed" }; },
   (s) => { s.files[0] = { filename: "governance/evidence/docs-admission-recovery/incident.json", status: "added" }; },
 ]) {
   test("operative incident authority/proof changes never take the code-only no-op route", async () => {

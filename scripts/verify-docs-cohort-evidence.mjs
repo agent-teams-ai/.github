@@ -19,10 +19,18 @@ import {
 } from "./docs-cohort-policy.mjs";
 import { loadJson } from "./governance-policy.mjs";
 import { verifyRecoveryIncident } from "./docs-legacy-admission-recovery.mjs";
+import { PLATFORM_RECOVERY } from "./docs-platform-admission-recovery.mjs";
 
 const execFileAsync = promisify(execFile);
 const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/u;
 const TRANSITION_CATALOG_MAX_BYTES = 1024 * 1024;
+export function requirePlatformPending(result, entry, head) {
+  assert(result?.status === "recovery_pending" && result.repository_id === PLATFORM_RECOVERY.repository_id &&
+    result.repository_id === entry.repository_id && result.source_head === head &&
+    result.semantics === "unverified" && result.qualification === "unverified",
+  "Platform incident must remain recovery_pending with unverified semantics and qualification.");
+  return result;
+}
 
 function assert(condition, message) {
   if (!condition) {throw new Error(message);}
@@ -713,6 +721,7 @@ export async function verifyAdmissionRevision(
 export async function verifyDocsAdmissionEvidence(policy, registry, schema, overrides = {}) {
   const lifecycle = validateDocsQualifiedCohorts(registry, schema, { asOf: overrides.asOf });
   const adapters = {
+    currentTime: async () => new Date().toISOString().replace(/\.\d{3}Z$/u, "Z"),
     getRepository: async (repository) => {
       const { stdout } = await command("gh", ["api", `repos/${repository}`]);
       return JSON.parse(stdout);
@@ -790,6 +799,24 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       "Live admission verification requires a job-scoped GH_TOKEN.");
   }
   const report = { historical_verified: [], current_verified: [], recovery_pending: [] };
+  const platformAdapters = {
+    ...adapters,
+    evaluateRemainingFleet: async (scope) => {
+      assert(scope.platform_repository_id === 1319378484 &&
+        Number.isSafeInteger(scope.changed_repository_id) &&
+        scope.changed_repository_id !== 1319378484,
+      "Platform recovery requested an invalid remaining-fleet scope.");
+      const remaining = { ...policy, repositories: policy.repositories.filter((row) =>
+        row.repository_id !== 1319378484) };
+      const audit = await verifyDocsAdmissionEvidence(remaining, registry, schema,
+        { ...overrides, platformRecovery: undefined });
+      const expected = remaining.repositories.filter((row) => row.repository_lifecycle === "active" &&
+        row.docs_role === "consumer" && ["bound", "rollout_pending"].includes(row.cohort_binding_status));
+      assert(audit.historical_verified.length === expected.length &&
+        audit.current_verified.length + audit.recovery_pending.length === expected.length,
+      "Remaining fleet audit is incomplete.");
+    },
+  };
   const verifiedHeads = [];
   const verifiedExecutions = [];
   const currentChecks = [];
@@ -871,9 +898,13 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
             `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
           currentChecks.push({ repository: entry.repository, revision: head,
             checks: structuredClone(matches) });
+        } else if (matches.length === 1 && matches[0].conclusion === "failure" &&
+          entry.repository_id === 1319378484 && overrides.platformRecovery) {
+          rowResult = requirePlatformPending(await overrides.platformRecovery.verify(entry, head, platformAdapters), entry, head);
         } else if (matches.length === 1 && matches[0].conclusion === "failure" && overrides.recovery) {
           rowResult = await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, head,
             overrides.recovery.execution, adapters);
+          assert(rowResult?.status === "recovery_pending", `${entry.repository} recovery returned a nonpending result.`);
         } else {
           assert(matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
             `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
@@ -916,6 +947,8 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     }
     verifiedHeads.push({ repository: entry.repository, branch: evidence.default_branch,
       head: rowResult.source_head ?? rowResult.revision });
+    assert(rowResult?.status === undefined || rowResult.status === "recovery_pending",
+      `${entry.repository} returned an unrecognized current classification.`);
     report[rowResult.status === "recovery_pending" ? "recovery_pending" : "current_verified"].push(rowResult);
     assert(stableHead,
       `${entry.repository} default-branch head changed repeatedly during live admission verification.`);
@@ -939,8 +972,13 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
   }
   for (const pending of report.recovery_pending) {
     const entry = candidates.find((row) => row.repository_id === pending.repository_id);
-    await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, pending.source_head,
-      overrides.recovery.execution, adapters);
+    if (pending.repository_id === 1319378484 && overrides.platformRecovery) {
+      requirePlatformPending(await overrides.platformRecovery.verify(entry, pending.source_head, platformAdapters),
+        entry, pending.source_head);
+    } else {
+      await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, pending.source_head,
+        overrides.recovery.execution, adapters);
+    }
   }
   for (const snapshot of verifiedHeads) {
     assert(await adapters.getDefaultBranchHead(snapshot.repository, snapshot.branch) === snapshot.head,

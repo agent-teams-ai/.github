@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "state": "unbound",
+  "incident": "platform-a3-admission-cycle",
+  "reason": "No authentic failed run/proof, accepted owner decision, independently installed guard or execution tuple exists."
+}

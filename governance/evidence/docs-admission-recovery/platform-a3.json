@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "state": "unbound",
+  "repository": "agent-teams-ai/agent-teams-platform",
+  "repository_id": 1319378484,
+  "source_head": "a3ce96e00df2f9958fbd614e7fa6cb965f83cab8",
+  "controller_snapshot_sha": "a9521f1f54a9ea836da6ade82344a3c9baded356",
+  "required_before_publication": [
+    "authentic failed push run and attempt",
+    "all exact job and step identities",
+    "trusted authorization log with unique controller snapshot and diagnostic digest",
+    "source profile, caller and projection Git blobs",
+    "independently accepted owner decision"
+  ]
+}
