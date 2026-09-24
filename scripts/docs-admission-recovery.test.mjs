@@ -18,7 +18,9 @@ const section = (start, end) => {
 };
 const makeVerifier = compileFunction(
   `const defaultIsCommitAncestor = () => { throw new Error("Unmocked ancestry adapter"); };
+   const POLICY_PATH = "governance/docs-protocol-policy-v2.json";
    ${section("function decisiveCheckRuns(", "\n}\n") + "\n}"}
+   ${section("export function currentAdmissionScope(", "\n}\n").replace("export ", "") + "\n}"}
    ${section("function workflowRunIdFromCheck(", "\n}\n") + "\n}"}
    ${section("function sha256(", "function plainRecord(")}
    ${section("export async function verifyAdmissionRevision(", "export async function verifyDocsCohortEvidence(").replaceAll("export ", "")}
