@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import { selectLatestFailedSourceCheck } from "./verify-docs-platform-recovery-installation-r317.mjs";
 import { recoveryBlob, recoveryDigest, recoveryTarget } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY, platformRecoveryDecisionText,
   validatePlatformPolicyTransition, validatePlatformRecoveryRecord, verifyPlatformAdmissionRecovery,
@@ -266,6 +267,37 @@ test("complete synthetic hosted fixture reaches candidate-only result", async ()
     ["governance/docs-protocol-exceptions.json", f.incident.controller_snapshot_sha],
   ]);
 });
+for (const conclusion of ["failure", "skipped"]) {
+  test(`hosted recovery accepts an older ${conclusion} required check`, async () => {
+    const f = hostedFixture();
+    const current = f.state.checks[0];
+    f.state.checks.unshift({ ...current, id: 1003, conclusion,
+      html_url: `https://github.com/${f.incident.repository}/actions/runs/1002/job/1003` });
+    assert.equal(selectLatestFailedSourceCheck(f.state.checks, current.name,
+      f.r.failure.semantic_job_id, f.r.failure.run_id).id, current.id);
+    assert.equal((await f.run()).status, "candidate_evidence_only");
+  });
+}
+test("hosted recovery rejects a later decisive successful required check", async () => {
+  const f = hostedFixture();
+  const current = f.state.checks[0];
+  f.state.checks.push({ ...current, id: 1005, conclusion: "success",
+    html_url: `https://github.com/${f.incident.repository}/actions/runs/1006/job/1005` });
+  assert.throws(() => selectLatestFailedSourceCheck(f.state.checks, current.name,
+    f.r.failure.semantic_job_id, f.r.failure.run_id), /latest decisive/u);
+  await assert.rejects(f.run(), /latest decisive/u);
+});
+test("hosted recovery keeps source check identity and run binding strict", async () => {
+  for (const [mutate, pattern] of [
+    [(f) => { f.state.checks[0].head_sha = "f".repeat(40); }, /failed required check is missing/u],
+    [(f) => { f.state.checks.push({ ...f.state.checks[0] }); }, /missing\/duplicate/u],
+    [(f) => { delete f.state.checks[0].html_url; }, /check context\/App\/job\/run differs/u],
+  ]) {
+    const f = hostedFixture();
+    mutate(f);
+    await assert.rejects(f.run(), pattern);
+  }
+});
 test("independently accepted synthetic installation remains recovery_pending after fleet and rereads", async () => {
   const f = hostedFixture();
   const result = await f.runInstalled();
@@ -362,7 +394,7 @@ for (const [label, mutate, pattern] of [
   ["stale default head", (f) => { f.state.head = "f".repeat(40); }, /source head drifted/u],
   ["source profile drift", (f) => { f.state.source.profile = Buffer.from("changed"); }, /source blob drifted/u],
   ["source projection drift", (f) => { f.state.source.projection = Buffer.from("{}"); }, /source blob drifted/u],
-  ["wrong check App", (f) => { f.state.checks[0].app.id = 0; }, /required check differs/u],
+  ["wrong check App", (f) => { f.state.checks[0].app.id = 0; }, /failed required check is missing/u],
   ["replayed run attempt", (f) => { f.state.run.run_attempt = 2; }, /run\/runner differs/u],
   ["independent qualification failure", (f) => { f.state.jobs[2].steps[1].name = "Run qualification"; }, /independently failing job step/u],
   ["independent semantic execution", (f) => { f.state.jobs[3].steps[2].conclusion = "failure"; }, /independently failing job step/u],

@@ -3,7 +3,8 @@ import { recoveryBlob, recoveryDigest, recoveryTarget, verifyLegacyFailureJobs,
   POLICY_PATH } from "./docs-legacy-admission-recovery.mjs";
 import { docsCohortTransitionKind, isDocsCohortSelectableForRepository,
   validateDocsQualifiedCohorts } from "./docs-cohort-policy.mjs";
-import { parseIncidentJson } from "./verify-docs-platform-recovery-installation-r317.mjs";
+import { parseIncidentJson, selectLatestFailedSourceCheck } from
+  "./verify-docs-platform-recovery-installation-r317.mjs";
 
 // Incident-specific verifier. Only the protected base may supply its record.
 // The current base has no active record or installed guard transition.
@@ -317,13 +318,8 @@ export async function verifyPlatformRecoveryCandidateEvidence(record, input, ada
   "source projection/qualified runner differs");
   const checks = await adapters.getCheckRuns(repo, head);
   const context = evidence.required_context;
-  need(checks.filter((check) => check.name === context).length === 1,
-    "ambiguous required check context/App identity");
-  const check = checks.find((item) => item.name === context);
-  need(check.app?.id === evidence.integration_id && check.head_sha === head &&
-    check.id === record.failure.semantic_job_id && check.conclusion === "failure" &&
-    check.html_url === `https://github.com/${repo}/actions/runs/${record.failure.run_id}/job/${check.id}`,
-  "failed exact current required check differs");
+  selectLatestFailedSourceCheck(checks, context, record.failure.semantic_job_id,
+    record.failure.run_id);
   const run = await adapters.getWorkflowRun(repo, record.failure.run_id);
   need(run.id === record.failure.run_id && run.run_attempt === record.failure.attempt &&
     run.workflow_id === record.failure.workflow_id && run.head_sha === head &&
