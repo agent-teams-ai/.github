@@ -1,0 +1,22 @@
+{
+  "cohort_id": "docs-2026-09-24-stable27",
+  "status": "qualified",
+  "recordDigest": "sha256:fdb949610dd196c48ae1345cad3ab3973c7f4d3cd97810fcf193eb392a3ac52e",
+  "runtimeClosureDigest": "sha256:f4ed63a2ed7a99353523c1ff36413ed88d4796326963d0ec3807c44399903d0a",
+  "qualificationEventDigest": "sha256:ca4bd2f045ce3b7fc26d42e2ca70c84e5ff01602a7308bd094fb471ad3127e07",
+  "observedAt": "2026-09-24T04:57:14Z",
+  "liveVerificationPerformed": true,
+  "verificationCommand": "node scripts/verify-docs-cohort-evidence.mjs --cohort docs-2026-09-24-stable27",
+  "verificationTransport": "Isolated old-host verification using authenticated GitHub CLI, npm 11.19.0 registry provenance/signatures, published adapter assets, exact pnpm 11.20.0 runtime closure, reusable workflow authority and append-only lifecycle validation.",
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false,
+  "centralPolicySelection": false,
+  "requiredBeforeMerge": "Base-owned trusted exact-head verification remains required.",
+  "evidenceReferences": [
+    "governance/evidence/docs-cohorts/docs-2026-09-24-stable27/verification.log"
+  ],
+  "verifierSha256": "4e1604f1e59445fb7049dc6e9e7ac13fc52afc35f5b1cfd8117c2aaac2ed4b54",
+  "verificationLogSha256": "e5e0e109563c13f9b1ce84a8ce72da87bebf66416c46dc2edb8cbae4b900016e",
+  "verificationLog": "Organization defaults verified: 39 files\nQualified Docs Cohort evidence verified: docs-2026-09-24-stable27\n"
+}
