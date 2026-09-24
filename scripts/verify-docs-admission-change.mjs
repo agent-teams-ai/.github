@@ -32,9 +32,15 @@ export async function readAdmissionBaseFile(path, revision) {
 }
 
 export async function verifyAdmissionController(execution, read = api) {
-  need(execution?.controller?.repository === "agent-teams-ai/.github" &&
+  need(execution && isDeepStrictEqual(Object.keys(execution).toSorted(),
+    "controller pull_number pull_id head_ref run_id run_attempt base head execution_base changed_files".split(" ").toSorted()) &&
+    execution.controller?.repository === "agent-teams-ai/.github" &&
+    isDeepStrictEqual(Object.keys(execution.controller).toSorted(), ["repository", "repository_id"]) &&
     execution.controller.repository_id === 1316243981 &&
     Number.isSafeInteger(execution.pull_number) && execution.pull_number > 0 &&
+    [execution.pull_id, execution.run_id, execution.run_attempt]
+      .every((value) => Number.isSafeInteger(value) && value > 0) &&
+    typeof execution.head_ref === "string" && execution.head_ref.length > 0 &&
     execution.execution_base === execution.base && execution.head !== execution.base &&
     [execution.base, execution.head].every((sha) => /^(?!0{40}$)[0-9a-f]{40}$/u.test(sha)),
   "Admission execution must bind the central repository/PR/base/head.");
@@ -43,6 +49,7 @@ export async function verifyAdmissionController(execution, read = api) {
   const identity = (value) => value?.id === execution.controller.repository_id && value.full_name === repo;
   need(identity(controller) && controller.archived === false && controller.disabled === false &&
     identity(pull.base?.repo) && identity(pull.head?.repo) && pull.number === execution.pull_number &&
+    pull.id === execution.pull_id && pull.head.ref === execution.head_ref &&
     pull.state === "open" && pull.merged === false && pull.base.sha === execution.base && pull.head.sha === execution.head &&
     pull.base.ref === controller.default_branch && pull.changed_files === execution.changed_files.length,
   "Live admission controller/PR identity or exact tuple changed.");
@@ -56,6 +63,12 @@ export function reconcileLegacyPending(report) {
   need(isDeepStrictEqual(report.recovery.recovery_pending, pending),
     "Legacy pending source changed during retry.");
   return report;
+}
+
+export function legacyRecoveryExecution(execution) {
+  return { controller: execution.controller, pull_number: execution.pull_number,
+    base: execution.base, head: execution.head, execution_base: execution.execution_base,
+    changed_files: execution.changed_files };
 }
 
 export async function verifyDocsAdmissionChange(paths, overrides = {}) {
@@ -92,13 +105,16 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   const verifyController = overrides.verifyController ?? verifyAdmissionController;
   const readBaseFile = overrides.readBaseFile ?? readAdmissionBaseFile;
   await verifyController(execution);
+  // Legacy incident authority owns only the original six-field PR/base tuple.
+  // The full materialized envelope remains available to Platform recovery.
+  const legacyExecution = legacyRecoveryExecution(execution);
   need(isDeepStrictEqual(await readBaseFile(POLICY_PATH, execution.base), basePolicyBytes) &&
     isDeepStrictEqual(await readBaseFile(REGISTRY_PATH, execution.base), registryBytes), "Checkout authority is not the exact base.");
   // Lazy consumption preserves normal successful admissions even when another
   // PR has separately staged incident authority. No failed row can skip proof.
   let capability;
   const getCapability = async () => {
-    capability ??= await prepareAdmissionRecovery({ execution, readBaseFile, asOf: clock(),
+    capability ??= await prepareAdmissionRecovery({ execution: legacyExecution, readBaseFile, asOf: clock(),
       basePolicyBytes, proposedPolicyBytes: policyBytes, registryBytes, exceptionsBytes });
     need(capability, "Current source failed without trusted base incident authorization.");
     return capability;
@@ -149,13 +165,13 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
     },
   };
   const report = await verifyDocsAdmissionEvidence(policy, registry, registrySchema, {
-    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution }, platformRecovery,
+    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution: legacyExecution }, platformRecovery,
   });
   // Controller and authority are re-read after the whole fleet, including
   // unrelated rows; a moving base never reuses an earlier result.
   await verifyController(execution);
   if (capability) {
-    report.recovery = finishAdmissionRecovery(capability, execution, clock());
+    report.recovery = finishAdmissionRecovery(capability, legacyExecution, clock());
     reconcileLegacyPending(report);
   }
   report.execution = execution;

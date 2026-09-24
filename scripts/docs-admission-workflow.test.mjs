@@ -3,8 +3,10 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { recoveryBlob, POLICY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH } from "./docs-legacy-admission-recovery.mjs";
+import { recoveryBlob, prepareAdmissionRecovery, POLICY_PATH, EXCEPTIONS_PATH,
+  RECOVERY_AUTHORITY_PATH } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY_AUTHORITY_PATH } from "./docs-platform-admission-recovery.mjs";
+import { legacyRecoveryExecution, verifyAdmissionController } from "./verify-docs-admission-change.mjs";
 
 const INVENTORY_PATH = "governance/organization-repository-inventory.json";
 
@@ -101,6 +103,27 @@ test("materializes only exact data and binds live central/base/head execution", 
   assert.equal(execution.head_ref, "synthetic-selection");
   assert.equal(execution.run_id, 3117);
   assert.equal(execution.run_attempt, 1);
+});
+test("real materialized execution reaches the closed legacy consumer through the admission projection", async () => {
+  const result = await fixture();
+  assert.deepEqual(result.failures, []);
+  const execution = JSON.parse(result.writes.get(result.outputs.get("execution-path")));
+  const repo = execution.controller.repository;
+  await verifyAdmissionController(execution, async (endpoint) => endpoint === `repos/${repo}`
+    ? result.controller : endpoint === `repos/${repo}/pulls/${execution.pull_number}`
+      ? result.live : { commit: { sha: execution.base } });
+  const legacy = legacyRecoveryExecution(execution);
+  let authorityReads = 0;
+  assert.equal(await prepareAdmissionRecovery({ execution: legacy,
+    readBaseFile: async (filePath, revision) => {
+      assert.equal(filePath, RECOVERY_AUTHORITY_PATH);
+      assert.equal(revision, execution.base);
+      authorityReads++;
+      return null;
+    } }), null);
+  assert.equal(authorityReads, 1);
+  assert.deepEqual(Object.keys(legacy).toSorted(),
+    "controller pull_number base head execution_base changed_files".split(" ").toSorted());
 });
 for (const runAttempt of ["", "0", "1.5", "1e0", " 1", "NaN", "9007199254740992"]) {
   test(`materializer rejects invalid GITHUB_RUN_ATTEMPT ${JSON.stringify(runAttempt)}`, async () => {

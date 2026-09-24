@@ -131,7 +131,8 @@ async function fixture(t) {
     run: { id: 800, attempt: 1, workflow_id: collateral.observed_default_branch_evidence.workflow_id,
       head: sourceHead, branch: "main", path: collateral.caller_workflow_path }, jobs, parser_job_id: 71, parser_log_digest: recoveryDigest(log) };
   const execution = { controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 },
-    pull_number: 999, base, head, execution_base: base, changed_files: [POLICY_PATH] };
+    pull_number: 999, pull_id: 1999, head_ref: "synthetic-selection", run_id: 3117, run_attempt: 1,
+    base, head, execution_base: base, changed_files: [POLICY_PATH] };
   const operation = { kind: "selection", repository_id: selected.repository_id, before_policy_blob: recoveryBlob(baseBytes),
     after_policy_blob: recoveryBlob(encode(policy)), registry_blob: recoveryBlob(registryBytes), exceptions_blob: recoveryBlob(exceptions),
     target: recoveryTarget(registry, selected.desired_cohort_id) };
@@ -143,8 +144,9 @@ async function fixture(t) {
       owner_decision: { comment_id: 7, actor_id: 8, actor_login: "synthetic-owner", body_digest: recoveryDigest(Buffer.from(decisionText)) } }] };
   const authority = { schema_version: 1, authorizations: [authorization] };
   const controller = { id: 1316243981, full_name: "agent-teams-ai/.github", default_branch: "main", archived: false, disabled: false };
-  const centralPull = { number: 999, state: "open", merged: false, changed_files: 1,
-    base: { sha: base, ref: "main", repo: controller }, head: { sha: head, repo: controller } };
+  const centralPull = { id: 1999, number: 999, state: "open", merged: false, changed_files: 1,
+    base: { sha: base, ref: "main", repo: controller },
+    head: { sha: head, ref: "synthetic-selection", repo: controller } };
   let controllerCalls = 0;
   const options = {
     clock: () => asOf, asOf, execution, basePolicyBytes: baseBytes,
@@ -222,7 +224,35 @@ test("full imported verifier admits exact TEST selection with independently cove
   assert.equal(f.selected.desired_cohort_id, "docs-2026-09-08-stable15");
   assert.equal(f.collateral.desired_cohort_id, "docs-2026-08-28-stable8");
   assert.equal(f.controllerCalls(), 2);
+  assert.deepEqual(result.execution, f.execution);
+  assert.deepEqual(result.recovery.execution, {
+    controller: f.execution.controller, pull_number: f.execution.pull_number,
+    base: f.execution.base, head: f.execution.head, execution_base: f.execution.execution_base,
+    changed_files: f.execution.changed_files,
+  });
 });
+for (const [name, mutate] of [
+  ["wrong PR ID", (f) => { f.execution.pull_id++; }],
+  ["wrong head ref", (f) => { f.execution.head_ref = "other-branch"; }],
+  ["invalid run ID", (f) => { f.execution.run_id = 0; }],
+  ["invalid run attempt", (f) => { f.execution.run_attempt = 0; }],
+  ["extra execution field", (f) => { f.execution.unreviewed = true; }],
+  ["extra controller field", (f) => { f.execution.controller.unreviewed = true; }],
+  ["missing execution field", (f) => { delete f.execution.pull_id; }],
+]) {
+  test(`admission rejects ${name} before legacy authority is read`, async (t) => {
+    const f = await fixture(t);
+    const read = f.options.readBaseFile;
+    let authorityReads = 0;
+    f.options.readBaseFile = async (filePath, revision) => {
+      if (filePath === RECOVERY_AUTHORITY_PATH) authorityReads++;
+      return read(filePath, revision);
+    };
+    mutate(f);
+    await assert.rejects(f.run(), /Admission execution must bind|Live admission controller/u);
+    assert.equal(authorityReads, 0);
+  });
+}
 test("real legacy recovery report reconciles while a Platform pending row remains in the fleet", async (t) => {
   const f = await fixture(t);
   const report = await f.run();
@@ -298,6 +328,7 @@ function installSyntheticPlatform(f, record, accepted) {
     return state.permission;
   };
   f.options.verifyPlatformRecovery = async (_record, input, adapters, entry, sourceHead) => {
+    assert.deepEqual(input.execution, f.execution);
     assert.equal(entry.repository_id, platform.repository_id);
     assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
     await adapters.getDecisionComment("agent-teams-ai/.github", 11);

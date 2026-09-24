@@ -68,6 +68,12 @@ test("exact TEST-only selection covers unchanged collateral without selecting th
   assert.throws(() => recoveryIncident(capability, f.after.repositories[1], sha(2), f.execution), /finalized/u);
 });
 
+test("legacy authority keeps its original closed execution contract", async () => {
+  const f = fixture();
+  f.execution.pull_id = 55;
+  await assert.rejects(f.prepare(), /execution fields differs/u);
+});
+
 test("absent base authority returns no capability, never reads PR-head authority", async () => {
   const f = fixture();
   f.input.readBaseFile = async (path, revision) => {
