@@ -1,0 +1,31 @@
+{
+  "cohort_id": "docs-2026-09-25-stable29",
+  "status": "qualified",
+  "recordDigest": "sha256:8e1f30c3d2e83c74e3a31bf3be001918d0ccac5c682b1300777c52af052d30b9",
+  "runtimeClosureDigest": "sha256:905a9c183743e61050fe59d040ecfe960c927ef50fbdb09e6a5898a68445d801",
+  "verifiedEventDigest": "sha256:31b27cab257712257d4c5e615e243bf4f29ec80740ba3c7e0ee7b3ef0e37a682",
+  "qualificationEventDigest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
+  "observedAt": "2026-09-25T11:20:26Z",
+  "publicationMergeRevision": "420b577e34939a5fcb352146407dd860a80b2014",
+  "hostedValidation": {
+    "source": "Task-provided exact hosted result; this worker did not independently query the run API.",
+    "pullRequest": 320,
+    "headRevision": "ecba3e842f9d87239afe73de14f60f00fb4601bc",
+    "workflowRunId": 36127695006,
+    "workflowRunAttempt": 2,
+    "jobId": 108049011337,
+    "updatedAt": "2026-09-25T11:13:44Z",
+    "conclusion": "success",
+    "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/36127695006/attempts/2",
+    "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/36127695006/job/108049011337",
+    "firstAttempt": "Failed when npm pack received SIGTERM; bounded attempt 2 succeeded."
+  },
+  "verificationScope": "Base-owned trusted validation on the exact publication PR head runs append-only and live Docs Cohort evidence verification for the newly appended stable29 record. The current lifecycle append requires its own trusted exact-head verification before merge.",
+  "localLiveVerificationPerformed": false,
+  "canaryExecuted": false,
+  "consumerQualification": false,
+  "generalConsumerEligibility": false,
+  "centralPolicySelection": false,
+  "platformInstallation": false,
+  "sdkE2E": false
+}

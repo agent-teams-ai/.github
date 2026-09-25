@@ -11052,6 +11052,52 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:2db2793370aa5e90abb44915b73265f5c36f2be82e06d92a0c764d1d9b451e53",
       "event_digest": "sha256:77308181402eb518e2e1c72e644cad41d2813c661087e8e38421dcce0f2bd79a"
+    },
+    {
+      "sequence": 178,
+      "cohort_id": "docs-2026-09-25-stable29",
+      "state": "VERIFIED",
+      "effective_at": "2026-09-25T11:20:26Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/35935434298",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/36120836137",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.12",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.6.0",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml",
+        "governance/evidence/docs-cohorts/docs-2026-09-25-stable29/publication.json",
+        "https://github.com/agent-teams-ai/.github/actions/runs/36127695006/attempts/2",
+        "governance/evidence/docs-cohorts/docs-2026-09-25-stable29/qualification.json"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:77308181402eb518e2e1c72e644cad41d2813c661087e8e38421dcce0f2bd79a",
+      "event_digest": "sha256:31b27cab257712257d4c5e615e243bf4f29ec80740ba3c7e0ee7b3ef0e37a682"
+    },
+    {
+      "sequence": 179,
+      "cohort_id": "docs-2026-09-25-stable29",
+      "state": "QUALIFIED",
+      "effective_at": "2026-09-25T11:20:26Z",
+      "support_until": null,
+      "evidence_references": [
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/35935434298",
+        "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/36120836137",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.1",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.12",
+        "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.6.0",
+        "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml",
+        "governance/evidence/docs-cohorts/docs-2026-09-25-stable29/publication.json",
+        "https://github.com/agent-teams-ai/.github/actions/runs/36127695006/attempts/2",
+        "governance/evidence/docs-cohorts/docs-2026-09-25-stable29/qualification.json"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:31b27cab257712257d4c5e615e243bf4f29ec80740ba3c7e0ee7b3ef0e37a682",
+      "event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3"
     }
   ]
 }
