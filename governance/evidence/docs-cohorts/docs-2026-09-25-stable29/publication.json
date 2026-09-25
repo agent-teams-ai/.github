@@ -1,0 +1,474 @@
+[
+  {
+    "name": "@agent-teams/repository-mutation",
+    "version": "0.2.1",
+    "dist": {
+      "shasum": "98e07e7a29f910be6d6f86a634a1031cd7b09a30",
+      "tarball": "https://registry.npmjs.org/@agent-teams/repository-mutation/-/repository-mutation-0.2.1.tgz",
+      "fileCount": 329,
+      "integrity": "sha512-/vzTh5xsqf9e63rs1fKoUCDVfC7Pj6M/AUlAKdPHgQxcwSO1M3TTmT/X1AlmP0zBiufuYGWSijkJ/f1/k9McLQ==",
+      "signatures": [
+        {
+          "sig": "MEUCIEuq7RoRoeIOwL5noSC80YQlb9pBFlrA4wdxO6bz/MoMAiEAh3Jpu/tAC6NbWBCxEPOxt+dN0ugOITkbRPOgCTL7NoA=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEYCIQCSrk/y0G5kbOOaHtiPNBS7r3GZpDp3yzChmLCCYv2CgQIhALPY3AL6RwE6zhlOt0/F5WGa0L2BRVfg8ib+5H0AIEVg",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.1",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 799915
+    },
+    "published_at": "2026-09-24T00:06:42.167Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/repository-mutation@0.2.1",
+          "digest": {
+            "sha512": "fefcd3879c6ca9ff5eeb7aecd5f2a85020d57c2ecf8fa33f01494029d3c7810c5cc123b53374d3993fd7d409663f4cc18ae7ee6065928a3909fdfd7f93d31c2d"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "852cd5130cad84d750788b080f0e358ac5210355"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/35935434298/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "tarballSha256": "sha256:b78f749aa0e511c433eb9257ea9aab0d2e1097eb8e0214cca27f96a22df62bd3",
+    "release": {
+      "name": "@agent-teams/repository-mutation@0.2.1",
+      "tagName": "@agent-teams/repository-mutation@0.2.1",
+      "publishedAt": "2026-09-24T00:19:25Z",
+      "isDraft": false,
+      "isPrerelease": false,
+      "isImmutable": false
+    },
+    "workflow": {
+      "workflowRunId": 35935434298,
+      "sourceCommit": "852cd5130cad84d750788b080f0e358ac5210355",
+      "runAttempt": 1,
+      "conclusion": "success"
+    },
+    "localEvidence": {
+      "metadataSha256": "sha256:41e8d766af487720af2be8bb88cff410897160dc03d99bbc1bdb02625418d720",
+      "attestationsSha256": "sha256:787421d1efba50a519ae409a52826dd0753f1aa7d3ce5cd6e157f817b28861c6",
+      "tarballSha256": "sha256:b78f749aa0e511c433eb9257ea9aab0d2e1097eb8e0214cca27f96a22df62bd3"
+    }
+  },
+  {
+    "name": "@agent-teams/document-authoring",
+    "version": "0.3.1",
+    "dist": {
+      "shasum": "b394ab531a96d4493bdd975370926ac6dc1fe38c",
+      "tarball": "https://registry.npmjs.org/@agent-teams/document-authoring/-/document-authoring-0.3.1.tgz",
+      "fileCount": 681,
+      "integrity": "sha512-i80qjxnwTggVB3wGEd9V27r3hHpHeIrhh6fgSXKb7b46XzrddkqOGfEQY1MoF3TwCDFAKuSmr0Rr6kfw7rejQg==",
+      "signatures": [
+        {
+          "sig": "MEUCIQCVEtSSFPffbif2s26r8DrAteMyiOwfrNGzWBJZdI+SUgIgGPFdiz/djHewFhIyferkVq5TX5JV0mWkaEQ4WkunOvs=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEQCIBwMUvSaW3qjD9i8szbTzXN/n6Im03J+3p7P5vjDOQxpAiAH5zrqsef8T5ylJWapaNrxJhiaYjIzd9h3cufGBZsVrA==",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.1",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 1947762
+    },
+    "published_at": "2026-09-24T00:09:00.693Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/document-authoring@0.3.1",
+          "digest": {
+            "sha512": "8bcd2a8f19f04e0815077c0611df55dbbaf7847a47788ae187a7e049729bedbe3a5f3add764a8e19f1106353281774f00831402ae4a6af446bea47f0eeb7a342"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "852cd5130cad84d750788b080f0e358ac5210355"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/35935434298/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "tarballSha256": "sha256:75383606965496db265cee7976c5cc657ccf3d251d97be51da7fbf9fab460f73",
+    "release": {
+      "name": "@agent-teams/document-authoring@0.3.1",
+      "tagName": "@agent-teams/document-authoring@0.3.1",
+      "publishedAt": "2026-09-24T00:19:27Z",
+      "isDraft": false,
+      "isPrerelease": false,
+      "isImmutable": false
+    },
+    "workflow": {
+      "workflowRunId": 35935434298,
+      "sourceCommit": "852cd5130cad84d750788b080f0e358ac5210355",
+      "runAttempt": 1,
+      "conclusion": "success"
+    },
+    "localEvidence": {
+      "metadataSha256": "sha256:bb9cd999196a32d0d399d647d2f994bd6b43c46833928afa012c473fc4c52e21",
+      "attestationsSha256": "sha256:511c07337cb1f78977403946a70aff3357f347d2251ebd909c934fc13b96571f",
+      "tarballSha256": "sha256:75383606965496db265cee7976c5cc657ccf3d251d97be51da7fbf9fab460f73"
+    }
+  },
+  {
+    "name": "@agent-teams/docs-protocol",
+    "version": "0.6.1",
+    "dist": {
+      "shasum": "03551df2e2b6c791e6982030e43e4fe6e57c8ebd",
+      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol/-/docs-protocol-0.6.1.tgz",
+      "fileCount": 345,
+      "integrity": "sha512-hidOFBbtcwlpd2jn3bRcWtpRXYDfdViYP5BD3AXjBPHXFLRox1kR/YvyGFRQ+9eeBhoBOt9OdrneH5utMGiO0A==",
+      "signatures": [
+        {
+          "sig": "MEUCIEIX+5/pvDE7+dowsCIVo5kbn8pBBrMRMUkhlSBduzhbAiEA03d33Bcl7NopF0xhPScG8vygwPD13aYiUH/Cuoxmf8Q=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEQCICe87SX2F3HTm8QGP8YEYYRmO1mfTz3oRLkWU0CaSS1SAiBzj3l+GMJO+s8b1wdoXNMmmkhtKxs1qYeipg8zRjwngw==",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.1",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 815953
+    },
+    "published_at": "2026-09-24T00:10:11.737Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/docs-protocol@0.6.1",
+          "digest": {
+            "sha512": "86274e1416ed7309697768e7ddb45c5ada515d80df7558983f9043dc05e304f1d714b468c75911fd8bf2185450fbd79e061a013adf4e76b9de1f9bad30688ed0"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "852cd5130cad84d750788b080f0e358ac5210355"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/35935434298/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "tarballSha256": "sha256:1e42126b6e3671f696e19618ea532bdb7ddacde5e4070e045761109b32bbabec",
+    "release": {
+      "name": "@agent-teams/docs-protocol@0.6.1",
+      "tagName": "@agent-teams/docs-protocol@0.6.1",
+      "publishedAt": "2026-09-24T00:19:29Z",
+      "isDraft": false,
+      "isPrerelease": false,
+      "isImmutable": false
+    },
+    "workflow": {
+      "workflowRunId": 35935434298,
+      "sourceCommit": "852cd5130cad84d750788b080f0e358ac5210355",
+      "runAttempt": 1,
+      "conclusion": "success"
+    },
+    "localEvidence": {
+      "metadataSha256": "sha256:378efeda22533754577a0c6e209a002b6eec0eda8c524316ae00672a190bc387",
+      "attestationsSha256": "sha256:21a9bbb2931cd9094ef549b2e44d945415a3e6723c16f00cd6589c873d56ff91",
+      "tarballSha256": "sha256:1e42126b6e3671f696e19618ea532bdb7ddacde5e4070e045761109b32bbabec"
+    }
+  },
+  {
+    "name": "@agent-teams/docs-protocol-agent-teams",
+    "version": "0.2.12",
+    "dist": {
+      "shasum": "0679bde3efa89f5f756a431d18b1ba88be008ab9",
+      "tarball": "https://registry.npmjs.org/@agent-teams/docs-protocol-agent-teams/-/docs-protocol-agent-teams-0.2.12.tgz",
+      "fileCount": 371,
+      "integrity": "sha512-WkiCRGyMeUO7DwTVTMOjOmZ8q66pJ/tkQrTDG7KkUDa7qtWejIjFamBO4PSatBlQ+baMdoMOlfdFgTvUyO05ZA==",
+      "signatures": [
+        {
+          "sig": "MEQCIE85y5S0LoNoqbaLStiVx4DId1Kn9C1w5lMhE/btNUyPAiBOivMbLmfI6LoLVhHw2/vG1K9Yn2jpMJfMJCsWXsO34A==",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEUCIE1bsZ6xCzJaZvLf4rgWWY/xljYKbXxON4WROqXhTWtYAiEA9esmpyi+u1VWnewvcSyNDcJAQEZe8VNrji90WsPQVMQ=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.2.12",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 1318363
+    },
+    "published_at": "2026-09-25T10:09:33.432Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/docs-protocol-agent-teams@0.2.12",
+          "digest": {
+            "sha512": "5a4882446c8c7943bb0f04d54cc3a33a667cabaea927fb6442b4c31bb2a45036bbaad59e8c88c56a604ee0f49ab41950f9b68c76830e95f745813bd4c8ed3964"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "9c43eb0a149a90b0a72652e630bdbbd4ab0d2916"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/36120836137/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "tarballSha256": "sha256:92bd8e0156d011c07ac6f5f010b799436d9d846cad63970115dbc52505b301f0",
+    "workflow": {
+      "workflowRunId": 36120836137,
+      "sourceCommit": "9c43eb0a149a90b0a72652e630bdbbd4ab0d2916",
+      "runAttempt": 1,
+      "conclusion": "success"
+    },
+    "localEvidence": {
+      "metadataSha256": "sha256:b9d595dbb7660d1166dc92e9a889269672043981f947fa10a923c8124f174ea8",
+      "attestationsSha256": "sha256:b2a5f1218cae3f606f804d1a787a94bf53ad1215924416dc4d4c2d23e657d384",
+      "tarballSha256": "sha256:92bd8e0156d011c07ac6f5f010b799436d9d846cad63970115dbc52505b301f0"
+    }
+  },
+  {
+    "name": "@agent-teams/engineering-foundation",
+    "version": "1.6.0",
+    "dist": {
+      "shasum": "0796717a46e3b7bfe4a5ddf8f333e50d2bbf1a51",
+      "tarball": "https://registry.npmjs.org/@agent-teams/engineering-foundation/-/engineering-foundation-1.6.0.tgz",
+      "fileCount": 2559,
+      "integrity": "sha512-E6ytO+3xhZsaPTo49DRuhldQBRMFlF06EGqqERuGHrc4q11eLssTA9fsbEGCm1e4B8n/i8AsMt2ZkQklFeolWA==",
+      "signatures": [
+        {
+          "sig": "MEUCIQC8ok4H/AbMiuOBokFlhewrCqMj8wqT69YgHlRuECuMCgIgZN2KvhViqQ4+SiG/w12VkRBNXALe9Rs54FXS5pJWkiQ=",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        },
+        {
+          "sig": "MEYCIQCDUriFEynqonwX98GAkuBH5zWMYhjEpJ0tCSfV4Ykj/AIhAID2X/gZohSgG4qUxGP+kA5hCRyHGVfUekUusY1bQfbN",
+          "keyid": "SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U"
+        }
+      ],
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.6.0",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      },
+      "unpackedSize": 4558803
+    },
+    "published_at": "2026-09-24T00:19:03.115Z",
+    "provenanceStatement": {
+      "_type": "https://in-toto.io/Statement/v1",
+      "subject": [
+        {
+          "name": "pkg:npm/%40agent-teams/engineering-foundation@1.6.0",
+          "digest": {
+            "sha512": "13acad3bedf1859b1a3d3a38f4346e865750051305945d3a106aaa111b861eb738ab5d5e2ecb1303d7ec6c41829b57b807c9ff8bc02c32dd9991092515ea2558"
+          }
+        }
+      ],
+      "predicateType": "https://slsa.dev/provenance/v1",
+      "predicate": {
+        "buildDefinition": {
+          "buildType": "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+          "externalParameters": {
+            "workflow": {
+              "ref": "refs/heads/main",
+              "repository": "https://github.com/agent-teams-ai/engineering-foundation",
+              "path": ".github/workflows/release.yml"
+            }
+          },
+          "internalParameters": {
+            "github": {
+              "event_name": "push",
+              "repository_id": "1316243988",
+              "repository_owner_id": "280712041"
+            }
+          },
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/agent-teams-ai/engineering-foundation@refs/heads/main",
+              "digest": {
+                "gitCommit": "852cd5130cad84d750788b080f0e358ac5210355"
+              }
+            }
+          ]
+        },
+        "runDetails": {
+          "builder": {
+            "id": "https://github.com/actions/runner/github-hosted"
+          },
+          "metadata": {
+            "invocationId": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/35935434298/attempts/1"
+          }
+        }
+      }
+    },
+    "tarballSriVerified": true,
+    "tarballSha256": "sha256:842f81ca68e9c3207a0da967eb599229d4d30ea32cd69a9a1686f2eb240f54eb",
+    "release": {
+      "name": "@agent-teams/engineering-foundation@1.6.0",
+      "tagName": "@agent-teams/engineering-foundation@1.6.0",
+      "publishedAt": "2026-09-24T00:19:34Z",
+      "isDraft": false,
+      "isPrerelease": false,
+      "isImmutable": false
+    },
+    "workflow": {
+      "workflowRunId": 35935434298,
+      "sourceCommit": "852cd5130cad84d750788b080f0e358ac5210355",
+      "runAttempt": 1,
+      "conclusion": "success"
+    },
+    "localEvidence": {
+      "metadataSha256": "sha256:ef3f26bad825ae3d47f1cb2a24bf5aebe75af5b20c3da2a4389ce84b499eb036",
+      "attestationsSha256": "sha256:70c962cc8de6d7df8bef5c10ea051a38decc9786d279a133a9df4f1115cbcfe1",
+      "tarballSha256": "sha256:842f81ca68e9c3207a0da967eb599229d4d30ea32cd69a9a1686f2eb240f54eb"
+    }
+  }
+]
