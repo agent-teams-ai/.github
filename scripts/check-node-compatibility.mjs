@@ -56,6 +56,15 @@ function verifyCompatibilityLane(source, path) {
   );
 }
 
+function verifySplitInteractionLane(source, path) {
+  assert(
+    !/node-version:\s*\[/u.test(source) &&
+      count(source, "node-version: 24.18.0") === 1 &&
+      count(source, "node-version: 26.10.0") === 1,
+    `${path} must keep independent literal Node 24 and Node 26 compatibility lanes.`,
+  );
+}
+
 export async function checkNodeCompatibility(root = process.cwd()) {
   const read = async (path) => readFile(join(root, path), "utf8");
   const packageSource = await read("package.json");
@@ -100,10 +109,8 @@ export async function checkNodeCompatibility(root = process.cwd()) {
     workflowSources.get(".github/workflows/reviewrouter-codex.yml"),
     ".github/workflows/reviewrouter-codex.yml",
   );
-  verifyCompatibilityLane(
-    workflowSources.get(".github/workflows/reviewrouter-interaction.yml"),
-    ".github/workflows/reviewrouter-interaction.yml",
-  );
+  const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
+  verifySplitInteractionLane(workflowSources.get(interactionPath), interactionPath);
 
   const literalNode24Paths = [
     ".github/workflows/docs-fleet-audit.yml",

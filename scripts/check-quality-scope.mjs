@@ -12,7 +12,7 @@ const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", "
 const FOUNDATION_PRESET = "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json";
 const EXPECTED_SCRIPTS = {
   precheck: "node scripts/check-quality-scope.mjs",
-  check: "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+  check: "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
   "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
   "quality:lint": "node scripts/run-quality-lint.mjs",
   "quality:check": "pnpm quality:scope && pnpm quality:lint",

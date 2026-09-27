@@ -42,6 +42,21 @@ const docsCompatibilityWorkflow =
   compatibilityWorkflow.replace("jobs:\n  check:", "jobs:\n  node-compatibility:") +
   literalWorkflow.slice("jobs:\n".length).replace("  check:", "  docs-protocol-check:");
 
+const splitInteractionWorkflow = `jobs:
+  node-compatibility:
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.18.0
+${proof()}
+  node26-compatibility:
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.10.0
+${proof("26.10.0")}
+`;
+
 async function makeFixture() {
   const root = await mkdtemp(join(tmpdir(), "node-compatibility-"));
   const paths = {
@@ -54,7 +69,7 @@ async function makeFixture() {
     ".github/workflows/ci.yml": compatibilityWorkflow,
     ".github/workflows/docs-protocol-check.yml": docsCompatibilityWorkflow,
     ".github/workflows/reviewrouter-codex.yml": compatibilityWorkflow,
-    ".github/workflows/reviewrouter-interaction.yml": compatibilityWorkflow,
+    ".github/workflows/reviewrouter-interaction.yml": splitInteractionWorkflow,
     ".github/workflows/docs-fleet-audit.yml": docsCompatibilityWorkflow,
     ".github/workflows/docs-platform-recovery-installation-r317.yml": docsCompatibilityWorkflow,
     ".github/workflows/docs-admission-evidence.yml": docsCompatibilityWorkflow,
@@ -101,6 +116,22 @@ test("rejects a strict-install regression", async () => {
   try {
     await writeFile(join(root, ".npmrc"), "engine-strict=false\n");
     await assert.rejects(checkNodeCompatibility(root), /strict engine enforcement/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects a matrix-coupled ReviewRouter interaction compatibility lane", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(
+      join(root, ".github/workflows/reviewrouter-interaction.yml"),
+      compatibilityWorkflow,
+    );
+    await assert.rejects(
+      checkNodeCompatibility(root),
+      /independent literal Node 24 and Node 26 compatibility lanes/u,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

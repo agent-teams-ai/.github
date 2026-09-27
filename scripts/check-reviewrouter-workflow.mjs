@@ -138,10 +138,18 @@ assert(
   `${interactionPath} must preserve review-comment, PR-comment, and manual events.`,
 );
 const interactionJob = interaction.workflow.jobs?.interaction;
+const requiredNodeCompatibilityJob = interaction.workflow.jobs?.["node-compatibility"];
+const node26CompatibilityJob = interaction.workflow.jobs?.["node26-compatibility"];
 assert(
-  interaction.workflow.jobs?.["node-compatibility"]?.needs === undefined &&
+  requiredNodeCompatibilityJob?.needs === undefined &&
+    node26CompatibilityJob?.needs === undefined &&
     interactionJob?.needs === "node-compatibility",
-  `${interactionPath} must gate interaction on the explicit Node compatibility lane.`,
+  `${interactionPath} must gate interaction only on Node 24 and keep Node 26 independent.`,
+);
+assert(
+  requiredNodeCompatibilityJob?.name === "node-compatibility (Node 24.18.0)" &&
+    node26CompatibilityJob?.name === "node26-compatibility (Node 26.10.0)",
+  `${interactionPath} must expose separate exact Node 24 and experimental Node 26 lanes.`,
 );
 assert(
   interactionJob?.if ===
