@@ -95,8 +95,18 @@ assert(
 const refreshJob = review.workflow.jobs?.["codex-refresh"];
 const refreshStep = refreshJob?.steps?.[0];
 assert(
+  review.workflow.jobs?.["node-compatibility"]?.needs === undefined &&
+    review.workflow.jobs?.["codex-review"]?.needs === "node-compatibility" &&
+    refreshJob?.needs === "node-compatibility",
+  `${reviewPath} must gate ReviewRouter jobs on the explicit Node compatibility lane.`,
+);
+assert(
   samePermissions(refreshJob?.permissions, { "id-token": "write" }),
   "codex-refresh must grant only OIDC write.",
+);
+assert(
+  refreshJob?.steps?.length === 1,
+  "codex-refresh must remain a single-purpose runtime refresh job.",
 );
 assert(
   refreshStep?.uses === `777genius/review-router@${reviewCommit}`,
@@ -128,6 +138,11 @@ assert(
   `${interactionPath} must preserve review-comment, PR-comment, and manual events.`,
 );
 const interactionJob = interaction.workflow.jobs?.interaction;
+assert(
+  interaction.workflow.jobs?.["node-compatibility"]?.needs === undefined &&
+    interactionJob?.needs === "node-compatibility",
+  `${interactionPath} must gate interaction on the explicit Node compatibility lane.`,
+);
 assert(
   interactionJob?.if ===
     "${{ github.event_name == 'workflow_dispatch' || ((github.event_name != 'issue_comment' || github.event.issue.pull_request) && github.event.comment.user.type != 'Bot') }}",
@@ -189,8 +204,6 @@ assert(
 for (const legacyMarker of [
   "mode: codex-oauth-rotating",
   "REVIEWROUTER_COMMENT_TOKEN_MODE: github-token",
-  "actions/checkout@",
-  "actions/setup-node@",
   ".reviewrouter-runtime",
   "npm install -g",
 ]) {
@@ -200,4 +213,4 @@ for (const legacyMarker of [
   );
 }
 
-console.log("ReviewRouter workflows verified: pinned thin callers with least-privilege tokens.");
+console.log("ReviewRouter workflows verified: explicit Node lanes and pinned thin callers with least-privilege tokens.");

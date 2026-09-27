@@ -11,6 +11,35 @@ permissions:
   contents: read
 
 jobs:
+  node-compatibility:
+    name: node-compatibility (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["24.18.0", "26.10.0"]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Prove selected Node runtime
+        env:
+          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}
+        run: |
+          selected="$(node --version)"
+          test "$selected" = "v$EXPECTED_NODE_VERSION"
+          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+      - name: Check bounded Node compatibility contract
+        run: |
+          node scripts/check-node-compatibility.mjs
+          node --test scripts/check-node-compatibility.test.mjs
+
   current-fleet:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -26,6 +55,13 @@ jobs:
         with:
           node-version: 24.18.0
           cache: pnpm
+      - name: Prove selected Node runtime
+        env:
+          EXPECTED_NODE_VERSION: 24.18.0
+        run: |
+          selected="$(node --version)"
+          test "$selected" = "v$EXPECTED_NODE_VERSION"
+          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
       - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
       - name: Verify every current consumer head
         env:

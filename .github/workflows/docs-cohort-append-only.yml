@@ -11,6 +11,36 @@ permissions:
   pull-requests: read
 
 jobs:
+  node-compatibility:
+    name: node-compatibility (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["24.18.0", "26.10.0"]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Prove selected Node runtime
+        env:
+          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}
+        run: |
+          selected="$(node --version)"
+          test "$selected" = "v$EXPECTED_NODE_VERSION"
+          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+      - name: Check bounded Node compatibility contract
+        run: |
+          node scripts/check-node-compatibility.mjs
+          node --test scripts/check-node-compatibility.test.mjs
+
   trusted-validation:
     name: trusted-validation
     runs-on: ubuntu-24.04
@@ -200,6 +230,14 @@ jobs:
         with:
           node-version: 24.18.0
           cache: pnpm
+      - name: Prove selected Node runtime
+        if: steps.materialize.outputs.mode == 'full'
+        env:
+          EXPECTED_NODE_VERSION: 24.18.0
+        run: |
+          selected="$(node --version)"
+          test "$selected" = "v$EXPECTED_NODE_VERSION"
+          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
       - id: pnpm-v2
         uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         if: steps.materialize.outputs.mode == 'full'

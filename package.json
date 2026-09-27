@@ -7,12 +7,12 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24.18.0 <25",
+    "node": ">=24.18.0 <25 || >=26.10.0 <27",
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
     "precheck": "node scripts/check-quality-scope.mjs",
-    "check": "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "check": "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
     "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
     "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
     "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
