@@ -27,7 +27,9 @@ and inverse families. Qualification V8 is a different contract.
 The workflow uses protected-base execution, fresh PR identity and immutable
 tree/blob reconstruction, complete API pages, authenticated admin comments,
 effective protections across classic main protection and every active returned
-branch ruleset that applies to main, a single bound run/attempt, deadline at most 24 hours, and final rereads.
+branch ruleset that applies to main, a single bound run/attempt, a live deadline
+at most 24 hours after the authenticated admin decision was created, and final
+rereads.
 Unsupported branch selectors fail closed; release-only and explicitly main-excluded
 inherited rules remain in the drift-bound snapshot without restricting main.
 The complete main-applicable set must not retain either superseded V8 or
@@ -43,8 +45,10 @@ admin decision binds both comment IDs, which cannot exist when review is
 written. Review edits must precede admin acceptance; both comments must exist
 before verification. Inverse verification also checks the retained forward
 review edit before the historical owner decision, both comment edits before
-the historical deadline and merge, and validates the forward deadline against
-the observed historical decision creation time. Forward verification itself
+the historical deadline and merge. Both forward and inverse validate the
+forward deadline against the observed admin decision creation time; the
+acceptance cannot gain a longer lifetime by waiting to run verification.
+Forward verification itself
 reads the live `pull_request_target` run attempt and its unique running
 `verified-portable-r322` job, binds their run ID, attempt, protected base,
 workflow path and repository, and requires both retained comment edits to
@@ -52,9 +56,14 @@ predate that job's actual start. It also rereads the bound
 historical `pull_request_target` Actions run attempt at the reviewed protected
 base, the successful `verified-portable-r322` job, and both successful final
 jobs. The retained owner and review comments must predate the verifier job's
-start, when it could first observe them; verifier completion must precede both
-final jobs and the historical deadline and installation. The reviewed PR head
-and base are separately bound by the retained comments and merged PR.
+start, when it could first observe them. The successful verifier must complete
+before the historical deadline and merge. Both final jobs must succeed on the
+same exact run and attempt after verifier completion and before merge; their
+completion is not subject to the decision deadline. Forward verification checks
+live expiry through its final reread, but cannot assert completion timestamps
+for jobs still running. Inverse verifies their actual completed history. The
+reviewed PR head and base are separately bound by the retained comments and
+merged PR.
 An expired forward deadline
 remains eligible for rollback when that historical chronology was valid.
 

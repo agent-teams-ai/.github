@@ -356,6 +356,30 @@ test('forward chronology accepts both comments before its own verifier starts', 
     () => now);
   assert.equal(result.status, 'exact_portable_candidate_verified');
 });
+test('forward rejects a live deadline more than 24 hours after the authenticated decision', async () => {
+  const fixture = executionFixture();
+  fixture.decision.deadline = '2026-09-29T11:00:00Z';
+  const original = fixture.api.getDecisionComment;
+  fixture.api.getDecisionComment = async (id) => {
+    const comment = await original(id);
+    return { ...comment, created_at: id === 1 ? '2026-09-27T11:00:00Z' :
+      '2026-09-27T10:59:00Z', updated_at: id === 1 ? '2026-09-27T11:00:00Z' :
+      '2026-09-27T10:59:00Z' };
+  };
+  await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+    () => now), /accepted execution coordinates differ/u);
+  const retained = inverseFixture();
+  retained.forward.deadline = fixture.decision.deadline;
+  const readRetainedComment = retained.fixture.api.getDecisionComment;
+  retained.fixture.api.getDecisionComment = async (id) => {
+    const comment = await readRetainedComment(id);
+    return id === 2 || id === 3 ? { ...comment,
+      created_at: id === 3 ? '2026-09-27T11:00:00Z' : '2026-09-27T10:59:00Z',
+      updated_at: id === 3 ? '2026-09-27T11:00:00Z' : '2026-09-27T10:59:00Z' } : comment;
+  };
+  await assert.rejects(verifyPortableExecution(retained.fixture.event, retained.inverse,
+    retained.fixture.api, () => now), /accepted execution coordinates differ/u);
+});
 test('forward chronology binds the live attempt and its unique running verifier job', async () => {
   for (const mutation of ['wrong-attempt', 'wrong-base', 'wrong-event', 'missing-verifier',
     'duplicate-verifier', 'wrong-job-attempt', 'not-running', 'missing-start']) {
@@ -594,8 +618,19 @@ test('inverse checks retained forward review order and actual historical deadlin
     }
   }
 });
-test('inverse requires a successful historical attempt with both jobs before deadline', async () => {
-  for (const mutation of ['wrong-head', 'wrong-event', 'failed-attempt', 'missing-job', 'late-job']) {
+test('inverse accepts successful final jobs after expiry when verifier finished before expiry', async () => {
+  const forwardFixture = executionFixture();
+  forwardFixture.decision.deadline = '2026-09-28T11:12:30Z';
+  assert.equal((await verifyPortableExecution(forwardFixture.event, forwardFixture.decision,
+    forwardFixture.api, () => Date.parse('2026-09-28T11:12:29Z'))).direction, 'forward');
+  const { fixture, inverse, forward } = inverseFixture();
+  forward.deadline = '2026-09-28T11:12:30Z';
+  assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
+    () => now)).direction, 'inverse');
+});
+test('inverse requires a successful historical verifier and final jobs before merge', async () => {
+  for (const mutation of ['wrong-head', 'wrong-event', 'failed-attempt', 'missing-job',
+    'failed-job', 'wrong-job-run', 'wrong-job-attempt', 'job-after-merge', 'expired-verifier']) {
     const { fixture, inverse, forward } = inverseFixture();
     forward.deadline = '2026-09-28T11:15:00Z';
     if (['wrong-head', 'wrong-event', 'failed-attempt'].includes(mutation)) {
@@ -608,8 +643,13 @@ test('inverse requires a successful historical attempt with both jobs before dea
       fixture.api.getRunAttemptJobs = async (...args) => {
         const jobs = await original(...args);
         return mutation === 'missing-job' ? jobs.slice(0, 1) :
-          jobs.map((job, index) => index === 0 ? {
-            ...job, completed_at: '2026-09-28T11:16:00Z' } : job);
+          jobs.map((job, index) => index === 0 ? { ...job,
+            ...(mutation === 'failed-job' ? { conclusion: 'failure' } :
+              mutation === 'wrong-job-run' ? { run_id: forward.run_id + 1 } :
+              mutation === 'wrong-job-attempt' ? { run_attempt: forward.run_attempt + 1 } :
+              mutation === 'job-after-merge' ? { completed_at: '2026-09-28T11:21:00Z' } :
+              {}) } : mutation === 'expired-verifier' && index === 2 ?
+            { ...job, completed_at: '2026-09-28T11:16:00Z' } : job);
       };
     }
     await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,

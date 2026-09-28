@@ -186,6 +186,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
     Date.parse(review.updated_at) <= Date.parse(decision.created_at),
   'review or admin decision chronology differs');
   if (accepted.direction === 'forward') {
+    validatePortableAcceptance(accepted, record, Date.parse(decision.created_at));
     const { verifier } = await readPortableVerifier(api, accepted, decision, review);
     need(Date.parse(verifier.started_at) <= clock() &&
       Date.parse(verifier.started_at) <= deadline(accepted.deadline),
@@ -268,7 +269,6 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
         typeof matches[0].completed_at === 'string' &&
         Number.isFinite(Date.parse(matches[0].completed_at)) &&
         Date.parse(matches[0].completed_at) >= Date.parse(verifier.completed_at) &&
-        Date.parse(matches[0].completed_at) <= deadline(forward.deadline) &&
         Date.parse(matches[0].completed_at) <= mergedAt,
       'retained forward required job or execution chronology differs');
     }
