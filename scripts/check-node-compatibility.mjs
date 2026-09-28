@@ -63,11 +63,10 @@ function verifyRuntimeProof(source, path) {
 }
 
 function verifyIsolatedParser(workflow, path) {
+  const central = path === ".github/workflows/docs-protocol-check.yml";
   const requiredJobs = path === ".github/workflows/ci.yml"
     ? ["check", "node26-compatibility"]
-    : path === ".github/workflows/docs-protocol-check.yml"
-      ? []
-      : path === ".github/workflows/reviewrouter-interaction.yml"
+    : path === ".github/workflows/reviewrouter-interaction.yml"
         ? ["node-compatibility", "node26-compatibility"]
         : ["node-compatibility"];
   for (const jobName of requiredJobs) {
@@ -75,23 +74,51 @@ function verifyIsolatedParser(workflow, path) {
   }
   for (const [jobName, job] of Object.entries(workflow.jobs ?? {})) {
     const steps = job.steps ?? [];
-    const checkName = path === ".github/workflows/ci.yml"
-      ? "Check Node compatibility contract"
-      : "Check bounded Node compatibility contract";
+    const checkName = central ? "Check central Node compatibility contract"
+      : path === ".github/workflows/ci.yml" ? "Check Node compatibility contract"
+        : "Check bounded Node compatibility contract";
     const checkIndex = steps.findIndex(step => step.name === checkName);
     if (checkIndex < 0 && !requiredJobs.includes(jobName)) { continue; }
     const setupIndex = steps.findIndex(step => step.uses?.startsWith("pnpm/action-setup@"));
-    const installIndex = steps.findIndex(step => step.name === "Install isolated compatibility parser");
+    const installIndex = steps.findIndex(step => step.name === (central ? "Install isolated central compatibility parser" : "Install isolated compatibility parser"));
+    const setup = steps[setupIndex];
+    const install = steps[installIndex];
+    const check = steps[checkIndex];
     assert(
       setupIndex >= 0 && setupIndex < installIndex && installIndex < checkIndex &&
-        steps[setupIndex].with?.version === "11.18.0" &&
-        steps[setupIndex].with?.run_install === false &&
-        steps[installIndex].run === "pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true" &&
-        !steps[installIndex].if && steps[installIndex].shell === undefined && steps[installIndex]["continue-on-error"] === undefined &&
-        steps[checkIndex].run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n" &&
-        !steps[checkIndex].if && steps[checkIndex].shell === undefined && steps[checkIndex]["continue-on-error"] === undefined,
+        setup.uses === "pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9" &&
+        setup.with?.version === "11.18.0" && setup.with?.run_install === false &&
+        setup.if === undefined && setup["continue-on-error"] === undefined &&
+        install.run === `pnpm --dir ${central ? ".node-compatibility/" : ""}scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true` &&
+        install.if === undefined && install.shell === undefined && install["continue-on-error"] === undefined &&
+        install["working-directory"] === undefined &&
+        check.run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n" &&
+        check.if === undefined && check.shell === undefined && check["continue-on-error"] === undefined &&
+        check["working-directory"] === (central ? ".node-compatibility" : undefined),
       `${path} job ${jobName} must install its pinned isolated parser before checking the source contract.`,
     );
+    if (central && jobName === "node-compatibility") {
+      const checkout = steps[0];
+      assert(
+        job.needs === "trusted-authorize" && job.if === undefined &&
+          job["continue-on-error"] === undefined &&
+          checkout?.name === "Check out exact called central revision" &&
+          checkout.uses === "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" &&
+          checkout.with?.repository === "agent-teams-ai/.github" &&
+          checkout.with?.ref === "${{ needs.trusted-authorize.outputs.workflow-sha }}" &&
+          checkout.with?.path === ".node-compatibility" &&
+          checkout.with?.["fetch-depth"] === 0 &&
+          checkout.with?.["persist-credentials"] === false &&
+          checkout.if === undefined && checkout.shell === undefined &&
+          checkout["continue-on-error"] === undefined &&
+          checkout["working-directory"] === undefined &&
+          setupIndex === 1 && installIndex === 4 && checkIndex === 5 &&
+          steps[2]?.uses === "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020" &&
+          steps[3]?.name === "Prove selected Node runtime" &&
+          Object.keys(job.permissions ?? {}).length === 1 && job.permissions.contents === "read",
+        `${path} central Node compatibility job must use its authorized central checkout before parser setup.`,
+      );
+    }
   }
 }
 

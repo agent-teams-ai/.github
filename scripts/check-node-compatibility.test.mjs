@@ -11,6 +11,7 @@ const strictFlags = "--config.engine-strict=true --config.strict-peer-dependenci
 const workflowSource = async (name) => readFile(new URL(`../.github/workflows/${name}`, import.meta.url), "utf8");
 const ciWorkflow = await workflowSource("ci.yml");
 const compatibilityWorkflow = await workflowSource("reviewrouter-codex.yml");
+const centralWorkflow = await workflowSource("docs-protocol-check.yml");
 
 async function makeFixture() {
   const root = await mkdtemp(join(tmpdir(), "node-compatibility-"));
@@ -25,7 +26,7 @@ async function makeFixture() {
     ".npmrc": "engine-strict=true\nstrict-peer-dependencies=true\n",
     "pnpm-workspace.yaml": "minimumReleaseAge: 0\n",
     ".github/workflows/ci.yml": ciWorkflow,
-    ".github/workflows/docs-protocol-check.yml": await workflowSource("docs-protocol-check.yml"),
+    ".github/workflows/docs-protocol-check.yml": centralWorkflow,
     ".github/workflows/reviewrouter-codex.yml": compatibilityWorkflow,
     ".github/workflows/reviewrouter-interaction.yml": await workflowSource("reviewrouter-interaction.yml"),
     ".github/workflows/docs-fleet-audit.yml": await workflowSource("docs-fleet-audit.yml"),
@@ -242,5 +243,72 @@ test("rejects a parser tool that loses the exact package manager pin", async () 
     await assert.rejects(checkNodeCompatibility(root), /exact pnpm and YAML pins/u);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+async function rejectsWorkflowMutation(name, source, change, expected) {
+  const root = await makeFixture();
+  try {
+    const mutated = change(source);
+    assert.notEqual(mutated, source, `fixture mutation for ${name} must take effect`);
+    await writeFile(join(root, ".github/workflows", name), mutated);
+    await assert.rejects(checkNodeCompatibility(root), expected);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+test("required parser steps reject skipped setup, install, and check", async () => {
+  const name = "reviewrouter-codex.yml";
+  for (const marker of [
+    "      - uses: pnpm/action-setup@",
+    "      - name: Install isolated compatibility parser",
+    "      - name: Check bounded Node compatibility contract",
+  ]) {
+    await rejectsWorkflowMutation(name, compatibilityWorkflow,
+      source => source.replace(marker, marker.replace("      - ", "      - if: false\n        ")),
+      /install its pinned isolated parser/u);
+  }
+});
+
+test("central parser job rejects disabled required steps and missing setup", async () => {
+  const name = "docs-protocol-check.yml";
+  for (const marker of [
+    "      - name: Set up pnpm for Node compatibility checks",
+    "      - name: Install isolated central compatibility parser",
+    "      - name: Check central Node compatibility contract",
+  ]) {
+    await rejectsWorkflowMutation(name, centralWorkflow,
+      source => source.replace(marker, marker.replace("      - ", "      - if: false\n        ")),
+      /pinned isolated parser/u);
+  }
+  await rejectsWorkflowMutation(name, centralWorkflow,
+    source => source.replace(/      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm\/action-setup@[^\n]+\n        with:\n          version: 11\.18\.0\n          run_install: false\n/u, ""),
+    /pinned isolated parser/u);
+  await rejectsWorkflowMutation(name, centralWorkflow,
+    source => source.replace("  node-compatibility:\n", "  node-compatibility-disabled:\n"),
+    /retain its node-compatibility compatibility job/u);
+});
+
+test("central parser job rejects untrusted checkout and weakened execution", async () => {
+  const name = "docs-protocol-check.yml";
+  const cases = [
+    [source => source.replace("    needs: trusted-authorize\n    runs-on: ubuntu-24.04", "    needs: trusted-authorize\n    if: false\n    runs-on: ubuntu-24.04"), /must not skip the compatibility job/u],
+    [source => source.replace("    needs: trusted-authorize\n    runs-on: ubuntu-24.04", "    needs: trusted-qualification\n    runs-on: ubuntu-24.04"), /authorized central checkout/u],
+    [source => source.replace("      - name: Check out exact called central revision", "      - if: false\n        name: Check out exact called central revision"), /authorized central checkout/u],
+    [source => source.replace("      - name: Check out exact called central revision", "      - name: Check out exact called central revision\n        continue-on-error: true"), /authorized central checkout/u],
+    [source => source.replace("ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}\n          path: .node-compatibility", "ref: main\n          path: .node-compatibility"), /authorized central checkout/u],
+    [source => source.replace("      - name: Check out exact called central revision\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", "      - name: Check out exact called central revision\n        uses: actions/checkout@main"), /authorized central checkout/u],
+    [source => source.replace("      - name: Set up pnpm for Node compatibility checks", "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n        with:\n          repository: agent-teams-ai/.github\n          ref: main\n          path: .node-compatibility\n      - name: Set up pnpm for Node compatibility checks"), /authorized central checkout/u],
+    [source => source.replace("      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9", "      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm/action-setup@main"), /pinned isolated parser/u],
+    [source => source.replace("      - name: Set up pnpm for Node compatibility checks", "      - name: Set up pnpm for Node compatibility checks\n        continue-on-error: true"), /pinned isolated parser/u],
+    [source => source.replace("      - name: Install isolated central compatibility parser", "      - name: Install isolated central compatibility parser\n        shell: bash {0}"), /pinned isolated parser/u],
+    [source => source.replace("      - name: Install isolated central compatibility parser", "      - name: Install isolated central compatibility parser\n        continue-on-error: true"), /pinned isolated parser/u],
+    [source => source.replace("        working-directory: .node-compatibility\n        run: |\n          node scripts/check-node-compatibility.mjs", "        working-directory: .\n        run: |\n          node scripts/check-node-compatibility.mjs"), /pinned isolated parser/u],
+    [source => source.replace("      - name: Check central Node compatibility contract", "      - name: Check central Node compatibility contract\n        shell: bash {0}"), /pinned isolated parser/u],
+    [source => source.replace("      - name: Check central Node compatibility contract", "      - name: Check central Node compatibility contract\n        continue-on-error: true"), /pinned isolated parser/u],
+  ];
+  for (const [change, expected] of cases) {
+    await rejectsWorkflowMutation(name, centralWorkflow, change, expected);
   }
 });
