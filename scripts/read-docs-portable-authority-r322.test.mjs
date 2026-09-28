@@ -145,6 +145,36 @@ test('a second active branch ruleset cannot reintroduce a bypass', async () => {
   await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
     () => now), /bypass differs/u);
 });
+test('other branch rules do not block main, while matching and ambiguous scope fails', async () => {
+  for (const [include, exclude, outcome] of [
+    [['refs/heads/release/**'], [], 'accept'],
+    [['~ALL'], ['refs/heads/main'], 'accept'],
+    [['refs/heads/m*'], [], 'reject-old-context'],
+    [['~ALL'], ['refs/heads/release/**'], 'reject-old-context'],
+    [['~UNKNOWN'], [], 'reject-selector'],
+    [['refs/heads/**/main'], [], 'reject-selector'],
+  ]) {
+    const fixture = executionFixture();
+    const detail = structuredClone(fixture.protections.rulesets[0].detail);
+    Object.assign(detail, { id: 19979784, name: 'Inherited branch policy',
+      source_type: 'Organization', bypass_actors: [{ actor_id: 7, actor_type: 'Team',
+        bypass_mode: 'always' }], conditions: { ref_name: { include, exclude } },
+      rules: [{ type: 'required_status_checks', parameters: {
+        strict_required_status_checks_policy: true,
+        required_status_checks: [{ context: 'trusted-validation', integration_id: 15368 }],
+      } }] });
+    fixture.protections.rulesets.push({ summary: { id: detail.id, name: detail.name,
+      enforcement: 'active' }, detail });
+    fixture.decision.expected_protections_digest = sha(JSON.stringify(fixture.protections));
+    if (outcome === 'accept') {
+      assert.equal((await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+        () => now)).direction, 'forward');
+    } else {
+      await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+        () => now), outcome === 'reject-selector' ? /selector is ambiguous/u : /bypass differs/u);
+    }
+  }
+});
 test('read port completes pages and decodes blobs without publishing or writing', async () => {
   const calls = [];
   const api = makePortableApi(async (path) => {
@@ -397,15 +427,19 @@ function inverseFixture() {
     filename: row.path, status: row.old === null ? 'removed' : 'modified',
     sha: row.old?.blob }))];
   fixture.api.getRunAttempt = async () => ({ id: forward.run_id,
-    run_attempt: forward.run_attempt, head_sha: forward.head,
-    repository: { id: 1316243981 }, event: 'pull_request',
+    run_attempt: forward.run_attempt, head_sha: forward.base,
+    repository: { id: 1316243981 }, event: 'pull_request_target',
     path: '.github/workflows/docs-portable-authority-r322.yml',
     status: 'completed', conclusion: 'success' });
   fixture.api.getRunAttemptJobs = async () => [
-    'trusted-cohort-authority-portable-r322', 'trusted-validation-portable-r322',
-  ].map((name, index) => ({ id: 100 + index, name, run_id: forward.run_id,
-    run_attempt: forward.run_attempt, status: 'completed', conclusion: 'success',
-    completed_at: '2026-09-28T11:14:00Z' }));
+    ...['trusted-cohort-authority-portable-r322', 'trusted-validation-portable-r322']
+      .map((name, index) => ({ id: 100 + index, name, run_id: forward.run_id,
+        run_attempt: forward.run_attempt, status: 'completed', conclusion: 'success',
+        completed_at: '2026-09-28T11:14:00Z' })),
+    { id: 102, name: 'verified-portable-r322', run_id: forward.run_id,
+      run_attempt: forward.run_attempt, status: 'completed', conclusion: 'success',
+      started_at: '2026-09-28T11:11:00Z', completed_at: '2026-09-28T11:12:00Z' },
+  ];
   fixture.api.getDecisionComment = async (id) => {
     const issue = id === 4 || id === 5 ? 323 : 322;
     const isReview = id === 2 || id === 5;
@@ -478,13 +512,14 @@ test('inverse checks retained forward review order and actual historical deadlin
   }
 });
 test('inverse requires a successful historical attempt with both jobs before deadline', async () => {
-  for (const mutation of ['wrong-head', 'failed-attempt', 'missing-job', 'late-job']) {
+  for (const mutation of ['wrong-head', 'wrong-event', 'failed-attempt', 'missing-job', 'late-job']) {
     const { fixture, inverse, forward } = inverseFixture();
     forward.deadline = '2026-09-28T11:15:00Z';
-    if (mutation === 'wrong-head' || mutation === 'failed-attempt') {
+    if (['wrong-head', 'wrong-event', 'failed-attempt'].includes(mutation)) {
       const original = fixture.api.getRunAttempt;
       fixture.api.getRunAttempt = async (...args) => ({ ...await original(...args),
-        ...(mutation === 'wrong-head' ? { head_sha: 'f'.repeat(40) } : { conclusion: 'failure' }) });
+        ...(mutation === 'wrong-head' ? { head_sha: forward.head } :
+          mutation === 'wrong-event' ? { event: 'pull_request' } : { conclusion: 'failure' }) });
     } else {
       const original = fixture.api.getRunAttemptJobs;
       fixture.api.getRunAttemptJobs = async (...args) => {
@@ -495,7 +530,37 @@ test('inverse requires a successful historical attempt with both jobs before dea
       };
     }
     await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /retained forward run attempt|retained forward required job/u, mutation);
+      () => now), /retained forward run attempt|retained forward required job|retained forward portable verification/u, mutation);
+  }
+});
+test('inverse binds owner comment to the successful portable verifier before final jobs', async () => {
+  for (const mutation of ['missing-verifier', 'failed-verifier', 'owner-created-late',
+    'owner-edited-late', 'review-edited-late']) {
+    const { fixture, inverse } = inverseFixture();
+    const originalJobs = fixture.api.getRunAttemptJobs;
+    fixture.api.getRunAttemptJobs = async () => {
+      const jobs = await originalJobs();
+      if (mutation === 'missing-verifier') {return jobs.slice(0, 2);}
+      if (mutation === 'failed-verifier') {jobs[2].conclusion = 'failure';}
+      return jobs;
+    };
+    const originalComment = fixture.api.getDecisionComment;
+    fixture.api.getDecisionComment = async (id) => {
+      const comment = await originalComment(id);
+      if (id === 3 && mutation === 'owner-created-late') {
+        comment.created_at = '2026-09-28T11:13:00Z';
+        comment.updated_at = comment.created_at;
+      }
+      if (id === 3 && mutation === 'owner-edited-late') {
+        comment.updated_at = '2026-09-28T11:13:00Z';
+      }
+      if (id === 2 && mutation === 'review-edited-late') {
+        comment.updated_at = '2026-09-28T11:13:00Z';
+      }
+      return comment;
+    };
+    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
+      () => now), /chronology|portable verification/u, mutation);
   }
 });
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));

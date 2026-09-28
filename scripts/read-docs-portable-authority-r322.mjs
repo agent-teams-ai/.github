@@ -220,9 +220,9 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
     const historicalRun = await api.getRunAttempt(forward.run_id, forward.run_attempt);
     need(historicalRun?.id === forward.run_id &&
       historicalRun.run_attempt === forward.run_attempt &&
-      historicalRun.head_sha === forward.head &&
+      historicalRun.head_sha === forward.base &&
       historicalRun.repository?.id === REPO_ID &&
-      historicalRun.event === 'pull_request' &&
+      historicalRun.event === 'pull_request_target' &&
       historicalRun.path?.split('@')[0] === '.github/workflows/docs-portable-authority-r322.yml' &&
       historicalRun.status === 'completed' && historicalRun.conclusion === 'success',
     'retained forward run attempt differs');
@@ -231,6 +231,20 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
       historicalJobs.length <= 100 &&
       new Set(historicalJobs.map((job) => job.id)).size === historicalJobs.length,
     'retained forward jobs are incomplete');
+    const verifier = historicalJobs.filter((job) => job.name === 'verified-portable-r322');
+    need(verifier.length === 1 && verifier[0].run_id === forward.run_id &&
+      verifier[0].run_attempt === forward.run_attempt &&
+      verifier[0].status === 'completed' && verifier[0].conclusion === 'success' &&
+      typeof verifier[0].started_at === 'string' &&
+      Number.isFinite(Date.parse(verifier[0].started_at)) &&
+      typeof verifier[0].completed_at === 'string' &&
+      Number.isFinite(Date.parse(verifier[0].completed_at)) &&
+      Date.parse(forwardReview.updated_at) <= Date.parse(verifier[0].started_at) &&
+      Date.parse(retained.updated_at) <= Date.parse(verifier[0].started_at) &&
+      Date.parse(verifier[0].started_at) <= Date.parse(verifier[0].completed_at) &&
+      Date.parse(verifier[0].completed_at) <= deadline(forward.deadline) &&
+      Date.parse(verifier[0].completed_at) <= mergedAt,
+    'retained forward portable verification or comment chronology differs');
     for (const name of ['trusted-cohort-authority-portable-r322',
       'trusted-validation-portable-r322']) {
       const matches = historicalJobs.filter((job) => job.name === name);
@@ -239,7 +253,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
         matches[0].status === 'completed' && matches[0].conclusion === 'success' &&
         typeof matches[0].completed_at === 'string' &&
         Number.isFinite(Date.parse(matches[0].completed_at)) &&
-        Date.parse(matches[0].completed_at) >= Date.parse(retained.updated_at) &&
+        Date.parse(matches[0].completed_at) >= Date.parse(verifier[0].completed_at) &&
         Date.parse(matches[0].completed_at) <= deadline(forward.deadline) &&
         Date.parse(matches[0].completed_at) <= mergedAt,
       'retained forward required job or execution chronology differs');

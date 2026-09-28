@@ -146,6 +146,33 @@ export function verifyPortableBlob(bytes, identity) {
   return true;
 }
 
+// Repository ruleset listing includes inherited rules for other branches. GitHub's
+// ref_name selectors use fnmatch-style branch patterns; only selectors whose
+// meaning for this exact ref is known may affect the cutover decision.
+function selectorMatchesMain(selector) {
+  need(typeof selector === 'string', 'ruleset branch selector is ambiguous');
+  if (selector === '~ALL' || selector === '~DEFAULT_BRANCH') {return true;}
+  need(/^refs\/heads\/[A-Za-z0-9._/*?-]+$/u.test(selector) &&
+    (!selector.includes('**') ||
+      (selector.indexOf('**') === selector.length - 2 && selector.at(-3) === '/')),
+  'ruleset branch selector is ambiguous');
+  const escaped = selector.replace(/[.+^${}()|[\]\\]/gu, '\\$&')
+    .replace(/\*\*/gu, '#').replace(/\*/gu, '[^/]*')
+    .replace(/\?/gu, '[^/]').replaceAll('#', '.*');
+  return new RegExp(`^${escaped}$`, 'u').test('refs/heads/main');
+}
+
+function rulesetAppliesToMain(detail) {
+  const scope = detail.conditions?.ref_name;
+  need(scope && Array.isArray(scope.include) && scope.include.length > 0 &&
+    Array.isArray(scope.exclude), 'ruleset branch scope is ambiguous');
+  // Inspect every selector even when a previous include or exclude decides the
+  // result. An unsupported selector cannot be treated as a safe exclusion.
+  const includes = scope.include.map(selectorMatchesMain);
+  const excludes = scope.exclude.map(selectorMatchesMain);
+  return includes.some(Boolean) && !excludes.some(Boolean);
+}
+
 export function verifyPortableProtections(snapshot) {
   need(Array.isArray(snapshot?.rulesets) &&
     Object.hasOwn(snapshot, 'classic_branch_protection'), 'effective protections are incomplete');
@@ -179,6 +206,7 @@ export function verifyPortableProtections(snapshot) {
       'effective ruleset detail differs');
     if (otherSummary.enforcement !== 'active' && other.enforcement !== 'active') {continue;}
     if (other.target !== 'branch') {continue;}
+    if (!rulesetAppliesToMain(other)) {continue;}
     need(otherSummary.enforcement === 'active' && other.enforcement === 'active' &&
       Array.isArray(other.bypass_actors) && other.bypass_actors.length === 0,
     'active effective ruleset enforcement or bypass differs');

@@ -27,8 +27,10 @@ and inverse families. Qualification V8 is a different contract.
 The workflow uses protected-base execution, fresh PR identity and immutable
 tree/blob reconstruction, complete API pages, authenticated admin comments,
 effective protections across classic main protection and every active returned
-branch ruleset, a single bound run/attempt, deadline at most 24 hours, and final rereads.
-The complete effective set must not retain either superseded V8 or
+branch ruleset that applies to main, a single bound run/attempt, deadline at most 24 hours, and final rereads.
+Unsupported branch selectors fail closed; release-only and explicitly main-excluded
+inherited rules remain in the drift-bound snapshot without restricting main.
+The complete main-applicable set must not retain either superseded V8 or
 trusted-validation check; Protect main still requires the six exact App
 contexts and has no bypass actors. PR update timestamps may advance with comments; final live
 tuples are reread. Their seven files plus the r317 imported closure must be
@@ -43,8 +45,13 @@ before verification. Inverse verification also checks the retained forward
 review edit before the historical owner decision, both comment edits before
 the historical deadline and merge, and validates the forward deadline against
 the observed historical decision creation time. It also rereads the bound
-historical Actions run attempt and both successful final jobs, whose completion
-must precede that deadline and installation. An expired forward deadline
+historical `pull_request_target` Actions run attempt at the reviewed protected
+base, the successful `verified-portable-r322` job, and both successful final
+jobs. The retained owner and review comments must predate the verifier job's
+start, when it could first observe them; verifier completion must precede both
+final jobs and the historical deadline and installation. The reviewed PR head
+and base are separately bound by the retained comments and merged PR.
+An expired forward deadline
 remains eligible for rollback when that historical chronology was valid.
 
 The successor workflow copies the entire required Cohort V8 behavior and full trusted
