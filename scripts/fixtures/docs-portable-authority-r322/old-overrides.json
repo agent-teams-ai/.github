@@ -1,0 +1,318 @@
+{
+  "provenance_commit": "ee717a097021894e67f9e814874240ecaf6f4715",
+  "source_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+  "content_candidate": "6e77efe7ef0c686c9e95d4d361578c8c594aad13",
+  "old_overrides": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "edits": [
+        {
+          "start": 30,
+          "delete": 1,
+          "insert": ""
+        },
+        {
+          "start": 33,
+          "delete": 1,
+          "insert": "          node-version-file: .node-version\n"
+        },
+        {
+          "start": 35,
+          "delete": 15,
+          "insert": "      - run: pnpm install --frozen-lockfile\n"
+        },
+        {
+          "start": 51,
+          "delete": 27,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-admission-evidence.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 33,
+          "insert": ""
+        },
+        {
+          "start": 297,
+          "delete": 5,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-cohort-append-only.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 33,
+          "insert": ""
+        },
+        {
+          "start": 235,
+          "delete": 5,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-fleet-audit.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 32,
+          "insert": ""
+        },
+        {
+          "start": 60,
+          "delete": 4,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-platform-recovery-installation-r317.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 33,
+          "insert": ""
+        },
+        {
+          "start": 58,
+          "delete": 4,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "edits": [
+        {
+          "start": 105,
+          "delete": 4,
+          "insert": ""
+        },
+        {
+          "start": 168,
+          "delete": 4,
+          "insert": ""
+        },
+        {
+          "start": 254,
+          "delete": 4,
+          "insert": ""
+        },
+        {
+          "start": 328,
+          "delete": 55,
+          "insert": ""
+        },
+        {
+          "start": 409,
+          "delete": 4,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/organization-inventory-drift.yml",
+      "edits": [
+        {
+          "start": 8,
+          "delete": 32,
+          "insert": ""
+        },
+        {
+          "start": 51,
+          "delete": 4,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/reviewrouter-codex.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 32,
+          "insert": ""
+        },
+        {
+          "start": 47,
+          "delete": 1,
+          "insert": ""
+        },
+        {
+          "start": 72,
+          "delete": 1,
+          "insert": ""
+        }
+      ],
+      "omit_final_newline": true
+    },
+    {
+      "path": ".github/workflows/reviewrouter-interaction.yml",
+      "edits": [
+        {
+          "start": 12,
+          "delete": 56,
+          "insert": ""
+        },
+        {
+          "start": 70,
+          "delete": 1,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": "README.md",
+      "edits": [
+        {
+          "start": 15,
+          "delete": 1,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": "package.json",
+      "edits": [
+        {
+          "start": 9,
+          "delete": 1,
+          "insert": "    \"node\": \">=24.18.0 <25\",\n"
+        },
+        {
+          "start": 14,
+          "delete": 1,
+          "insert": "    \"check\": \"pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test\",\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-community-files.mjs",
+      "edits": [
+        {
+          "start": 208,
+          "delete": 2,
+          "insert": ""
+        },
+        {
+          "start": 229,
+          "delete": 2,
+          "insert": ""
+        },
+        {
+          "start": 256,
+          "delete": 2,
+          "insert": ""
+        },
+        {
+          "start": 285,
+          "delete": 24,
+          "insert": ""
+        },
+        {
+          "start": 316,
+          "delete": 2,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-community-files.test.mjs",
+      "edits": [
+        {
+          "start": 87,
+          "delete": 6,
+          "insert": "    (changed) => { changed.jobs[\"trusted-qualification\"].steps[5].run = \"true # base verifier install\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[10].run = \"true # prepare-install\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[12].run = \"true # pnpm install --ignore-scripts --ignore-pnpmfile\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[14].run = \"true # agent-teams-docs qualify\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[15].run = \"true # verify-docs-qualification-receipt.mjs\"; },\n    (changed) => { changed.jobs[\"docs-protocol-check\"].steps[5].run = \"true # pnpm docs:protocol:check\"; },\n"
+        },
+        {
+          "start": 97,
+          "delete": 41,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-quality-scope.mjs",
+      "edits": [
+        {
+          "start": 14,
+          "delete": 1,
+          "insert": "  check: \"pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test\",\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-quality-scope.test.mjs",
+      "edits": [
+        {
+          "start": 31,
+          "delete": 2,
+          "insert": "  assert.equal(paths.length, 19);\n"
+        },
+        {
+          "start": 50,
+          "delete": 1,
+          "insert": ""
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-reviewrouter-workflow.mjs",
+      "edits": [
+        {
+          "start": 97,
+          "delete": 6,
+          "insert": ""
+        },
+        {
+          "start": 105,
+          "delete": 4,
+          "insert": ""
+        },
+        {
+          "start": 140,
+          "delete": 13,
+          "insert": ""
+        },
+        {
+          "start": 214,
+          "delete": 0,
+          "insert": "  \"actions/checkout@\",\n  \"actions/setup-node@\",\n"
+        },
+        {
+          "start": 223,
+          "delete": 1,
+          "insert": "console.log(\"ReviewRouter workflows verified: pinned thin callers with least-privilege tokens.\");\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/docs-cohort-policy.test.mjs",
+      "edits": [
+        {
+          "start": 73,
+          "delete": 19,
+          "insert": ""
+        },
+        {
+          "start": 475,
+          "delete": 2,
+          "insert": "  const pnpmV1Setup = appendOnlyWorkflow.indexOf(\"- id: pnpm-v1\");\n  const setupNode = appendOnlyWorkflow.indexOf(\"uses: actions/setup-node@\");\n  const pnpmV2Setup = appendOnlyWorkflow.indexOf(\"- id: pnpm-v2\");\n  const verifyPnpm = appendOnlyWorkflow.indexOf(\"Verify trusted package-manager binaries\");\n  const baseInstall = appendOnlyWorkflow.indexOf(\"Install trusted base dependencies\");\n  assert.ok(pnpmV1Setup >= 0 && pnpmV1Setup < setupNode && setupNode < pnpmV2Setup &&\n    pnpmV2Setup < baseInstall,\n  \"setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed\");\n  const pnpmV1SetupStep = appendOnlyWorkflow.slice(pnpmV1Setup, setupNode);\n  const pnpmV2SetupStep = appendOnlyWorkflow.slice(pnpmV2Setup, verifyPnpm);\n  assert.doesNotMatch(pnpmV1SetupStep, /package_json_file:/u,\n    \"v1 setup must keep the matching root packageManager authority\");\n  assert.match(pnpmV2SetupStep,\n    /package_json_file: governance\\/docs-qualified-cohorts\\.schema\\.json/u,\n  \"v2 setup must not read the conflicting v1 root packageManager authority\");\n  assert.doesNotMatch(appendOnlyWorkflow, /\\brun:\\s+pnpm\\b/u);\n"
+        },
+        {
+          "start": 495,
+          "delete": 9,
+          "insert": ""
+        }
+      ]
+    }
+  ]
+}

@@ -9,15 +9,32 @@ import { classifyPortableIntent, makePortableApi, validatePortableAcceptance, ve
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
-function candidateBlob(blob) {
-  try {return execFileSync('git', ['cat-file', 'blob', blob], { stdio: ['ignore', 'pipe', 'pipe'] });}
-  catch {
-    const ref = 'refs/heads/chore/node26-compat-workflows';
-    execFileSync('git', ['fetch', '--no-tags', '--depth=1', 'origin', ref]);
-    assert.equal(execFileSync('git', ['rev-parse', 'FETCH_HEAD'], { encoding: 'utf8' }).trim(),
-      record.content_candidate, 'fetched corrected candidate ref moved');
-    return execFileSync('git', ['cat-file', 'blob', blob]);
+const historical = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
+assert.equal(historical.provenance_commit, 'ee717a097021894e67f9e814874240ecaf6f4715');
+assert.equal(historical.source_base, record.source_base);
+assert.equal(historical.content_candidate, record.content_candidate);
+const oldOverrides = new Map(historical.old_overrides.map((entry) => [entry.path, entry]));
+assert.equal(oldOverrides.size, historical.old_overrides.length);
+assert.deepEqual([...oldOverrides.keys()].sort(), record.manifest.filter((row) => row.old)
+  .map((row) => row.path).sort());
+function historicalBody(row, side) {
+  const current = read(row.path);
+  if (side === 'new') {return Buffer.from(current);}
+  const lines = current.match(/[^\n]*\n|[^\n]+$/gu) ?? [];
+  const override = oldOverrides.get(row.path);
+  assert.ok(override, `missing old fixture for ${row.path}`);
+  const { edits } = override;
+  for (const { start, delete: count, insert } of [...edits].reverse()) {
+    assert.ok(Number.isSafeInteger(start) && Number.isSafeInteger(count) &&
+      start >= 0 && count >= 0 && start + count <= lines.length);
+    lines.splice(start, count, insert);
   }
+  const body = lines.join('');
+  if (override.omit_final_newline) {
+    assert.ok(body.endsWith('\n'), `expected final newline in ${row.path}`);
+    return Buffer.from(body.slice(0, -1));
+  }
+  return Buffer.from(body);
 }
 const G = ['.github/workflows/docs-portable-authority-r322.yml', 'docs/node26-portable-authority-r322.md',
   'governance/docs-portable-authority-r322.json', 'scripts/docs-portable-authority-r322.mjs',
@@ -262,11 +279,11 @@ function executionFixture() {
   });
   for (const row of record.manifest) {
     if (row.old) {
-      const bytes = candidateBlob(row.old.blob);
+      const bytes = historicalBody(row, 'old');
       assert.deepEqual(identity(bytes), row.old);
       baseFiles.set(row.path, row.old);
     }
-    const bytes = candidateBlob(row.new.blob);
+    const bytes = historicalBody(row, 'new');
     assert.deepEqual(identity(bytes), row.new);
     headFiles.set(row.path, row.new);
   }
