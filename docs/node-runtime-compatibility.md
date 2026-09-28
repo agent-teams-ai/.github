@@ -23,3 +23,9 @@ The migration contract is:
 Historical Docs cohorts and their receipts remain bound to their original Node
 24 runtime ranges. Compatibility qualification is new evidence and does not
 rewrite those immutable records.
+
+The Docs Cohort append-only workflow keeps its trusted validation on Node 24.
+Its full validation path sets up Cohort v1 pnpm before Node cache resolution,
+then installs the separate Cohort v2 pnpm binary. The Node 26 compatibility job
+checks the runtime contract independently; it does not qualify or promote a
+Docs Cohort.

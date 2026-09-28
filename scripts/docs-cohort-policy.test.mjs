@@ -71,6 +71,25 @@ const cohortEvidenceVerifierSource = await readFile(
   "scripts/verify-docs-cohort-evidence.mjs",
   "utf8",
 );
+
+function assertTrustedPnpmSetupOrder(steps) {
+  const pnpmV1 = steps.findIndex(step => step.id === "pnpm-v1");
+  const setupNode = steps.findIndex(step => step.uses?.startsWith("actions/setup-node@"));
+  const pnpmV2 = steps.findIndex(step => step.id === "pnpm-v2");
+  const verifyPnpm = steps.findIndex(step => step.name === "Verify trusted package-manager binaries");
+  const baseInstall = steps.findIndex(step => step.name?.startsWith("Install trusted base dependencies"));
+  assert.ok(pnpmV1 >= 0 && pnpmV1 < setupNode && setupNode < pnpmV2 &&
+    pnpmV2 < verifyPnpm && verifyPnpm < baseInstall,
+  "setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed");
+  assert.equal(steps[setupNode].with?.cache, "pnpm");
+  assert.equal(steps[pnpmV1].with?.package_json_file, undefined,
+    "v1 setup must keep the matching root packageManager authority");
+  assert.equal(steps[pnpmV2].with?.package_json_file,
+    "governance/docs-qualified-cohorts.schema.json",
+    "v2 setup must not read the conflicting v1 root packageManager authority");
+}
+
+const trustedAppendOnlySteps = YAML.parse(appendOnlyWorkflow).jobs["trusted-validation"].steps;
 const producerCallerFixture = await readFile(
   "scripts/fixtures/producer-docs-protocol.yml",
 );
@@ -454,21 +473,7 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
     /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V1_BIN" --version\)" = "11\.18\.0"/u);
   assert.match(appendOnlyWorkflow,
     /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V2_BIN" --version\)" = "11\.20\.0"/u);
-  const pnpmV1Setup = appendOnlyWorkflow.indexOf("- id: pnpm-v1");
-  const setupNode = appendOnlyWorkflow.indexOf("uses: actions/setup-node@");
-  const pnpmV2Setup = appendOnlyWorkflow.indexOf("- id: pnpm-v2");
-  const verifyPnpm = appendOnlyWorkflow.indexOf("Verify trusted package-manager binaries");
-  const baseInstall = appendOnlyWorkflow.indexOf("Install trusted base dependencies");
-  assert.ok(pnpmV1Setup >= 0 && pnpmV1Setup < setupNode && setupNode < pnpmV2Setup &&
-    pnpmV2Setup < baseInstall,
-  "setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed");
-  const pnpmV1SetupStep = appendOnlyWorkflow.slice(pnpmV1Setup, setupNode);
-  const pnpmV2SetupStep = appendOnlyWorkflow.slice(pnpmV2Setup, verifyPnpm);
-  assert.doesNotMatch(pnpmV1SetupStep, /package_json_file:/u,
-    "v1 setup must keep the matching root packageManager authority");
-  assert.match(pnpmV2SetupStep,
-    /package_json_file: governance\/docs-qualified-cohorts\.schema\.json/u,
-  "v2 setup must not read the conflicting v1 root packageManager authority");
+  assertTrustedPnpmSetupOrder(trustedAppendOnlySteps);
   assert.doesNotMatch(appendOnlyWorkflow, /\brun:\s+pnpm\b/u);
   const emergencyStart = appendOnlyWorkflow.indexOf(
     "Validate negative emergency append without network dependencies",
@@ -488,6 +493,15 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow, /"pnpm-lock\.yaml"/u);
   assert.match(appendOnlyWorkflow, /"governance\/docs-qualified-cohorts\.schema\.json"/u);
   assert.doesNotMatch(appendOnlyWorkflow, /authorityPaths[\s\S]{0,500}"README\.md"/u);
+});
+
+test("rejects v2 pnpm setup before trusted setup-node cache resolution", () => {
+  const steps = [...trustedAppendOnlySteps];
+  const setupNode = steps.findIndex(step => step.uses?.startsWith("actions/setup-node@"));
+  const pnpmV2 = steps.findIndex(step => step.id === "pnpm-v2");
+  [steps[setupNode], steps[pnpmV2]] = [steps[pnpmV2], steps[setupNode]];
+  assert.throws(() => assertTrustedPnpmSetupOrder(steps),
+    /setup-node cache resolution must see only v1 pnpm/u);
 });
 
 test("stages authority evolution without executing pull-request code", () => {
