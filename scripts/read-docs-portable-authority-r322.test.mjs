@@ -29,6 +29,9 @@ assert.equal(forward.content_candidate, record.content_candidate);
 const newOverrides = new Map(forward.new_overrides.map((entry) => [entry.path, entry]));
 assert.equal(newOverrides.size, forward.new_overrides.length);
 assert.deepEqual([...newOverrides.keys()].sort(), [...oldOverrides.keys()].sort());
+const liveOverrides = new Map(forward.live_overrides.map((entry) => [entry.path, entry]));
+assert.equal(liveOverrides.size, forward.live_overrides.length);
+assert.deepEqual([...liveOverrides.keys()], ['scripts/check-quality-scope.test.mjs']);
 function applyEdits(body, edits, path) {
   const lines = body.match(/[^\n]*\n|[^\n]+$/gu) ?? [];
   for (const { start, delete: count, insert } of [...edits].reverse()) {
@@ -42,9 +45,14 @@ function applyEdits(body, edits, path) {
 }
 function historicalBody(row, side) {
   const path = new URL(`../${row.path}`, import.meta.url);
-  const current = existsSync(path) ? readFileSync(path) : null;
+  let current = existsSync(path) ? readFileSync(path) : null;
   const matches = (bytes, expected) => Boolean(bytes && expected &&
     bytes.length === expected.bytes && sha(bytes) === expected.sha256);
+  const liveOverride = liveOverrides.get(row.path);
+  if (liveOverride && matches(current, liveOverride.live)) {
+    current = Buffer.from(applyEdits(current.toString('utf8'), liveOverride.edits, row.path));
+    assert.ok(matches(current, row.new), `live override differs from candidate for ${row.path}`);
+  }
   if (matches(current, row.new)) {
     if (side === 'new') {return current;}
     const override = oldOverrides.get(row.path);
@@ -82,6 +90,19 @@ test('consolidated additions preserve all seven candidate blob identities and fi
     assert.equal(blob, row.new.blob, row.path);
     assert.equal(sha(bytes), row.new.sha256, row.path);
     assert.equal(row.new.mode, '100644', row.path);
+  }
+});
+test('all 24 historical paths retain byte-authenticated old and candidate bodies', () => {
+  assert.equal(record.manifest.length, 24);
+  for (const row of record.manifest) {
+    for (const side of ['old', 'new']) {
+      if (row[side] === null) {continue;}
+      const bytes = historicalBody(row, side);
+      const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+      assert.equal(bytes.length, row[side].bytes, `${row.path} ${side} bytes`);
+      assert.equal(blob, row[side].blob, `${row.path} ${side} blob`);
+      assert.equal(sha(bytes), row[side].sha256, `${row.path} ${side} sha256`);
+    }
   }
 });
 const now = Date.parse('2026-09-28T12:00:00Z');

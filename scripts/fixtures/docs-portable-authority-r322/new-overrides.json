@@ -317,5 +317,26 @@
         }
       ]
     }
+  ],
+  "live_overrides": [
+    {
+      "path": "scripts/check-quality-scope.test.mjs",
+      "live": {
+        "bytes": 4114,
+        "sha256": "sha256:7f4894ecd051b181b5923975675b9066cc102331ceb16339f19a11ee4679e260"
+      },
+      "edits": [
+        {
+          "start": 31,
+          "delete": 3,
+          "insert": "  assert.ok(paths.includes(\"scripts/assert-node-runtime.mjs\"));\n  assert.ok(paths.includes(\"scripts/check-node-compatibility.mjs\"));\n"
+        },
+        {
+          "start": 51,
+          "delete": 0,
+          "insert": "  \"a removed Node compatibility gate\": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(\" && node scripts/check-node-compatibility.mjs\", \"\"); },\n"
+        }
+      ]
+    }
   ]
 }

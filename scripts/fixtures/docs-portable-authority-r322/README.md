@@ -16,6 +16,14 @@ manifest's byte length, Git blob SHA-1, and SHA-256, with the path and mode
 checked by the manifest. The reverse delta records one source workflow's missing
 final newline.
 
+The G-only tooling census update makes the live
+`scripts/check-quality-scope.test.mjs` differ from both historical sides.
+`new-overrides.json` records one SHA-256 and byte-length-locked live-to-candidate
+line delta for that path. The test authenticates the reconstructed candidate
+against the manifest before applying the existing candidate-to-source delta.
+The 21-source census assertion remains in the live G-only test; neither
+historical body is changed to include it.
+
 Provenance was verified from exact commit
 `ee717a097021894e67f9e814874240ecaf6f4715`, whose governance record names
 source base `18b7e22f7247a85181516a7bbb989c9d5fad7be3` and content candidate
