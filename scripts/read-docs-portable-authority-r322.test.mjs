@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import YAML from 'yaml';
@@ -17,24 +17,50 @@ const oldOverrides = new Map(historical.old_overrides.map((entry) => [entry.path
 assert.equal(oldOverrides.size, historical.old_overrides.length);
 assert.deepEqual([...oldOverrides.keys()].sort(), record.manifest.filter((row) => row.old)
   .map((row) => row.path).sort());
-function historicalBody(row, side) {
-  const current = read(row.path);
-  if (side === 'new') {return Buffer.from(current);}
-  const lines = current.match(/[^\n]*\n|[^\n]+$/gu) ?? [];
-  const override = oldOverrides.get(row.path);
-  assert.ok(override, `missing old fixture for ${row.path}`);
-  const { edits } = override;
+const forward = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
+assert.equal(forward.source_base, record.source_base);
+assert.equal(forward.content_candidate, record.content_candidate);
+const newOverrides = new Map(forward.new_overrides.map((entry) => [entry.path, entry]));
+assert.equal(newOverrides.size, forward.new_overrides.length);
+assert.deepEqual([...newOverrides.keys()].sort(), [...oldOverrides.keys()].sort());
+function applyEdits(body, edits, path) {
+  const lines = body.match(/[^\n]*\n|[^\n]+$/gu) ?? [];
   for (const { start, delete: count, insert } of [...edits].reverse()) {
     assert.ok(Number.isSafeInteger(start) && Number.isSafeInteger(count) &&
-      start >= 0 && count >= 0 && start + count <= lines.length);
+      start >= 0 && count >= 0 && start + count <= lines.length,
+    `invalid line edit for ${path}`);
+    assert.equal(typeof insert, 'string');
     lines.splice(start, count, insert);
   }
-  const body = lines.join('');
-  if (override.omit_final_newline) {
-    assert.ok(body.endsWith('\n'), `expected final newline in ${row.path}`);
-    return Buffer.from(body.slice(0, -1));
+  return lines.join('');
+}
+function historicalBody(row, side) {
+  const path = new URL(`../${row.path}`, import.meta.url);
+  const current = existsSync(path) ? readFileSync(path) : null;
+  const matches = (bytes, expected) => Boolean(bytes && expected &&
+    bytes.length === expected.bytes && sha(bytes) === expected.sha256);
+  if (matches(current, row.new)) {
+    if (side === 'new') {return current;}
+    const override = oldOverrides.get(row.path);
+    assert.ok(override, `missing old fixture for ${row.path}`);
+    const body = applyEdits(current.toString('utf8'), override.edits, row.path);
+    if (override.omit_final_newline) {
+      assert.ok(body.endsWith('\n'), `expected final newline in ${row.path}`);
+      return Buffer.from(body.slice(0, -1));
+    }
+    return Buffer.from(body);
   }
-  return Buffer.from(body);
+  if (matches(current, row.old)) {
+    if (side === 'old') {return current;}
+    const override = newOverrides.get(row.path);
+    assert.ok(override, `missing new fixture for ${row.path}`);
+    return Buffer.from(applyEdits(current.toString('utf8'), override.edits, row.path));
+  }
+  if (current === null && row.old === null && side === 'new') {
+    return readFileSync(new URL(`./fixtures/docs-portable-authority-r322/new-additions/${row.path}`,
+      import.meta.url));
+  }
+  assert.fail(`live body is neither exact historical side for ${row.path}`);
 }
 const G = ['.github/workflows/docs-portable-authority-r322.yml', 'docs/node26-portable-authority-r322.md',
   'governance/docs-portable-authority-r322.json', 'scripts/docs-portable-authority-r322.mjs',
