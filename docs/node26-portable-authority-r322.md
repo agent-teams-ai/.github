@@ -45,19 +45,26 @@ admin decision binds both comment IDs, which cannot exist when review is
 written. Review edits must precede admin acceptance; both comments must exist
 before verification. Inverse verification also checks the retained forward
 review edit before the historical owner decision, both comment edits before
-the historical deadline and merge. Both forward and inverse validate the
-forward deadline against the observed admin decision creation time; the
-acceptance cannot gain a longer lifetime by waiting to run verification.
+the historical deadline and merge. Forward and inverse each validate their own
+deadline against authenticated admin decision creation and live expiry. Inverse
+also validates the retained forward deadline against its authenticated admin
+decision creation. Neither acceptance can gain a longer lifetime by waiting to
+run verification.
 Forward verification itself
 reads the live `pull_request_target` run attempt and its unique running
 `verified-portable-r322` job, binds their run ID, attempt, protected base,
 workflow path and repository, and requires both retained comment edits to
-predate that job's actual start. It also rereads the bound
+predate that job's actual start. Inverse rereads the bound
 historical `pull_request_target` Actions run attempt at the reviewed protected
 base, the successful `verified-portable-r322` job, and both successful final
 jobs. The retained owner and review comments must predate the verifier job's
-start, when it could first observe them. The successful verifier must complete
-before the historical deadline and merge. Both final jobs must succeed on the
+start, when it could first observe them. The successful verifier must start by
+the forward deadline and complete before merge. Its GitHub `completed_at` may
+follow the deadline because forward verification enforces live expiry through
+its final reread before returning success. Inverse binds the historical workflow
+to the reviewed exact workflow blob and the historical verifier script to the
+executing script's exact bytes; an unknown historical verifier fails closed.
+Both final jobs must succeed on the
 same exact run and attempt after verifier completion and before merge; their
 completion is not subject to the decision deadline. Forward verification checks
 live expiry through its final reread, but cannot assert completion timestamps

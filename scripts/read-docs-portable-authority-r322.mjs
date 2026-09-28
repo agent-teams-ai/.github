@@ -10,6 +10,9 @@ const REPO = 'agent-teams-ai/.github';
 const REPO_ID = 1316243981;
 const SHA = /^(?!0{40}$)[a-f0-9]{40}$/u;
 const DIGEST = /^sha256:(?!0{64}$)[a-f0-9]{64}$/u;
+const PORTABLE_WORKFLOW = '.github/workflows/docs-portable-authority-r322.yml';
+const VERIFIED_WORKFLOW_BLOB = 'b2f55c633c57058cca6daab97a1e26a8a55099d5';
+const PORTABLE_VERIFIER = 'scripts/read-docs-portable-authority-r322.mjs';
 const G = [
   '.github/workflows/docs-portable-authority-r322.yml',
   'docs/node26-portable-authority-r322.md',
@@ -185,8 +188,8 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
     Date.parse(comment.updated_at) <= clock()) &&
     Date.parse(review.updated_at) <= Date.parse(decision.created_at),
   'review or admin decision chronology differs');
+  validatePortableAcceptance(accepted, record, Date.parse(decision.created_at));
   if (accepted.direction === 'forward') {
-    validatePortableAcceptance(accepted, record, Date.parse(decision.created_at));
     const { verifier } = await readPortableVerifier(api, accepted, decision, review);
     need(Date.parse(verifier.started_at) <= clock() &&
       Date.parse(verifier.started_at) <= deadline(accepted.deadline),
@@ -257,7 +260,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
     'retained forward decision or review chronology differs');
     const { run: historicalRun, jobs: historicalJobs, verifier } =
       await readPortableVerifier(api, forward, retained, forwardReview, true);
-    need(Date.parse(verifier.completed_at) <= deadline(forward.deadline) &&
+    need(Date.parse(verifier.started_at) <= deadline(forward.deadline) &&
       Date.parse(verifier.completed_at) <= mergedAt,
     'retained forward portable verification or comment chronology differs');
     for (const name of ['trusted-cohort-authority-portable-r322',
@@ -268,7 +271,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
         matches[0].status === 'completed' && matches[0].conclusion === 'success' &&
         typeof matches[0].completed_at === 'string' &&
         Number.isFinite(Date.parse(matches[0].completed_at)) &&
-        Date.parse(matches[0].completed_at) >= Date.parse(verifier.completed_at) &&
+        Date.parse(matches[0].completed_at) > Date.parse(verifier.completed_at) &&
         Date.parse(matches[0].completed_at) <= mergedAt,
       'retained forward required job or execution chronology differs');
     }
@@ -282,6 +285,9 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
         'installed forward is not inverse base ancestor');
     }
     const original = await readTree(forward.base, api), mergedTree = await readTree(installed, api);
+    need(original.get(PORTABLE_WORKFLOW)?.blob === VERIFIED_WORKFLOW_BLOB &&
+      original.get(PORTABLE_VERIFIER)?.sha256 === digest(await readFile(new URL(import.meta.url))),
+    'retained forward verifier code cannot be established');
     need(classifyPortableTransition(original, mergedTree, record) === 'portable-forward',
       'squash-installed forward tree differs');
     for (const entry of accepted.closure) {
