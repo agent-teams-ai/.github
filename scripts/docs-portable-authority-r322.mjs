@@ -147,6 +147,8 @@ export function verifyPortableBlob(bytes, identity) {
 }
 
 export function verifyPortableProtections(snapshot) {
+  need(Array.isArray(snapshot?.rulesets) &&
+    Object.hasOwn(snapshot, 'classic_branch_protection'), 'effective protections are incomplete');
   const matches = snapshot?.rulesets?.filter(({ detail }) => detail?.id === 19979783);
   need(matches?.length === 1, 'Protect main ruleset is missing');
   const { summary, detail } = matches[0];
@@ -171,4 +173,36 @@ export function verifyPortableProtections(snapshot) {
     'trusted-validation-portable-r322'].every((context) => contexts.get(context) === 15368) &&
     !contexts.has('trusted-cohort-authority-evolution-v8') && !contexts.has('trusted-validation'),
   'required context or integration differs');
+  const superseded = new Set(['trusted-cohort-authority-evolution-v8', 'trusted-validation']);
+  for (const { summary: otherSummary, detail: other } of snapshot.rulesets) {
+    need(otherSummary?.id === other?.id && Array.isArray(other.rules),
+      'effective ruleset detail differs');
+    if (otherSummary.enforcement !== 'active' && other.enforcement !== 'active') {continue;}
+    if (other.target !== 'branch') {continue;}
+    need(otherSummary.enforcement === 'active' && other.enforcement === 'active' &&
+      Array.isArray(other.bypass_actors) && other.bypass_actors.length === 0,
+    'active effective ruleset enforcement or bypass differs');
+    for (const rule of other.rules.filter((item) => item.type === 'required_status_checks')) {
+      const required = rule.parameters?.required_status_checks;
+      need(Array.isArray(required) && required.every((item) =>
+        typeof item?.context === 'string' && Number.isSafeInteger(item.integration_id)),
+      'effective ruleset required checks are incomplete');
+      need(required.every((item) => !superseded.has(item.context)),
+        'superseded context remains in effective ruleset');
+    }
+  }
+  const classic = snapshot.classic_branch_protection;
+  if (classic !== null) {
+    need(classic && typeof classic === 'object' && !Array.isArray(classic),
+      'classic branch protection is incomplete');
+    const statusChecks = classic.required_status_checks;
+    if (statusChecks !== undefined && statusChecks !== null) {
+      need(Array.isArray(statusChecks.contexts) && Array.isArray(statusChecks.checks),
+        'classic required checks are incomplete');
+      need(statusChecks.contexts.every((context) => typeof context === 'string' &&
+        !superseded.has(context)) && statusChecks.checks.every((check) =>
+        typeof check?.context === 'string' && !superseded.has(check.context)),
+      'superseded context remains in classic protection');
+    }
+  }
 }

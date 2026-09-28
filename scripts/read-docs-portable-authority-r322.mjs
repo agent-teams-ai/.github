@@ -181,7 +181,6 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
   if (accepted.direction === 'inverse') {
     const retained = await api.getDecisionComment(accepted.forward_decision_comment_id);
     const forward = parsePortableJson(Buffer.from(retained?.body ?? ''), 'retained portable forward');
-    validatePortableAcceptance(forward, record, deadline(forward.deadline) - 1000);
     need(forward.direction === 'forward' && forward.decision_comment_id === retained.id &&
       retained.user?.id === accepted.owner_id && retained.user?.login === accepted.owner_login &&
       forward.owner_id === accepted.owner_id && forward.owner_login === accepted.owner_login &&
@@ -207,12 +206,44 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
       typeof merged.merged_at === 'string' && Number.isFinite(Date.parse(merged.merged_at)),
     'forward PR is not authentically merged');
     const mergedAt = Date.parse(merged.merged_at);
+    need(typeof retained.created_at === 'string' && Number.isFinite(Date.parse(retained.created_at)),
+      'retained forward decision chronology differs');
+    validatePortableAcceptance(forward, record, Date.parse(retained.created_at));
     need([retained, forwardReview].every((comment) =>
       typeof comment.created_at === 'string' && typeof comment.updated_at === 'string' &&
       Number.isFinite(Date.parse(comment.created_at)) &&
       Date.parse(comment.created_at) <= Date.parse(comment.updated_at) &&
-      Date.parse(comment.updated_at) <= mergedAt),
-    'retained forward decision or review postdates installation');
+      Date.parse(comment.updated_at) <= mergedAt &&
+      Date.parse(comment.updated_at) <= deadline(forward.deadline)) &&
+      Date.parse(forwardReview.updated_at) <= Date.parse(retained.created_at),
+    'retained forward decision or review chronology differs');
+    const historicalRun = await api.getRunAttempt(forward.run_id, forward.run_attempt);
+    need(historicalRun?.id === forward.run_id &&
+      historicalRun.run_attempt === forward.run_attempt &&
+      historicalRun.head_sha === forward.head &&
+      historicalRun.repository?.id === REPO_ID &&
+      historicalRun.event === 'pull_request' &&
+      historicalRun.path?.split('@')[0] === '.github/workflows/docs-portable-authority-r322.yml' &&
+      historicalRun.status === 'completed' && historicalRun.conclusion === 'success',
+    'retained forward run attempt differs');
+    const historicalJobs = await api.getRunAttemptJobs(forward.run_id, forward.run_attempt);
+    need(Array.isArray(historicalJobs) && historicalJobs.length > 0 &&
+      historicalJobs.length <= 100 &&
+      new Set(historicalJobs.map((job) => job.id)).size === historicalJobs.length,
+    'retained forward jobs are incomplete');
+    for (const name of ['trusted-cohort-authority-portable-r322',
+      'trusted-validation-portable-r322']) {
+      const matches = historicalJobs.filter((job) => job.name === name);
+      need(matches.length === 1 && matches[0].run_id === forward.run_id &&
+        matches[0].run_attempt === forward.run_attempt &&
+        matches[0].status === 'completed' && matches[0].conclusion === 'success' &&
+        typeof matches[0].completed_at === 'string' &&
+        Number.isFinite(Date.parse(matches[0].completed_at)) &&
+        Date.parse(matches[0].completed_at) >= Date.parse(retained.updated_at) &&
+        Date.parse(matches[0].completed_at) <= deadline(forward.deadline) &&
+        Date.parse(matches[0].completed_at) <= mergedAt,
+      'retained forward required job or execution chronology differs');
+    }
     const installed = merged.merge_commit_sha;
     const related = await api.compare(forward.base, installed);
     need(related?.status === 'ahead' && related.merge_base_commit?.sha === forward.base,
@@ -240,6 +271,9 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
     'retained forward provenance moved');
     need(json(await api.getDecisionComment(forward.review_comment_id)) === json(forwardReview),
       'retained forward review moved');
+    need(json(await api.getRunAttempt(forward.run_id, forward.run_attempt)) === json(historicalRun) &&
+      json(await api.getRunAttemptJobs(forward.run_id, forward.run_attempt)) === json(historicalJobs),
+    'retained forward execution moved');
   }
   need(json(await api.getRepository()) === json(repo) &&
     tuple(await api.getPull(accepted.pull_number)) === tuple(pull) &&
@@ -275,6 +309,15 @@ export function makePortableApi(read = gh, recordPath = new URL('../governance/d
     }),
     getCollaboratorPermission: (login) => at(`collaborators/${login}/permission`),
     getDecisionComment: (id) => at(`issues/comments/${id}`),
+    getRunAttempt: (id, attempt) => at(`actions/runs/${id}/attempts/${attempt}`),
+    getRunAttemptJobs: async (id, attempt) => {
+      const response = await at(`actions/runs/${id}/attempts/${attempt}/jobs?per_page=100`);
+      need(Number.isSafeInteger(response?.total_count) && response.total_count > 0 &&
+        response.total_count <= 100 && Array.isArray(response.jobs) &&
+        response.jobs.length === response.total_count,
+      'historical run job inventory is incomplete');
+      return response.jobs;
+    },
     getPullFiles: async (number) => {
       const pages = [];
       for (let page = 1; page <= 31; page++) {

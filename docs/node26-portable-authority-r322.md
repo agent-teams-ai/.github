@@ -26,8 +26,11 @@ and inverse families. Qualification V8 is a different contract.
 
 The workflow uses protected-base execution, fresh PR identity and immutable
 tree/blob reconstruction, complete API pages, authenticated admin comments,
-effective protections, a single bound run/attempt, deadline at most 24 hours,
-and final rereads. PR update timestamps may advance with comments; final live
+effective protections across classic main protection and every active returned
+branch ruleset, a single bound run/attempt, deadline at most 24 hours, and final rereads.
+The complete effective set must not retain either superseded V8 or
+trusted-validation check; Protect main still requires the six exact App
+contexts and has no bypass actors. PR update timestamps may advance with comments; final live
 tuples are reread. Their seven files plus the r317 imported closure must be
 byte-identical at base and head to a reviewed owner tuple. The inverse must
 retain the actual merged forward PR and installed squash tree, reconstruct the
@@ -36,7 +39,13 @@ The distinct human review comment binds reviewable execution coordinates,
 including the nine-file closure, protection digest and run attempt. The later
 admin decision binds both comment IDs, which cannot exist when review is
 written. Review edits must precede admin acceptance; both comments must exist
-before verification.
+before verification. Inverse verification also checks the retained forward
+review edit before the historical owner decision, both comment edits before
+the historical deadline and merge, and validates the forward deadline against
+the observed historical decision creation time. It also rereads the bound
+historical Actions run attempt and both successful final jobs, whose completion
+must precede that deadline and installation. An expired forward deadline
+remains eligible for rollback when that historical chronology was valid.
 
 The successor workflow copies the entire required Cohort V8 behavior and full trusted
 validation/materialization/emergency/install/qualification branches for every

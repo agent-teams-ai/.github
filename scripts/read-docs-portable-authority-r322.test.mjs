@@ -106,6 +106,45 @@ test('protected check cutover requires the two exact new App contexts', () => {
   checks[0].integration_id = 1;
   assert.throws(() => verifyPortableProtections(snapshot));
 });
+test('effective protection refuses superseded checks in classic and inherited rulesets', async () => {
+  for (const location of ['classic-contexts', 'classic-checks', 'inherited-ruleset']) {
+    const fixture = executionFixture();
+    if (location.startsWith('classic')) {
+      fixture.protections.classic_branch_protection = { required_status_checks: {
+        strict: true,
+        contexts: location === 'classic-contexts' ? ['trusted-validation'] : [],
+        checks: location === 'classic-checks' ? [{ context: 'trusted-cohort-authority-evolution-v8',
+          app_id: 15368 }] : [],
+      } };
+    } else {
+      const detail = structuredClone(fixture.protections.rulesets[0].detail);
+      detail.id = 19979784;
+      detail.name = 'Inherited main';
+      detail.source_type = 'Organization';
+      detail.rules = [{ type: 'required_status_checks', parameters: {
+        strict_required_status_checks_policy: true,
+        required_status_checks: [{ context: 'trusted-validation', integration_id: 15368 }],
+      } }];
+      fixture.protections.rulesets.push({ summary: { id: detail.id, name: detail.name,
+        enforcement: 'active' }, detail });
+    }
+    fixture.decision.expected_protections_digest = sha(JSON.stringify(fixture.protections));
+    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+      () => now), /superseded context/u, location);
+  }
+});
+test('a second active branch ruleset cannot reintroduce a bypass', async () => {
+  const fixture = executionFixture();
+  const detail = structuredClone(fixture.protections.rulesets[0].detail);
+  detail.id = 19979784;
+  detail.name = 'Inherited main';
+  detail.bypass_actors = [{ actor_id: 7, actor_type: 'Team', bypass_mode: 'always' }];
+  fixture.protections.rulesets.push({ summary: { id: detail.id, name: detail.name,
+    enforcement: 'active' }, detail });
+  fixture.decision.expected_protections_digest = sha(JSON.stringify(fixture.protections));
+  await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+    () => now), /bypass differs/u);
+});
 test('read port completes pages and decodes blobs without publishing or writing', async () => {
   const calls = [];
   const api = makePortableApi(async (path) => {
@@ -129,6 +168,23 @@ test('file port accepts exactly 3000 entries only with an empty terminal page', 
   assert.equal((await api.getPullFiles(322)).flat().length, 3000);
   const extra = makePortableApi(async () => page);
   await assert.rejects(extra.getPullFiles(322), /exceeded 3000/u);
+});
+test('historical execution port binds one attempt and complete job inventory', async () => {
+  const calls = [];
+  const run = { id: 11, run_attempt: 2 };
+  const jobs = [{ id: 21 }, { id: 22 }];
+  const api = makePortableApi(async (path) => {
+    calls.push(path);
+    return path.endsWith('/jobs?per_page=100') ? { total_count: 2, jobs } : run;
+  });
+  assert.deepEqual(await api.getRunAttempt(11, 2), run);
+  assert.deepEqual(await api.getRunAttemptJobs(11, 2), jobs);
+  assert.deepEqual(calls, [
+    'repos/agent-teams-ai/.github/actions/runs/11/attempts/2',
+    'repos/agent-teams-ai/.github/actions/runs/11/attempts/2/jobs?per_page=100',
+  ]);
+  const incomplete = makePortableApi(async () => ({ total_count: 3, jobs }));
+  await assert.rejects(incomplete.getRunAttemptJobs(11, 2), /inventory is incomplete/u);
 });
 function gitTree(files, revision) {
   const root = new Map(), entries = [];
@@ -340,6 +396,16 @@ function inverseFixture() {
   fixture.api.getPullFiles = async () => [record.manifest.map((row) => ({
     filename: row.path, status: row.old === null ? 'removed' : 'modified',
     sha: row.old?.blob }))];
+  fixture.api.getRunAttempt = async () => ({ id: forward.run_id,
+    run_attempt: forward.run_attempt, head_sha: forward.head,
+    repository: { id: 1316243981 }, event: 'pull_request',
+    path: '.github/workflows/docs-portable-authority-r322.yml',
+    status: 'completed', conclusion: 'success' });
+  fixture.api.getRunAttemptJobs = async () => [
+    'trusted-cohort-authority-portable-r322', 'trusted-validation-portable-r322',
+  ].map((name, index) => ({ id: 100 + index, name, run_id: forward.run_id,
+    run_attempt: forward.run_attempt, status: 'completed', conclusion: 'success',
+    completed_at: '2026-09-28T11:14:00Z' }));
   fixture.api.getDecisionComment = async (id) => {
     const issue = id === 4 || id === 5 ? 323 : 322;
     const isReview = id === 2 || id === 5;
@@ -379,7 +445,57 @@ test('inverse refuses a forward decision or review created or edited after merge
       return commentId === id ? { ...comment, [field]: '2026-09-28T11:25:00Z' } : comment;
     };
     await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /postdates installation/u);
+      () => now), /chronology/u);
+  }
+});
+test('inverse checks retained forward review order and actual historical deadline', async () => {
+  for (const caseName of ['review-after-acceptance', 'decision-after-deadline',
+    'review-after-deadline', 'valid-expired-forward']) {
+    const { fixture, inverse, forward } = inverseFixture();
+    if (['decision-after-deadline', 'review-after-deadline', 'valid-expired-forward']
+      .includes(caseName)) {
+      forward.deadline = caseName === 'valid-expired-forward' ?
+        '2026-09-28T11:15:00Z' : '2026-09-28T11:05:00Z';
+    }
+    const original = fixture.api.getDecisionComment;
+    fixture.api.getDecisionComment = async (id) => {
+      const comment = await original(id);
+      if (id === 2 && caseName === 'review-after-acceptance') {
+        comment.updated_at = '2026-09-28T11:15:00Z';
+      }
+      if (id === 2 && caseName === 'review-after-deadline') {
+        comment.updated_at = '2026-09-28T11:08:00Z';
+      }
+      return comment;
+    };
+    if (caseName === 'valid-expired-forward') {
+      assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
+        () => now)).direction, 'inverse');
+    } else {
+      await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
+        () => now), /chronology|accepted execution coordinates/u, caseName);
+    }
+  }
+});
+test('inverse requires a successful historical attempt with both jobs before deadline', async () => {
+  for (const mutation of ['wrong-head', 'failed-attempt', 'missing-job', 'late-job']) {
+    const { fixture, inverse, forward } = inverseFixture();
+    forward.deadline = '2026-09-28T11:15:00Z';
+    if (mutation === 'wrong-head' || mutation === 'failed-attempt') {
+      const original = fixture.api.getRunAttempt;
+      fixture.api.getRunAttempt = async (...args) => ({ ...await original(...args),
+        ...(mutation === 'wrong-head' ? { head_sha: 'f'.repeat(40) } : { conclusion: 'failure' }) });
+    } else {
+      const original = fixture.api.getRunAttemptJobs;
+      fixture.api.getRunAttemptJobs = async (...args) => {
+        const jobs = await original(...args);
+        return mutation === 'missing-job' ? jobs.slice(0, 1) :
+          jobs.map((job, index) => index === 0 ? {
+            ...job, completed_at: '2026-09-28T11:16:00Z' } : job);
+      };
+    }
+    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
+      () => now), /retained forward run attempt|retained forward required job/u, mutation);
   }
 });
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
