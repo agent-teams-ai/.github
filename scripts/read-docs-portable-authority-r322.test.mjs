@@ -3,12 +3,18 @@ import { test } from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { Script } from 'node:vm';
 import YAML from 'yaml';
 import { parsePortableJson, validatePortableRecord, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
 import { classifyPortableIntent, makePortableApi, validatePortableAcceptance, verifyPortableExecution } from './read-docs-portable-authority-r322.mjs';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
+const additionBodies = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-additions.json'));
+const addedRows = record.manifest.filter((row) => row.old === null);
+assert.equal(addedRows.length, 7);
+assert.deepEqual(Object.keys(additionBodies).sort(), addedRows.map((row) => row.path).sort());
 const historical = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
 assert.equal(historical.provenance_commit, 'ee717a097021894e67f9e814874240ecaf6f4715');
 assert.equal(historical.source_base, record.source_base);
@@ -57,8 +63,7 @@ function historicalBody(row, side) {
     return Buffer.from(applyEdits(current.toString('utf8'), override.edits, row.path));
   }
   if (current === null && row.old === null && side === 'new') {
-    return readFileSync(new URL(`./fixtures/docs-portable-authority-r322/new-additions/${row.path}`,
-      import.meta.url));
+    return Buffer.from(additionBodies[row.path], 'utf8');
   }
   assert.fail(`live body is neither exact historical side for ${row.path}`);
 }
@@ -67,6 +72,18 @@ const G = ['.github/workflows/docs-portable-authority-r322.yml', 'docs/node26-po
   'scripts/docs-portable-authority-r322.test.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
   'scripts/read-docs-portable-authority-r322.test.mjs', 'scripts/docs-legacy-admission-recovery.mjs',
   'scripts/verify-docs-platform-recovery-installation-r317.mjs'];
+test('consolidated additions preserve all seven candidate blob identities and final newlines', () => {
+  for (const row of addedRows) {
+    assert.equal(typeof additionBodies[row.path], 'string', row.path);
+    assert.ok(additionBodies[row.path].endsWith('\n'), row.path);
+    const bytes = historicalBody(row, 'new');
+    const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+    assert.equal(bytes.length, row.new.bytes, row.path);
+    assert.equal(blob, row.new.blob, row.path);
+    assert.equal(sha(bytes), row.new.sha256, row.path);
+    assert.equal(row.new.mode, '100644', row.path);
+  }
+});
 const now = Date.parse('2026-09-28T12:00:00Z');
 const accepted = () => ({
   schema_version: 1, repository: 'agent-teams-ai/.github', repository_id: 1316243981,
@@ -802,6 +819,43 @@ test('inverse binds owner comment to the successful portable verifier before fin
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
 const oldV8 = YAML.parse(read('.github/workflows/docs-cohort-authority-evolution-v8.yml'));
 const oldValidation = YAML.parse(read('.github/workflows/docs-cohort-append-only.yml'));
+test('protected-base trusted-validation accepts the G-only tree after consolidation', async () => {
+  const source = oldValidation.jobs['trusted-validation'].steps.find((step) =>
+    step.id === 'materialize').with.script;
+  const materialize = new Script(`(async () => {\n${source}\n})()`, {
+    filename: '.github/workflows/docs-cohort-append-only.yml',
+  });
+  const paths = [
+    ...G.slice(0, 7),
+    'scripts/fixtures/docs-portable-authority-r322/README.md',
+    'scripts/fixtures/docs-portable-authority-r322/new-additions.json',
+    'scripts/fixtures/docs-portable-authority-r322/new-overrides.json',
+    'scripts/fixtures/docs-portable-authority-r322/old-overrides.json',
+  ];
+  async function probe(filenames) {
+    const failures = [], outputs = [];
+    const files = filenames.map((filename) => ({ filename, status: 'added' }));
+    const github = { paginate: async () => files,
+      rest: { pulls: { listFiles: () => {} }, repos: { get: () => {
+        throw Error('G-only no-op must not fetch registry authority');
+      } } } };
+    const context = { payload: { pull_request: { changed_files: files.length, number: 323 } },
+      repo: { owner: 'agent-teams-ai', repo: '.github' } };
+    const core = { setFailed: (message) => failures.push(message),
+      setOutput: (name, value) => outputs.push([name, value]) };
+    await materialize.runInNewContext({ require: createRequire(import.meta.url),
+      context, github, core });
+    return { failures, outputs };
+  }
+  assert.deepEqual(await probe(paths), { failures: [], outputs: [['mode', 'noop']] });
+  for (const basename of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
+    const collision = `scripts/fixtures/docs-portable-authority-r322/new-additions/scripts/node-compatibility-tooling/${basename}`;
+    const result = await probe([...paths, collision]);
+    assert.equal(result.outputs.length, 0, basename);
+    assert.match(result.failures[0], /Authority files require a separately staged successor check/u,
+      basename);
+  }
+});
 const finalIds = ['trusted_cohort_authority_portable_r322', 'trusted_validation_portable_r322'];
 function verifyValidation(steps) {
   const before = structuredClone(oldValidation.jobs['trusted-validation'].steps), after = structuredClone(steps);

@@ -4,8 +4,9 @@
 modified paths in `governance/docs-portable-authority-r322.json`. Each edit has
 a zero-based line index in its starting body, a line count to delete, and the
 literal replacement text. Edits apply in descending index order. The seven
-candidate-only bodies live under `new-additions/` at their manifest paths.
-No modified file is copied into this fixture.
+candidate-only UTF-8 bodies are string values in `new-additions.json`, keyed by
+their manifest paths. JSON escaping preserves their exact bytes, including final
+newlines. No modified file is copied into this fixture.
 
 The test selects an exact checked-in source or candidate body by length and
 SHA-256. It uses the forward delta when only the source body is present, the
@@ -22,4 +23,8 @@ source base `18b7e22f7247a85181516a7bbb989c9d5fad7be3` and content candidate
 `git show <source-base>:<path>` (when old exists) and
 `git show <content-candidate>:<path>` matched the recorded blob ID, length,
 and SHA-256. The deltas and additions need no Git objects, branch, remote,
-network, or external patch executable at test time.
+network, or external patch executable at test time. The JSON map avoids nested
+fixture files named `package.json`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml`,
+which the protected-base trusted-validation job treats as installation authority
+at any depth. The test executes that job's materialization script against the
+G-only path inventory and checks both the no-op result and the former collision.
