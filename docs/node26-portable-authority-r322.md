@@ -44,7 +44,11 @@ written. Review edits must precede admin acceptance; both comments must exist
 before verification. Inverse verification also checks the retained forward
 review edit before the historical owner decision, both comment edits before
 the historical deadline and merge, and validates the forward deadline against
-the observed historical decision creation time. It also rereads the bound
+the observed historical decision creation time. Forward verification itself
+reads the live `pull_request_target` run attempt and its unique running
+`verified-portable-r322` job, binds their run ID, attempt, protected base,
+workflow path and repository, and requires both retained comment edits to
+predate that job's actual start. It also rereads the bound
 historical `pull_request_target` Actions run attempt at the reviewed protected
 base, the successful `verified-portable-r322` job, and both successful final
 jobs. The retained owner and review comments must predate the verifier job's
@@ -63,16 +67,32 @@ under both supplied Node handles. Its two new final contexts succeed only when t
 branch succeeds. Existing historical workflows, three other admission
 contexts and `check` remain separate obligations.
 
-Staging currently has no admitted bootstrap route. The present required V8
-rejects the seven-file G installation, and proposed ADR-0006/0007 leave G
-unbound. An owner must first establish independently protected G staging under
-the accepted governance procedure; a temporary bypass, failed-check merge or
-head-executed workflow is not evidence. After G legitimately reaches protected
-main, rebase a positively reviewed portable content pair without modifying G,
-review the new exact base/head, observe real new App15368 contexts, and accept
-a fresh human-admin execution tuple. Only then can the owner consider replacing
-exactly old V8 and trusted-validation contexts with the two successors while
-retaining other required contexts and settings. The verifier rejects old contexts.
+Staging currently has no admitted bootstrap route. Under the current protected
+rules neither this stacked G installation nor the portable content PR is
+mergeable: V8 rejects G, and the old required authority checks cannot admit the
+content transition. Proposed ADR-0006/0007 leave G unbound. A separate, finite
+bridge B is a conditional prerequisite, subject to an accepted owner decision,
+independent protected enforcement, exact reviewed transitions, and successful
+required checks. No such bridge or authorization is established here. G must
+first be unstacked and reviewed as an exact G-only PR against protected main;
+its fresh head and required check results must be verified before any merge.
+No bypass or failed-check merge is an installation route.
+
+If that independent bridge is established, retain protection throughout its
+handoff: require B alongside the old checks before replacing any old required
+context, then change only the contexts that the reviewed bridge actually covers.
+After G legitimately reaches protected main, rebase the portable content pair
+without modifying G and review its new exact base/head. While B remains
+required, install the two successor App15368 contexts and remove the two
+superseded contexts wherever they apply. Verify that both new contexts really
+run and pass under the new effective protection before considering the content
+merge or retirement of B. The portable verifier rejects the old contexts, so
+this protection change necessarily precedes a successful portable run. It
+cannot serve as evidence authorizing its own cutover. The actual forward
+decision and independent review must bind a subsequent exact run attempt and
+both comments must be final before that attempt's verifier job starts. Preserve
+every other required context and protection setting. A bridge, context change,
+or accepted decision is not implied by this document.
 
 For rollback, retain original protection JSON, forward acceptance, actual
 merged G and portable commits, run/check provenance, and every preimage. While

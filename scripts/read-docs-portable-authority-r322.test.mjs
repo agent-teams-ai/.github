@@ -309,6 +309,14 @@ function executionFixture() {
       body: JSON.stringify({ decision: 'accept-reviewed-corrected-portable-content',
         source_base: record.source_base, content_candidate: record.content_candidate,
         ...reviewedCoordinates(decision) }) },
+    getRunAttempt: async () => ({ id: decision.run_id, run_attempt: decision.run_attempt,
+      head_sha: decision.base, repository: { id: 1316243981 },
+      event: 'pull_request_target', path: '.github/workflows/docs-portable-authority-r322.yml',
+      status: 'in_progress', conclusion: null }),
+    getRunAttemptJobs: async () => [{ id: 102, name: 'verified-portable-r322',
+      run_id: decision.run_id, run_attempt: decision.run_attempt,
+      status: 'in_progress', conclusion: null,
+      started_at: '2026-09-28T11:01:00Z', completed_at: null }],
     getPullFiles: async () => [record.manifest.map((row) => ({ filename: row.path,
       status: row.status, sha: row.new.blob }))],
     getTree: async (revision) => gitTree(revision === decision.base ? baseFiles : headFiles, revision),
@@ -321,6 +329,57 @@ test('complete reviewed forward passes reconstructed tree and all final rereads'
   fixture.event.pull_request.updated_at = '2026-09-28T10:50:00Z';
   assert.equal((await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
     () => now)).status, 'exact_portable_candidate_verified');
+});
+test('forward chronology rejects comments arriving after its own verifier starts', async () => {
+  for (const [id, field] of [[1, 'created_at'], [1, 'updated_at'],
+    [2, 'created_at'], [2, 'updated_at']]) {
+    const fixture = executionFixture();
+    const original = fixture.api.getDecisionComment;
+    fixture.api.getDecisionComment = async (commentId) => {
+      const comment = await original(commentId);
+      const time = '2026-09-28T11:02:00Z';
+      if (id === 2 && commentId === 1) {
+        return { ...comment, created_at: '2026-09-28T11:03:00Z',
+          updated_at: '2026-09-28T11:03:00Z' };
+      }
+      if (commentId !== id) {return comment;}
+      return { ...comment, ...(field === 'created_at' ?
+        { created_at: time, updated_at: time } : { updated_at: time }) };
+    };
+    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+      () => now), /verifier|chronology/u, `${id} ${field}`);
+  }
+});
+test('forward chronology accepts both comments before its own verifier starts', async () => {
+  const fixture = executionFixture();
+  const result = await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+    () => now);
+  assert.equal(result.status, 'exact_portable_candidate_verified');
+});
+test('forward chronology binds the live attempt and its unique running verifier job', async () => {
+  for (const mutation of ['wrong-attempt', 'wrong-base', 'wrong-event', 'missing-verifier',
+    'duplicate-verifier', 'wrong-job-attempt', 'not-running', 'missing-start']) {
+    const fixture = executionFixture();
+    const originalRun = fixture.api.getRunAttempt;
+    fixture.api.getRunAttempt = async (...args) => {
+      const run = await originalRun(...args);
+      return mutation === 'wrong-attempt' ? { ...run, run_attempt: run.run_attempt + 1 } :
+        mutation === 'wrong-base' ? { ...run, head_sha: fixture.decision.head } :
+          mutation === 'wrong-event' ? { ...run, event: 'pull_request' } : run;
+    };
+    const originalJobs = fixture.api.getRunAttemptJobs;
+    fixture.api.getRunAttemptJobs = async (...args) => {
+      const jobs = await originalJobs(...args);
+      if (mutation === 'missing-verifier') {return [];}
+      if (mutation === 'duplicate-verifier') {return [...jobs, { ...jobs[0], id: 103 }];}
+      if (mutation === 'wrong-job-attempt') {jobs[0].run_attempt++;}
+      if (mutation === 'not-running') {jobs[0].status = 'completed';}
+      if (mutation === 'missing-start') {jobs[0].started_at = null;}
+      return jobs;
+    };
+    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+      () => now), /run attempt|jobs|verifier|chronology/u, mutation);
+  }
 });
 test('provider, owner, review, closure and protection mutations fail', async () => {
   for (const mutate of [
@@ -455,6 +514,30 @@ function inverseFixture() {
   };
   return { fixture, inverse, forward, mergedPull, newFiles };
 }
+test('portable prestart chronology is accepted by forward and retained inverse', async () => {
+  const current = executionFixture();
+  assert.equal((await verifyPortableExecution(current.event, current.decision, current.api,
+    () => now)).direction, 'forward');
+  const { fixture, inverse } = inverseFixture();
+  assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
+    () => now)).direction, 'inverse');
+});
+test('retained inverse chronology rejects a forward comment edited after verifier start', async () => {
+  for (const id of [2, 3]) {
+    const { fixture, inverse } = inverseFixture();
+    const original = fixture.api.getDecisionComment;
+    fixture.api.getDecisionComment = async (commentId) => {
+      const comment = await original(commentId);
+      if (id === 2 && commentId === 3) {
+        return { ...comment, created_at: '2026-09-28T11:14:00Z',
+          updated_at: '2026-09-28T11:14:00Z' };
+      }
+      return commentId === id ? { ...comment, updated_at: '2026-09-28T11:13:00Z' } : comment;
+    };
+    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
+      () => now), /chronology/u, `forward comment ${id}`);
+  }
+});
 test('inverse accepts distinct squash commit and restores all preimages', async () => {
   const { fixture, inverse } = inverseFixture();
   assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
