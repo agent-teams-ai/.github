@@ -19,6 +19,35 @@ a current human-admin execution comment are required after source freeze.
 Neither local tests nor source review can replace a required hosted check. The
 existing V8 and trusted-validation refusals remain in force.
 
+The proposed central G installation is a different Git transition. The exact
+diff from planned main base `18b7e22f7247a85181516a7bbb989c9d5fad7be3`
+to G-only owner tree `10b30f72454858b8f3ed5918b4e5285769eda228`
+adds **11 files**:
+
+- [portable workflow](../.github/workflows/docs-portable-authority-r322.yml)
+- [this installation document](node26-portable-authority-r322.md)
+- [portable content record](../governance/docs-portable-authority-r322.json)
+- [pure portable policy](../scripts/docs-portable-authority-r322.mjs)
+- [policy tests](../scripts/docs-portable-authority-r322.test.mjs)
+- [execution verifier](../scripts/read-docs-portable-authority-r322.mjs)
+- [execution verifier tests](../scripts/read-docs-portable-authority-r322.test.mjs)
+- [historical fixture guide](../scripts/fixtures/docs-portable-authority-r322/README.md)
+- [candidate additions fixture](../scripts/fixtures/docs-portable-authority-r322/new-additions.json)
+- [candidate forward overrides fixture](../scripts/fixtures/docs-portable-authority-r322/new-overrides.json)
+- [source reverse overrides fixture](../scripts/fixtures/docs-portable-authority-r322/old-overrides.json)
+
+The acceptance verifier's **nine-file execution binding** is a different
+inventory: the seven principal G files above, plus the existing
+`scripts/docs-legacy-admission-recovery.mjs` and
+`scripts/verify-docs-platform-recovery-installation-r317.mjs` imports. Those
+two imports already exist at the G base. The four fixture/support additions
+belong to the full 11-addition inventory in the G Git diff even though they
+are outside that nine-file execution binding. The G-only PR must carry and
+review all 11 additions; its rollback must account for all 11 removals. The
+same G diff also modifies `scripts/check-quality-scope.test.mjs`; that
+existing file is outside both the 11-addition count and the nine-file
+execution binding. Include its preimage in the complete G rollback review.
+
 The router selects portable verification for all 24 content paths or any of
 the seven G paths, including rename sources. Partial content and r317 imports
 retain required **Cohort Authority Evolution V8** and its historical forward
@@ -90,7 +119,8 @@ content transition. Proposed ADR-0006/0007 leave G unbound. A separate, finite
 bridge B is a conditional prerequisite, subject to an accepted owner decision,
 independent protected enforcement, exact reviewed transitions, and successful
 required checks. No such bridge or authorization is established here. G must
-first be unstacked and reviewed as an exact G-only PR against protected main;
+first be unstacked and reviewed as an exact 11-addition G-only PR against
+protected main;
 its fresh head and required check results must be verified before any merge.
 No bypass or failed-check merge is an installation route.
 
@@ -116,5 +146,10 @@ the successor enforces both directions, verify the installed forward tree and
 propose the complete 24-path inverse, restoring 17 old blobs and removing the
 seven portable additions. Observe original required checks after source
 restoration before restoring the original protection JSON. Removing G is a
-separate exact seven-file removal transition; the portable inverse does not
-delete its own guard.
+separate exact 11-file removal transition covering every G addition listed
+above, including the four fixture/support files; the portable inverse does
+not delete its own guard. Check the complete main-to-installed-G Git diff and
+its inverse, rather than using the nine-file execution binding as a removal
+inventory. Preserve the bridge prerequisite, owner decision, required checks
+and effective protection throughout rollback; no bypass or failed-check merge
+is authorized.
