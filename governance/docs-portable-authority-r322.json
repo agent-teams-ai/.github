@@ -1,0 +1,397 @@
+{
+  "schema_version": 1,
+  "source_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+  "content_candidate": "6e77efe7ef0c686c9e95d4d361578c8c594aad13",
+  "manifest": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "4036cdaa2a5b7eadf1ca96f737944851361e9361",
+        "bytes": 845,
+        "sha256": "sha256:e02b870104e91813b34a2a6dd0098bd713da876543c9b0917cc9a08d6f9bdeb2"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "c818fd484abc6204f05540cdd0143cfeaf66cf40",
+        "bytes": 3041,
+        "sha256": "sha256:bf77f0f51b59d54b70043b192c18c71fd04e3e1ce9d78e37a6256da7c20f1fdb"
+      }
+    },
+    {
+      "path": ".github/workflows/docs-admission-evidence.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "6de75ea253f021c255216862283400ef22c35a13",
+        "bytes": 17756,
+        "sha256": "sha256:c307850dd7bc47f7d89f07dc4ccf09085f81bf01ec7ad29e8070a9b54620c0d2"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "b0cd6bcf796b33511b34390247586d536573d8c9",
+        "bytes": 19470,
+        "sha256": "sha256:94a9847bf972712439460060118934c5d81a1e43e0aec2913db5d37c8ce4c725"
+      }
+    },
+    {
+      "path": ".github/workflows/docs-cohort-append-only.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "3c7f54dc24a6a2cd8c1c124df242841cde46df87",
+        "bytes": 13538,
+        "sha256": "sha256:9d30a19b9a22022a3ee5e2ce4e56ad52b636c4693f1b03eb2b275f18cc838c02"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "a56dd6f9a502edbe4db219dbe160ee5fccbf78bd",
+        "bytes": 15247,
+        "sha256": "sha256:83d880af42a8c1668e5c321ab00f6862e66a73b712c8ed61051a882853c5eba3"
+      }
+    },
+    {
+      "path": ".github/workflows/docs-fleet-audit.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "cd2cfee3713da2669b7a414a26d57aceff0038ba",
+        "bytes": 1094,
+        "sha256": "sha256:82f18b83c81fc31912bebce38f87771219070ebcc82d07a35480451be3145623"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "5946623a2d44b4f0a08bddd7fea48052db605ebb",
+        "bytes": 2693,
+        "sha256": "sha256:a26032881c019c7c809697a4de015ed59ea8ed8f09bdf4520e76d829294b0dff"
+      }
+    },
+    {
+      "path": ".github/workflows/docs-platform-recovery-installation-r317.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "3e07551ab95719b62c67595e7bb2819ae01670b3",
+        "bytes": 1050,
+        "sha256": "sha256:3ae5eab34b356dcf7a30873b3999c4d72b5ee2a643a25f99980bfbfcd5a17f07"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "e7d0ee8d5b383c31a4c0a6a0d0433dbf714ca38f",
+        "bytes": 2706,
+        "sha256": "sha256:9b32e43c8765746cd5356c01a58459b339dab9ab8a7e75164ce82ab0e41ad2d4"
+      }
+    },
+    {
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+        "bytes": 16954,
+        "sha256": "sha256:ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "ddb69a618290eb48cfe41a59a8821c61524c912a",
+        "bytes": 20481,
+        "sha256": "sha256:7abb7262fff9d32815c68bd156c694ceeaec52c0858a4ea3d16b84eb7018f5c4"
+      }
+    },
+    {
+      "path": ".github/workflows/organization-inventory-drift.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "454895d3558437b884299e9e23402a4dca59ca19",
+        "bytes": 1235,
+        "sha256": "sha256:97355e48b7b6acf98270346c636addea8134443a337a0233691b8bfbe76ee21f"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "8db7aa268f3258de991e565e3723d7c27bfa4f43",
+        "bytes": 2834,
+        "sha256": "sha256:680353cda03a453dd319eb1e828980f22d5fa8501c94b84a919b3481f462c491"
+      }
+    },
+    {
+      "path": ".github/workflows/reviewrouter-codex.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "546f044775de26e7fefb91246848beae5a9451b0",
+        "bytes": 2644,
+        "sha256": "sha256:6c70d1338a6a9a9a5967a5bf832bfe3b9c83afc64453dd1b44e9adfaaf2d8362"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "9d979fe54f0ba99b075ee39355c6eb5975e33794",
+        "bytes": 4083,
+        "sha256": "sha256:d903af77f1f9801b079bb30636ab88a30025cf03329b783fd8225132f3bf3905"
+      }
+    },
+    {
+      "path": ".github/workflows/reviewrouter-interaction.yml",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "6d99f10230e1cb202237db160722dbfe7515a9e3",
+        "bytes": 1509,
+        "sha256": "sha256:b62e98591d4f84ec11621c051d3dffdb8c40ed2157b3de4634586ff68979ea8f"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "9955e97bcdfde5d174614ef2694542d1b5072102",
+        "bytes": 3993,
+        "sha256": "sha256:6ecee86140d260fcb594c08d86bf0b594ff54a4b957b5d76a4aabb9ba4b3b634"
+      }
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "b5a95cbdb375432362daeec43431f9ecc02a6f35",
+        "bytes": 4294,
+        "sha256": "sha256:a83db8e785a4df58e401c116f07a411005a3a748f7b465e330a84c5fa3ae1fa5"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "b54f82af80c1f9a129ce58955088399353fdd3a7",
+        "bytes": 4439,
+        "sha256": "sha256:5bc474c294059a79cedef3ebf04359af54cc212516df526f5313a1495e74aac9"
+      }
+    },
+    {
+      "path": "docs/node-runtime-compatibility.md",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "9a5f74f37a1835b50a1f1b6f86eb97e561351ddd",
+        "bytes": 2302,
+        "sha256": "sha256:6db277cf6904e17f21c5998aa5580e143194b9b515668b529a2c0803bb6a7180"
+      }
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "b4bee381c864b24ee01f3da9a47582f304a61514",
+        "bytes": 1607,
+        "sha256": "sha256:abd7a46e8db0a46159c0dfa09848da9b27d701708522ec21b41a488998b701a0"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "de9749b18a8a6ad1213390a7bfe10d6e3e4e10d5",
+        "bytes": 1669,
+        "sha256": "sha256:48cfae3063cc00c9a82d8b321073693e93124e25029de87c78f59ff577493415"
+      }
+    },
+    {
+      "path": "scripts/assert-node-runtime.mjs",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "9c8f8752d7ad682c51436f28beb07984a72eb97f",
+        "bytes": 1009,
+        "sha256": "sha256:169f00f8bf67db6543cbdf0faf2ec7dc4fe0522bdde905d8f99e2c2c89257c45"
+      }
+    },
+    {
+      "path": "scripts/check-community-files.mjs",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "b43b247a4b727974ef878ff09abc05cd17f22d0e",
+        "bytes": 21730,
+        "sha256": "sha256:2826c86560b2c6d2d483a26a818459709e975465e727b6e0def7577db812dc26"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "5bdc09cb663ec16f99ca07244b3a1fa5e847bf4d",
+        "bytes": 25104,
+        "sha256": "sha256:e8d167ac41a3d9b1a3e7759d95f4c7901e6b4c10c238430e92b3193b32af2332"
+      }
+    },
+    {
+      "path": "scripts/check-community-files.test.mjs",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "fe25fc2080ed470098208c7753793e8c1b144e4f",
+        "bytes": 7806,
+        "sha256": "sha256:a21cf5e88da498335ab53404b67166a6a64a2a737e5840985150f1a0c4c529cb"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "3194e9671988778be721c3368081c2e577decc7e",
+        "bytes": 10223,
+        "sha256": "sha256:119889a811425c3a5f4e38ab8cd2b31f69986a1f1180f4c774e38c3aa02f664f"
+      }
+    },
+    {
+      "path": "scripts/check-node-compatibility.mjs",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "55905e0cdbbbdb002ce696554263687b2c410d5d",
+        "bytes": 15552,
+        "sha256": "sha256:fa203055ca6cb7706c2d964704c0140954a75448dbc3a8bc35bb0102c84b5455"
+      }
+    },
+    {
+      "path": "scripts/check-node-compatibility.test.mjs",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "63a3f0737fd417ae6602c2d25902d1cb0f9dc979",
+        "bytes": 17963,
+        "sha256": "sha256:63f74d480c0e95904c332a559ab1856dcc8d19d84519c4b9528a782d75784670"
+      }
+    },
+    {
+      "path": "scripts/check-quality-scope.mjs",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "105403b63038c5a1076c6754abe66a75275e2915",
+        "bytes": 5991,
+        "sha256": "sha256:b8b2dc43a877581a68a4d2a5619a84a26cfeaed223b4e43bb4381320251d668d"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "07f348a77b5c4426c8347f453970c75d893001c0",
+        "bytes": 6036,
+        "sha256": "sha256:defc0eb9c942e90ff290dfeb8040d7ae8be34478febdb1fbeb807ee12172ae3e"
+      }
+    },
+    {
+      "path": "scripts/check-quality-scope.test.mjs",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "2cacbca6acaebe64d57adbdcee367b9e595f6f83",
+        "bytes": 3963,
+        "sha256": "sha256:0ebad95f918670d31a7d3724c544ce5c508ed17a8e66ed5c1cc50dfe419a1db0"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "323513b857e6bce43a6838222741f87180cbdd57",
+        "bytes": 4237,
+        "sha256": "sha256:5ed83e81676d320744679240bf26bde23af5c1a1da817a96d4d30aa2f7c54406"
+      }
+    },
+    {
+      "path": "scripts/check-reviewrouter-workflow.mjs",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "675e24a4664a81eb78066ed0cae87ebd82e6cc75",
+        "bytes": 7856,
+        "sha256": "sha256:078d66dd6790b9f810cb495106e43f73fdba0db0ae9f7dbd7f6ec1667bd2b1d8"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "82152737a6cf7ee8486e42b92a71c08c44dfa775",
+        "bytes": 8934,
+        "sha256": "sha256:ceaafe65db3885702ef7a0d43b288b57df6c084be47f095d4beabcd3549fa0a5"
+      }
+    },
+    {
+      "path": "scripts/docs-cohort-policy.test.mjs",
+      "status": "modified",
+      "old": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "7543006ded770545dc1525e0aa199bdd52aaffe2",
+        "bytes": 119481,
+        "sha256": "sha256:c8883e79bfaa9c64d35062df3ed62aff51db9f86aad77bc72cc3d9033aee0a0f"
+      },
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "34245bf55f050fb51d5ef911d2518cbcfd983462",
+        "bytes": 120142,
+        "sha256": "sha256:2ed33b5da2a07bfda211a6e14c07baf9287138706b67ed87f9b10797a95d8e96"
+      }
+    },
+    {
+      "path": "scripts/node-compatibility-tooling/package.json",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "989fae201c9a26b1818cdd87ca6a2219e7a5563c",
+        "bytes": 218,
+        "sha256": "sha256:bf9334f51dc089fca6a3659fd0cb4875e62a2865bd600f24ee44ed451b9531b8"
+      }
+    },
+    {
+      "path": "scripts/node-compatibility-tooling/pnpm-lock.yaml",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "0b4c5c00ce52a31c4e94b1033f7efd1f8e82be1c",
+        "bytes": 418,
+        "sha256": "sha256:eb5f225a7e9789f01a9b58da5eb7085b1c5c42da11e4e8a0a3c774d99df8a7b8"
+      }
+    },
+    {
+      "path": "scripts/node-compatibility-tooling/pnpm-workspace.yaml",
+      "status": "added",
+      "old": null,
+      "new": {
+        "type": "blob",
+        "mode": "100644",
+        "blob": "c74cbd3f354fa9538c0eeceb4c87249e4b15cb9f",
+        "bytes": 37,
+        "sha256": "sha256:30e467a2fdcc42c96bd061888c8e98cf38f96600acf8be2e2dca843cda7d426b"
+      }
+    }
+  ]
+}
