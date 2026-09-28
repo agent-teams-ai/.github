@@ -176,8 +176,8 @@ export async function checkNodeCompatibility(root = process.cwd()) {
     ".npmrc must retain strict peer-dependency enforcement.",
   );
   assert(workspace.includes("minimumReleaseAge:"), "pnpm-workspace.yaml must remain present.");
-  assert(toolingPackage.packageManager === "pnpm@11.18.0" && toolingPackage.dependencies?.yaml === "2.9.0", "Compatibility parser must retain exact pnpm and YAML pins.");
-  assert(toolingWorkspace.includes("packages:\n  - .") && toolingLock.importers?.["."]?.dependencies?.yaml?.version === "2.9.0" && toolingLock.packages?.["yaml@2.9.0"]?.resolution?.integrity === "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==", "Compatibility parser must retain isolated workspace and exact lock integrity.");
+  assert(toolingPackage.packageManager === "pnpm@11.18.0" && toolingPackage.dependencies?.yaml === "2.9.1", "Compatibility parser must retain exact pnpm and YAML pins.");
+  assert(toolingWorkspace.includes("packages:\n  - .") && toolingLock.importers?.["."]?.dependencies?.yaml?.version === "2.9.1" && toolingLock.packages?.["yaml@2.9.1"]?.resolution?.integrity === "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==", "Compatibility parser must retain isolated workspace and exact lock integrity.");
 
   const workflowSources = new Map();
   for (const path of requiredWorkflowPaths) {
