@@ -43,5 +43,8 @@ jobs:
           selected="$(node --version)"
           test "$selected" = "v$EXPECTED_NODE_VERSION"
           echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
-      - run: pnpm install --frozen-lockfile
+      - run: |
+          pnpm install --frozen-lockfile --config.engine-strict=true --config.strict-peer-dependencies=true
+          pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+          git diff --exit-code -- pnpm-lock.yaml
       - run: pnpm check

@@ -101,14 +101,24 @@ test("rejects run/comment bypasses despite preserved step names", () => {
 test("rejects a compatibility lane that gains authority or depends on the documentation gate", () => {
   for (const mutate of [
     (changed) => { changed.jobs["node-compatibility"].needs = "trusted-qualification"; },
+    (changed) => { changed.jobs["node-compatibility"].needs = undefined; },
     (changed) => { changed.jobs["node-compatibility"].permissions["id-token"] = "write"; },
     (changed) => { changed.jobs["node-compatibility"].steps[0].with.ref = "${{ github.sha }}"; },
+    (changed) => { changed.jobs["node-compatibility"].steps[0].with.ref = "${{ github.workflow_sha }}"; },
     (changed) => { changed.jobs["docs-protocol-check"].needs = ["trusted-qualification", "node-compatibility"]; },
   ]) {
     const changed = clone(workflow);
     mutate(changed);
     assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
   }
+});
+
+test("compatibility checkout uses the authenticated called workflow revision", () => {
+  const compatibility = workflow.jobs["node-compatibility"];
+  assert.equal(compatibility.needs, "trusted-authorize");
+  assert.equal(compatibility.steps[0].with.ref, "${{ needs.trusted-authorize.outputs.workflow-sha }}");
+  assert.equal(workflow.jobs["trusted-authorize"].outputs["workflow-sha"],
+    "${{ steps.authority.outputs.workflow-sha }}");
 });
 
 test("rejects compatibility lane runtime, install, gate, and step bypasses", () => {

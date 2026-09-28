@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 export const NODE_COMPATIBILITY = Object.freeze({
   productionDefault: "24.18.0",
@@ -27,21 +28,30 @@ function count(source, marker) {
 }
 
 function verifyRuntimeProof(source, path) {
-  const setupCount = count(source, "uses: actions/setup-node@");
-  const proofCount = count(source, "- name: Prove selected Node runtime");
+  const workflow = parseYaml(source);
+  const expectedRun = 'selected="$(node --version)"\ntest "$selected" = "v$EXPECTED_NODE_VERSION"\necho "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"\n';
+  let setupCount = 0;
+  for (const job of Object.values(workflow.jobs ?? {})) {
+    for (const [index, step] of (job.steps ?? []).entries()) {
+      if (typeof step.uses !== "string" || !step.uses.startsWith("actions/setup-node@")) {
+        continue;
+      }
+      setupCount++;
+      const proof = job.steps[index + 1];
+      const expectedVersion = step.with?.["node-version"] ??
+        (step.with?.["node-version-file"] === ".node-version" ? NODE_COMPATIBILITY.productionDefault : undefined);
+      assert(expectedVersion, `${path} must select a known Node runtime.`);
+      assert(
+        proof?.name === "Prove selected Node runtime" &&
+          proof.if === step.if &&
+          proof.env?.EXPECTED_NODE_VERSION === expectedVersion &&
+          proof.run === expectedRun &&
+          !proof["continue-on-error"],
+        `${path} must execute the selected Node version comparison immediately after setup.`,
+      );
+    }
+  }
   assert(setupCount > 0, `${path} must select a Node runtime explicitly.`);
-  assert(
-    proofCount === setupCount,
-    `${path} must prove every selected Node runtime exactly once.`,
-  );
-  assert(
-    source.includes('test "$selected" = "v$EXPECTED_NODE_VERSION"'),
-    `${path} must compare the selected Node version with the requested version.`,
-  );
-  assert(
-    source.includes("EXPECTED_NODE_VERSION:"),
-    `${path} must pass the requested Node version to its proof step.`,
-  );
 }
 
 function verifyCompatibilityLane(source, path) {
@@ -138,12 +148,21 @@ export async function checkNodeCompatibility(root = process.cwd()) {
 
   const ciSource = workflowSources.get(".github/workflows/ci.yml");
   const docsSource = workflowSources.get(".github/workflows/docs-protocol-check.yml");
+  const ciSteps = parseYaml(ciSource).jobs?.check?.steps ?? [];
+  const docsSteps = parseYaml(docsSource).jobs?.["node-compatibility"]?.steps ?? [];
+  const strictFlags = "--config.engine-strict=true --config.strict-peer-dependencies=true";
   assert(
-    /pnpm install [^\n]*--frozen-lockfile/u.test(ciSource),
+    ciSteps.some(step => step.run ===
+      `pnpm install --frozen-lockfile ${strictFlags}\n` +
+      `pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile ${strictFlags}\n` +
+      "git diff --exit-code -- pnpm-lock.yaml\n"),
     "CI must use a frozen strict install in both Node lanes.",
   );
   assert(
-    /pnpm install --dir[^\n]*--frozen-lockfile/u.test(docsSource),
+    docsSteps.some(step => step.run ===
+      `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile ${strictFlags}\n` +
+      `pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile ${strictFlags}\n` +
+      "git diff --exit-code -- pnpm-lock.yaml\n"),
     "The docs compatibility lane must use a frozen strict install.",
   );
 

@@ -285,12 +285,13 @@ export function validateDocsProtocolWorkflow(workflow) {
       },
       "node-compatibility": {
         name: "node-compatibility (Node ${{ matrix.node-version }})",
+        needs: "trusted-authorize",
         "runs-on": "ubuntu-24.04", "timeout-minutes": 10,
         strategy: { "fail-fast": false, matrix: { "node-version": ["24.18.0", "26.10.0"] } },
         permissions: { contents: "read" },
         steps: [
           { name: "Check out exact called central revision", uses: checkout,
-            with: { repository: "agent-teams-ai/.github", ref: "${{ github.workflow_sha }}", path: ".node-compatibility", "fetch-depth": 0, "persist-credentials": false } },
+            with: { repository: "agent-teams-ai/.github", ref: "${{ needs.trusted-authorize.outputs.workflow-sha }}", path: ".node-compatibility", "fetch-depth": 0, "persist-credentials": false } },
           { name: "Set up pnpm for Node compatibility checks", uses: pnpm,
             with: { version: "11.18.0", run_install: false } },
           { name: "Set up Node for compatibility checks", uses: node,
@@ -298,7 +299,7 @@ export function validateDocsProtocolWorkflow(workflow) {
           { name: "Prove selected Node runtime", env: { EXPECTED_NODE_VERSION: "${{ matrix.node-version }}" },
             run: "selected=\"$(node --version)\"\ntest \"$selected\" = \"v$EXPECTED_NODE_VERSION\"\necho \"Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected\"\n" },
           { name: "Install central dependencies with strict frozen resolution", "working-directory": ".node-compatibility",
-            run: "pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile" },
+            run: "pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\npnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\ngit diff --exit-code -- pnpm-lock.yaml\n" },
           { name: "Run central compatibility gates", "working-directory": ".node-compatibility", run: "pnpm check" },
         ],
       },

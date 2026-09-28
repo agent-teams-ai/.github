@@ -337,6 +337,7 @@ jobs:
 
   node-compatibility:
     name: node-compatibility (Node ${{ matrix.node-version }})
+    needs: trusted-authorize
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
@@ -350,7 +351,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: agent-teams-ai/.github
-          ref: ${{ github.workflow_sha }}
+          ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}
           path: .node-compatibility
           fetch-depth: 0
           persist-credentials: false
@@ -374,7 +375,10 @@ jobs:
           echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
       - name: Install central dependencies with strict frozen resolution
         working-directory: .node-compatibility
-        run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+          pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+          git diff --exit-code -- pnpm-lock.yaml
       - name: Run central compatibility gates
         working-directory: .node-compatibility
         run: pnpm check

@@ -27,5 +27,5 @@ rewrite those immutable records.
 The Docs Cohort append-only workflow keeps its trusted validation on Node 24.
 Its full validation path sets up Cohort v1 pnpm before Node cache resolution,
 then installs the separate Cohort v2 pnpm binary. The Node 26 compatibility job
-checks the runtime contract independently; it does not qualify or promote a
+checks the runtime contract separately from Cohort qualification; it does not qualify or promote a
 Docs Cohort.

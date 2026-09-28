@@ -14,7 +14,17 @@ const proof = (expected = "24.18.0") => `
         run: |
           selected="$(node --version)"
           test "$selected" = "v$EXPECTED_NODE_VERSION"
+          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
 `;
+
+const strictFlags = "--config.engine-strict=true --config.strict-peer-dependencies=true";
+const ciStrictInstall = `pnpm install --frozen-lockfile ${strictFlags}
+          pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile ${strictFlags}
+          git diff --exit-code -- pnpm-lock.yaml`;
+const docsStrictInstall = ciStrictInstall.replace(
+  "pnpm install --frozen-lockfile ",
+  "pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile ",
+);
 
 const compatibilityWorkflow = `jobs:
   check:
@@ -26,7 +36,8 @@ const compatibilityWorkflow = `jobs:
         with:
           node-version: \${{ matrix.node-version }}
 ${proof("${{ matrix.node-version }}")}
-      - run: pnpm install --dir .node-compatibility --frozen-lockfile
+      - run: |
+          ${ciStrictInstall}
 `;
 
 const literalWorkflow = `jobs:
@@ -39,7 +50,8 @@ ${proof()}
 `;
 
 const docsCompatibilityWorkflow =
-  compatibilityWorkflow.replace("jobs:\n  check:", "jobs:\n  node-compatibility:") +
+  compatibilityWorkflow.replace("jobs:\n  check:", "jobs:\n  node-compatibility:")
+    .replace(ciStrictInstall, docsStrictInstall) +
   literalWorkflow.slice("jobs:\n".length).replace("  check:", "  docs-protocol-check:");
 
 const splitInteractionWorkflow = `jobs:
@@ -111,11 +123,40 @@ test("rejects a workflow that loses the Node 26 compatibility lane", async () =>
   }
 });
 
+test("rejects a runtime comparison disabled by a shell comment", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(
+      join(root, ".github/workflows/ci.yml"),
+      compatibilityWorkflow.replace(
+        'test "$selected" = "v$EXPECTED_NODE_VERSION"',
+        'true # test "$selected" = "v$EXPECTED_NODE_VERSION"',
+      ),
+    );
+    await assert.rejects(checkNodeCompatibility(root), /execute the selected Node version comparison/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects a strict-install regression", async () => {
   const root = await makeFixture();
   try {
     await writeFile(join(root, ".npmrc"), "engine-strict=false\n");
     await assert.rejects(checkNodeCompatibility(root), /strict engine enforcement/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects an install that relies on ignored npmrc strictness flags", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(
+      join(root, ".github/workflows/ci.yml"),
+      compatibilityWorkflow.replace(" --config.strict-peer-dependencies=true", ""),
+    );
+    await assert.rejects(checkNodeCompatibility(root), /CI must use a frozen strict install/u);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
