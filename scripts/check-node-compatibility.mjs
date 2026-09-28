@@ -140,6 +140,14 @@ function verifyCompatibilityLane(source, path) {
 function verifySplitInteractionLane(source, path) {
   const jobs = parseYaml(source).jobs ?? {};
   const setupVersion = name => jobs[name]?.steps?.find(step => step.uses?.startsWith("actions/setup-node@"))?.with?.["node-version"];
+  if (path === ".github/workflows/ci.yml") {
+    assert(
+      jobs.check?.name === "check" && jobs.check?.strategy?.matrix === undefined &&
+        jobs["node26-compatibility"]?.strategy?.matrix === undefined &&
+        jobs["node26-compatibility"]?.needs === undefined,
+      "CI must emit the exact required check context and keep the Node 26 job independent.",
+    );
+  }
   assert(
     (setupVersion(path === ".github/workflows/ci.yml" ? "check" : "node-compatibility") === NODE_COMPATIBILITY.productionDefault) &&
       setupVersion("node26-compatibility") === NODE_COMPATIBILITY.compatibility &&

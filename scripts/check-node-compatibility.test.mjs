@@ -57,6 +57,45 @@ test("accepts explicit Node 24 and Node 26 lanes with strict installs", async ()
   }
 });
 
+test("rejects a renamed required CI context", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(
+      join(root, ".github/workflows/ci.yml"),
+      ciWorkflow.replace("    name: check\n", "    name: check (Node 24.18.0)\n"),
+    );
+    await assert.rejects(checkNodeCompatibility(root), /exact required check context/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects matrix-expanded required CI contexts", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(
+      join(root, ".github/workflows/ci.yml"),
+      ciWorkflow.replace("    name: check\n", "    name: check\n    strategy:\n      matrix:\n        os: [ubuntu-24.04]\n"),
+    );
+    await assert.rejects(checkNodeCompatibility(root), /exact required check context/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects coupling the independent Node 26 CI job to check", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(
+      join(root, ".github/workflows/ci.yml"),
+      ciWorkflow.replace("  node26-compatibility:\n", "  node26-compatibility:\n    needs: check\n"),
+    );
+    await assert.rejects(checkNodeCompatibility(root), /keep the Node 26 job independent/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("rejects a workflow that loses the Node 26 compatibility lane", async () => {
   const root = await makeFixture();
   try {
