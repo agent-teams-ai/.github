@@ -106,10 +106,7 @@ jobs:
       - name: Prove selected Node runtime
         env:
           EXPECTED_NODE_VERSION: 24.18.0
-        run: |
-          selected="$(node --version)"
-          test "$selected" = "v$EXPECTED_NODE_VERSION"
-          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+        run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
 
       - name: Install only base-owned validator dependencies
         run: >-
@@ -172,10 +169,7 @@ jobs:
       - name: Prove selected Node runtime
         env:
           EXPECTED_NODE_VERSION: 24.18.0
-        run: |
-          selected="$(node --version)"
-          test "$selected" = "v$EXPECTED_NODE_VERSION"
-          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+        run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
       - name: Install only base-owned validator dependencies
         run: >-
           pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile
@@ -261,10 +255,7 @@ jobs:
       - name: Prove selected Node runtime
         env:
           EXPECTED_NODE_VERSION: 24.18.0
-        run: |
-          selected="$(node --version)"
-          test "$selected" = "v$EXPECTED_NODE_VERSION"
-          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+        run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
       - name: Install only base-owned qualification verifier dependencies
         run: >-
           pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile
@@ -369,17 +360,24 @@ jobs:
       - name: Prove selected Node runtime
         env:
           EXPECTED_NODE_VERSION: ${{ matrix.node-version }}
+        run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
+      - name: Install isolated central compatibility parser
+        run: pnpm --dir .node-compatibility/scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+      - name: Check central Node compatibility contract
+        working-directory: .node-compatibility
         run: |
-          selected="$(node --version)"
-          test "$selected" = "v$EXPECTED_NODE_VERSION"
-          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+          node scripts/check-node-compatibility.mjs
+          node --test scripts/check-node-compatibility.test.mjs
       - name: Install central dependencies with strict frozen resolution
+        if: matrix.node-version == '24.18.0'
         working-directory: .node-compatibility
         run: |
           pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+          pnpm peers check --lockfile-only
           pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
           git diff --exit-code -- pnpm-lock.yaml
       - name: Run central compatibility gates
+        if: matrix.node-version == '24.18.0'
         working-directory: .node-compatibility
         run: pnpm check
 
@@ -412,10 +410,7 @@ jobs:
       - name: Prove selected Node runtime
         env:
           EXPECTED_NODE_VERSION: 24.18.0
-        run: |
-          selected="$(node --version)"
-          test "$selected" = "v$EXPECTED_NODE_VERSION"
-          echo "Node runtime proved: requested=$EXPECTED_NODE_VERSION selected=$selected"
+        run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
       - name: Install consumer dependencies in the untrusted context
         run: pnpm install --frozen-lockfile
       - name: Run repository semantic documentation gate

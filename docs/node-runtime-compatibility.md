@@ -6,8 +6,10 @@ release, published cohort, receipt, or accepted decision to imply a production
 runtime cutover.
 
 Node `26.10.0` is supported only through explicit compatibility lanes. Those
-lanes select clean Node 26 toolchains, perform frozen strict installs, and prove
-the selected runtime before running checks. Node 25 is intentionally unsupported
+lanes select clean Node 26 toolchains, prove the selected runtime, and run
+the source compatibility checker with an isolated, frozen, strict installation
+of its pinned YAML parser. The full root dependency graph remains on Node 24
+until its published dependencies support Node 26. Node 25 is intentionally unsupported
 and is not a migration step.
 
 The migration contract is:
@@ -29,3 +31,12 @@ Its full validation path sets up Cohort v1 pnpm before Node cache resolution,
 then installs the separate Cohort v2 pnpm binary. The Node 26 compatibility job
 checks the runtime contract separately from Cohort qualification; it does not qualify or promote a
 Docs Cohort.
+
+The parser is provisioned from `scripts/node-compatibility-tooling`, a private,
+exactly pinned one-dependency workspace. Its own workspace file prevents pnpm
+from climbing into the repository root. The central docs reusable workflow
+checks out the authorized central SHA before installing that parser and running
+the central checker. Node 24 continues to run the full frozen root installation,
+lockfile peer check, and repository gate. Node 26 does not claim a full root
+installation while published Engineering Foundation packages retain Node 24-only
+engines. The accepted Docs Cohort qualifications and rollback bytes are unchanged.

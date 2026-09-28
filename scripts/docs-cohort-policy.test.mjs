@@ -474,7 +474,7 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow,
     /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V2_BIN" --version\)" = "11\.20\.0"/u);
   assertTrustedPnpmSetupOrder(trustedAppendOnlySteps);
-  assert.doesNotMatch(appendOnlyWorkflow, /\brun:\s+pnpm\b/u);
+  assert.equal(trustedAppendOnlySteps.some(step => /^pnpm\b/u.test(step.run ?? "")), false);
   const emergencyStart = appendOnlyWorkflow.indexOf(
     "Validate negative emergency append without network dependencies",
   );
