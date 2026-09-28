@@ -6,7 +6,6 @@ import { createHash } from 'node:crypto';
 import YAML from 'yaml';
 import { parsePortableJson, validatePortableRecord, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
 import { classifyPortableIntent, makePortableApi, validatePortableAcceptance, verifyPortableExecution } from './read-docs-portable-authority-r322.mjs';
-
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -20,11 +19,10 @@ function candidateBlob(blob) {
     return execFileSync('git', ['cat-file', 'blob', blob]);
   }
 }
-const G = ['.github/workflows/docs-portable-authority-r322.yml',
-  'docs/node26-portable-authority-r322.md', 'governance/docs-portable-authority-r322.json',
-  'scripts/docs-portable-authority-r322.mjs', 'scripts/docs-portable-authority-r322.test.mjs',
-  'scripts/read-docs-portable-authority-r322.mjs', 'scripts/read-docs-portable-authority-r322.test.mjs',
-  'scripts/docs-legacy-admission-recovery.mjs',
+const G = ['.github/workflows/docs-portable-authority-r322.yml', 'docs/node26-portable-authority-r322.md',
+  'governance/docs-portable-authority-r322.json', 'scripts/docs-portable-authority-r322.mjs',
+  'scripts/docs-portable-authority-r322.test.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
+  'scripts/read-docs-portable-authority-r322.test.mjs', 'scripts/docs-legacy-admission-recovery.mjs',
   'scripts/verify-docs-platform-recovery-installation-r317.mjs'];
 const now = Date.parse('2026-09-28T12:00:00Z');
 const accepted = () => ({
@@ -40,7 +38,8 @@ const accepted = () => ({
   expected_protections_digest: `sha256:${'5'.repeat(64)}`,
   forward_decision_comment_id: null,
 });
-
+const reviewedCoordinates = (value) => Object.fromEntries(Object.entries(value)
+  .filter(([key]) => !['decision_comment_id', 'review_comment_id'].includes(key)));
 test('acceptance is closed, current, exact, and direction-specific', () => {
   assert.throws(() => parsePortableJson(Buffer.from('{"id":1,"id":2}'), 'acceptance'));
   assert.throws(() => parsePortableJson(Buffer.from('['.repeat(17) + '0' + ']'.repeat(17)), 'acceptance'));
@@ -59,23 +58,25 @@ test('acceptance is closed, current, exact, and direction-specific', () => {
   assert.throws(() => validatePortableAcceptance({ ...inverse, forward_decision_comment_id: null }, record, now));
   assert.throws(() => validatePortableAcceptance(accepted(), record, now + 86400_000));
 });
-
 test('unbound reviewer identity refuses before API authority observations', async () => {
   const api = { getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')),
     getRepository: () => {throw Error('must not read repository');} };
   await assert.rejects(verifyPortableExecution({}, { ...accepted(), reviewer_id: 0 }, api,
     () => now), /accepted execution coordinates differ/u);
 });
-
-test('protected G data, docs and imports cannot route around portable verification', () => {
+test('seven G paths select portable while imported and historical paths retain V8', () => {
   assert.equal(classifyPortableIntent([{ filename: 'docs/ordinary.md' }], record), 'legacy');
-  for (const path of G) {
+  const pair = record.manifest.map((row) => ({ filename: row.path }));
+  for (const files of [pair, [...pair, { filename: 'extra.md' }]]) {assert.equal(classifyPortableIntent(files, record), 'portable');}
+  for (const path of G.slice(0, 7)) {
     assert.equal(classifyPortableIntent([{ filename: path }], record), 'portable');
     assert.equal(classifyPortableIntent([{ filename: 'renamed.md', previous_filename: path }], record),
       'portable');
   }
+  for (const path of [...G.slice(7), ...record.manifest.map((row) => row.path)]) {
+    assert.equal(classifyPortableIntent([{ filename: path }], record), 'legacy', path);
+  }
 });
-
 test('protected check cutover requires the two exact new App contexts', () => {
   const detail = { id: 19979783, name: 'Protect main', target: 'branch',
     enforcement: 'active', bypass_actors: [],
@@ -98,10 +99,13 @@ test('protected check cutover requires the two exact new App contexts', () => {
   checks.find((check) => check.context === 'trusted-validation').context =
     'trusted-validation-portable-r322';
   verifyPortableProtections(snapshot);
+  checks.push({ context: 'trusted-validation', integration_id: 15368 }); assert.throws(() => verifyPortableProtections(snapshot)); checks.pop();
+  snapshot.rulesets[0].summary.id = 1;
+  assert.throws(() => verifyPortableProtections(snapshot));
+  snapshot.rulesets[0].summary.id = detail.id;
   checks[0].integration_id = 1;
   assert.throws(() => verifyPortableProtections(snapshot));
 });
-
 test('read port completes pages and decodes blobs without publishing or writing', async () => {
   const calls = [];
   const api = makePortableApi(async (path) => {
@@ -119,7 +123,6 @@ test('read port completes pages and decodes blobs without publishing or writing'
     'repos/agent-teams-ai/.github/pulls/322/files?per_page=100&page=2',
     `repos/agent-teams-ai/.github/git/blobs/${'1'.repeat(40)}`]);
 });
-
 test('file port accepts exactly 3000 entries only with an empty terminal page', async () => {
   const page = Array.from({ length: 100 }, (_, index) => ({ filename: `f${index}` }));
   const api = makePortableApi(async (path) => path.endsWith('page=31') ? [] : page);
@@ -127,7 +130,6 @@ test('file port accepts exactly 3000 entries only with an empty terminal page', 
   const extra = makePortableApi(async () => page);
   await assert.rejects(extra.getPullFiles(322), /exceeded 3000/u);
 });
-
 function gitTree(files, revision) {
   const root = new Map(), entries = [];
   for (const [path, value] of files) {
@@ -157,7 +159,6 @@ function gitTree(files, revision) {
   return { commit: { sha: revision, tree: { sha: treeSha } },
     tree: { sha: treeSha, truncated: false, tree: entries } };
 }
-
 function executionFixture() {
   const repo = { id: 1316243981, full_name: 'agent-teams-ai/.github', default_branch: 'main',
     archived: false, disabled: false };
@@ -215,13 +216,13 @@ function executionFixture() {
     getCollaboratorPermission: async () => ({ permission: 'admin',
       user: { id: 1, login: 'owner' } }),
     getDecisionComment: async (id) => id === 1 ? { id, user: { id: 1, login: 'owner', type: 'User' },
+      created_at: '2026-09-28T11:00:00Z', updated_at: '2026-09-28T11:00:00Z',
       issue_url: url, body: JSON.stringify(decision) } : { id, user: {
       id: 2, login: 'reviewer', type: 'User' }, issue_url: url,
-      body: JSON.stringify({ schema_version: 1, decision: 'accept-reviewed-corrected-portable-content',
+      created_at: '2026-09-28T10:59:00Z', updated_at: '2026-09-28T10:59:00Z',
+      body: JSON.stringify({ decision: 'accept-reviewed-corrected-portable-content',
         source_base: record.source_base, content_candidate: record.content_candidate,
-        manifest_digest: decision.manifest_digest, repository: decision.repository,
-        pull_number: decision.pull_number, pull_id: decision.pull_id,
-        base: decision.base, head: decision.head, direction: decision.direction }) },
+        ...reviewedCoordinates(decision) }) },
     getPullFiles: async () => [record.manifest.map((row) => ({ filename: row.path,
       status: row.status, sha: row.new.blob }))],
     getTree: async (revision) => gitTree(revision === decision.base ? baseFiles : headFiles, revision),
@@ -229,17 +230,16 @@ function executionFixture() {
   };
   return { decision, event, api, protections, baseFiles, headFiles, bodies };
 }
-
 test('complete reviewed forward passes reconstructed tree and all final rereads', async () => {
   const fixture = executionFixture();
+  fixture.event.pull_request.updated_at = '2026-09-28T10:50:00Z';
   assert.equal((await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
     () => now)).status, 'exact_portable_candidate_verified');
 });
-
 test('provider, owner, review, closure and protection mutations fail', async () => {
   for (const mutate of [
     (f) => {f.event.run_attempt++;},
-    (f) => {f.event.pull_request.updated_at = '2026-09-28T11:01:00Z';},
+    (f) => {f.event.pull_request.head.sha = 'f'.repeat(40);},
     (f) => {f.decision.closure[0].blob = '9'.repeat(40);},
     (f) => {f.api.getCollaboratorPermission = async () => ({ permission: 'write',
       user: { id: 1, login: 'owner' } });},
@@ -269,7 +269,34 @@ test('provider, owner, review, closure and protection mutations fail', async () 
       () => now));
   }
 });
-
+test('independent review binds the full execution and precedes admin acceptance', async () => {
+  for (const mutate of [
+    (body) => {body.run_attempt++;},
+    (body) => {body.expected_protections_digest = `sha256:${'6'.repeat(64)}`;},
+    (body) => {body.closure[0].sha256 = `sha256:${'6'.repeat(64)}`;},
+  ]) {
+    const fixture = executionFixture();
+    const review = await fixture.api.getDecisionComment(2), body = JSON.parse(review.body);
+    mutate(body); review.body = JSON.stringify(body);
+    const original = fixture.api.getDecisionComment;
+    fixture.api.getDecisionComment = async (id) => id === 2 ? review : original(id);
+    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+      () => now), /independent human comment differs/u);
+  }
+  for (const [id, field, value] of [
+    [2, 'updated_at', '2026-09-28T11:01:00Z'], [1, 'created_at', '2026-09-28T10:58:00Z'],
+    [1, 'updated_at', '2026-09-28T12:01:00Z'],
+  ]) {
+    const fixture = executionFixture();
+    const original = fixture.api.getDecisionComment;
+    fixture.api.getDecisionComment = async (commentId) => {
+      const comment = await original(commentId);
+      return commentId === id ? { ...comment, [field]: value } : comment;
+    };
+    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
+      () => now), /chronology/u);
+  }
+});
 test('final rereads reject admin revocation, comment movement and protection drift', async () => {
   for (const method of ['getCollaboratorPermission', 'getDecisionComment',
     'getEffectiveProtections', 'getPull', 'getBranchHead']) {
@@ -291,7 +318,6 @@ test('final rereads reject admin revocation, comment movement and protection dri
       () => now), `final movement: ${method}`);
   }
 });
-
 function inverseFixture() {
   const fixture = executionFixture();
   const forward = { ...fixture.decision, decision_comment_id: 3 };
@@ -322,23 +348,18 @@ function inverseFixture() {
       created_at: '2026-09-28T11:10:00Z', updated_at: '2026-09-28T11:10:00Z',
       user: isReview ? { id: 2, login: 'reviewer', type: 'User' } :
         { id: 1, login: 'owner', type: 'User' },
-      body: isReview ? JSON.stringify({ schema_version: 1,
-        decision: 'accept-reviewed-corrected-portable-content',
+      body: isReview ? JSON.stringify({ decision: 'accept-reviewed-corrected-portable-content',
         source_base: record.source_base, content_candidate: record.content_candidate,
-        manifest_digest: reviewed.manifest_digest, repository: reviewed.repository,
-        pull_number: reviewed.pull_number, pull_id: reviewed.pull_id,
-        base: reviewed.base, head: reviewed.head, direction: reviewed.direction }) :
+        ...reviewedCoordinates(reviewed) }) :
         JSON.stringify(id === 3 ? forward : inverse) };
   };
   return { fixture, inverse, forward, mergedPull, newFiles };
 }
-
 test('inverse accepts distinct squash commit and restores all preimages', async () => {
   const { fixture, inverse } = inverseFixture();
   assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
     () => now)).direction, 'inverse');
 });
-
 test('inverse rejects rewritten installed postimage and unrelated merge', async () => {
   const rewritten = inverseFixture();
   rewritten.newFiles.set(record.manifest[0].path, rewritten.fixture.baseFiles.get(record.manifest[0].path));
@@ -349,7 +370,6 @@ test('inverse rejects rewritten installed postimage and unrelated merge', async 
   await assert.rejects(verifyPortableExecution(unrelated.fixture.event, unrelated.inverse,
     unrelated.fixture.api, () => now));
 });
-
 test('inverse refuses a forward decision or review created or edited after merge', async () => {
   for (const id of [2, 3]) for (const field of ['created_at', 'updated_at']) {
     const { fixture, inverse } = inverseFixture();
@@ -362,26 +382,26 @@ test('inverse refuses a forward decision or review created or edited after merge
       () => now), /postdates installation/u);
   }
 });
-
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
-const oldV8 = YAML.parse(read('.github/workflows/docs-qualification-authority-evolution-v8.yml'));
+const oldV8 = YAML.parse(read('.github/workflows/docs-cohort-authority-evolution-v8.yml'));
 const oldValidation = YAML.parse(read('.github/workflows/docs-cohort-append-only.yml'));
 const finalIds = ['trusted_cohort_authority_portable_r322', 'trusted_validation_portable_r322'];
-
+function verifyValidation(steps) {
+  const before = structuredClone(oldValidation.jobs['trusted-validation'].steps), after = structuredClone(steps);
+  const proof = after.find((step) => step.name === 'Prove selected Node runtime');
+  assert.deepEqual(proof, { name: 'Prove selected Node runtime', if: "steps.materialize.outputs.mode == 'full'", env: { EXPECTED_NODE_VERSION: '24.18.0' },
+    run: `node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"` });
+  if (!before.some((step) => step.name === proof.name)) {before.splice(before.findIndex((step) => step.id === 'pnpm-v2'), 0, proof);}
+  const install = after.find((step) => step.name === 'Install trusted base dependencies with Cohort v1 pnpm');
+  for (const rule of [/--config\.engine-strict=true/u, /--config\.strict-peer-dependencies=true/u, /"\$DOCS_COHORT_PNPM_V1_BIN" peers check/u]) {assert.match(install.run, rule);}
+  install.run = before.find((step) => step.name === install.name).run; assert.deepEqual(after, before);
+}
 test('copied legacy branches retain real predecessor bodies and strict install', () => {
-  assert.deepEqual(workflow.jobs.legacy_v8.steps, oldV8.jobs['trusted-qualification-authority-evolution-v8'].steps);
-  const oldSteps = structuredClone(oldValidation.jobs['trusted-validation'].steps);
-  const newSteps = structuredClone(workflow.jobs.legacy_validation.steps);
-  const install = newSteps.find((step) => step.name === 'Install trusted base dependencies with Cohort v1 pnpm');
-  assert.match(install.run, /--config\.engine-strict=true/u);
-  assert.match(install.run, /--config\.strict-peer-dependencies=true/u);
-  assert.match(install.run, /"\$DOCS_COHORT_PNPM_V1_BIN" peers check/u);
-  install.run = oldSteps.find((step) => step.name === install.name).run;
-  assert.deepEqual(newSteps, oldSteps);
+  assert.deepEqual(workflow.jobs.legacy_v8.steps, oldV8.jobs['trusted-cohort-authority-evolution-v8'].steps);
+  verifyValidation(workflow.jobs.legacy_validation.steps);
   assert.equal(workflow.jobs.legacy_v8.if, "needs.route.outputs.mode == 'legacy'");
   assert.equal(workflow.jobs.legacy_validation.if, "needs.route.outputs.mode == 'legacy'");
 });
-
 test('both final contexts require exactly the successful selected branch', () => {
   for (const id of finalIds) {
     const job = workflow.jobs[id];
@@ -404,31 +424,13 @@ test('both final contexts require exactly the successful selected branch', () =>
     }
   }
 });
-
-test('all executable work is protected-base, pinned, read-only and Node24', () => {
-  assert.deepEqual(workflow.permissions, {
-    actions: 'read', checks: 'read', contents: 'read', 'pull-requests': 'read' });
-  const steps = Object.values(workflow.jobs).flatMap((job) => job.steps);
-  for (const step of steps) {
-    if (step.uses?.startsWith('actions/checkout@')) {
-      assert.equal(step.with.ref, '${{ github.event.pull_request.base.sha }}');
-      assert.equal(step.with['persist-credentials'], false);
-    }
-    if (step.uses?.startsWith('actions/setup-node@')) {
-      assert.equal(step.with['node-version'], '24.18.0');
-    }
-    if (step.uses) {assert.match(step.uses, /@[a-f0-9]{40}$/u);}
-  }
-  assert.equal(workflow.jobs.portable.if, "needs.route.outputs.mode == 'portable'");
-  assert.equal(workflow.jobs.route.outputs.mode, '${{ steps.classify.outputs.mode }}');
-});
-
 function auditWorkflow(candidate) {
   assert.deepEqual(candidate.on.pull_request_target.types,
     ['opened', 'synchronize', 'reopened', 'edited', 'ready_for_review']);
-  assert.deepEqual(candidate.permissions, workflow.permissions);
+  assert.deepEqual(candidate.permissions, {
+    actions: 'read', checks: 'read', contents: 'read', 'pull-requests': 'read' });
   assert.deepEqual(candidate.jobs.legacy_v8.steps,
-    oldV8.jobs['trusted-qualification-authority-evolution-v8'].steps);
+    oldV8.jobs['trusted-cohort-authority-evolution-v8'].steps);
   assert.equal(candidate.jobs.legacy_v8.if, "needs.route.outputs.mode == 'legacy'");
   assert.equal(candidate.jobs.legacy_validation.if, "needs.route.outputs.mode == 'legacy'");
   assert.equal(candidate.jobs.portable.if, "needs.route.outputs.mode == 'portable'");
@@ -448,21 +450,13 @@ function auditWorkflow(candidate) {
       }
     }
   }
-  const oldSteps = structuredClone(oldValidation.jobs['trusted-validation'].steps);
-  const newSteps = structuredClone(candidate.jobs.legacy_validation.steps);
-  const install = newSteps.find((step) => step.name === 'Install trusted base dependencies with Cohort v1 pnpm');
-  assert.match(install.run, /--config\.engine-strict=true/u);
-  assert.match(install.run, /--config\.strict-peer-dependencies=true/u);
-  assert.match(install.run, /"\$DOCS_COHORT_PNPM_V1_BIN" peers check/u);
-  install.run = oldSteps.find((step) => step.name === install.name).run;
-  assert.deepEqual(newSteps, oldSteps);
+  verifyValidation(candidate.jobs.legacy_validation.steps);
   for (const id of finalIds) {
     assert.equal(candidate.jobs[id].if, 'always()');
     assert.deepEqual(candidate.jobs[id].needs, workflow.jobs[id].needs);
     assert.equal(candidate.jobs[id].steps[0].run, workflow.jobs[id].steps[0].run);
   }
 }
-
 test('workflow disablements, head checkout and changed legacy body fail audit', () => {
   auditWorkflow(workflow);
   for (const mutate of [

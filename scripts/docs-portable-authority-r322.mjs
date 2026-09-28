@@ -150,7 +150,8 @@ export function verifyPortableProtections(snapshot) {
   const matches = snapshot?.rulesets?.filter(({ detail }) => detail?.id === 19979783);
   need(matches?.length === 1, 'Protect main ruleset is missing');
   const { summary, detail } = matches[0];
-  need(summary?.name === 'Protect main' && summary.enforcement === 'active' &&
+  need(summary?.id === detail.id && summary.name === 'Protect main' &&
+    summary.enforcement === 'active' &&
     detail.name === 'Protect main' && detail.target === 'branch' && detail.enforcement === 'active' &&
     detail.bypass_actors?.length === 0 && detail.conditions?.ref_name?.include?.includes('~DEFAULT_BRANCH') &&
     detail.conditions.ref_name.exclude?.length === 0 && Array.isArray(detail.rules),
@@ -167,6 +168,7 @@ export function verifyPortableProtections(snapshot) {
   need(contexts.size === checks.length && ['check', 'trusted-admission-evidence',
     'trusted-authority-evolution', 'trusted-admission-authority-evolution-v1',
     'trusted-cohort-authority-portable-r322',
-    'trusted-validation-portable-r322'].every((context) => contexts.get(context) === 15368),
+    'trusted-validation-portable-r322'].every((context) => contexts.get(context) === 15368) &&
+    !contexts.has('trusted-cohort-authority-evolution-v8') && !contexts.has('trusted-validation'),
   'required context or integration differs');
 }

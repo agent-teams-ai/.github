@@ -5,7 +5,6 @@ import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { parseIncidentJson, verifiedTree, readEffectiveProtections } from './verify-docs-platform-recovery-installation-r317.mjs';
 import { classifyPortableTransition, parsePortableJson, validatePortableRecord, verifyPortableBlob, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
-
 const exec = promisify(execFile);
 const REPO = 'agent-teams-ai/.github';
 const REPO_ID = 1316243981;
@@ -29,10 +28,10 @@ const FIELDS = ['schema_version', 'repository', 'repository_id', 'pull_number', 
   'expected_protections_digest', 'forward_decision_comment_id'];
 const need = (yes, why) => { if (!yes) {throw new Error(`portable r322: ${why}`);} };
 const digest = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
-const tuple = (item) => JSON.stringify([item?.id, item?.number, item?.state, item?.merged,
+const tuple = (item, includeUpdatedAt = true) => JSON.stringify([item?.id, item?.number, item?.state, item?.merged,
   item?.draft, item?.base?.sha, item?.base?.ref, item?.base?.repo?.id,
   item?.head?.sha, item?.head?.ref, item?.head?.repo?.id, item?.changed_files,
-  item?.commits, item?.updated_at]);
+  item?.commits, ...(includeUpdatedAt ? [item?.updated_at] : [])]);
 const json = (value) => JSON.stringify(value);
 const closed = (value, fields) => need(value && typeof value === 'object' && !Array.isArray(value) &&
   json(Object.keys(value).toSorted()) === json(fields.toSorted()), 'record fields differ');
@@ -43,20 +42,20 @@ const deadline = (value) => {
   'deadline is invalid');
   return Date.parse(value);
 };
-const reviewBody = (record, accepted) => json({ schema_version: 1,
-  decision: 'accept-reviewed-corrected-portable-content',
-  source_base: record.source_base, content_candidate: record.content_candidate,
-  manifest_digest: accepted.manifest_digest, repository: REPO,
-  pull_number: accepted.pull_number, pull_id: accepted.pull_id,
-  base: accepted.base, head: accepted.head, direction: accepted.direction });
-
+const reviewBody = (record, accepted) => {
+  const coordinates = { ...accepted };
+  delete coordinates.decision_comment_id;
+  delete coordinates.review_comment_id;
+  return json({ decision: 'accept-reviewed-corrected-portable-content',
+    source_base: record.source_base, content_candidate: record.content_candidate,
+    ...coordinates });
+};
 export function classifyPortableIntent(files, record) {
   need(Array.isArray(files), 'classification file inventory is missing');
-  return files.some((file) => [file?.filename, file?.previous_filename].filter(Boolean)
-    .some((path) => G.includes(path) || record.manifest.some((row) => row.path === path))) ?
-    'portable' : 'legacy';
+  const completePair = record.manifest.every((row) => files.some((file) => file?.filename === row.path));
+  return completePair || files.some((file) => [file?.filename, file?.previous_filename].filter(Boolean)
+    .some((path) => G.slice(0, 7).includes(path))) ? 'portable' : 'legacy';
 }
-
 export function validatePortableAcceptance(value, record, now) {
   closed(value, FIELDS);
   need(value.schema_version === 1 && value.repository === REPO && value.repository_id === REPO_ID &&
@@ -86,8 +85,6 @@ export function validatePortableAcceptance(value, record, now) {
     }), 'execution closure differs');
   return value;
 }
-
-
 async function readTree(revision, api) {
   const raw = verifiedTree(revision, await api.getTree(revision));
   const entries = new Map();
@@ -106,7 +103,6 @@ async function readTree(revision, api) {
   await Promise.all(Array.from({ length: Math.min(8, rows.length) }, () => worker()));
   return entries;
 }
-
 export async function verifyPortableExecution(event, accepted, api, clock = Date.now) {
   const record = validatePortableRecord(await api.getInstalledRecord());
   validatePortableAcceptance(accepted, record, clock());
@@ -117,7 +113,8 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
   const repo = await api.getRepository();
   const pull = await api.getPull(accepted.pull_number);
   need(repo?.id === REPO_ID && repo.full_name === REPO && repo.default_branch === 'main' &&
-    repo.archived === false && repo.disabled === false && tuple(event.pull_request) === tuple(pull) &&
+    repo.archived === false && repo.disabled === false &&
+    tuple(event.pull_request, false) === tuple(pull, false) &&
     pull.id === accepted.pull_id && pull.number === accepted.pull_number && pull.state === 'open' &&
     pull.merged === false && pull.draft === false && pull.base.repo?.id === REPO_ID &&
     pull.head.repo?.id === REPO_ID && pull.base.repo?.full_name === REPO &&
@@ -149,6 +146,14 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
       comment.issue_url === `https://api.github.com/repos/${REPO}/issues/${issue}` &&
       comment.body === body, 'independent human comment differs');
   }
+  need([decision, review].every((comment) =>
+    typeof comment.created_at === 'string' && typeof comment.updated_at === 'string' &&
+    Number.isFinite(Date.parse(comment.created_at)) &&
+    Number.isFinite(Date.parse(comment.updated_at)) &&
+    Date.parse(comment.created_at) <= Date.parse(comment.updated_at) &&
+    Date.parse(comment.updated_at) <= clock()) &&
+    Date.parse(review.updated_at) <= Date.parse(decision.created_at),
+  'review or admin decision chronology differs');
   const pages = await api.getPullFiles(accepted.pull_number);
   need(Array.isArray(pages) && pages.length <= 30 && pages.length > 0 &&
     pages.every((page) => Array.isArray(page) && page.length <= 100), 'file pages are incomplete');
@@ -247,7 +252,6 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
   return { status: 'exact_portable_candidate_verified', direction: accepted.direction,
     base: accepted.base, head: accepted.head };
 }
-
 async function gh(path) {
   const { stdout } = await exec('gh', ['api', path],
     { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: 60_000 });
@@ -297,7 +301,6 @@ export function makePortableApi(read = gh, recordPath = new URL('../governance/d
     },
   };
 }
-
 async function run() {
   const event = parseIncidentJson(await readFile(process.env.GITHUB_EVENT_PATH), 'event');
   event.execution_base = process.env.GITHUB_SHA;
