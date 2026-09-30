@@ -1,0 +1,87 @@
+{
+  "candidate_id": "docs-2026-09-30-stable30",
+  "status": "staged_unqualified_checkpoint",
+  "scope": "Node24 Docs Cohort v2 for Token only; exact five packages; MCP excluded",
+  "observed_at": "2026-09-30T14:24:37Z",
+  "protected_main_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+  "local_only_evidence_head": "db0bdba45cd6a9c5942809738f6d73798c45858b",
+  "engineering_quality_standard_retained_revision": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+  "engineering_quality_standard_sha256": "sha256:e97a2d9f5ec7d05f9a515c28df38fb921c5048d4e2cab850561717f7dedff5d7",
+  "draft_record_digest": "sha256:0b3a2e2f80928e4c881fbf08b643f82912969637316c147a8f6e579d2c1664b7",
+  "draft_digest_scope": "Digest of the unregistered draft with signature_verified=false on all five coordinates. It is not a published registry digest. Successful cryptographic verification and signature_verified=true will require recomputing it before any lifecycle append.",
+  "host_closure": {
+    "source": "Host orchestration supplied the output of existing resolvePublishedRuntimeClosure with pnpm@11.20.0 and live registry; worker did not rerun registry resolution.",
+    "supplied_result_sha256": "sha256:f8e89b5843b6d55c3b8c989cd8531a10bf595dbd091a033b3f04a6e4ecf47210",
+    "projection": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 83,
+      "projection_path": "governance/docs-runtime-closures/sha256-3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca.json",
+      "digest": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+    },
+    "local_rederivation": "docsRuntimeClosureV2Evidence rederived the identical canonical source, authority digest, exact five SRIs, three direct roots, seven managed edges, and 83-package closure from the supplied pnpmLock."
+  },
+  "source_observations": {
+    "archives": "All five archive SRIs and SHA256 values were recomputed and matched the supplied metadata. Original archive bytes remain local-only; the new source-excerpts.json preserves exact manifests, four adapter assets, and every historical asset referenced by its catalog.",
+    "attestations": "Raw npm bundles copied byte-for-byte into sources/attestations. Payload subject SHA512, source SHA, workflow path and invocation attempts match the supplied archives and draft. This decoding is not cryptographic verification.",
+    "release_origin": "Run 36602046555 attempt 1 and release job 109521591169 failed. Repository Mutation, Document Authoring and Docs Protocol provenance binds this unsuccessful attempt; each draft entry declares reconciliation to successful attempt 2, release job 109533098433.",
+    "release_success": "Adapter and Engineering Foundation provenance binds attempt 2 directly. Retained run/job receipts do not contain every identity field required by the live verifier; do not synthesize repository identities or event fields into these receipts.",
+    "central_workflow": "Retained tree observation and local Git object agree on blob 9bcbe54dfec6280045ac596e55c1f14ce5f176e1 at protected-main observation 18b7e22. Draft preserves qualified central pin 757122cb08ed15aba6c9eef1b1f655b77d1ac54b. Current remote branch protection, ancestry and blob still require live verification.",
+    "transition_catalog": "All 19 published historical projections, route/scripts digests and bundled historical skill/caller byte digests match current immutable authority. stable25 has immutable QUALIFIED event 161 and is both the chosen upgrade origin and rollback target. stable29 is not bundled by adapter 0.2.13 and cannot be an upgrade origin.",
+    "runtime": "Published engines also permit Node26, but managed runtime remains >=24.18.0 <25; Node26 process is not authorized by adapter 0.2.13.",
+    "release_source_identity_incident": "Retained release context reports a bot-authored producer squash despite the owner identity requirement. This worker did not inspect or repair shared history; signature/protected-main verification does not resolve that separate owner-policy incident."
+  },
+  "blocked_checks": [
+    {
+      "check": "verifyInstalledPackageSignatures(record.packages)",
+      "result": "spawn npm ENOENT",
+      "missing": "A trusted host with npm must return the exact five verified attestationBundles with invalid=[] and missing=[]; retained summary log (58 signatures, 9 attestations) cannot supply that result."
+    },
+    {
+      "check": "resolvePublishedRuntimeClosure(..., {cohortGeneration:2,pnpmBinary:\"/usr/local/bin/pnpm\"})",
+      "result": "exit 127: corepack not found",
+      "missing": "Host-derived supplied closure is now staged, but an independent live verifier still needs trusted distinct absolute v1 pnpm@11.18.0 and v2 pnpm@11.20.0 binaries."
+    },
+    {
+      "check": "worker registry connectivity",
+      "result": "Sandbox rejected registry.npmjs.org: domain not on allowlist",
+      "missing": "Networked host read-only npm/GitHub verification. No gh CLI or live branch/repository/run identity receipts were available in this worker."
+    },
+    {
+      "check": "pnpm check",
+      "result": "exit 127: corepack not found",
+      "missing": "Run the canonical pnpm check route on the networked host; direct component results are reported separately."
+    }
+  ],
+  "promotion_missing": [
+    "Run the existing base-owned verifyDocsCohortEvidence/verifyChangedDocsCohortEvidence with genuine live adapters for the exact proposed append, including cryptographic npm bundles, Foundation protected-main ancestry, exact failed origin and successful reconciliation run/job identities, current protected central workflow identity/bytes, published assets and independently resolved closure.",
+    "Only after successful cryptographic verification set the five draft signature_verified fields to true and recompute record_digest. Append the record and a genuine first PUBLISHED_UNQUALIFIED event at the latest actual publication time 2026-09-29T17:54:07.257Z with the actual then-current sequence and predecessor; no event has been staged as authority here.",
+    "Retain immutable exact-head trusted hosted publication validation, then append only genuinely evidenced VERIFIED and QUALIFIED transitions. Candidate eligible_after is 2026-09-30T17:54:08Z, rounded upward from the latest publication plus the existing 24-hour age policy; no future event is claimed.",
+    "Token CANARY promotion separately requires the real hosted default-branch central consumer check-run identities and bindings. A receipt-v3 plus execution envelope is supporting evidence only. No consumer change, canary execution, qualification receipt, or policy selection is included."
+  ],
+  "registry_record_present": false,
+  "lifecycle_event_present": false,
+  "live_verifier_passed": false,
+  "qualified": false,
+  "canary_executed": false,
+  "consumer_policy_changed": false,
+  "node26_managed_runtime_authorized": false,
+  "portable_evidence_sha256": {
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/record-draft.json": "sha256:cd7a6b7e977bbbd6a8e662e5343cece3c57d1f4e658d109e09c0543b0b53d091",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/source-excerpts.json": "sha256:bd8e8f03e7ae64836b8d5dfe9feaa98c56f20cb15ddde629aee296839233c6b2",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/attestations/docs-protocol-0.6.2.json": "sha256:60dac0597157ed34a208205e0e6ae65f4d295a0bf41ea52c331ae2c9f8a302b4",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/attestations/docs-protocol-agent-teams-0.2.13.json": "sha256:fb2d27e299e13ff81f6afc0ce7e177863a688a952a7eba03066323e968ebbeeb",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/attestations/document-authoring-0.3.2.json": "sha256:ba831484cbb3c540c319f3b65201ec2ca1b3b9b166a881fb2c5a4bbb03059d4f",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/attestations/engineering-foundation-1.7.0.json": "sha256:8589039e5045ab3993f50213a6e5cf31d0363569d91aec5fdcd747a3d4ef58ec",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/attestations/repository-mutation-0.2.2.json": "sha256:366f6daa9938e288d56dbd3c1be85028cfe98227df5a656259102c5879220a7f",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/node26-central-workflow-tree-entry.json": "sha256:1fbbc3df7facf2bdd6bbd09797f13625fffba91b771e4fa0418f1be359af3183",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/node26-foundation-release-attempt1.json": "sha256:ad43507397700a14b22482ddcc16c0a0f5d7450c2c6bef2ece24c2efe13cc620",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/node26-foundation-release-attempt2.json": "sha256:313ba6bf28937e884f571aa38223ebc27fb1b6cb9d3667f77df8ee4a901ae03e",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/node26-foundation-release-job-attempt1.json": "sha256:45db6fe0b85ebb6f23486c84d0ea3ce89822fb2e448ec61bd01bf52abb546ee7",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/node26-foundation-release-job-attempt2.json": "sha256:887156de0d5d52269981a727b0dee7a70ad4077c55f9eabcb069ae3da7b443da",
+    "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/registry-metadata.json": "sha256:8712127a601243eb6a8a99cd820bff8a00559e475201122f9f672d79ce492538",
+    "governance/docs-runtime-closures/sha256-3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca.json": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+  }
+}
