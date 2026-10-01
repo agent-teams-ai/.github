@@ -85,57 +85,16 @@ test("rejects semantic commands in OIDC and changed authority", () => {
 
 test("rejects run/comment bypasses despite preserved step names", () => {
   for (const mutate of [
-    (changed) => { changed.jobs["trusted-qualification"].steps[7].run = "true # base verifier install"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[11].run = "true # prepare-install"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[13].run = "true # pnpm install --ignore-scripts --ignore-pnpmfile"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[15].run = "true # agent-teams-docs qualify"; },
-    (changed) => { changed.jobs["trusted-qualification"].steps[17].run = "true # verify-docs-qualification-receipt.mjs"; },
-    (changed) => { changed.jobs["docs-protocol-check"].steps[6].run = "true # pnpm docs:protocol:check"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[5].run = "true # base verifier install"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[10].run = "true # prepare-install"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[12].run = "true # pnpm install --ignore-scripts --ignore-pnpmfile"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[14].run = "true # agent-teams-docs qualify"; },
+    (changed) => { changed.jobs["trusted-qualification"].steps[15].run = "true # verify-docs-qualification-receipt.mjs"; },
+    (changed) => { changed.jobs["docs-protocol-check"].steps[5].run = "true # pnpm docs:protocol:check"; },
   ]) {
     const changed = clone(workflow);
     mutate(changed);
     assert.throws(() => validateDocsProtocolWorkflow(changed, YAML.stringify(changed)), /allowlist/u);
-  }
-});
-
-test("rejects a compatibility lane that gains authority or depends on the documentation gate", () => {
-  for (const mutate of [
-    (changed) => { changed.jobs["node-compatibility"].needs = "trusted-qualification"; },
-    (changed) => { changed.jobs["node-compatibility"].needs = undefined; },
-    (changed) => { changed.jobs["node-compatibility"].permissions["id-token"] = "write"; },
-    (changed) => { changed.jobs["node-compatibility"].steps[0].with.ref = "${{ github.sha }}"; },
-    (changed) => { changed.jobs["node-compatibility"].steps[0].with.ref = "${{ github.workflow_sha }}"; },
-    (changed) => { changed.jobs["docs-protocol-check"].needs = ["trusted-qualification", "node-compatibility"]; },
-  ]) {
-    const changed = clone(workflow);
-    mutate(changed);
-    assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
-  }
-});
-
-test("compatibility checkout uses the authenticated called workflow revision", () => {
-  const compatibility = workflow.jobs["node-compatibility"];
-  assert.equal(compatibility.needs, "trusted-authorize");
-  assert.equal(compatibility.steps[0].with.ref, "${{ needs.trusted-authorize.outputs.workflow-sha }}");
-  assert.equal(workflow.jobs["trusted-authorize"].outputs["workflow-sha"],
-    "${{ steps.authority.outputs.workflow-sha }}");
-});
-
-test("rejects compatibility lane runtime, install, gate, and step bypasses", () => {
-  for (const mutate of [
-    (changed) => { changed.jobs["node-compatibility"].strategy.matrix["node-version"] = ["24.18.0"]; },
-    (changed) => { changed.jobs["node-compatibility"].steps[3].run = "true # runtime proved"; },
-    (changed) => { changed.jobs["node-compatibility"].steps[4].run = "pnpm install"; },
-    (changed) => { changed.jobs["node-compatibility"].steps[5].run = "true # contract checked"; },
-    (changed) => { changed.jobs["node-compatibility"].steps[6].run = "pnpm install"; },
-    (changed) => { changed.jobs["node-compatibility"].steps[7].run = "true # pnpm check"; },
-    (changed) => { changed.jobs["node-compatibility"].steps.push({ run: "echo extra" }); },
-    (changed) => { changed.jobs["docs-protocol-check"].steps[4].run = "true # runtime proved"; },
-    (changed) => { changed.jobs["trusted-authorize"].steps[4].run = "true # runtime proved"; },
-  ]) {
-    const changed = clone(workflow);
-    mutate(changed);
-    assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
   }
 });
 

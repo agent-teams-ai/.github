@@ -34,9 +34,11 @@ Docs Cohort.
 
 The parser is provisioned from `scripts/node-compatibility-tooling`, a private,
 exactly pinned one-dependency workspace. Its own workspace file prevents pnpm
-from climbing into the repository root. The central docs reusable workflow
-checks out the authorized central SHA before installing that parser and running
-the central checker. Node 24 continues to run the full frozen root installation,
+from climbing into the repository root. Central CI runs the source checker in
+independent Node 24 and Node 26 jobs.
+The stable30 Docs reusable workflow retains its exact pinned Node 24 bytes and
+existing safe-closure validator; it does not acquire a Node 26 compatibility job.
+Node 24 continues to run the full frozen root installation,
 lockfile peer check, and repository gate. Node 26 does not claim a full root
 installation while published Engineering Foundation packages retain Node 24-only
 engines. The accepted Docs Cohort qualifications and rollback bytes are unchanged.

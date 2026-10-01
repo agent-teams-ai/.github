@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +16,6 @@ export const NODE_COMPATIBILITY = Object.freeze({
 
 const requiredWorkflowPaths = Object.freeze([
   ".github/workflows/ci.yml",
-  ".github/workflows/docs-protocol-check.yml",
   ".github/workflows/reviewrouter-codex.yml",
   ".github/workflows/reviewrouter-interaction.yml",
 ]);
@@ -63,7 +63,6 @@ function verifyRuntimeProof(source, path) {
 }
 
 function verifyIsolatedParser(workflow, path) {
-  const central = path === ".github/workflows/docs-protocol-check.yml";
   const requiredJobs = path === ".github/workflows/ci.yml"
     ? ["check", "node26-compatibility"]
     : path === ".github/workflows/reviewrouter-interaction.yml"
@@ -74,13 +73,12 @@ function verifyIsolatedParser(workflow, path) {
   }
   for (const [jobName, job] of Object.entries(workflow.jobs ?? {})) {
     const steps = job.steps ?? [];
-    const checkName = central ? "Check central Node compatibility contract"
-      : path === ".github/workflows/ci.yml" ? "Check Node compatibility contract"
+    const checkName = path === ".github/workflows/ci.yml" ? "Check Node compatibility contract"
         : "Check bounded Node compatibility contract";
     const checkIndex = steps.findIndex(step => step.name === checkName);
     if (checkIndex < 0 && !requiredJobs.includes(jobName)) { continue; }
     const setupIndex = steps.findIndex(step => step.uses?.startsWith("pnpm/action-setup@"));
-    const installIndex = steps.findIndex(step => step.name === (central ? "Install isolated central compatibility parser" : "Install isolated compatibility parser"));
+    const installIndex = steps.findIndex(step => step.name === "Install isolated compatibility parser");
     const setup = steps[setupIndex];
     const install = steps[installIndex];
     const check = steps[checkIndex];
@@ -89,36 +87,14 @@ function verifyIsolatedParser(workflow, path) {
         setup.uses === "pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9" &&
         setup.with?.version === "11.18.0" && setup.with?.run_install === false &&
         setup.if === undefined && setup["continue-on-error"] === undefined &&
-        install.run === `pnpm --dir ${central ? ".node-compatibility/" : ""}scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true` &&
+        install.run === `pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true` &&
         install.if === undefined && install.shell === undefined && install["continue-on-error"] === undefined &&
         install["working-directory"] === undefined &&
         check.run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n" &&
         check.if === undefined && check.shell === undefined && check["continue-on-error"] === undefined &&
-        check["working-directory"] === (central ? ".node-compatibility" : undefined),
+        check["working-directory"] === undefined,
       `${path} job ${jobName} must install its pinned isolated parser before checking the source contract.`,
     );
-    if (central && jobName === "node-compatibility") {
-      const checkout = steps[0];
-      assert(
-        job.needs === "trusted-authorize" && job.if === undefined &&
-          job["continue-on-error"] === undefined &&
-          checkout?.name === "Check out exact called central revision" &&
-          checkout.uses === "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" &&
-          checkout.with?.repository === "agent-teams-ai/.github" &&
-          checkout.with?.ref === "${{ needs.trusted-authorize.outputs.workflow-sha }}" &&
-          checkout.with?.path === ".node-compatibility" &&
-          checkout.with?.["fetch-depth"] === 0 &&
-          checkout.with?.["persist-credentials"] === false &&
-          checkout.if === undefined && checkout.shell === undefined &&
-          checkout["continue-on-error"] === undefined &&
-          checkout["working-directory"] === undefined &&
-          setupIndex === 1 && installIndex === 4 && checkIndex === 5 &&
-          steps[2]?.uses === "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020" &&
-          steps[3]?.name === "Prove selected Node runtime" &&
-          Object.keys(job.permissions ?? {}).length === 1 && job.permissions.contents === "read",
-        `${path} central Node compatibility job must use its authorized central checkout before parser setup.`,
-      );
-    }
   }
 }
 
@@ -187,6 +163,13 @@ export async function checkNodeCompatibility(root = process.cwd()) {
   assert(toolingPackage.packageManager === "pnpm@11.18.0" && toolingPackage.dependencies?.yaml === "2.9.1", "Compatibility parser must retain exact pnpm and YAML pins.");
   assert(toolingWorkspace.includes("packages:\n  - .") && toolingLock.importers?.["."]?.dependencies?.yaml?.version === "2.9.1" && toolingLock.packages?.["yaml@2.9.1"]?.resolution?.integrity === "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==", "Compatibility parser must retain isolated workspace and exact lock integrity.");
 
+  // Stable30 binds these exact bytes; source compatibility runs in central CI.
+  const frozenWorkflow = await read(".github/workflows/docs-protocol-check.yml");
+  assert(
+    createHash("sha256").update(frozenWorkflow).digest("hex") === "ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6",
+    "The stable30 Docs reusable workflow must retain its exact frozen Node 24 bytes.",
+  );
+
   const workflowSources = new Map();
   for (const path of requiredWorkflowPaths) {
     workflowSources.set(path, await read(path));
@@ -199,10 +182,6 @@ export async function checkNodeCompatibility(root = process.cwd()) {
 
   verifySplitInteractionLane(workflowSources.get(".github/workflows/ci.yml"), ".github/workflows/ci.yml");
   verifyCompatibilityLane(
-    workflowSources.get(".github/workflows/docs-protocol-check.yml"),
-    ".github/workflows/docs-protocol-check.yml",
-  );
-  verifyCompatibilityLane(
     workflowSources.get(".github/workflows/reviewrouter-codex.yml"),
     ".github/workflows/reviewrouter-codex.yml",
   );
@@ -214,7 +193,6 @@ export async function checkNodeCompatibility(root = process.cwd()) {
     ".github/workflows/docs-platform-recovery-installation-r317.yml",
     ".github/workflows/docs-admission-evidence.yml",
     ".github/workflows/docs-cohort-append-only.yml",
-    ".github/workflows/docs-protocol-check.yml",
     ".github/workflows/organization-inventory-drift.yml",
   ];
   for (const path of literalNode24Paths) {
@@ -235,11 +213,9 @@ export async function checkNodeCompatibility(root = process.cwd()) {
   }
 
   const ciSource = workflowSources.get(".github/workflows/ci.yml");
-  const docsSource = workflowSources.get(".github/workflows/docs-protocol-check.yml");
   const ciJobs = parseYaml(ciSource).jobs ?? {};
   const ciSteps = ciJobs.check?.steps ?? [];
   const ci26Steps = ciJobs["node26-compatibility"]?.steps ?? [];
-  const docsSteps = parseYaml(docsSource).jobs?.["node-compatibility"]?.steps ?? [];
   const strictFlags = "--config.engine-strict=true --config.strict-peer-dependencies=true";
   const ciInstall = ciSteps.find(step => step.run?.startsWith("pnpm install --frozen-lockfile "));
   assert(
@@ -251,24 +227,10 @@ export async function checkNodeCompatibility(root = process.cwd()) {
         "git diff --exit-code -- pnpm-lock.yaml\n",
     "CI must use a frozen strict install and lockgraph peer check in the Node 24 check job.",
   );
-  const docsInstall = docsSteps.find(step => step.run?.startsWith("pnpm install --frozen-lockfile "));
-  assert(
-    docsInstall?.if === "matrix.node-version == '24.18.0'" && docsInstall.shell === undefined && docsInstall["continue-on-error"] === undefined &&
-      docsInstall.run ===
-        `pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile ${strictFlags}\n` +
-        `pnpm peers check --lockfile-only\n` +
-        `pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile ${strictFlags}\n` +
-        "git diff --exit-code -- pnpm-lock.yaml\n",
-    "The docs compatibility lane must validate frozen strict lockgraph peers only on Node 24.",
-  );
   assert(ci26Steps.some(step => step.run?.includes("scripts/node-compatibility-tooling install --frozen-lockfile")) &&
     ci26Steps.some(step => step.run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n") &&
     !ci26Steps.some(step => step.run?.includes("pnpm install --frozen-lockfile --config.engine-strict=true")),
   "CI Node 26 must check source with isolated parser, without the unsupported root install.");
-  for (const [path, steps] of [[".github/workflows/ci.yml", ciSteps], [".github/workflows/docs-protocol-check.yml", docsSteps]]) {
-    assert(steps.some(step => step.run?.includes("scripts/node-compatibility-tooling install --frozen-lockfile")), `${path} must install isolated parser tooling.`);
-    assert(steps.some(step => step.run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n"), `${path} must check the source contract on both runtimes.`);
-  }
 
   return Object.freeze({
     productionDefault: NODE_COMPATIBILITY.productionDefault,

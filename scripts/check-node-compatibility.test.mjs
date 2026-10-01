@@ -310,44 +310,37 @@ test("required parser steps reject skipped setup, install, and check", async () 
   }
 });
 
-test("central parser job rejects disabled required steps and missing setup", async () => {
-  const name = "docs-protocol-check.yml";
-  for (const marker of [
-    "      - name: Set up pnpm for Node compatibility checks",
-    "      - name: Install isolated central compatibility parser",
-    "      - name: Check central Node compatibility contract",
-  ]) {
-    await rejectsWorkflowMutation(name, centralWorkflow,
-      source => source.replace(marker, marker.replace("      - ", "      - if: false\n        ")),
-      /pinned isolated parser/u);
-  }
-  await rejectsWorkflowMutation(name, centralWorkflow,
-    source => source.replace(/      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm\/action-setup@[^\n]+\n        with:\n          version: 11\.18\.0\n          run_install: false\n/u, ""),
-    /pinned isolated parser/u);
-  await rejectsWorkflowMutation(name, centralWorkflow,
-    source => source.replace("  node-compatibility:\n", "  node-compatibility-disabled:\n"),
-    /retain its node-compatibility compatibility job/u);
+test("rejects widening the frozen stable30 workflow runtime", async () => {
+  await rejectsWorkflowMutation("docs-protocol-check.yml", centralWorkflow,
+    source => source.replace("node-version: 24.18.0", "node-version: 26.10.0"),
+    /exact frozen Node 24 bytes/u);
 });
 
-test("central parser job rejects untrusted checkout and weakened execution", async () => {
-  const name = "docs-protocol-check.yml";
-  const cases = [
-    [source => source.replace("    needs: trusted-authorize\n    runs-on: ubuntu-24.04", "    needs: trusted-authorize\n    if: false\n    runs-on: ubuntu-24.04"), /must not skip the compatibility job/u],
-    [source => source.replace("    needs: trusted-authorize\n    runs-on: ubuntu-24.04", "    needs: trusted-qualification\n    runs-on: ubuntu-24.04"), /authorized central checkout/u],
-    [source => source.replace("      - name: Check out exact called central revision", "      - if: false\n        name: Check out exact called central revision"), /authorized central checkout/u],
-    [source => source.replace("      - name: Check out exact called central revision", "      - name: Check out exact called central revision\n        continue-on-error: true"), /authorized central checkout/u],
-    [source => source.replace("ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}\n          path: .node-compatibility", "ref: main\n          path: .node-compatibility"), /authorized central checkout/u],
-    [source => source.replace("      - name: Check out exact called central revision\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", "      - name: Check out exact called central revision\n        uses: actions/checkout@main"), /authorized central checkout/u],
-    [source => source.replace("      - name: Set up pnpm for Node compatibility checks", "      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n        with:\n          repository: agent-teams-ai/.github\n          ref: main\n          path: .node-compatibility\n      - name: Set up pnpm for Node compatibility checks"), /authorized central checkout/u],
-    [source => source.replace("      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9", "      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm/action-setup@main"), /pinned isolated parser/u],
-    [source => source.replace("      - name: Set up pnpm for Node compatibility checks", "      - name: Set up pnpm for Node compatibility checks\n        continue-on-error: true"), /pinned isolated parser/u],
-    [source => source.replace("      - name: Install isolated central compatibility parser", "      - name: Install isolated central compatibility parser\n        shell: bash {0}"), /pinned isolated parser/u],
-    [source => source.replace("      - name: Install isolated central compatibility parser", "      - name: Install isolated central compatibility parser\n        continue-on-error: true"), /pinned isolated parser/u],
-    [source => source.replace("        working-directory: .node-compatibility\n        run: |\n          node scripts/check-node-compatibility.mjs", "        working-directory: .\n        run: |\n          node scripts/check-node-compatibility.mjs"), /pinned isolated parser/u],
-    [source => source.replace("      - name: Check central Node compatibility contract", "      - name: Check central Node compatibility contract\n        shell: bash {0}"), /pinned isolated parser/u],
-    [source => source.replace("      - name: Check central Node compatibility contract", "      - name: Check central Node compatibility contract\n        continue-on-error: true"), /pinned isolated parser/u],
-  ];
-  for (const [change, expected] of cases) {
-    await rejectsWorkflowMutation(name, centralWorkflow, change, expected);
+test("CI Node 26 rejects a reused root install and weakened parser isolation", async () => {
+  for (const change of [
+    source => source.replaceAll("pnpm --dir scripts/node-compatibility-tooling install", "pnpm install"),
+    source => source.replaceAll("--frozen-lockfile --ignore-scripts --ignore-pnpmfile", "--ignore-scripts --ignore-pnpmfile"),
+    source => source.replaceAll("--config.strict-peer-dependencies=true", "--config.strict-peer-dependencies=false"),
+  ]) {
+    await rejectsWorkflowMutation("ci.yml", ciWorkflow, change, /pinned isolated parser/u);
+  }
+});
+
+test("rejects parser version or integrity drift", async () => {
+  for (const [path, change, expected] of [
+    ["package.json", source => source.replace("2.9.1", "2.9.0"), /exact pnpm and YAML pins/u],
+    ["pnpm-lock.yaml", source => source.replace("sha512-3NxN8+78", "sha512-4NxN8+78"), /exact lock integrity/u],
+  ]) {
+    const root = await makeFixture();
+    try {
+      const target = join(root, "scripts/node-compatibility-tooling", path);
+      const source = await readFile(target, "utf8");
+      const mutated = change(source);
+      assert.notEqual(mutated, source);
+      await writeFile(target, mutated);
+      await assert.rejects(checkNodeCompatibility(root), expected);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   }
 });
