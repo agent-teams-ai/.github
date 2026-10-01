@@ -1,6 +1,12 @@
 {
-  "source_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
-  "content_candidate": "6e77efe7ef0c686c9e95d4d361578c8c594aad13",
+  "historical_sources": {
+    "old_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+    "current_main": "3fe0f135ffc446b3bb174397c6b5783f72a008a2",
+    "old_g": "4e5e722f337ff19dff62aada7bc9a42cedbeb6c9",
+    "corrected_322": "a5035495279c0cb750a2c9b898acab89cf94edbb",
+    "reviewed_322": "1aaace692e57b13534c809a9b1b77700aab4b938",
+    "corrected_tree": "eea25f3c755d05747fd63f32034cdb3c3378df05"
+  },
   "new_overrides": [
     {
       "path": ".github/workflows/ci.yml",
@@ -88,36 +94,6 @@
       ]
     },
     {
-      "path": ".github/workflows/docs-protocol-check.yml",
-      "edits": [
-        {
-          "start": 105,
-          "delete": 0,
-          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
-        },
-        {
-          "start": 164,
-          "delete": 0,
-          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
-        },
-        {
-          "start": 246,
-          "delete": 0,
-          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
-        },
-        {
-          "start": 316,
-          "delete": 0,
-          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    needs: trusted-authorize\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - name: Check out exact called central revision\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          repository: agent-teams-ai/.github\n          ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}\n          path: .node-compatibility\n          fetch-depth: 0\n          persist-credentials: false\n      - name: Set up pnpm for Node compatibility checks\n        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Set up Node for compatibility checks\n        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n          cache: pnpm\n          cache-dependency-path: .node-compatibility/pnpm-lock.yaml\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - name: Install isolated central compatibility parser\n        run: pnpm --dir .node-compatibility/scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check central Node compatibility contract\n        working-directory: .node-compatibility\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n      - name: Install central dependencies with strict frozen resolution\n        if: matrix.node-version == '24.18.0'\n        working-directory: .node-compatibility\n        run: |\n          pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n          pnpm peers check --lockfile-only\n          pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n          git diff --exit-code -- pnpm-lock.yaml\n      - name: Run central compatibility gates\n        if: matrix.node-version == '24.18.0'\n        working-directory: .node-compatibility\n        run: pnpm check\n\n"
-        },
-        {
-          "start": 342,
-          "delete": 0,
-          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
-        }
-      ]
-    },
-    {
       "path": ".github/workflows/organization-inventory-drift.yml",
       "edits": [
         {
@@ -198,51 +174,6 @@
       ]
     },
     {
-      "path": "scripts/check-community-files.mjs",
-      "edits": [
-        {
-          "start": 208,
-          "delete": 0,
-          "insert": "          { name: \"Prove selected Node runtime\", env: { EXPECTED_NODE_VERSION: \"24.18.0\" },\n            run: \"node -e \\\"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\\\"\" },\n"
-        },
-        {
-          "start": 227,
-          "delete": 0,
-          "insert": "          { name: \"Prove selected Node runtime\", env: { EXPECTED_NODE_VERSION: \"24.18.0\" },\n            run: \"node -e \\\"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\\\"\" },\n"
-        },
-        {
-          "start": 252,
-          "delete": 0,
-          "insert": "          { name: \"Prove selected Node runtime\", env: { EXPECTED_NODE_VERSION: \"24.18.0\" },\n            run: \"node -e \\\"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\\\"\" },\n"
-        },
-        {
-          "start": 279,
-          "delete": 0,
-          "insert": "      \"node-compatibility\": {\n        name: \"node-compatibility (Node ${{ matrix.node-version }})\",\n        needs: \"trusted-authorize\",\n        \"runs-on\": \"ubuntu-24.04\", \"timeout-minutes\": 10,\n        strategy: { \"fail-fast\": false, matrix: { \"node-version\": [\"24.18.0\", \"26.10.0\"] } },\n        permissions: { contents: \"read\" },\n        steps: [\n          { name: \"Check out exact called central revision\", uses: checkout,\n            with: { repository: \"agent-teams-ai/.github\", ref: \"${{ needs.trusted-authorize.outputs.workflow-sha }}\", path: \".node-compatibility\", \"fetch-depth\": 0, \"persist-credentials\": false } },\n          { name: \"Set up pnpm for Node compatibility checks\", uses: pnpm,\n            with: { version: \"11.18.0\", run_install: false } },\n          { name: \"Set up Node for compatibility checks\", uses: node,\n            with: { \"node-version\": \"${{ matrix.node-version }}\", cache: \"pnpm\", \"cache-dependency-path\": \".node-compatibility/pnpm-lock.yaml\" } },\n          { name: \"Prove selected Node runtime\", env: { EXPECTED_NODE_VERSION: \"${{ matrix.node-version }}\" },\n            run: \"node -e \\\"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\\\"\" },\n          { name: \"Install isolated central compatibility parser\",\n            run: \"pnpm --dir .node-compatibility/scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\" },\n          { name: \"Check central Node compatibility contract\", \"working-directory\": \".node-compatibility\",\n            run: \"node scripts/check-node-compatibility.mjs\\nnode --test scripts/check-node-compatibility.test.mjs\\n\" },\n          { name: \"Install central dependencies with strict frozen resolution\", if: \"matrix.node-version == '24.18.0'\", \"working-directory\": \".node-compatibility\",\n            run: \"pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\\npnpm peers check --lockfile-only\\npnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\\ngit diff --exit-code -- pnpm-lock.yaml\\n\" },\n          { name: \"Run central compatibility gates\", if: \"matrix.node-version == '24.18.0'\", \"working-directory\": \".node-compatibility\", run: \"pnpm check\" },\n        ],\n      },\n"
-        },
-        {
-          "start": 286,
-          "delete": 0,
-          "insert": "          { name: \"Prove selected Node runtime\", env: { EXPECTED_NODE_VERSION: \"24.18.0\" },\n            run: \"node -e \\\"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\\\"\" },\n"
-        }
-      ]
-    },
-    {
-      "path": "scripts/check-community-files.test.mjs",
-      "edits": [
-        {
-          "start": 87,
-          "delete": 6,
-          "insert": "    (changed) => { changed.jobs[\"trusted-qualification\"].steps[7].run = \"true # base verifier install\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[11].run = \"true # prepare-install\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[13].run = \"true # pnpm install --ignore-scripts --ignore-pnpmfile\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[15].run = \"true # agent-teams-docs qualify\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[17].run = \"true # verify-docs-qualification-receipt.mjs\"; },\n    (changed) => { changed.jobs[\"docs-protocol-check\"].steps[6].run = \"true # pnpm docs:protocol:check\"; },\n"
-        },
-        {
-          "start": 97,
-          "delete": 0,
-          "insert": "  }\n});\n\ntest(\"rejects a compatibility lane that gains authority or depends on the documentation gate\", () => {\n  for (const mutate of [\n    (changed) => { changed.jobs[\"node-compatibility\"].needs = \"trusted-qualification\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].needs = undefined; },\n    (changed) => { changed.jobs[\"node-compatibility\"].permissions[\"id-token\"] = \"write\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[0].with.ref = \"${{ github.sha }}\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[0].with.ref = \"${{ github.workflow_sha }}\"; },\n    (changed) => { changed.jobs[\"docs-protocol-check\"].needs = [\"trusted-qualification\", \"node-compatibility\"]; },\n  ]) {\n    const changed = clone(workflow);\n    mutate(changed);\n    assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);\n  }\n});\n\ntest(\"compatibility checkout uses the authenticated called workflow revision\", () => {\n  const compatibility = workflow.jobs[\"node-compatibility\"];\n  assert.equal(compatibility.needs, \"trusted-authorize\");\n  assert.equal(compatibility.steps[0].with.ref, \"${{ needs.trusted-authorize.outputs.workflow-sha }}\");\n  assert.equal(workflow.jobs[\"trusted-authorize\"].outputs[\"workflow-sha\"],\n    \"${{ steps.authority.outputs.workflow-sha }}\");\n});\n\ntest(\"rejects compatibility lane runtime, install, gate, and step bypasses\", () => {\n  for (const mutate of [\n    (changed) => { changed.jobs[\"node-compatibility\"].strategy.matrix[\"node-version\"] = [\"24.18.0\"]; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[3].run = \"true # runtime proved\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[4].run = \"pnpm install\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[5].run = \"true # contract checked\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[6].run = \"pnpm install\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps[7].run = \"true # pnpm check\"; },\n    (changed) => { changed.jobs[\"node-compatibility\"].steps.push({ run: \"echo extra\" }); },\n    (changed) => { changed.jobs[\"docs-protocol-check\"].steps[4].run = \"true # runtime proved\"; },\n    (changed) => { changed.jobs[\"trusted-authorize\"].steps[4].run = \"true # runtime proved\"; },\n  ]) {\n    const changed = clone(workflow);\n    mutate(changed);\n    assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);\n"
-        }
-      ]
-    },
-    {
       "path": "scripts/check-quality-scope.mjs",
       "edits": [
         {
@@ -258,10 +189,15 @@
         {
           "start": 31,
           "delete": 1,
+          "insert": ""
+        },
+        {
+          "start": 34,
+          "delete": 0,
           "insert": "  assert.ok(paths.includes(\"scripts/assert-node-runtime.mjs\"));\n  assert.ok(paths.includes(\"scripts/check-node-compatibility.mjs\"));\n"
         },
         {
-          "start": 49,
+          "start": 51,
           "delete": 0,
           "insert": "  \"a removed Node compatibility gate\": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(\" && node scripts/check-node-compatibility.mjs\", \"\"); },\n"
         }
@@ -314,27 +250,6 @@
           "start": 490,
           "delete": 0,
           "insert": "});\n\ntest(\"rejects v2 pnpm setup before trusted setup-node cache resolution\", () => {\n  const steps = [...trustedAppendOnlySteps];\n  const setupNode = steps.findIndex(step => step.uses?.startsWith(\"actions/setup-node@\"));\n  const pnpmV2 = steps.findIndex(step => step.id === \"pnpm-v2\");\n  [steps[setupNode], steps[pnpmV2]] = [steps[pnpmV2], steps[setupNode]];\n  assert.throws(() => assertTrustedPnpmSetupOrder(steps),\n    /setup-node cache resolution must see only v1 pnpm/u);\n"
-        }
-      ]
-    }
-  ],
-  "live_overrides": [
-    {
-      "path": "scripts/check-quality-scope.test.mjs",
-      "live": {
-        "bytes": 4114,
-        "sha256": "sha256:7f4894ecd051b181b5923975675b9066cc102331ceb16339f19a11ee4679e260"
-      },
-      "edits": [
-        {
-          "start": 31,
-          "delete": 3,
-          "insert": "  assert.ok(paths.includes(\"scripts/assert-node-runtime.mjs\"));\n  assert.ok(paths.includes(\"scripts/check-node-compatibility.mjs\"));\n"
-        },
-        {
-          "start": 51,
-          "delete": 0,
-          "insert": "  \"a removed Node compatibility gate\": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(\" && node scripts/check-node-compatibility.mjs\", \"\"); },\n"
         }
       ]
     }

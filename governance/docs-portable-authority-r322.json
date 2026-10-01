@@ -1,7 +1,14 @@
 {
-  "schema_version": 1,
-  "source_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
-  "content_candidate": "6e77efe7ef0c686c9e95d4d361578c8c594aad13",
+  "schema_version": 2,
+  "historical_sources": {
+    "old_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+    "current_main": "3fe0f135ffc446b3bb174397c6b5783f72a008a2",
+    "old_g": "4e5e722f337ff19dff62aada7bc9a42cedbeb6c9",
+    "corrected_322": "a5035495279c0cb750a2c9b898acab89cf94edbb",
+    "reviewed_322": "1aaace692e57b13534c809a9b1b77700aab4b938",
+    "corrected_tree": "eea25f3c755d05747fd63f32034cdb3c3378df05"
+  },
+  "activation": "UNQUALIFIED",
   "manifest": [
     {
       "path": ".github/workflows/ci.yml",
@@ -94,24 +101,6 @@
       }
     },
     {
-      "path": ".github/workflows/docs-protocol-check.yml",
-      "status": "modified",
-      "old": {
-        "type": "blob",
-        "mode": "100644",
-        "blob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
-        "bytes": 16954,
-        "sha256": "sha256:ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6"
-      },
-      "new": {
-        "type": "blob",
-        "mode": "100644",
-        "blob": "ddb69a618290eb48cfe41a59a8821c61524c912a",
-        "bytes": 20481,
-        "sha256": "sha256:7abb7262fff9d32815c68bd156c694ceeaec52c0858a4ea3d16b84eb7018f5c4"
-      }
-    },
-    {
       "path": ".github/workflows/organization-inventory-drift.yml",
       "status": "modified",
       "old": {
@@ -190,9 +179,9 @@
       "new": {
         "type": "blob",
         "mode": "100644",
-        "blob": "9a5f74f37a1835b50a1f1b6f86eb97e561351ddd",
-        "bytes": 2302,
-        "sha256": "sha256:6db277cf6904e17f21c5998aa5580e143194b9b515668b529a2c0803bb6a7180"
+        "blob": "3f7f666598c28d1fb9a5337780ed9eea364056cd",
+        "bytes": 2403,
+        "sha256": "sha256:a457aa68d246c28209c38c4fe86597f532f46d9db42ac8be12a6a154d87a17f8"
       }
     },
     {
@@ -226,51 +215,15 @@
       }
     },
     {
-      "path": "scripts/check-community-files.mjs",
-      "status": "modified",
-      "old": {
-        "type": "blob",
-        "mode": "100644",
-        "blob": "b43b247a4b727974ef878ff09abc05cd17f22d0e",
-        "bytes": 21730,
-        "sha256": "sha256:2826c86560b2c6d2d483a26a818459709e975465e727b6e0def7577db812dc26"
-      },
-      "new": {
-        "type": "blob",
-        "mode": "100644",
-        "blob": "5bdc09cb663ec16f99ca07244b3a1fa5e847bf4d",
-        "bytes": 25104,
-        "sha256": "sha256:e8d167ac41a3d9b1a3e7759d95f4c7901e6b4c10c238430e92b3193b32af2332"
-      }
-    },
-    {
-      "path": "scripts/check-community-files.test.mjs",
-      "status": "modified",
-      "old": {
-        "type": "blob",
-        "mode": "100644",
-        "blob": "fe25fc2080ed470098208c7753793e8c1b144e4f",
-        "bytes": 7806,
-        "sha256": "sha256:a21cf5e88da498335ab53404b67166a6a64a2a737e5840985150f1a0c4c529cb"
-      },
-      "new": {
-        "type": "blob",
-        "mode": "100644",
-        "blob": "3194e9671988778be721c3368081c2e577decc7e",
-        "bytes": 10223,
-        "sha256": "sha256:119889a811425c3a5f4e38ab8cd2b31f69986a1f1180f4c774e38c3aa02f664f"
-      }
-    },
-    {
       "path": "scripts/check-node-compatibility.mjs",
       "status": "added",
       "old": null,
       "new": {
         "type": "blob",
         "mode": "100644",
-        "blob": "55905e0cdbbbdb002ce696554263687b2c410d5d",
-        "bytes": 15552,
-        "sha256": "sha256:fa203055ca6cb7706c2d964704c0140954a75448dbc3a8bc35bb0102c84b5455"
+        "blob": "f3a251a169e563f6b56655403de79df9f4f08b68",
+        "bytes": 12748,
+        "sha256": "sha256:493a37d1b7b5aa4f80e44a58754f16f50f1f89c61da9253edbc1d7e6127bb09e"
       }
     },
     {
@@ -280,9 +233,9 @@
       "new": {
         "type": "blob",
         "mode": "100644",
-        "blob": "63a3f0737fd417ae6602c2d25902d1cb0f9dc979",
-        "bytes": 17963,
-        "sha256": "sha256:63f74d480c0e95904c332a559ab1856dcc8d19d84519c4b9528a782d75784670"
+        "blob": "024f454c4e9348357ac0f3a409dd6dc1c7ac51af",
+        "bytes": 14950,
+        "sha256": "sha256:4dcb38a209973b15e760e3216c431cd332d8057016f38bf0e831e33a09930e3a"
       }
     },
     {
@@ -309,16 +262,16 @@
       "old": {
         "type": "blob",
         "mode": "100644",
-        "blob": "2cacbca6acaebe64d57adbdcee367b9e595f6f83",
-        "bytes": 3963,
-        "sha256": "sha256:0ebad95f918670d31a7d3724c544ce5c508ed17a8e66ed5c1cc50dfe419a1db0"
+        "blob": "38844e9615e74474db8419d50b1b80d26ba825b8",
+        "bytes": 4114,
+        "sha256": "sha256:7f4894ecd051b181b5923975675b9066cc102331ceb16339f19a11ee4679e260"
       },
       "new": {
         "type": "blob",
         "mode": "100644",
-        "blob": "323513b857e6bce43a6838222741f87180cbdd57",
-        "bytes": 4237,
-        "sha256": "sha256:5ed83e81676d320744679240bf26bde23af5c1a1da817a96d4d30aa2f7c54406"
+        "blob": "8658090bf484d1394f6ec6aca4f0fdb5164cb8b1",
+        "bytes": 4388,
+        "sha256": "sha256:8c004f5a00e7a7d9249d16e2abfddf584c6ae17f062660641f0c48b0d2361974"
       }
     },
     {

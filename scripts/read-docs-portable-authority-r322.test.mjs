@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { Script } from 'node:vm';
 import YAML from 'yaml';
-import { parsePortableJson, validatePortableRecord, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
-import { classifyPortableIntent, makePortableApi, validatePortableAcceptance, verifyPortableExecution } from './read-docs-portable-authority-r322.mjs';
+import { classifyPortableTransition, parsePortableJson, portableRecordDigest, validatePortableRecord, verifyPortableBlob, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
+import { classifyPortableIntent, makePortableApi, portableReviewBody, validatePortableAcceptance, verifyPortableExecution } from './read-docs-portable-authority-r322.mjs';
+import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from './check-quality-scope.mjs';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -16,22 +20,16 @@ const addedRows = record.manifest.filter((row) => row.old === null);
 assert.equal(addedRows.length, 7);
 assert.deepEqual(Object.keys(additionBodies).sort(), addedRows.map((row) => row.path).sort());
 const historical = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
-assert.equal(historical.provenance_commit, 'ee717a097021894e67f9e814874240ecaf6f4715');
-assert.equal(historical.source_base, record.source_base);
-assert.equal(historical.content_candidate, record.content_candidate);
+assert.deepEqual(historical.historical_sources, record.historical_sources);
 const oldOverrides = new Map(historical.old_overrides.map((entry) => [entry.path, entry]));
 assert.equal(oldOverrides.size, historical.old_overrides.length);
 assert.deepEqual([...oldOverrides.keys()].sort(), record.manifest.filter((row) => row.old)
   .map((row) => row.path).sort());
 const forward = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
-assert.equal(forward.source_base, record.source_base);
-assert.equal(forward.content_candidate, record.content_candidate);
+assert.deepEqual(forward.historical_sources, record.historical_sources);
 const newOverrides = new Map(forward.new_overrides.map((entry) => [entry.path, entry]));
 assert.equal(newOverrides.size, forward.new_overrides.length);
 assert.deepEqual([...newOverrides.keys()].sort(), [...oldOverrides.keys()].sort());
-const liveOverrides = new Map(forward.live_overrides.map((entry) => [entry.path, entry]));
-assert.equal(liveOverrides.size, forward.live_overrides.length);
-assert.deepEqual([...liveOverrides.keys()], ['scripts/check-quality-scope.test.mjs']);
 function applyEdits(body, edits, path) {
   const lines = body.match(/[^\n]*\n|[^\n]+$/gu) ?? [];
   for (const { start, delete: count, insert } of [...edits].reverse()) {
@@ -48,11 +46,6 @@ function historicalBody(row, side) {
   let current = existsSync(path) ? readFileSync(path) : null;
   const matches = (bytes, expected) => Boolean(bytes && expected &&
     bytes.length === expected.bytes && sha(bytes) === expected.sha256);
-  const liveOverride = liveOverrides.get(row.path);
-  if (liveOverride && matches(current, liveOverride.live)) {
-    current = Buffer.from(applyEdits(current.toString('utf8'), liveOverride.edits, row.path));
-    assert.ok(matches(current, row.new), `live override differs from candidate for ${row.path}`);
-  }
   if (matches(current, row.new)) {
     if (side === 'new') {return current;}
     const override = oldOverrides.get(row.path);
@@ -92,8 +85,8 @@ test('consolidated additions preserve all seven candidate blob identities and fi
     assert.equal(row.new.mode, '100644', row.path);
   }
 });
-test('all 24 historical paths retain byte-authenticated old and candidate bodies', () => {
-  assert.equal(record.manifest.length, 24);
+test('all 21 content paths retain byte-authenticated old and candidate bodies', () => {
+  assert.equal(record.manifest.length, 21);
   for (const row of record.manifest) {
     for (const side of ['old', 'new']) {
       if (row[side] === null) {continue;}
@@ -107,10 +100,10 @@ test('all 24 historical paths retain byte-authenticated old and candidate bodies
 });
 const now = Date.parse('2026-09-28T12:00:00Z');
 const accepted = () => ({
-  schema_version: 1, repository: 'agent-teams-ai/.github', repository_id: 1316243981,
+  schema_version: 2, repository: 'agent-teams-ai/.github', repository_id: 1316243981,
   pull_number: 322, pull_id: 1, branch: 'main', head_ref: 'portable-r322',
   base: '1'.repeat(40), head: '2'.repeat(40), direction: 'forward',
-  manifest_digest: sha(JSON.stringify(record.manifest)),
+  source_digest: portableRecordDigest(record), manifest_digest: sha(JSON.stringify(record.manifest)),
   closure: G.map((path) => ({ path, blob: '3'.repeat(40), bytes: 1,
     sha256: `sha256:${'4'.repeat(64)}` })),
   run_id: 1, run_attempt: 1, decision_comment_id: 1, owner_id: 1, owner_login: 'owner',
@@ -119,14 +112,12 @@ const accepted = () => ({
   expected_protections_digest: `sha256:${'5'.repeat(64)}`,
   forward_decision_comment_id: null,
 });
-const reviewedCoordinates = (value) => Object.fromEntries(Object.entries(value)
-  .filter(([key]) => !['decision_comment_id', 'review_comment_id'].includes(key)));
 test('acceptance is closed, current, exact, and direction-specific', () => {
   assert.throws(() => parsePortableJson(Buffer.from('{"id":1,"id":2}'), 'acceptance'));
   assert.throws(() => parsePortableJson(Buffer.from('['.repeat(17) + '0' + ']'.repeat(17)), 'acceptance'));
   assert.equal(validatePortableAcceptance(accepted(), record, now).pull_number, 322);
   for (const mutation of [
-    { extra: true }, { run_id: 0 }, { run_id: Number.MAX_SAFE_INTEGER + 1 },
+    { extra: true }, { schema_version: 1 }, { source_digest: sha('unreviewed') }, { run_id: 0 }, { run_id: Number.MAX_SAFE_INTEGER + 1 },
     { pull_number: 321 }, { head: '0'.repeat(40) }, { owner_id: 0 },
     { manifest_digest: `sha256:${'6'.repeat(64)}` },
     { deadline: '2026-09-30T00:00:00Z' },
@@ -145,6 +136,21 @@ test('unbound reviewer identity refuses before API authority observations', asyn
   await assert.rejects(verifyPortableExecution({}, { ...accepted(), reviewer_id: 0 }, api,
     () => now), /accepted execution coordinates differ/u);
 });
+test('native review serialization binds historical sources and reviewed v2 bytes together', () => {
+  const coordinates = accepted();
+  const body = JSON.parse(portableReviewBody(record, coordinates));
+  assert.equal(body.source_digest, 'sha256:e9babac407a8fcdbcf177cb5b2e74ca79f8678ab5e86389684dea508b602635f');
+  assert.equal(body.manifest_digest, 'sha256:8ee791b1321937633f43d3aa8773f29cbde6ddf8dd093ddecf921bc444561c3d');
+  assert.deepEqual(body.historical_sources, record.historical_sources);
+  assert.equal(body.base, coordinates.base);
+  assert.equal(body.head, coordinates.head);
+  assert.ok(!Object.hasOwn(body, 'decision_comment_id'));
+  assert.ok(!Object.hasOwn(body, 'review_comment_id'));
+  assert.ok(!Object.hasOwn(body, 'source_base'));
+  assert.ok(!Object.hasOwn(body, 'content_candidate'));
+  assert.throws(() => portableReviewBody(record, { ...coordinates, source_digest: sha('changed') }),
+    /review source digest differs/u);
+});
 test('seven G paths select portable while imported and historical paths retain V8', () => {
   assert.equal(classifyPortableIntent([{ filename: 'docs/ordinary.md' }], record), 'legacy');
   const pair = record.manifest.map((row) => ({ filename: row.path }));
@@ -158,7 +164,7 @@ test('seven G paths select portable while imported and historical paths retain V
     assert.equal(classifyPortableIntent([{ filename: path }], record), 'legacy', path);
   }
 });
-test('protected check cutover requires the two exact new App contexts', () => {
+test('unqualified alternative protection shape requires the two exact App contexts', () => {
   const detail = { id: 19979783, name: 'Protect main', target: 'branch',
     enforcement: 'active', bypass_actors: [],
     conditions: { ref_name: { include: ['~DEFAULT_BRANCH'], exclude: [] } },
@@ -186,75 +192,6 @@ test('protected check cutover requires the two exact new App contexts', () => {
   snapshot.rulesets[0].summary.id = detail.id;
   checks[0].integration_id = 1;
   assert.throws(() => verifyPortableProtections(snapshot));
-});
-test('effective protection refuses superseded checks in classic and inherited rulesets', async () => {
-  for (const location of ['classic-contexts', 'classic-checks', 'inherited-ruleset']) {
-    const fixture = executionFixture();
-    if (location.startsWith('classic')) {
-      fixture.protections.classic_branch_protection = { required_status_checks: {
-        strict: true,
-        contexts: location === 'classic-contexts' ? ['trusted-validation'] : [],
-        checks: location === 'classic-checks' ? [{ context: 'trusted-cohort-authority-evolution-v8',
-          app_id: 15368 }] : [],
-      } };
-    } else {
-      const detail = structuredClone(fixture.protections.rulesets[0].detail);
-      detail.id = 19979784;
-      detail.name = 'Inherited main';
-      detail.source_type = 'Organization';
-      detail.rules = [{ type: 'required_status_checks', parameters: {
-        strict_required_status_checks_policy: true,
-        required_status_checks: [{ context: 'trusted-validation', integration_id: 15368 }],
-      } }];
-      fixture.protections.rulesets.push({ summary: { id: detail.id, name: detail.name,
-        enforcement: 'active' }, detail });
-    }
-    fixture.decision.expected_protections_digest = sha(JSON.stringify(fixture.protections));
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now), /superseded context/u, location);
-  }
-});
-test('a second active branch ruleset cannot reintroduce a bypass', async () => {
-  const fixture = executionFixture();
-  const detail = structuredClone(fixture.protections.rulesets[0].detail);
-  detail.id = 19979784;
-  detail.name = 'Inherited main';
-  detail.bypass_actors = [{ actor_id: 7, actor_type: 'Team', bypass_mode: 'always' }];
-  fixture.protections.rulesets.push({ summary: { id: detail.id, name: detail.name,
-    enforcement: 'active' }, detail });
-  fixture.decision.expected_protections_digest = sha(JSON.stringify(fixture.protections));
-  await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-    () => now), /bypass differs/u);
-});
-test('other branch rules do not block main, while matching and ambiguous scope fails', async () => {
-  for (const [include, exclude, outcome] of [
-    [['refs/heads/release/**'], [], 'accept'],
-    [['~ALL'], ['refs/heads/main'], 'accept'],
-    [['refs/heads/m*'], [], 'reject-old-context'],
-    [['~ALL'], ['refs/heads/release/**'], 'reject-old-context'],
-    [['~UNKNOWN'], [], 'reject-selector'],
-    [['refs/heads/**/main'], [], 'reject-selector'],
-  ]) {
-    const fixture = executionFixture();
-    const detail = structuredClone(fixture.protections.rulesets[0].detail);
-    Object.assign(detail, { id: 19979784, name: 'Inherited branch policy',
-      source_type: 'Organization', bypass_actors: [{ actor_id: 7, actor_type: 'Team',
-        bypass_mode: 'always' }], conditions: { ref_name: { include, exclude } },
-      rules: [{ type: 'required_status_checks', parameters: {
-        strict_required_status_checks_policy: true,
-        required_status_checks: [{ context: 'trusted-validation', integration_id: 15368 }],
-      } }] });
-    fixture.protections.rulesets.push({ summary: { id: detail.id, name: detail.name,
-      enforcement: 'active' }, detail });
-    fixture.decision.expected_protections_digest = sha(JSON.stringify(fixture.protections));
-    if (outcome === 'accept') {
-      assert.equal((await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-        () => now)).direction, 'forward');
-    } else {
-      await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-        () => now), outcome === 'reject-selector' ? /selector is ambiguous/u : /bypass differs/u);
-    }
-  }
 });
 test('read port completes pages and decodes blobs without publishing or writing', async () => {
   const calls = [];
@@ -297,546 +234,84 @@ test('historical execution port binds one attempt and complete job inventory', a
   const incomplete = makePortableApi(async () => ({ total_count: 3, jobs }));
   await assert.rejects(incomplete.getRunAttemptJobs(11, 2), /inventory is incomplete/u);
 });
-function gitTree(files, revision) {
-  const root = new Map(), entries = [];
-  for (const [path, value] of files) {
-    const parts = path.split('/'); let parent = root;
-    for (const part of parts.slice(0, -1)) {
-      if (!parent.has(part)) {parent.set(part, new Map());}
-      parent = parent.get(part);
+test('installed G content fails closed without qualifying either Actions head association', async () => {
+  for (const direction of ['forward', 'inverse']) for (const headSha of ['1'.repeat(40), '2'.repeat(40)]) {
+    let observations = 0;
+    const api = new Proxy({ getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')) }, {
+      get(target, key) {
+        if (key in target) {return target[key];}
+        return async () => {observations++; return { head_sha: headSha, conclusion: 'success' };};
+      },
+    });
+    const decision = direction === 'forward' ? accepted() : { ...accepted(),
+      direction, pull_number: 324, forward_decision_comment_id: 3 };
+    await assert.rejects(verifyPortableExecution({ execution_base: decision.base }, decision, api,
+      () => now), /G_ACTIVATION_UNQUALIFIED/u);
+    assert.equal(observations, 0, 'unqualified source cannot observe authority or issue success');
+  }
+});
+
+const identity = (bytes) => ({ type: 'blob', mode: '100644',
+  blob: createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex'),
+  bytes: bytes.length, sha256: sha(bytes) });
+const reconstructed = (side) => new Map(record.manifest.filter((row) => row[side] !== null)
+  .map((row) => [row.path, identity(historicalBody(row, side))]));
+test('independent byte reconstruction admits only the complete 21-path pair and its inverse', () => {
+  const before = reconstructed('old'), after = reconstructed('new');
+  for (const p of G) {
+    assert.ok(!record.manifest.some((row) => row.path === p), p);
+    const descriptor = identity(Buffer.from(read(p)));
+    before.set(p, descriptor); after.set(p, descriptor);
+  }
+  assert.equal(classifyPortableTransition(before, after, record), 'portable-forward');
+  assert.equal(classifyPortableTransition(after, before, record), 'portable-inverse');
+  for (const p of ['.github/workflows/docs-protocol-check.yml',
+    'scripts/check-community-files.mjs', 'scripts/check-community-files.test.mjs']) {
+    assert.ok(!record.manifest.some((row) => row.path === p));
+    const descriptor = identity(Buffer.from(read(p)));
+    before.set(p, descriptor); after.set(p, descriptor);
+    const changed = new Map(after); changed.set(p, identity(Buffer.from('rewritten frozen authority')));
+    assert.throws(() => classifyPortableTransition(before, changed, record), /incomplete or mixed/u);
+  }
+  for (const p of ['package.json', 'scripts/check-quality-scope.test.mjs']) {
+    const changed = new Map(after); changed.set(p, identity(Buffer.from('stale or widened runtime')));
+    assert.throws(() => classifyPortableTransition(before, changed, record), /preimages or postimages/u);
+  }
+  const selfInstall = new Map(before); selfInstall.delete(G[0]);
+  assert.throws(() => classifyPortableTransition(selfInstall, after, record), /incomplete or mixed/u);
+});
+
+test('authenticated live census and all-four forecast agree with actual Oxlint selection', async () => {
+  const adoption = await readQualityAdoption();
+  const pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
+  const censusRow = record.manifest.find((r) => r.path === 'scripts/check-quality-scope.test.mjs');
+  const live = Buffer.from(read(censusRow.path));
+  const installedSide = sha(live) === censusRow.old.sha256 ? 'old' : 'new';
+  verifyPortableBlob(live, censusRow[installedSide]);
+  assert.equal(pre.length, installedSide === 'old' ? 21 : 23);
+  const trackedPaths = [...new Set([...adoption.trackedPaths, ...record.manifest.map((row) => row.path)])];
+  const post = deriveLintPaths(assertQualityAdoption({ ...adoption, trackedPaths,
+    workflow: historicalBody(record.manifest[0], 'new').toString() }), adoption.profile);
+  assert.equal(post.length, 23);
+  for (const p of ['scripts/docs-portable-authority-r322.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
+    'scripts/assert-node-runtime.mjs', 'scripts/check-node-compatibility.mjs']) {assert.ok(post.includes(p));}
+  const temp = mkdtempSync(path.join(tmpdir(), 'portable-r322-NEWTEST-'));
+  try {
+    for (const p of post) {
+      mkdirSync(path.dirname(path.join(temp, p)), { recursive: true });
+      const row = record.manifest.find((r) => r.path === p);
+      writeFileSync(path.join(temp, p), row ? historicalBody(row, 'new') : read(p));
     }
-    parent.set(parts.at(-1), value);
-  }
-  function directory(children, prefix) {
-    const rows = [];
-    for (const [name, value] of children) {
-      const path = prefix ? `${prefix}/${name}` : name;
-      const entry = value instanceof Map ? { path, type: 'tree', mode: '040000',
-        sha: directory(value, path) } : { path, type: 'blob', mode: value.mode,
-        sha: value.blob, size: value.bytes };
-      entries.push(entry); rows.push({ ...entry, name });
-    }
-    rows.sort((a, b) => Buffer.compare(Buffer.from(a.name + (a.type === 'tree' ? '/' : '')),
-      Buffer.from(b.name + (b.type === 'tree' ? '/' : ''))));
-    const bytes = Buffer.concat(rows.flatMap((entry) => [
-      Buffer.from(`${entry.mode.replace(/^0/u, '')} ${entry.name}\0`), Buffer.from(entry.sha, 'hex')]));
-    return createHash('sha1').update(`tree ${bytes.length}\0`).update(bytes).digest('hex');
-  }
-  const treeSha = directory(root, '');
-  return { commit: { sha: revision, tree: { sha: treeSha } },
-    tree: { sha: treeSha, truncated: false, tree: entries } };
-}
-function executionFixture() {
-  const repo = { id: 1316243981, full_name: 'agent-teams-ai/.github', default_branch: 'main',
-    archived: false, disabled: false };
-  const bodies = new Map();
-  const identity = (bytes) => {
-    const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
-    bodies.set(blob, bytes);
-    return { type: 'blob', mode: '100644', blob, bytes: bytes.length, sha256: sha(bytes) };
-  };
-  const baseFiles = new Map(), headFiles = new Map();
-  const closure = G.map((path) => {
-    const value = identity(Buffer.from(read(path)));
-    baseFiles.set(path, value); headFiles.set(path, value);
-    return { path, blob: value.blob, bytes: value.bytes, sha256: value.sha256 };
-  });
-  for (const row of record.manifest) {
-    if (row.old) {
-      const bytes = historicalBody(row, 'old');
-      assert.deepEqual(identity(bytes), row.old);
-      baseFiles.set(row.path, row.old);
-    }
-    const bytes = historicalBody(row, 'new');
-    assert.deepEqual(identity(bytes), row.new);
-    headFiles.set(row.path, row.new);
-  }
-  const contextNames = ['check', 'trusted-admission-evidence', 'trusted-authority-evolution',
-    'trusted-admission-authority-evolution-v1', 'trusted-cohort-authority-portable-r322',
-    'trusted-validation-portable-r322'];
-  const detail = { id: 19979783, name: 'Protect main', target: 'branch', enforcement: 'active',
-    bypass_actors: [], conditions: { ref_name: { include: ['~DEFAULT_BRANCH'], exclude: [] } },
-    rules: ['deletion', 'non_fast_forward', 'required_linear_history', 'pull_request']
-      .map((type) => ({ type })).concat([{ type: 'required_status_checks', parameters: {
-        strict_required_status_checks_policy: true,
-        required_status_checks: contextNames.map((context) => ({ context, integration_id: 15368 })),
-      } }]),
-  };
-  const protections = { rulesets: [{ summary: { id: detail.id, name: detail.name,
-    enforcement: detail.enforcement }, detail }], classic_branch_protection: null };
-  const decision = { ...accepted(), closure, expected_protections_digest: sha(JSON.stringify(protections)) };
-  const pull = { id: decision.pull_id, number: 322, state: 'open', merged: false, draft: false,
-    changed_files: 24, commits: 1, updated_at: '2026-09-28T11:00:00Z',
-    base: { sha: decision.base, ref: 'main', repo },
-    head: { sha: decision.head, ref: decision.head_ref, repo } };
-  const event = { action: 'synchronize', repository: repo, pull_request: structuredClone(pull),
-    execution_base: decision.base, run_id: decision.run_id, run_attempt: decision.run_attempt };
-  const url = 'https://api.github.com/repos/agent-teams-ai/.github/issues/322';
-  const api = {
-    getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')),
-    getRepository: async () => repo,
-    getPull: async () => pull,
-    getBranchHead: async () => decision.base,
-    compare: async (from) => ({ status: 'ahead', merge_base_commit: { sha: from },
-      behind_by: 0, ahead_by: 1 }),
-    getEffectiveProtections: async () => protections,
-    getCollaboratorPermission: async () => ({ permission: 'admin',
-      user: { id: 1, login: 'owner' } }),
-    getDecisionComment: async (id) => id === 1 ? { id, user: { id: 1, login: 'owner', type: 'User' },
-      created_at: '2026-09-28T11:00:00Z', updated_at: '2026-09-28T11:00:00Z',
-      issue_url: url, body: JSON.stringify(decision) } : { id, user: {
-      id: 2, login: 'reviewer', type: 'User' }, issue_url: url,
-      created_at: '2026-09-28T10:59:00Z', updated_at: '2026-09-28T10:59:00Z',
-      body: JSON.stringify({ decision: 'accept-reviewed-corrected-portable-content',
-        source_base: record.source_base, content_candidate: record.content_candidate,
-        ...reviewedCoordinates(decision) }) },
-    getRunAttempt: async () => ({ id: decision.run_id, run_attempt: decision.run_attempt,
-      head_sha: decision.base, repository: { id: 1316243981 },
-      event: 'pull_request_target', path: '.github/workflows/docs-portable-authority-r322.yml',
-      status: 'in_progress', conclusion: null }),
-    getRunAttemptJobs: async () => [{ id: 102, name: 'verified-portable-r322',
-      run_id: decision.run_id, run_attempt: decision.run_attempt,
-      status: 'in_progress', conclusion: null,
-      started_at: '2026-09-28T11:01:00Z', completed_at: null }],
-    getPullFiles: async () => [record.manifest.map((row) => ({ filename: row.path,
-      status: row.status, sha: row.new.blob }))],
-    getTree: async (revision) => gitTree(revision === decision.base ? baseFiles : headFiles, revision),
-    getBlob: async (blob) => bodies.get(blob),
-  };
-  return { decision, event, api, protections, baseFiles, headFiles, bodies };
-}
-test('complete reviewed forward passes reconstructed tree and all final rereads', async () => {
-  const fixture = executionFixture();
-  fixture.event.pull_request.updated_at = '2026-09-28T10:50:00Z';
-  assert.equal((await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-    () => now)).status, 'exact_portable_candidate_verified');
+    writeFileSync(path.join(temp, 'oxlint.json'), read('oxlint.json'));
+    symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), path.join(temp, 'node_modules'), 'dir');
+    const selected = execFileSync(process.execPath, [fileURLToPath(new URL('../node_modules/oxlint/bin/oxlint', import.meta.url)),
+      '--debug=files', '--config', 'oxlint.json', '--no-ignore', '--disable-nested-config', ...post],
+    { cwd: temp, encoding: 'utf8' }).trim().split(/\r?\n/u).sort();
+    assert.deepEqual(selected, post);
+    for (const side of ['old', 'new']) {verifyPortableBlob(historicalBody(censusRow, side), censusRow[side]);}
+  } finally {rmSync(temp, { recursive: true, force: true });}
 });
-test('forward chronology rejects comments arriving after its own verifier starts', async () => {
-  for (const [id, field] of [[1, 'created_at'], [1, 'updated_at'],
-    [2, 'created_at'], [2, 'updated_at']]) {
-    const fixture = executionFixture();
-    const original = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (commentId) => {
-      const comment = await original(commentId);
-      const time = '2026-09-28T11:02:00Z';
-      if (id === 2 && commentId === 1) {
-        return { ...comment, created_at: '2026-09-28T11:03:00Z',
-          updated_at: '2026-09-28T11:03:00Z' };
-      }
-      if (commentId !== id) {return comment;}
-      return { ...comment, ...(field === 'created_at' ?
-        { created_at: time, updated_at: time } : { updated_at: time }) };
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now), /verifier|chronology/u, `${id} ${field}`);
-  }
-});
-test('forward chronology accepts both comments before its own verifier starts', async () => {
-  const fixture = executionFixture();
-  const result = await verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-    () => now);
-  assert.equal(result.status, 'exact_portable_candidate_verified');
-});
-test('forward rejects a live deadline more than 24 hours after the authenticated decision', async () => {
-  const fixture = executionFixture();
-  fixture.decision.deadline = '2026-09-29T11:00:00Z';
-  const original = fixture.api.getDecisionComment;
-  fixture.api.getDecisionComment = async (id) => {
-    const comment = await original(id);
-    return { ...comment, created_at: id === 1 ? '2026-09-27T11:00:00Z' :
-      '2026-09-27T10:59:00Z', updated_at: id === 1 ? '2026-09-27T11:00:00Z' :
-      '2026-09-27T10:59:00Z' };
-  };
-  await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-    () => now), /accepted execution coordinates differ/u);
-  const retained = inverseFixture();
-  retained.forward.deadline = fixture.decision.deadline;
-  const readRetainedComment = retained.fixture.api.getDecisionComment;
-  retained.fixture.api.getDecisionComment = async (id) => {
-    const comment = await readRetainedComment(id);
-    return id === 2 || id === 3 ? { ...comment,
-      created_at: id === 3 ? '2026-09-27T11:00:00Z' : '2026-09-27T10:59:00Z',
-      updated_at: id === 3 ? '2026-09-27T11:00:00Z' : '2026-09-27T10:59:00Z' } : comment;
-  };
-  await assert.rejects(verifyPortableExecution(retained.fixture.event, retained.inverse,
-    retained.fixture.api, () => now), /accepted execution coordinates differ/u);
-});
-test('forward chronology binds the live attempt and its unique running verifier job', async () => {
-  for (const mutation of ['wrong-attempt', 'wrong-base', 'wrong-event', 'missing-verifier',
-    'duplicate-verifier', 'wrong-job-attempt', 'not-running', 'missing-start']) {
-    const fixture = executionFixture();
-    const originalRun = fixture.api.getRunAttempt;
-    fixture.api.getRunAttempt = async (...args) => {
-      const run = await originalRun(...args);
-      return mutation === 'wrong-attempt' ? { ...run, run_attempt: run.run_attempt + 1 } :
-        mutation === 'wrong-base' ? { ...run, head_sha: fixture.decision.head } :
-          mutation === 'wrong-event' ? { ...run, event: 'pull_request' } : run;
-    };
-    const originalJobs = fixture.api.getRunAttemptJobs;
-    fixture.api.getRunAttemptJobs = async (...args) => {
-      const jobs = await originalJobs(...args);
-      if (mutation === 'missing-verifier') {return [];}
-      if (mutation === 'duplicate-verifier') {return [...jobs, { ...jobs[0], id: 103 }];}
-      if (mutation === 'wrong-job-attempt') {jobs[0].run_attempt++;}
-      if (mutation === 'not-running') {jobs[0].status = 'completed';}
-      if (mutation === 'missing-start') {jobs[0].started_at = null;}
-      return jobs;
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now), /run attempt|jobs|verifier|chronology/u, mutation);
-  }
-});
-test('provider, owner, review, closure and protection mutations fail', async () => {
-  for (const mutate of [
-    (f) => {f.event.run_attempt++;},
-    (f) => {f.event.pull_request.head.sha = 'f'.repeat(40);},
-    (f) => {f.decision.closure[0].blob = '9'.repeat(40);},
-    (f) => {f.api.getCollaboratorPermission = async () => ({ permission: 'write',
-      user: { id: 1, login: 'owner' } });},
-    (f) => {f.api.getDecisionComment = async () => null;},
-    (f) => {const readComment = f.api.getDecisionComment;
-      f.api.getDecisionComment = async (id) => {
-        const comment = await readComment(id);
-        return id === 2 ? { ...comment, body: comment.body.replace(f.decision.head, 'f'.repeat(40)) } :
-          comment;
-      };},
-    (f) => {f.protections.rulesets[0].detail.bypass_actors.push({ actor_id: 1 });},
-    (f) => {f.api.getPullFiles = async () => [[]];},
-    (f) => {f.api.getPullFiles = async () => [[{ filename: record.manifest[0].path,
-      status: 'renamed', previous_filename: 'old.txt' }]];},
-    (f) => {f.api.getPullFiles = async () => [record.manifest.map((row) => ({
-      filename: row.path, status: row.status, sha: 'f'.repeat(40) }))];},
-    (f) => {f.api.getBlob = async () => Buffer.from('wrong');},
-    (f) => {f.headFiles.set('extra.txt', f.headFiles.get('README.md'));},
-    (f) => {f.headFiles.set(G[3], f.headFiles.get(record.manifest[0].path));},
-    (f) => {f.api.getTree = async (revision) => ({ ...gitTree(f.baseFiles, revision),
-      tree: { ...gitTree(f.baseFiles, revision).tree, truncated: true } });},
-    (f) => {f.api.compare = async () => ({ status: 'diverged',
-      merge_base_commit: { sha: 'f'.repeat(40) } });},
-  ]) {
-    const fixture = executionFixture(); mutate(fixture);
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now));
-  }
-});
-test('independent review binds the full execution and precedes admin acceptance', async () => {
-  for (const mutate of [
-    (body) => {body.run_attempt++;},
-    (body) => {body.expected_protections_digest = `sha256:${'6'.repeat(64)}`;},
-    (body) => {body.closure[0].sha256 = `sha256:${'6'.repeat(64)}`;},
-  ]) {
-    const fixture = executionFixture();
-    const review = await fixture.api.getDecisionComment(2), body = JSON.parse(review.body);
-    mutate(body); review.body = JSON.stringify(body);
-    const original = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (id) => id === 2 ? review : original(id);
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now), /independent human comment differs/u);
-  }
-  for (const [id, field, value] of [
-    [2, 'updated_at', '2026-09-28T11:01:00Z'], [1, 'created_at', '2026-09-28T10:58:00Z'],
-    [1, 'updated_at', '2026-09-28T12:01:00Z'],
-  ]) {
-    const fixture = executionFixture();
-    const original = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (commentId) => {
-      const comment = await original(commentId);
-      return commentId === id ? { ...comment, [field]: value } : comment;
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now), /chronology/u);
-  }
-});
-test('final rereads reject admin revocation, comment movement and protection drift', async () => {
-  for (const method of ['getCollaboratorPermission', 'getDecisionComment',
-    'getEffectiveProtections', 'getPull', 'getBranchHead']) {
-    const fixture = executionFixture();
-    const original = fixture.api[method];
-    let calls = 0;
-    fixture.api[method] = async (...args) => {
-      const result = await original(...args);
-      calls++;
-      if (method === 'getDecisionComment' && calls <= 2) {return result;}
-      if (method !== 'getDecisionComment' && calls === 1) {return result;}
-      if (method === 'getBranchHead') {return 'f'.repeat(40);}
-      if (method === 'getPull') {return { ...result, updated_at: '2026-09-28T12:01:00Z' };}
-      if (method === 'getEffectiveProtections') {return { ...result, classic_branch_protection: {} };}
-      if (method === 'getCollaboratorPermission') {return { ...result, permission: 'write' };}
-      return { ...result, body: 'revoked' };
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision, fixture.api,
-      () => now), `final movement: ${method}`);
-  }
-});
-test('forward final live reread rejects a deadline that expires during verification', async () => {
-  const fixture = executionFixture();
-  fixture.decision.deadline = '2026-09-28T11:12:30Z';
-  const original = fixture.api.getEffectiveProtections;
-  let reads = 0;
-  fixture.api.getEffectiveProtections = async () => {
-    reads++;
-    return original();
-  };
-  await assert.rejects(verifyPortableExecution(fixture.event, fixture.decision,
-    fixture.api, () => Date.parse(reads < 2 ?
-      '2026-09-28T11:12:29Z' : '2026-09-28T11:12:31Z')),
-  /final protected observations moved/u);
-  assert.equal(reads, 2);
-});
-function inverseFixture() {
-  const fixture = executionFixture();
-  const forward = { ...fixture.decision, decision_comment_id: 3 };
-  const inverse = { ...fixture.decision, direction: 'inverse', pull_number: 323,
-    pull_id: 2, base: '3'.repeat(40), head: '4'.repeat(40), head_ref: 'inverse-r322',
-    decision_comment_id: 4, review_comment_id: 5, forward_decision_comment_id: 3 };
-  const currentPull = { ...fixture.event.pull_request, id: 2, number: 323,
-    base: { ...fixture.event.pull_request.base, sha: inverse.base },
-    head: { ...fixture.event.pull_request.head, sha: inverse.head, ref: inverse.head_ref } };
-  const mergedPull = { ...fixture.event.pull_request, state: 'closed', merged: true,
-    merge_commit_sha: '5'.repeat(40), merged_at: '2026-09-28T11:20:00Z' };
-  const oldFiles = fixture.baseFiles, newFiles = fixture.headFiles;
-  fixture.event.pull_request = structuredClone(currentPull);
-  fixture.event.execution_base = inverse.base;
-  fixture.api.getPull = async (number) => number === 323 ? currentPull : mergedPull;
-  fixture.api.getBranchHead = async () => inverse.base;
-  fixture.api.getTree = async (revision) => gitTree([
-    inverse.base, mergedPull.merge_commit_sha, forward.head].includes(revision) ?
-    newFiles : oldFiles, revision);
-  fixture.api.getPullFiles = async () => [record.manifest.map((row) => ({
-    filename: row.path, status: row.old === null ? 'removed' : 'modified',
-    sha: row.old?.blob }))];
-  fixture.api.getRunAttempt = async () => ({ id: forward.run_id,
-    run_attempt: forward.run_attempt, head_sha: forward.base,
-    repository: { id: 1316243981 }, event: 'pull_request_target',
-    path: '.github/workflows/docs-portable-authority-r322.yml',
-    status: 'completed', conclusion: 'success' });
-  fixture.api.getRunAttemptJobs = async () => [
-    ...['trusted-cohort-authority-portable-r322', 'trusted-validation-portable-r322']
-      .map((name, index) => ({ id: 100 + index, name, run_id: forward.run_id,
-        run_attempt: forward.run_attempt, status: 'completed', conclusion: 'success',
-        completed_at: '2026-09-28T11:14:00Z' })),
-    { id: 102, name: 'verified-portable-r322', run_id: forward.run_id,
-      run_attempt: forward.run_attempt, status: 'completed', conclusion: 'success',
-      started_at: '2026-09-28T11:11:00Z', completed_at: '2026-09-28T11:12:00Z' },
-  ];
-  fixture.api.getDecisionComment = async (id) => {
-    const issue = id === 4 || id === 5 ? 323 : 322;
-    const isReview = id === 2 || id === 5;
-    const reviewed = id === 2 ? forward : inverse;
-    return { id, issue_url: `https://api.github.com/repos/agent-teams-ai/.github/issues/${issue}`,
-      created_at: '2026-09-28T11:10:00Z', updated_at: '2026-09-28T11:10:00Z',
-      user: isReview ? { id: 2, login: 'reviewer', type: 'User' } :
-        { id: 1, login: 'owner', type: 'User' },
-      body: isReview ? JSON.stringify({ decision: 'accept-reviewed-corrected-portable-content',
-        source_base: record.source_base, content_candidate: record.content_candidate,
-        ...reviewedCoordinates(reviewed) }) :
-        JSON.stringify(id === 3 ? forward : inverse) };
-  };
-  return { fixture, inverse, forward, mergedPull, newFiles };
-}
-test('portable prestart chronology is accepted by forward and retained inverse', async () => {
-  const current = executionFixture();
-  assert.equal((await verifyPortableExecution(current.event, current.decision, current.api,
-    () => now)).direction, 'forward');
-  const { fixture, inverse } = inverseFixture();
-  assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
-    () => now)).direction, 'inverse');
-});
-test('retained inverse chronology rejects a forward comment edited after verifier start', async () => {
-  for (const id of [2, 3]) {
-    const { fixture, inverse } = inverseFixture();
-    const original = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (commentId) => {
-      const comment = await original(commentId);
-      if (id === 2 && commentId === 3) {
-        return { ...comment, created_at: '2026-09-28T11:14:00Z',
-          updated_at: '2026-09-28T11:14:00Z' };
-      }
-      return commentId === id ? { ...comment, updated_at: '2026-09-28T11:13:00Z' } : comment;
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /chronology/u, `forward comment ${id}`);
-  }
-});
-test('inverse accepts distinct squash commit and restores all preimages', async () => {
-  const { fixture, inverse } = inverseFixture();
-  assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
-    () => now)).direction, 'inverse');
-});
-test('inverse rejects rewritten installed postimage and unrelated merge', async () => {
-  const rewritten = inverseFixture();
-  rewritten.newFiles.set(record.manifest[0].path, rewritten.fixture.baseFiles.get(record.manifest[0].path));
-  await assert.rejects(verifyPortableExecution(rewritten.fixture.event, rewritten.inverse,
-    rewritten.fixture.api, () => now));
-  const unrelated = inverseFixture();
-  unrelated.fixture.api.compare = async () => ({ status: 'diverged', merge_base_commit: { sha: 'f'.repeat(40) } });
-  await assert.rejects(verifyPortableExecution(unrelated.fixture.event, unrelated.inverse,
-    unrelated.fixture.api, () => now));
-});
-test('inverse refuses a forward decision or review created or edited after merge', async () => {
-  for (const id of [2, 3]) for (const field of ['created_at', 'updated_at']) {
-    const { fixture, inverse } = inverseFixture();
-    const original = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (commentId) => {
-      const comment = await original(commentId);
-      return commentId === id ? { ...comment, [field]: '2026-09-28T11:25:00Z' } : comment;
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /chronology/u);
-  }
-});
-test('inverse checks retained forward review order and actual historical deadline', async () => {
-  for (const caseName of ['review-after-acceptance', 'decision-after-deadline',
-    'review-after-deadline', 'valid-expired-forward']) {
-    const { fixture, inverse, forward } = inverseFixture();
-    if (['decision-after-deadline', 'review-after-deadline', 'valid-expired-forward']
-      .includes(caseName)) {
-      forward.deadline = caseName === 'valid-expired-forward' ?
-        '2026-09-28T11:15:00Z' : '2026-09-28T11:05:00Z';
-    }
-    const original = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (id) => {
-      const comment = await original(id);
-      if (id === 2 && caseName === 'review-after-acceptance') {
-        comment.updated_at = '2026-09-28T11:15:00Z';
-      }
-      if (id === 2 && caseName === 'review-after-deadline') {
-        comment.updated_at = '2026-09-28T11:08:00Z';
-      }
-      return comment;
-    };
-    if (caseName === 'valid-expired-forward') {
-      assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
-        () => now)).direction, 'inverse');
-    } else {
-      await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-        () => now), /chronology|accepted execution coordinates/u, caseName);
-    }
-  }
-});
-test('inverse accepts successful final jobs after expiry when verifier finished before expiry', async () => {
-  const forwardFixture = executionFixture();
-  forwardFixture.decision.deadline = '2026-09-28T11:12:30Z';
-  assert.equal((await verifyPortableExecution(forwardFixture.event, forwardFixture.decision,
-    forwardFixture.api, () => Date.parse('2026-09-28T11:12:29Z'))).direction, 'forward');
-  const { fixture, inverse, forward } = inverseFixture();
-  forward.deadline = '2026-09-28T11:12:30Z';
-  assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
-    () => now)).direction, 'inverse');
-});
-test('inverse accepts the exact forward verifier finishing after its live deadline', async () => {
-  const forwardFixture = executionFixture();
-  forwardFixture.decision.deadline = '2026-09-28T11:12:30Z';
-  assert.equal((await verifyPortableExecution(forwardFixture.event, forwardFixture.decision,
-    forwardFixture.api, () => Date.parse('2026-09-28T11:12:29Z'))).direction, 'forward');
-  const { fixture, inverse, forward } = inverseFixture();
-  forward.deadline = '2026-09-28T11:12:30Z';
-  const originalJobs = fixture.api.getRunAttemptJobs;
-  fixture.api.getRunAttemptJobs = async () => (await originalJobs()).map((job) =>
-    job.name === 'verified-portable-r322' ?
-      { ...job, completed_at: '2026-09-28T11:13:00Z' } : job);
-  assert.equal((await verifyPortableExecution(fixture.event, inverse, fixture.api,
-    () => now)).direction, 'inverse');
-});
-test('inverse deadline is bounded by its authenticated decision creation', async () => {
-  const { fixture, inverse } = inverseFixture();
-  inverse.deadline = '2026-09-29T11:00:01Z';
-  const original = fixture.api.getDecisionComment;
-  fixture.api.getDecisionComment = async (id) => {
-    const comment = await original(id);
-    return id === 4 || id === 5 ? { ...comment,
-      created_at: id === 4 ? '2026-09-27T11:00:00Z' : '2026-09-27T10:59:00Z',
-      updated_at: id === 4 ? '2026-09-27T11:00:00Z' : '2026-09-27T10:59:00Z' } : comment;
-  };
-  await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-    () => now), /accepted execution coordinates differ/u);
-});
-test('inverse refuses historical verifier code that differs from the executable authority', async () => {
-  for (const path of ['scripts/read-docs-portable-authority-r322.mjs',
-    '.github/workflows/docs-portable-authority-r322.yml']) {
-    const { fixture, inverse } = inverseFixture();
-    const bytes = Buffer.from(`forged historical verifier: ${path}\n`);
-    const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
-    const identity = { type: 'blob', mode: '100644', blob,
-      bytes: bytes.length, sha256: sha(bytes) };
-    fixture.baseFiles.set(path, identity);
-    fixture.headFiles.set(path, identity);
-    fixture.bodies.set(blob, bytes);
-    Object.assign(inverse.closure.find((entry) => entry.path === path),
-      { blob, bytes: bytes.length, sha256: sha(bytes) });
-    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /retained forward verifier code cannot be established/u, path);
-  }
-});
-test('inverse requires a successful historical verifier and final jobs before merge', async () => {
-  for (const mutation of ['wrong-head', 'wrong-event', 'failed-attempt', 'missing-job',
-    'failed-job', 'wrong-job-run', 'wrong-job-attempt', 'job-after-merge',
-    'job-before-verifier', 'job-at-verifier-completion', 'wrong-verifier-run',
-    'wrong-verifier-attempt',
-    'verifier-start-after-deadline']) {
-    const { fixture, inverse, forward } = inverseFixture();
-    forward.deadline = '2026-09-28T11:15:00Z';
-    if (['wrong-head', 'wrong-event', 'failed-attempt'].includes(mutation)) {
-      const original = fixture.api.getRunAttempt;
-      fixture.api.getRunAttempt = async (...args) => ({ ...await original(...args),
-        ...(mutation === 'wrong-head' ? { head_sha: forward.head } :
-          mutation === 'wrong-event' ? { event: 'pull_request' } : { conclusion: 'failure' }) });
-    } else {
-      const original = fixture.api.getRunAttemptJobs;
-      fixture.api.getRunAttemptJobs = async (...args) => {
-        const jobs = await original(...args);
-        return mutation === 'missing-job' ? jobs.slice(0, 1) :
-          jobs.map((job, index) => index === 0 ? { ...job,
-            ...(mutation === 'failed-job' ? { conclusion: 'failure' } :
-              mutation === 'wrong-job-run' ? { run_id: forward.run_id + 1 } :
-              mutation === 'wrong-job-attempt' ? { run_attempt: forward.run_attempt + 1 } :
-              mutation === 'job-after-merge' ? { completed_at: '2026-09-28T11:21:00Z' } :
-              mutation === 'job-before-verifier' ? { completed_at: '2026-09-28T11:11:30Z' } :
-              mutation === 'job-at-verifier-completion' ?
-                { completed_at: '2026-09-28T11:12:00Z' } :
-              {}) } : mutation === 'verifier-start-after-deadline' && index === 2 ?
-            { ...job, started_at: '2026-09-28T11:16:00Z',
-              completed_at: '2026-09-28T11:17:00Z' } :
-            mutation === 'wrong-verifier-run' && index === 2 ?
-              { ...job, run_id: forward.run_id + 1 } :
-              mutation === 'wrong-verifier-attempt' && index === 2 ?
-                { ...job, run_attempt: forward.run_attempt + 1 } : job);
-      };
-    }
-    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /retained forward run attempt|retained forward required job|retained forward portable verification/u, mutation);
-  }
-});
-test('inverse binds owner comment to the successful portable verifier before final jobs', async () => {
-  for (const mutation of ['missing-verifier', 'failed-verifier', 'owner-created-late',
-    'owner-edited-late', 'review-edited-late']) {
-    const { fixture, inverse } = inverseFixture();
-    const originalJobs = fixture.api.getRunAttemptJobs;
-    fixture.api.getRunAttemptJobs = async () => {
-      const jobs = await originalJobs();
-      if (mutation === 'missing-verifier') {return jobs.slice(0, 2);}
-      if (mutation === 'failed-verifier') {jobs[2].conclusion = 'failure';}
-      return jobs;
-    };
-    const originalComment = fixture.api.getDecisionComment;
-    fixture.api.getDecisionComment = async (id) => {
-      const comment = await originalComment(id);
-      if (id === 3 && mutation === 'owner-created-late') {
-        comment.created_at = '2026-09-28T11:13:00Z';
-        comment.updated_at = comment.created_at;
-      }
-      if (id === 3 && mutation === 'owner-edited-late') {
-        comment.updated_at = '2026-09-28T11:13:00Z';
-      }
-      if (id === 2 && mutation === 'review-edited-late') {
-        comment.updated_at = '2026-09-28T11:13:00Z';
-      }
-      return comment;
-    };
-    await assert.rejects(verifyPortableExecution(fixture.event, inverse, fixture.api,
-      () => now), /chronology|portable verification/u, mutation);
-  }
-});
+
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
 const oldV8 = YAML.parse(read('.github/workflows/docs-cohort-authority-evolution-v8.yml'));
 const oldValidation = YAML.parse(read('.github/workflows/docs-cohort-append-only.yml'));
@@ -868,7 +343,7 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
       context, github, core });
     return { failures, outputs };
   }
-  assert.deepEqual(await probe(paths), { failures: [], outputs: [['mode', 'noop']] });
+  assert.deepEqual(await probe([...paths, "scripts/check-quality-scope.test.mjs"]), { failures: [], outputs: [['mode', 'noop']] });
   for (const basename of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
     const collision = `scripts/fixtures/docs-portable-authority-r322/new-additions/scripts/node-compatibility-tooling/${basename}`;
     const result = await probe([...paths, collision]);

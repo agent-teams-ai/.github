@@ -1,7 +1,12 @@
 {
-  "provenance_commit": "ee717a097021894e67f9e814874240ecaf6f4715",
-  "source_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
-  "content_candidate": "6e77efe7ef0c686c9e95d4d361578c8c594aad13",
+  "historical_sources": {
+    "old_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+    "current_main": "3fe0f135ffc446b3bb174397c6b5783f72a008a2",
+    "old_g": "4e5e722f337ff19dff62aada7bc9a42cedbeb6c9",
+    "corrected_322": "a5035495279c0cb750a2c9b898acab89cf94edbb",
+    "reviewed_322": "1aaace692e57b13534c809a9b1b77700aab4b938",
+    "corrected_tree": "eea25f3c755d05747fd63f32034cdb3c3378df05"
+  },
   "old_overrides": [
     {
       "path": ".github/workflows/ci.yml",
@@ -89,36 +94,6 @@
       ]
     },
     {
-      "path": ".github/workflows/docs-protocol-check.yml",
-      "edits": [
-        {
-          "start": 105,
-          "delete": 4,
-          "insert": ""
-        },
-        {
-          "start": 168,
-          "delete": 4,
-          "insert": ""
-        },
-        {
-          "start": 254,
-          "delete": 4,
-          "insert": ""
-        },
-        {
-          "start": 328,
-          "delete": 55,
-          "insert": ""
-        },
-        {
-          "start": 409,
-          "delete": 4,
-          "insert": ""
-        }
-      ]
-    },
-    {
       "path": ".github/workflows/organization-inventory-drift.yml",
       "edits": [
         {
@@ -150,9 +125,13 @@
           "start": 72,
           "delete": 1,
           "insert": ""
+        },
+        {
+          "start": 90,
+          "delete": 1,
+          "insert": "          auth-json: ${{ secrets.REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E3_805e1404efa0ee03613cabc31b18f2a3 }}"
         }
-      ],
-      "omit_final_newline": true
+      ]
     },
     {
       "path": ".github/workflows/reviewrouter-interaction.yml",
@@ -195,51 +174,6 @@
       ]
     },
     {
-      "path": "scripts/check-community-files.mjs",
-      "edits": [
-        {
-          "start": 208,
-          "delete": 2,
-          "insert": ""
-        },
-        {
-          "start": 229,
-          "delete": 2,
-          "insert": ""
-        },
-        {
-          "start": 256,
-          "delete": 2,
-          "insert": ""
-        },
-        {
-          "start": 285,
-          "delete": 24,
-          "insert": ""
-        },
-        {
-          "start": 316,
-          "delete": 2,
-          "insert": ""
-        }
-      ]
-    },
-    {
-      "path": "scripts/check-community-files.test.mjs",
-      "edits": [
-        {
-          "start": 87,
-          "delete": 6,
-          "insert": "    (changed) => { changed.jobs[\"trusted-qualification\"].steps[5].run = \"true # base verifier install\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[10].run = \"true # prepare-install\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[12].run = \"true # pnpm install --ignore-scripts --ignore-pnpmfile\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[14].run = \"true # agent-teams-docs qualify\"; },\n    (changed) => { changed.jobs[\"trusted-qualification\"].steps[15].run = \"true # verify-docs-qualification-receipt.mjs\"; },\n    (changed) => { changed.jobs[\"docs-protocol-check\"].steps[5].run = \"true # pnpm docs:protocol:check\"; },\n"
-        },
-        {
-          "start": 97,
-          "delete": 41,
-          "insert": ""
-        }
-      ]
-    },
-    {
       "path": "scripts/check-quality-scope.mjs",
       "edits": [
         {
@@ -254,11 +188,16 @@
       "edits": [
         {
           "start": 31,
-          "delete": 2,
-          "insert": "  assert.equal(paths.length, 19);\n"
+          "delete": 0,
+          "insert": "  assert.equal(paths.length, 21);\n"
         },
         {
-          "start": 50,
+          "start": 33,
+          "delete": 2,
+          "insert": ""
+        },
+        {
+          "start": 52,
           "delete": 1,
           "insert": ""
         }

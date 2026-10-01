@@ -1,38 +1,33 @@
-# Portable authority historical bodies
+# Portable authority v2 independent TEST bodies
 
-`old-overrides.json` and `new-overrides.json` hold UTF-8 line deltas for the 17
-modified paths in `governance/docs-portable-authority-r322.json`. Each edit has
-a zero-based line index in its starting body, a line count to delete, and the
-literal replacement text. Edits apply in descending index order. The seven
-candidate-only UTF-8 bodies are string values in `new-additions.json`, keyed by
-their manifest paths. JSON escaping preserves their exact bytes, including final
-newlines. No modified file is copied into this fixture.
+These fixtures reconstruct the exact 21-path compatibility content transition
+from retained Git objects, the r731 reviewed corrected source tree, and its
+reviewed composed census. Historical sources identify inspected material only;
+no fixture names a future execution or squash SHA.
 
-The test selects an exact checked-in source or candidate body by length and
-SHA-256. It uses the forward delta when only the source body is present, the
-reverse delta when only the candidate body is present, and the addition fixture
-when an added path is absent. It then checks both historical bodies against the
-manifest's byte length, Git blob SHA-1, and SHA-256, with the path and mode
-checked by the manifest. The reverse delta records one source workflow's missing
-final newline.
+`new-additions.json` holds the seven added UTF-8 bodies. `old-overrides.json`
+and `new-overrides.json` hold reverse and forward line deltas for the fourteen
+modified bodies, including the G-installed census preimage and all-four census
+postimage. Each zero-based edit deletes a line count and inserts exact literal
+text; edits apply in descending starting index order. JSON preserves final
+newlines, including the historical workflow with no terminal newline.
 
-The G-only tooling census update makes the live
-`scripts/check-quality-scope.test.mjs` differ from both historical sides.
-`new-overrides.json` records one SHA-256 and byte-length-locked live-to-candidate
-line delta for that path. The test authenticates the reconstructed candidate
-against the manifest before applying the existing candidate-to-source delta.
-The 21-source census assertion remains in the live G-only test; neither
-historical body is changed to include it.
+Tests authenticate the checked-in source or candidate side before reconstructing
+its counterpart, then verify every Git blob, SHA256 and byte length. Literal
+reviewed descriptors supply an independent oracle. Reconstructed complete tree
+maps admit exactly the forward/inverse pair; additional G installation authority,
+frozen Docs rewrites, missing paths, stale bytes or mixed tuples fail.
 
-Provenance was verified from exact commit
-`ee717a097021894e67f9e814874240ecaf6f4715`, whose governance record names
-source base `18b7e22f7247a85181516a7bbb989c9d5fad7be3` and content candidate
-`6e77efe7ef0c686c9e95d4d361578c8c594aad13`. For every manifest path,
-`git show <source-base>:<path>` (when old exists) and
-`git show <content-candidate>:<path>` matched the recorded blob ID, length,
-and SHA-256. The deltas and additions need no Git objects, branch, remote,
-network, or external patch executable at test time. The JSON map avoids nested
-fixture files named `package.json`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml`,
-which the protected-base trusted-validation job treats as installation authority
-at any depth. The test executes that job's materialization script against the
-G-only path inventory and checks both the no-op result and the former collision.
+The census preimage remains the exact G-only 21-tooling-path source. Its corrected
+postimage retains both G helpers and both Node helpers, selecting 23 paths.
+A disposable NEWTEST composition runs the native census/parser and actual Oxlint
+selection with all four included. Source installation remains distinct from
+G enforcement: synthetic comments and success-shaped Actions responses cannot
+make the reader issue success while activation is UNQUALIFIED.
+
+The fixtures need no retained Git repository, network, remote or external patch
+executable to reconstruct their bytes. Consolidated JSON avoids nested
+`package.json`/lock/workspace files being misclassified as installation authority.
+The actual predecessor materializer is executed against all eleven G additions
+and its census modification; former nested-install collisions are rejecting
+probes. This is local source evidence, not hosted publication or qualification.

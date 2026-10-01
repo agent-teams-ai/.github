@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { parseIncidentJson, verifiedTree, readEffectiveProtections } from './verify-docs-platform-recovery-installation-r317.mjs';
-import { classifyPortableTransition, parsePortableJson, validatePortableRecord, verifyPortableBlob, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
+import { classifyPortableTransition, parsePortableJson, portableRecordDigest, validatePortableRecord, verifyPortableBlob, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
 const exec = promisify(execFile);
 const REPO = 'agent-teams-ai/.github';
 const REPO_ID = 1316243981;
@@ -25,7 +25,7 @@ const G = [
   'scripts/verify-docs-platform-recovery-installation-r317.mjs',
 ];
 const FIELDS = ['schema_version', 'repository', 'repository_id', 'pull_number', 'pull_id',
-  'branch', 'head_ref', 'base', 'head', 'direction', 'manifest_digest', 'closure',
+  'branch', 'head_ref', 'base', 'head', 'direction', 'source_digest', 'manifest_digest', 'closure',
   'run_id', 'run_attempt', 'decision_comment_id', 'owner_id', 'owner_login',
   'review_comment_id', 'reviewer_id', 'reviewer_login', 'deadline',
   'expected_protections_digest', 'forward_decision_comment_id'];
@@ -45,18 +45,19 @@ const deadline = (value) => {
   'deadline is invalid');
   return Date.parse(value);
 };
-const reviewBody = (record, accepted) => {
+export const portableReviewBody = (record, accepted) => {
+  need(accepted.source_digest === portableRecordDigest(record), 'review source digest differs');
   const coordinates = { ...accepted };
   delete coordinates.decision_comment_id;
   delete coordinates.review_comment_id;
   return json({ decision: 'accept-reviewed-corrected-portable-content',
-    source_base: record.source_base, content_candidate: record.content_candidate,
+    historical_sources: record.historical_sources, source_digest: portableRecordDigest(record),
     ...coordinates });
 };
 async function readPortableVerifier(api, accepted, decision, review, historical = false) {
   const verifierRun = await api.getRunAttempt(accepted.run_id, accepted.run_attempt);
   need(verifierRun?.id === accepted.run_id && verifierRun.run_attempt === accepted.run_attempt &&
-    verifierRun.head_sha === accepted.base && verifierRun.repository?.id === REPO_ID &&
+    verifierRun.head_sha === accepted.head && verifierRun.repository?.id === REPO_ID &&
     verifierRun.event === 'pull_request_target' &&
     verifierRun.path?.split('@')[0] === '.github/workflows/docs-portable-authority-r322.yml' &&
     (historical ? verifierRun.status === 'completed' && verifierRun.conclusion === 'success' :
@@ -92,13 +93,14 @@ export function classifyPortableIntent(files, record) {
 }
 export function validatePortableAcceptance(value, record, now) {
   closed(value, FIELDS);
-  need(value.schema_version === 1 && value.repository === REPO && value.repository_id === REPO_ID &&
+  need(value.schema_version === 2 && value.repository === REPO && value.repository_id === REPO_ID &&
     (value.direction === 'forward' ? value.pull_number === 322 :
       positive(value.pull_number) && value.pull_number !== 322) &&
     positive(value.pull_id) && value.branch === 'main' &&
     typeof value.head_ref === 'string' && /^[A-Za-z0-9_./-]+$/u.test(value.head_ref) &&
     SHA.test(value.base) && SHA.test(value.head) && value.base !== value.head &&
     ['forward', 'inverse'].includes(value.direction) &&
+    value.source_digest === portableRecordDigest(record) &&
     value.manifest_digest === digest(json(record.manifest)) &&
     positive(value.run_id) && positive(value.run_attempt) &&
     positive(value.decision_comment_id) && positive(value.review_comment_id) &&
@@ -140,6 +142,9 @@ async function readTree(revision, api) {
 export async function verifyPortableExecution(event, accepted, api, clock = Date.now) {
   const record = validatePortableRecord(await api.getInstalledRecord());
   validatePortableAcceptance(accepted, record, clock());
+  // B installs this finite source and independently covers PR322. A local record,
+  // comment or Actions head_sha cannot qualify G replacement enforcement.
+  need(record.activation !== 'UNQUALIFIED', 'G_ACTIVATION_UNQUALIFIED');
   need(event?.repository?.id === REPO_ID && event.repository.full_name === REPO &&
     ['opened', 'synchronize', 'reopened', 'edited', 'ready_for_review'].includes(event.action) &&
     event.run_id === accepted.run_id && event.run_attempt === accepted.run_attempt,
@@ -173,7 +178,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
   for (const [comment, id, body, issue, actorId, actorLogin] of [
     [decision, accepted.decision_comment_id, json(accepted), accepted.pull_number,
       accepted.owner_id, accepted.owner_login],
-    [review, accepted.review_comment_id, reviewBody(record, accepted), accepted.pull_number,
+    [review, accepted.review_comment_id, portableReviewBody(record, accepted), accepted.pull_number,
       accepted.reviewer_id, accepted.reviewer_login]]) {
     need(comment?.id === id && comment.user?.type === 'User' &&
       comment.user.id === actorId && comment.user.login === actorLogin &&
@@ -199,7 +204,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
   need(Array.isArray(pages) && pages.length <= 30 && pages.length > 0 &&
     pages.every((page) => Array.isArray(page) && page.length <= 100), 'file pages are incomplete');
   const files = pages.flat();
-  need(files.length === 24 && new Set(files.map((file) => file.filename)).size === files.length,
+  need(files.length === record.manifest.length && new Set(files.map((file) => file.filename)).size === files.length,
     'file inventory differs');
   for (const row of record.manifest) {
     const file = files.find((item) => item.filename === row.path);
@@ -234,7 +239,7 @@ export async function verifyPortableExecution(event, accepted, api, clock = Date
       forwardReview.user?.login === forward.reviewer_login &&
       forwardReview.user?.type === 'User' &&
       forwardReview.issue_url === `https://api.github.com/repos/${REPO}/issues/${forward.pull_number}` &&
-      forwardReview.body === reviewBody(record, forward),
+      forwardReview.body === portableReviewBody(record, forward),
     'retained forward review differs');
     const merged = await api.getPull(forward.pull_number);
     need(merged?.id === forward.pull_id && merged.number === forward.pull_number &&

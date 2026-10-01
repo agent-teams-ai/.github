@@ -8,8 +8,10 @@ const ZERO256 = `sha256:${'0'.repeat(64)}`;
 const PATH = /^(?!\/)(?!.*\/\/)[A-Za-z0-9._/-]+$/u;
 const FIELDS = ['type', 'mode', 'blob', 'bytes', 'sha256'];
 const ROW = ['path', 'status', 'old', 'new'];
-const RECORD = ['schema_version', 'source_base', 'content_candidate', 'manifest'];
-const REVIEWED_CANDIDATE_DIGEST = 'sha256:63f5a63d9a60dfd30d7d3c1d9ad3af024dd549188f4b6eef085923affff97491';
+const RECORD = ['schema_version', 'historical_sources', 'activation', 'manifest'];
+const SOURCES = ['old_base', 'current_main', 'old_g', 'corrected_322', 'reviewed_322', 'corrected_tree'];
+// Retained content review, independent of any execution base/head or caller checksum.
+const REVIEWED_CANDIDATE_DIGEST = 'sha256:e9babac407a8fcdbcf177cb5b2e74ca79f8678ab5e86389684dea508b602635f';
 const validated = new WeakSet();
 const need = (yes, message) => { if (!yes) {throw new Error(message);} };
 const keys = (value, expected, label) => {
@@ -62,10 +64,10 @@ export function validatePortableRecord(bytes, retainedReview = REVIEWED_CANDIDAT
   need(retainedReview === REVIEWED_CANDIDATE_DIGEST && hash(bytes) === retainedReview,
     'portable candidate record differs from retained content review');
   keys(record, RECORD, 'portable record');
-  need(record.schema_version === 1 && SHA1.test(record.source_base) &&
-    record.source_base !== ZERO1 && SHA1.test(record.content_candidate) &&
-    record.content_candidate !== ZERO1 && record.source_base !== record.content_candidate &&
-    Array.isArray(record.manifest) && record.manifest.length === 24,
+  keys(record.historical_sources, SOURCES, 'historical sources');
+  need(record.schema_version === 2 && record.activation === 'UNQUALIFIED' &&
+    Object.values(record.historical_sources).every((value) => SHA1.test(value) && value !== ZERO1) &&
+    Array.isArray(record.manifest) && record.manifest.length === 21,
   'portable record identity differs');
   let previous = '';
   let additions = 0;
@@ -86,9 +88,15 @@ export function validatePortableRecord(bytes, retainedReview = REVIEWED_CANDIDAT
     Object.freeze(row);
   }
   Object.freeze(record.manifest);
+  Object.freeze(record.historical_sources);
   Object.freeze(record);
   validated.add(record);
   return record;
+}
+
+export function portableRecordDigest(record) {
+  need(validated.has(record), 'portable record lacks retained content review');
+  return REVIEWED_CANDIDATE_DIGEST;
 }
 
 function same(actual, expected) {
