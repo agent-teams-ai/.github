@@ -1,0 +1,257 @@
+{
+  "historical_sources": {
+    "old_base": "18b7e22f7247a85181516a7bbb989c9d5fad7be3",
+    "current_main": "3fe0f135ffc446b3bb174397c6b5783f72a008a2",
+    "old_g": "4e5e722f337ff19dff62aada7bc9a42cedbeb6c9",
+    "corrected_322": "a5035495279c0cb750a2c9b898acab89cf94edbb",
+    "reviewed_322": "1aaace692e57b13534c809a9b1b77700aab4b938",
+    "corrected_tree": "eea25f3c755d05747fd63f32034cdb3c3378df05"
+  },
+  "new_overrides": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "edits": [
+        {
+          "start": 30,
+          "delete": 0,
+          "insert": "          run_install: false\n"
+        },
+        {
+          "start": 32,
+          "delete": 1,
+          "insert": "          node-version: 24.18.0\n"
+        },
+        {
+          "start": 34,
+          "delete": 1,
+          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n      - run: |\n          pnpm install --frozen-lockfile --config.engine-strict=true --config.strict-peer-dependencies=true\n          pnpm peers check --lockfile-only\n          pnpm install --lockfile-only --resolution-only --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n          git diff --exit-code -- pnpm-lock.yaml\n"
+        },
+        {
+          "start": 36,
+          "delete": 0,
+          "insert": "\n  node26-compatibility:\n    name: node26-compatibility (Node 26.10.0)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          fetch-depth: 0\n          persist-credentials: false\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: 26.10.0\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 26.10.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-admission-evidence.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          ref: ${{ github.event.pull_request.base.sha }}\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 264,
+          "delete": 0,
+          "insert": "      - name: Prove selected Node runtime\n        if: steps.materialize.outputs.mode == 'admission'\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-cohort-append-only.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          ref: ${{ github.event.pull_request.base.sha }}\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 202,
+          "delete": 0,
+          "insert": "      - name: Prove selected Node runtime\n        if: steps.materialize.outputs.mode == 'full'\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-fleet-audit.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 28,
+          "delete": 0,
+          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/docs-platform-recovery-installation-r317.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          ref: ${{ github.event.pull_request.base.sha }}\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 25,
+          "delete": 0,
+          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/organization-inventory-drift.yml",
+      "edits": [
+        {
+          "start": 8,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 19,
+          "delete": 0,
+          "insert": "      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/reviewrouter-codex.yml",
+      "edits": [
+        {
+          "start": 13,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node ${{ matrix.node-version }})\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    strategy:\n      fail-fast: false\n      matrix:\n        node-version: [\"24.18.0\", \"26.10.0\"]\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: ${{ matrix.node-version }}\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 15,
+          "delete": 0,
+          "insert": "    needs: node-compatibility\n"
+        },
+        {
+          "start": 39,
+          "delete": 0,
+          "insert": "    needs: node-compatibility\n"
+        },
+        {
+          "start": 56,
+          "delete": 1,
+          "insert": "          auth-json: ${{ secrets.REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E3_805e1404efa0ee03613cabc31b18f2a3 }}\n"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/reviewrouter-interaction.yml",
+      "edits": [
+        {
+          "start": 12,
+          "delete": 0,
+          "insert": "  node-compatibility:\n    name: node-compatibility (Node 24.18.0)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: 24.18.0\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 24.18.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n  node26-compatibility:\n    name: node26-compatibility (Node 26.10.0)\n    runs-on: ubuntu-24.04\n    timeout-minutes: 5\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0\n        with:\n          node-version: 26.10.0\n      - name: Prove selected Node runtime\n        env:\n          EXPECTED_NODE_VERSION: 26.10.0\n        run: node -e \"if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')\"\n      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9\n        with:\n          version: 11.18.0\n          run_install: false\n      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n      - name: Check bounded Node compatibility contract\n        run: |\n          node scripts/check-node-compatibility.mjs\n          node --test scripts/check-node-compatibility.test.mjs\n\n"
+        },
+        {
+          "start": 14,
+          "delete": 0,
+          "insert": "    needs: node-compatibility\n"
+        }
+      ]
+    },
+    {
+      "path": "README.md",
+      "edits": [
+        {
+          "start": 15,
+          "delete": 0,
+          "insert": "- [Node Runtime Compatibility](docs/node-runtime-compatibility.md) - the Node 24 production default and bounded Node 26 compatibility migration.\n"
+        }
+      ]
+    },
+    {
+      "path": "package.json",
+      "edits": [
+        {
+          "start": 9,
+          "delete": 1,
+          "insert": "    \"node\": \">=24.18.0 <25 || >=26.10.0 <27\",\n"
+        },
+        {
+          "start": 14,
+          "delete": 1,
+          "insert": "    \"check\": \"pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test\",\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-quality-scope.mjs",
+      "edits": [
+        {
+          "start": 14,
+          "delete": 1,
+          "insert": "  check: \"pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test\",\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-quality-scope.test.mjs",
+      "edits": [
+        {
+          "start": 31,
+          "delete": 1,
+          "insert": ""
+        },
+        {
+          "start": 34,
+          "delete": 0,
+          "insert": "  assert.ok(paths.includes(\"scripts/assert-node-runtime.mjs\"));\n  assert.ok(paths.includes(\"scripts/check-node-compatibility.mjs\"));\n"
+        },
+        {
+          "start": 51,
+          "delete": 0,
+          "insert": "  \"a removed Node compatibility gate\": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(\" && node scripts/check-node-compatibility.mjs\", \"\"); },\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/check-reviewrouter-workflow.mjs",
+      "edits": [
+        {
+          "start": 97,
+          "delete": 0,
+          "insert": "  review.workflow.jobs?.[\"node-compatibility\"]?.needs === undefined &&\n    review.workflow.jobs?.[\"codex-review\"]?.needs === \"node-compatibility\" &&\n    refreshJob?.needs === \"node-compatibility\",\n  `${reviewPath} must gate ReviewRouter jobs on the explicit Node compatibility lane.`,\n);\nassert(\n"
+        },
+        {
+          "start": 99,
+          "delete": 0,
+          "insert": ");\nassert(\n  refreshJob?.steps?.length === 1,\n  \"codex-refresh must remain a single-purpose runtime refresh job.\",\n"
+        },
+        {
+          "start": 130,
+          "delete": 0,
+          "insert": "const requiredNodeCompatibilityJob = interaction.workflow.jobs?.[\"node-compatibility\"];\nconst node26CompatibilityJob = interaction.workflow.jobs?.[\"node26-compatibility\"];\nassert(\n  requiredNodeCompatibilityJob?.needs === undefined &&\n    node26CompatibilityJob?.needs === undefined &&\n    interactionJob?.needs === \"node-compatibility\",\n  `${interactionPath} must gate interaction only on Node 24 and keep Node 26 independent.`,\n);\nassert(\n  requiredNodeCompatibilityJob?.name === \"node-compatibility (Node 24.18.0)\" &&\n    node26CompatibilityJob?.name === \"node26-compatibility (Node 26.10.0)\",\n  `${interactionPath} must expose separate exact Node 24 and experimental Node 26 lanes.`,\n);\n"
+        },
+        {
+          "start": 191,
+          "delete": 2,
+          "insert": ""
+        },
+        {
+          "start": 202,
+          "delete": 1,
+          "insert": "console.log(\"ReviewRouter workflows verified: explicit Node lanes and pinned thin callers with least-privilege tokens.\");\n"
+        }
+      ]
+    },
+    {
+      "path": "scripts/docs-cohort-policy.test.mjs",
+      "edits": [
+        {
+          "start": 73,
+          "delete": 0,
+          "insert": "\nfunction assertTrustedPnpmSetupOrder(steps) {\n  const pnpmV1 = steps.findIndex(step => step.id === \"pnpm-v1\");\n  const setupNode = steps.findIndex(step => step.uses?.startsWith(\"actions/setup-node@\"));\n  const pnpmV2 = steps.findIndex(step => step.id === \"pnpm-v2\");\n  const verifyPnpm = steps.findIndex(step => step.name === \"Verify trusted package-manager binaries\");\n  const baseInstall = steps.findIndex(step => step.name?.startsWith(\"Install trusted base dependencies\"));\n  assert.ok(pnpmV1 >= 0 && pnpmV1 < setupNode && setupNode < pnpmV2 &&\n    pnpmV2 < verifyPnpm && verifyPnpm < baseInstall,\n  \"setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed\");\n  assert.equal(steps[setupNode].with?.cache, \"pnpm\");\n  assert.equal(steps[pnpmV1].with?.package_json_file, undefined,\n    \"v1 setup must keep the matching root packageManager authority\");\n  assert.equal(steps[pnpmV2].with?.package_json_file,\n    \"governance/docs-qualified-cohorts.schema.json\",\n    \"v2 setup must not read the conflicting v1 root packageManager authority\");\n}\n\nconst trustedAppendOnlySteps = YAML.parse(appendOnlyWorkflow).jobs[\"trusted-validation\"].steps;\n"
+        },
+        {
+          "start": 456,
+          "delete": 16,
+          "insert": "  assertTrustedPnpmSetupOrder(trustedAppendOnlySteps);\n  assert.equal(trustedAppendOnlySteps.some(step => /^pnpm\\b/u.test(step.run ?? \"\")), false);\n"
+        },
+        {
+          "start": 490,
+          "delete": 0,
+          "insert": "});\n\ntest(\"rejects v2 pnpm setup before trusted setup-node cache resolution\", () => {\n  const steps = [...trustedAppendOnlySteps];\n  const setupNode = steps.findIndex(step => step.uses?.startsWith(\"actions/setup-node@\"));\n  const pnpmV2 = steps.findIndex(step => step.id === \"pnpm-v2\");\n  [steps[setupNode], steps[pnpmV2]] = [steps[pnpmV2], steps[setupNode]];\n  assert.throws(() => assertTrustedPnpmSetupOrder(steps),\n    /setup-node cache resolution must see only v1 pnpm/u);\n"
+        }
+      ]
+    }
+  ]
+}
