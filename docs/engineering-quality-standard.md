@@ -78,19 +78,20 @@ and scale. Validate it with disposable test projects and at least one real
 consumer in the same delivery; that consumer proves the contract and is not an
 incubator for it.
 
-Breaking changes are allowed when they deliberately improve the system, unless
-the repository explicitly declares a compatibility commitment. Examples are a
-stable 1.0+ public API with external users, a published protocol or data format
-that others depend on, or a no-breaking-change policy stated in the repository's
-`AGENTS.md`, README or accepted decisions. Prefer one clean contract over
-parallel variants, compatibility shims and deprecated paths that accumulate
-legacy and become harder to migrate.
+Breaking changes are allowed in every organization repository when they
+deliberately improve the system. No repository has a compatibility commitment
+during the MVP stage; a repository that later needs one must declare it
+explicitly in its `AGENTS.md`, README or accepted decisions. Prefer one clean
+contract over parallel variants, compatibility shims and deprecated paths that
+accumulate legacy and become harder to migrate.
 
-A deliberate breaking change states why the new shape is better. Version it
-honestly (a pre-1.0 minor or a major release, with a changelog entry and a
-migration note) and migrate affected organization-owned consumers in the same
-or the next delivery. Do not leave an old and a new variant side by side
-without an owner and a removal step.
+Packages still on 0.x stay on 0.x during the MVP stage and ship a breaking
+change as a minor release; do not bump the major version for each break. A
+package already at 1.0 or later marks a break with a major release, because a
+caret range would otherwise install it silently. Every breaking release has a
+changelog entry and a migration guide that states why the new shape is better
+and how to move to it. Consumers adapt when they upgrade. Do not leave an old
+and a new variant side by side without an owner and a removal step.
 
 This direction does not relax minimalism, security or data safety. A library
 carries only mechanism with a concrete need, product policy stays with its
@@ -174,8 +175,8 @@ same implementation and call that independent evidence.
 - Separate an observed result from an asserted guarantee. Tests, configuration,
   manifests, signatures, authorization, enforcement and qualification prove
   different things. Do not fake receipts or silently downgrade an adapter.
-- Preserve durable state, in-flight work and any compatibility commitment the
-  repository has declared. Plan migrations, rollback and handling of in-flight
+- Preserve durable state, in-flight work and any compatibility commitment a
+  repository has explicitly declared. Plan migrations, rollback and handling of in-flight
   state for changes that need them. Other contract changes may break
   deliberately under [library-first design](#library-first-design-and-deliberate-evolution).
   Cleanup must release only owned resources and report unresolved debt.
