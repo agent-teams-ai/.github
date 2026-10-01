@@ -29,7 +29,8 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 19);
+  assert.ok(paths.includes("scripts/assert-node-runtime.mjs"));
+  assert.ok(paths.includes("scripts/check-node-compatibility.mjs"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
@@ -47,6 +48,7 @@ const mutations = {
   "a no-op required route": value => { value.manifest.scripts.check = "true"; },
   "a conditional required route": value => { value.manifest.scripts.check += " || true"; },
   "a removed existing governance gate": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && pnpm governance:validate", ""); },
+  "a removed Node compatibility gate": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && node scripts/check-node-compatibility.mjs", ""); },
   "a missing FMS test route": value => { value.manifest.scripts.test = "node --test scripts/*.test.mjs"; },
   "authority JSON misclassified as source": value => { value.trackedPaths.push("governance/authority.ts"); },
   "a missing CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- run: pnpm test"); },
