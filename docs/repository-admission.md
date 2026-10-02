@@ -162,6 +162,14 @@ result. Future validator/schema changes must
 use a separately staged successor check and ruleset cutover; the v1 trusted
 workflow intentionally rejects edits to its own authority files.
 
+For the historical clock repair in PR #327, the separately staged
+`trusted-admission-clock-repair-v1` check accepts only its reviewed two-file
+forward tuple. Qualify it on TEST and the refreshed live PR before temporarily
+replacing the three rejecting authority contexts. Keep strict, identity, CI and
+other required checks; use the owner merge guard, restore exact original
+protection immediately, and verify full main CI. This check cannot authorize
+its own installation, modification or a rollback.
+
 Renovate cannot propose Foundation or Docs Protocol independently. Their exact
 pair changes only through a centrally qualified Cohort proposal with an explicit
 upgrade or rollback edge.
