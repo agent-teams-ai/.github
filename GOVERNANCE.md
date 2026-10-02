@@ -246,6 +246,8 @@ The canonical payload requires the exact head status from GitHub Actions
 integration `15368`, on `~DEFAULT_BRANCH`, active and without bypass actors.
 Installation and actual merge qualification remain maintainer operations;
 this policy does not claim live enforcement or automatic inheritance on Free.
+Future owned repositories use the bounded [commit identity onboarding route](docs/repository-admission.md#commit-identity-onboarding)
+to prepare the caller, inspect a write-free plan and apply owner-reviewed additive settings.
 
 Owner-generated agent changes must use the fresh actor guard in
 [`scripts/merge-owner-pr.mjs`](scripts/merge-owner-pr.mjs) for squash merges.

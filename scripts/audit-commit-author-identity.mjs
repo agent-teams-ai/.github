@@ -18,6 +18,17 @@ export function assertActionsWorkflowPermissions(actual, expected) {
   assert.equal(expected?.can_approve_pull_request_reviews, false, "Canonical Actions PR creation/approval permission must be false");
   assert.equal(actual?.can_approve_pull_request_reviews, false, "Actions PR creation/approval permission must be explicitly false; true/missing/unknown fails closed");
 }
+export function assertIdentityCaller(bytes, template, allowLocal = false) {
+  const text = bytes.toString();
+  const pin = /commit-author-identity-check\.yml@((?!0{40})[0-9a-f]{40})\s*$/u.exec(text)?.[1];
+  const local = allowLocal && text.includes("uses: ./");
+  assert.ok(pin || local, "Caller requires a nonzero immutable central revision");
+  const expected = local
+    ? template.toString().replace("agent-teams-ai/.github/.github/workflows/commit-author-identity-check.yml@CENTRAL_REVISION", "./.github/workflows/commit-author-identity-check.yml")
+    : template.toString().replace("CENTRAL_REVISION", pin ?? "INVALID");
+  assert.deepEqual(Buffer.from(bytes), Buffer.from(expected), "Missing/broken trusted caller");
+  return pin;
+}
 const api = endpoint => JSON.parse(execFileSync("gh", ["api", "--method", "GET", endpoint], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
 const pages = endpoint => JSON.parse(execFileSync("gh", ["api", "--method", "GET", "--paginate", "--slurp", endpoint],
   { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })).flat();
@@ -48,13 +59,7 @@ export async function auditIdentity() {
       const caller = api(`${root}/contents/.github/workflows/commit-author-identity.yml?ref=${branch.commit.sha}`);
       assert.equal(caller.type, "file"); assert.equal(caller.encoding, "base64");
       assertRegularGitFile(api(`${root}/git/trees/${branch.commit.sha}?recursive=true`), ".github/workflows/commit-author-identity.yml", caller);
-      const text = Buffer.from(caller.content, "base64").toString("utf8");
-      const pin = /commit-author-identity-check\.yml@((?!0{40})[0-9a-f]{40})\s*$/u.exec(text)?.[1];
-      assert.ok(pin || (repository.full_name === "agent-teams-ai/.github" && text.includes("uses: ./")), "Caller requires a nonzero immutable central revision");
-      const expected = repository.full_name === "agent-teams-ai/.github" && text.includes("uses: ./")
-        ? template.replace("agent-teams-ai/.github/.github/workflows/commit-author-identity-check.yml@CENTRAL_REVISION", "./.github/workflows/commit-author-identity-check.yml")
-        : template.replace("CENTRAL_REVISION", pin ?? "INVALID");
-      assert.equal(text, expected, "Missing/broken trusted caller");
+      const pin = assertIdentityCaller(Buffer.from(caller.content, "base64"), template, repository.full_name === "agent-teams-ai/.github");
       const target = api(`repos/agent-teams-ai/.github/contents/.github/workflows/commit-author-identity-check.yml?ref=${pin ?? branch.commit.sha}`);
       assertRegularGitFile(api(`repos/agent-teams-ai/.github/git/trees/${pin ?? branch.commit.sha}?recursive=true`), ".github/workflows/commit-author-identity-check.yml", target);
       assert.equal(target.type, "file"); assert.equal(target.encoding, "base64");
