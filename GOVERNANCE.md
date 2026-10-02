@@ -198,7 +198,12 @@ Git name/email. The human owner opens owner release PRs after inspecting the
 exact generated diff, head SHA and base SHA. An author-email merge flag cannot
 transfer PR authorship. Bot PRs must be replaced by a human-opened PR; rewriting
 an external human contribution as the owner is forbidden. Known Bot/GitHub
-commit authors are rejected; GitHub's technical committer is allowed.
+and known Codex/OpenAI source commit authors are rejected. Owner source commits
+require both raw author and committer to be exactly `iliya <iliyazelenkog@gmail.com>`;
+GitHub/web-flow is not an owner source committer exception. External human
+contributions retain their original author and committer, including GitHub's
+technical committer. The generated final squash after merge has the owner's
+GitHub committer/display-name exception and is verified separately with `gh`.
 
 The trusted reusable identity workflow reads GitHub metadata and inert caller
 bytes, never PR code. It checks every commit (paginated, at most 250; split larger
@@ -207,6 +212,9 @@ name/email on owner-associated commits. Unassociated commits bearing the owner
 name also require that identity. This checks metadata, not cryptographic owner
 identity. It rejects Bot PR authors even when every source commit is owner-authored.
 A same-head Bot PR also blocks success on a human PR because statuses share a SHA.
+Publishers serialize by repository without cancellation; same-head open PR
+ownership is re-read as the final metadata operation before success, after the
+complete live PR/head/base reread.
 Pending and terminal `commit-author-identity` statuses bind the independently
 observed head; transport errors and head/base movement fail the job without
 publishing success. An unavailable status write cannot guarantee revocation of
@@ -216,11 +224,18 @@ The reusable implementation is pinned by each consumer. Current policy and the
 caller template are read together from an immutable observation of the trusted
 central default branch, then rechecked before success. They are maintained
 central guidance, not an architecture content-pin migration. The check rejects
-a removed, broken or changed caller, including the central local reusable target.
+removed or broken callers and changes beyond the allowed remote pin upgrade,
+including changes to the central local reusable target.
 Immutable Git tree mode/blob checks reject symlink or submodule replacements
-even when the Contents API resolves identical bytes. Caller upgrades require a staged,
-reviewed successor and required-check cutover; a deleted caller cannot certify
-itself. First installation is a reviewed bootstrap.
+even when the Contents API resolves identical bytes. Remote callers may upgrade
+only their nonzero immutable 40-SHA pin when both base and head exactly match
+the trusted canonical template. The new target must be a regular Git file with
+the same blob as the independently observed reviewed current central-main
+implementation; both are rechecked before success. This approves only the
+workflow artifact bytes, not the whole pinned repository. Other caller changes
+and central local reusable changes require a staged reviewed successor and
+required-check cutover; a deleted caller cannot certify itself. First installation
+is a reviewed bootstrap. The audit retains its implementation-byte verification.
 
 Native commit-email restrictions failed the TEST rebase merge qualification;
 they are supplementary unproven posture and are not shipped as enforcement.

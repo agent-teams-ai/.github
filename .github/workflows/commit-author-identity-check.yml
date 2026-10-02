@@ -5,6 +5,9 @@ permissions:
   contents: read
   pull-requests: read
   statuses: write
+concurrency:
+  group: commit-author-identity-${{ github.repository }}
+  cancel-in-progress: false
 jobs:
   identity:
     runs-on: ubuntu-24.04
@@ -74,10 +77,20 @@ jobs:
               const baseCaller = await content({ owner, repo }, callerPath, observed.base.sha);
               const headCaller = await content({ owner, repo }, callerPath, observed.head.sha);
               const pin = /uses: agent-teams-ai\/\.github\/\.github\/workflows\/commit-author-identity-check\.yml@([0-9a-f]{40})\s*$/u.exec(baseCaller.text)?.[1];
+              const headPin = /uses: agent-teams-ai\/\.github\/\.github\/workflows\/commit-author-identity-check\.yml@([0-9a-f]{40})\s*$/u.exec(headCaller.text)?.[1];
               const call = repository === "agent-teams-ai/.github" && baseCaller.text.includes(`uses: ${localCall}`)
                 ? localCall : sha(pin) ? remoteCall + pin : null;
+              const headCall = call === localCall ? localCall : sha(headPin) ? remoteCall + headPin : null;
               need(call && baseCaller.text === template.text.replace(remoteCall + "CENTRAL_REVISION", call) &&
-                headCaller.blob === baseCaller.blob && headCaller.text === baseCaller.text, "Required caller is absent, broken, or changed; stage a reviewed successor");
+                headCall && headCaller.text === template.text.replace(remoteCall + "CENTRAL_REVISION", headCall) &&
+                (call !== localCall || headCaller.blob === baseCaller.blob), "Required caller is absent, broken, or changed beyond an immutable pin");
+              const implementationPath = localCall.slice(2);
+              let implementation;
+              if (call !== localCall && headPin !== pin) {
+                implementation = await content(central, implementationPath, centralBranch.commit.sha);
+                need((await content(central, implementationPath, headPin)).blob === implementation.blob,
+                  "Caller upgrade target differs from the reviewed current central implementation");
+              }
               if (repository === "agent-teams-ai/.github" && call === localCall) {
                 const path = localCall.slice(2);
                 const baseWorkflow = await content({ owner, repo }, path, observed.base.sha);
@@ -98,25 +111,33 @@ jobs:
                 need(!/\[bot\]|^(github|web-flow)$/iu.test(author.name.trim()) &&
                   !/\[bot\]|^noreply@github\.com$/iu.test(author.email.trim()) &&
                   (commit.author === null || human(commit.author)), "Bot/GitHub commit AUTHOR is forbidden");
+                need(!/^(?:codex|openai(?: codex)?)$/iu.test(author.name.trim()) &&
+                  !/^(?:codex|openai)@(?:openai\.com|users\.noreply\.github\.com)$/iu.test(author.email.trim()),
+                  "Codex/OpenAI source commit AUTHOR is forbidden");
                 const ownerAuthor = commit.author?.login.toLowerCase() === identity.login.toLowerCase() ||
                   (commit.author === null && author.name.toLowerCase() === identity.name.toLowerCase()) || author.email === identity.email;
-                need(!ownerAuthor || (author.name === identity.name && author.email === identity.email),
-                  "Owner-authored commits require the exact owner name/email");
+                need(!ownerAuthor || [author, commit.commit?.committer].every(person =>
+                  person?.name === identity.name && person.email === identity.email),
+                  "Owner source commits require exact raw author AND committer name/email");
               }
               const latest = (await github.rest.repos.getBranch({ ...central, branch: "main" })).data;
+              need(sha(latest.commit?.sha), "Missing trusted central revision");
               need((await content(central, policyPath, latest.commit.sha)).blob === policyData.blob &&
                 (await content(central, templatePath, latest.commit.sha)).blob === template.blob,
                 "Central identity policy/caller changed during verification");
+              if (implementation) need((await content(central, implementationPath, latest.commit.sha)).blob === implementation.blob &&
+                (await content(central, implementationPath, headPin)).blob === implementation.blob,
+                "Central implementation/upgrade target changed during verification");
+              const currentController = (await github.rest.repos.get({ owner, repo })).data;
+              const current = await readPull();
+              need(snapshot(current) === snapshot(observed) && currentController.id === controller.id &&
+                currentController.default_branch === controller.default_branch, "PR identity/head/base changed during verification");
               // Statuses are shared by SHA: a human PR must not bless a Bot PR with the same head.
               const open = await github.paginate(github.rest.pulls.list, { owner, repo,
                 state: "open", base: controller.default_branch, per_page: 100 });
               need(open.some(pull => pull.number === pull_number && pull.head?.sha === observed.head.sha) &&
                 open.filter(pull => pull.head?.sha === observed.head.sha).every(pull => human(pull.user)),
                 "Conflicting Bot/GitHub PR author on the same head");
-              const currentController = (await github.rest.repos.get({ owner, repo })).data;
-              const current = await readPull();
-              need(snapshot(current) === snapshot(observed) && currentController.id === controller.id &&
-                currentController.default_branch === controller.default_branch, "PR identity/head/base changed during verification");
               await status("success");
             } catch (error) {
               if (sha(observed?.head?.sha)) {

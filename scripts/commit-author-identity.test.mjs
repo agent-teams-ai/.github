@@ -13,8 +13,8 @@ const template = await readFile("scripts/fixtures/commit-author-identity-caller.
 const base = "a".repeat(40), head = "b".repeat(40), central = "c".repeat(40);
 const human = { login: "777genius", type: "User" };
 const commit = (author = human, name = "iliya", email = "iliyazelenkog@gmail.com", sha = head) => ({
-  sha, author, commit: { author: { name, email }, committer: { name: "GitHub", email: "noreply@github.com" } },
-  committer: { login: "web-flow", type: "User" },
+  sha, author, commit: { author: { name, email }, committer: { name: "iliya", email: "iliyazelenkog@gmail.com" } },
+  committer: human,
 });
 const clone = value => structuredClone(value);
 function fixture() {
@@ -27,34 +27,37 @@ function fixture() {
     headCaller: template.replace("CENTRAL_REVISION", central), statuses: [], failures: [], pullReads: 0 };
 }
 async function run(f) {
-  const unavailable = stage => { if (f.unavailable === stage) throw new Error(`Transport unavailable: ${stage}`); };
+  f.operations = [];
+  const unavailable = stage => { f.operations.push(stage); if (f.unavailable === stage) throw new Error(`Transport unavailable: ${stage}`); };
+  const target = ref => Object.hasOwn(f.targets ?? {}, ref) ? f.targets[ref] : workflow;
   const github = { rest: { pulls: {
     get: async () => { unavailable(++f.pullReads === 1 ? "pull" : "refresh"); return { data: clone(f.pullReads === 1 ? f.pull : f.latePull ?? f.pull) }; },
     listCommits: "commits", list: "open",
   }, repos: {
-    get: async () => { unavailable("repository"); return { data: f.repository }; },
-    getBranch: async () => { unavailable("central"); return { data: { commit: { sha: central } } }; },
+    get: async () => { unavailable("repository"); await f.onRepositoryRead?.(++f.repositoryReads); return { data: f.repository }; },
+    getBranch: async () => { unavailable("central"); return { data: { commit: { sha: ++f.branchReads === 1 ? central : f.lateCentral ?? central } } }; },
     getContent: async ({ path, ref }) => {
       unavailable(path);
       let text = path === "governance/commit-author-identity.json" ? JSON.stringify(f.policy) :
         path === "scripts/fixtures/commit-author-identity-caller.yml" ? f.template :
-        path === ".github/workflows/commit-author-identity-check.yml" ? workflow : ref === base ? f.baseCaller : f.headCaller;
+        path === ".github/workflows/commit-author-identity-check.yml" ? target(ref) : ref === base ? f.baseCaller : f.headCaller;
       if (f.contentOverride) text = f.contentOverride(path, ref, text);
       if (text === null) throw new Error("404 missing caller");
       return { data: { type: "file", encoding: "base64", sha: createHash("sha1").update(text).digest("hex"), content: Buffer.from(text).toString("base64") } };
     },
-    createCommitStatus: async value => { unavailable(value.state); f.statuses.push(value); },
+    createCommitStatus: async value => { unavailable(value.state); f.statuses.push(value); f.onStatus?.(value); },
   }, git: { getTree: async ({ tree_sha }) => {
     unavailable("git");
     const values = { "governance/commit-author-identity.json": JSON.stringify(f.policy), "scripts/fixtures/commit-author-identity-caller.yml": f.template,
-      ".github/workflows/commit-author-identity-check.yml": workflow, ".github/workflows/commit-author-identity.yml": tree_sha === base ? f.baseCaller : f.headCaller };
-    const tree = Object.entries(values).filter(([, value]) => value !== null).map(([path, value]) => ({ path, type: "blob", mode: tree_sha === head ? f.gitMode ?? "100644" : "100644", sha: createHash("sha1").update(value).digest("hex") }));
+      ".github/workflows/commit-author-identity-check.yml": target(tree_sha), ".github/workflows/commit-author-identity.yml": tree_sha === base ? f.baseCaller : f.headCaller };
+    const tree = Object.entries(values).filter(([, value]) => value !== null).map(([path, value]) => ({ path, type: "blob", mode: path.endsWith("identity-check.yml") && tree_sha === f.upgrade ? f.targetMode ?? "100644" : tree_sha === head ? f.gitMode ?? "100644" : "100644", sha: createHash("sha1").update(value).digest("hex") }));
     return { data: { truncated: f.gitTruncated ?? false, tree } };
   } } }, paginate: async (method, parameters) => {
-    unavailable(method); assert.equal(parameters.per_page, 100); return method === "open" ? f.open ?? [f.pull] : f.commits;
+    unavailable(method); assert.equal(parameters.per_page, 100); return clone(method === "open" ? f.open ?? [f.pull] : f.commits);
   } };
   const context = { repo: { owner: "agent-teams-ai", repo: f.repository.full_name.split("/")[1] }, eventName: f.event ?? "pull_request_target",
-    payload: { pull_request: { number: 7, head: { sha: "e".repeat(40) }, user: human } } };
+    payload: { pull_request: { number: f.pull.number, head: { sha: "e".repeat(40) }, user: human } } };
+  f.repositoryReads = 0; f.branchReads = 0;
   await execute(context, github, { setFailed: value => f.failures.push(value), warning: () => {} });
   return f;
 }
@@ -65,17 +68,82 @@ async function rejected(mutate) {
   if (states(f).includes("pending")) assert.equal(states(f).at(-1), "failure");
   return f;
 }
-test("owner and external humans pass on the independent exact head; GitHub committer is allowed", async () => {
+test("exact owner source identity and external original metadata pass on the independent head", async () => {
   for (const [user, commits] of [
     [human, [commit()]],
+    [human, [commit(null)]],
     [{ login: "alice", type: "User" }, [commit({ login: "alice", type: "User" }, "Alice", "alice@example.org")]],
     [{ login: "alice", type: "User" }, [commit(null, "Alice", "alice@example.org")]],
     [{ login: "alice", type: "User" }, [commit({ login: "alice", type: "User" }, "iliya", "alice@example.org")]],
   ]) {
-    const f = fixture(); f.pull.user = user; f.commits = commits; await run(f);
+    const f = fixture(); f.pull.user = user; f.commits = commits;
+    if (user !== human) { commits[0].commit.committer = { name: "GitHub", email: "noreply@github.com" };
+      commits[0].committer = { login: "web-flow", type: "User" }; }
+    await run(f);
     assert.deepEqual(f.failures, []); assert.deepEqual(states(f), ["pending", "success"]);
     assert.ok(f.statuses.every(value => value.sha === head && value.context === "commit-author-identity"));
     assert.equal(f.pullReads, 2);
+    assert.equal(f.operations.at(-2), "open", "Same-head PR ownership must be the last metadata read");
+  }
+  const f = fixture(); f.commits = [commit(null, "Alice", "alice@openai.com")];
+  f.commits[0].commit.committer = { name: "Alice", email: "alice@openai.com" };
+  f.commits[0].committer = null;
+  await run(f); assert.deepEqual(states(f), ["pending", "success"]);
+});
+test("owner source committers must be exact, including unassociated owner authors", async () => {
+  for (const author of [human, null]) for (const committer of [undefined, null, {}, { name: "iliya" }, { email: "iliyazelenkog@gmail.com" },
+    { name: "wrong", email: "iliyazelenkog@gmail.com" }, { name: "iliya", email: "wrong@example.org" },
+    { name: "GitHub", email: "noreply@github.com" }, { name: "web-flow", email: "noreply@github.com" },
+    { name: "technical", email: "technical@example.org" }, { name: "Iliya", email: "iliyazelenkog@gmail.com" },
+    { name: "iliya", email: "iliyazelenkog@gmail.com " }]) {
+    const f = await rejected(value => { value.commits = [commit(author)]; value.commits[0].commit.committer = committer; });
+    assert.match(f.failures[0], /exact raw author AND committer/u);
+  }
+});
+test("known unassociated Codex/OpenAI source authors cannot masquerade as humans", async () => {
+  for (const [name, email] of [["Codex", "codex@openai.com"], ["OpenAI", "openai@openai.com"],
+    [" OpenAI Codex ", "CODEX@OPENAI.COM"], ["Codex", "unknown@example.org"],
+    ["Alice", "codex@openai.com"], ["Alice", "openai@users.noreply.github.com"]]) {
+    const f = await rejected(value => { value.commits = [commit(null, name, email)]; });
+    assert.match(f.failures[0], /Codex\/OpenAI source commit AUTHOR/u);
+  }
+});
+test("repository publisher serialization is a workflow concurrency contract", () => {
+  const block = /^concurrency:\n((?:  .*\n)+)/mu.exec(workflow)?.[1];
+  assert.equal(block, "  group: commit-author-identity-${{ github.repository }}\n  cancel-in-progress: false\n");
+});
+test("overlapping older human run cannot overwrite a same-head Bot failure with success", async () => {
+  const older = fixture(), bot = fixture(), published = [];
+  bot.pull.number = 8; bot.pull.user = { login: "renovate", type: "Bot" };
+  older.onStatus = value => published.push(["human", value.sha, value.state]);
+  bot.onStatus = value => published.push(["bot", value.sha, value.state]);
+  older.onRepositoryRead = async count => {
+    if (count === 2) { older.open = [clone(older.pull), clone(bot.pull)]; await run(bot); }
+  };
+  await run(older);
+  assert.deepEqual(published, [["human", head, "pending"], ["bot", head, "pending"],
+    ["bot", head, "failure"], ["human", head, "failure"]]);
+  assert.match(bot.failures[0], /Bot\/GitHub PR authors/u);
+  assert.match(older.failures[0], /Conflicting Bot\/GitHub PR author/u);
+});
+test("canonical pin-only upgrade admits reviewed implementation bytes and rejects other targets", async () => {
+  const upgrade = "d".repeat(40);
+  const upgraded = () => { const f = fixture(); f.upgrade = upgrade; f.headCaller = template.replace("CENTRAL_REVISION", upgrade); return f; };
+  const good = upgraded(); await run(good);
+  assert.deepEqual(good.failures, []); assert.deepEqual(states(good), ["pending", "success"]);
+  for (const mutate of [
+    f => { f.targets = { [upgrade]: workflow + "# unreviewed implementation\n" }; },
+    f => { f.targets = { [upgrade]: null }; },
+    f => { let reads = 0; f.contentOverride = (path, ref, text) => path.endsWith("identity-check.yml") && ref === upgrade && ++reads === 2 ? null : text; },
+    f => { f.targetMode = "120000"; }, f => { f.targetMode = "160000"; },
+    f => { f.headCaller += "# extra caller text\n"; },
+    f => { f.baseCaller += "# extra caller text\n"; },
+    f => { f.headCaller = f.headCaller.replace(upgrade, "0".repeat(40)); },
+    f => { f.headCaller = f.headCaller.replace(upgrade, "main"); },
+    f => { f.lateCentral = "e".repeat(40); f.targets = { [f.lateCentral]: workflow + "# authority moved\n" }; },
+  ]) {
+    const f = upgraded(); mutate(f); await run(f);
+    assert.ok(f.failures.length > 0); assert.deepEqual(states(f), ["pending", "failure"]);
   }
 });
 test("central local caller uses trusted base workflow; same-head Bot PR cannot borrow human success", async () => {
