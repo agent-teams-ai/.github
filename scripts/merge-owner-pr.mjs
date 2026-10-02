@@ -84,12 +84,16 @@ async function mergeOwnerPull() {
     const before = api(endpoint);
     ownerPull(before, options, owner);
     assert.ok(before.state === "open" && before.merged === false, "PR must be open and unmerged");
+    assert.ok(typeof before.base?.ref === "string" && before.base.ref.length > 0 && isSha(before.base.sha),
+      "PR base ref and exact SHA must be known before inspecting source commits");
     assert.ok(Number.isSafeInteger(before.commits) && before.commits > 0 && before.commits <= 250,
       "Source commit count must be known and between 1 and 250");
     const pages = JSON.parse(gh(["api", "--hostname", "github.com", "--method", "GET", "--paginate", "--slurp", `${endpoint}/commits?per_page=100`]));
     ownerCommits(pages, before, options, owner);
     const ready = api(endpoint);
     ownerPull(ready, options, owner);
+    assert.ok(ready.base?.ref === before.base.ref && ready.base.sha === before.base.sha,
+      "PR base changed while inspecting source commits; inspect its new diff before retrying");
     assert.ok(ready.state === "open" && ready.merged === false && ready.commits === before.commits,
       "PR changed while inspecting source commits; inspect before retrying");
     attempted = true;
@@ -98,6 +102,7 @@ async function mergeOwnerPull() {
     // A successful gh exit is not proof: independently resolve the PR and final commit.
     const after = api(endpoint);
     ownerPull(after, options, owner);
+    assert.equal(after.base?.ref, before.base.ref, "Merged PR base differs from the inspected target");
     assert.ok(after.merged === true && after.state === "closed" && isSha(after.merge_commit_sha), "PR is not verifiably merged");
     const final = api(`${root}/commits/${after.merge_commit_sha}`);
     assert.equal(final.sha, after.merge_commit_sha, "Unexpected final commit SHA");

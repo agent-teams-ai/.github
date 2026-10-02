@@ -37,6 +37,10 @@ function fakeTransport() {
     if (config.invalidJson === endpoint) { process.stdout.write("not JSON"); return; }
     const responses = fs.existsSync(process.env.FAKE_GH_EFFECT) ? { ...config.responses, ...config.after } : config.responses;
     if (Object.hasOwn(responses, endpoint)) {
+      if (config.retargetAfterSource && endpoint.endsWith("/commits?per_page=100")) {
+        config.responses[endpoint.split("/commits?")[0]].base = config.retargetAfterSource;
+        fs.writeFileSync(process.env.FAKE_GH_SCENARIO, JSON.stringify(config));
+      }
       process.stdout.write(JSON.stringify(args.includes("--slurp") ? [responses[endpoint]] : responses[endpoint]));
       return;
     }
@@ -70,7 +74,7 @@ const commitEndpoint = "repos/" + repository + "/commits/" + mergedSha;
 const statusEndpoint = "repos/" + repository + "/commits/" + head + "/status";
 function ownerScenario() {
   const pull = { number: 13, state: "open", merged: false, commits: 1, user: owner, head: { sha: head },
-    base: { repo: { full_name: repository } }, body };
+    base: { repo: { full_name: repository }, ref: "main", sha: "a".repeat(40) }, body };
   return { responses: { user: owner, [pullEndpoint]: pull,
     [sourceEndpoint]: [{ sha: head, author: owner, committer: owner,
       commit: { author: { name: "iliya", email }, committer: { name: "iliya", email } } }],
@@ -151,6 +155,27 @@ test("missing, truncated, duplicate or head-unbound source evidence cannot merge
     failed(fake.run(argsFor(fake)), /Source commit count|Incomplete/u);
     assert.equal(merges(fake.trace()).length, 0);
   }
+});
+
+test("same-head same-count base retargeting cannot replace checked owner sources with external contributions", t => {
+  for (const base of [
+    { repo: { full_name: repository }, ref: "main", sha: "e".repeat(40) },
+    { repo: { full_name: repository }, ref: "other-target", sha: "a".repeat(40) },
+  ]) {
+    const scenario = ownerScenario();
+    scenario.responses[pullEndpoint].commits = 2;
+    const ownerSource = structuredClone(scenario.responses[sourceEndpoint][0]);
+    ownerSource.sha = "e".repeat(40);
+    scenario.responses[sourceEndpoint].unshift(ownerSource);
+    scenario.retargetAfterSource = base;
+    const fake = transport(t, scenario);
+    failed(fake.run(argsFor(fake)), /PR base changed/u);
+    assert.equal(merges(fake.trace()).length, 0);
+  }
+  const malformed = ownerScenario(); delete malformed.responses[pullEndpoint].base.sha;
+  const fake = transport(t, malformed);
+  failed(fake.run(argsFor(fake)), /base ref and exact SHA/u);
+  assert.equal(merges(fake.trace()).length, 0);
 });
 
 test("argument mistakes and unreadable/invalid UTF-8 body fail before gh is invoked", t => {
