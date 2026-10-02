@@ -175,40 +175,97 @@ remain explicit maintainer operations.
 
 ## Commit identity onboarding
 
-For every new owned repository and transfer, install the reviewed thin
-[`pull_request_target` caller](../scripts/fixtures/commit-author-identity-caller.yml)
-as `.github/workflows/commit-author-identity.yml`. Replace `CENTRAL_REVISION`
-with the nonzero 40-hex central revision containing the reusable workflow. The
-central repository uses its trusted base-relative caller. Roll out the same
-thin caller to all 13 current repositories using a fresh visible inventory;
-the dated inventory here is not proof of that current count.
+Future owned repositories and transfers use the supported central
+[onboarding command](../scripts/onboard-commit-author-identity.mjs). Its only
+sources of rules and caller bytes are the
+[canonical identity policy](../governance/commit-author-identity.json),
+[thin caller](../scripts/fixtures/commit-author-identity-caller.yml), and
+[current trusted implementation](../.github/workflows/commit-author-identity-check.yml).
+Central itself has a separately bootstrapped base-relative caller and is refused
+by this route. No consumer copies policy or receives a second template.
 
-After bootstrap and disposable TEST qualification, install the additive
-required-status payload in
-[`commit-author-identity.json`](../governance/commit-author-identity.json).
-Require `commit-author-identity` from Actions integration `15368`, with strict
-up-to-date checking, default-branch scope and no bypass. Preserve existing
-checks and external human authorship. A plan that cannot enforce required
-checks is an explicit limitation, not an inheritance claim.
+1. Prepare the caller from a reviewed central checkout:
 
-Run `node scripts/audit-commit-author-identity.mjs` using authorized read-only
-`gh` access. It paginates every visible active repository and ruleset, rejects
-missing/inactive/bypassed/mismatched status rules and broken callers, and reports
-configuration rather than merge qualification. It also queries
-`orgs/agent-teams-ai/actions/permissions/workflow` and each current active
-repository's `actions/permissions/workflow`: the canonical
-`can_approve_pull_request_reviews` permission must be explicitly false, covering
-GITHUB_TOKEN PR creation as well as approval. True, missing, unknown or
-inaccessible values fail closed; admission and transfers must verify both scopes.
-Inaccessible repositories fail; visibility of private repositories must be
-established independently. The worker
-performs no GitHub writes. The trusted CI token reads metadata/contents and writes
-only the exact observed head status; it never checks out or executes PR code.
-Keep consumer caller defaults read-only. Grant `statuses: write` only to its
-exact `identity` job; consumers declare that pinned job in their security baseline.
-The called reusable workflow also declares `statuses: write` at its root for
-GitHub's nested permission contract; its only execution job is `identity`.
-Qualify this contract in GitHub TEST: offline YAML checks alone do not prove it.
+   ```sh
+   node scripts/onboard-commit-author-identity.mjs render --revision 6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6
+   ```
+
+   Rendering only prints the exact fixture with its placeholder replaced. It
+   makes no remote or local change and does not verify remote admission. If using
+   shell redirection, redirect only to a reviewed **new** destination; the shell
+   can otherwise overwrite an existing file. Review and bootstrap those bytes as
+   `.github/workflows/commit-author-identity.yml` on the consumer's default branch
+   before activating the required status. The command never commits, pushes,
+   creates repositories, or opens/merges PRs. The first installation cannot
+   protect its own bootstrap PR.
+
+2. Inspect the write-free remote plan from this central checkout, using authorized
+   `gh` access:
+
+   ```sh
+   node scripts/onboard-commit-author-identity.mjs --repo agent-teams-ai/NEW_REPOSITORY
+   ```
+
+   The JSON binds the repository ID, default branch, exact head, caller pin,
+   existing ruleset IDs, and proposed changes. `--expected-head <reviewed-SHA>`
+   also binds a dry-run to a previously reviewed head. Missing callers, moving or
+   zero pins, symlinks/submodules, obsolete central authority, unknown permission
+   values, or ambiguous/mismatched dedicated rules refuse administration.
+
+3. The authenticated human owner `777genius` explicitly applies that reviewed plan:
+
+   ```sh
+   node scripts/onboard-commit-author-identity.mjs --repo agent-teams-ai/NEW_REPOSITORY --expected-head REVIEWED_DEFAULT_HEAD_SHA --apply
+   ```
+
+   `--expected-head` is mandatory for apply. Current remote central policy,
+   template and workflow must byte-match unchanged regular Git files in this
+   checkout. The installed default-head caller must exactly match the template
+   and pin an accessible regular central workflow with the current trusted
+   implementation bytes. Exact pins need a retained, accessible commit: the
+   retained `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` source is already qualified;
+   recheck its availability and byte compatibility rather than switching to `main`.
+
+   Organization Actions PR creation/approval must already be explicitly false;
+   the command never changes organization settings. It may send only repository
+   `can_approve_pull_request_reviews=false`, preserving default workflow
+   permissions and all unrelated fields, then create only the missing additive
+   canonical dedicated rule. All visible rulesets, including parents, are
+   paginated. A single exact inherited or repository rule is a no-op; competing or
+   mismatched candidates are never overwritten, deleted, disabled or bypassed.
+   Existing checks and protections remain intact. Repository identity, default
+   head and configuration are rechecked before each write and afterward. Movement
+   or uncertain transport stops with an explicit partial result when a write was
+   attempted. Inspect actual state and a fresh dry-run before another explicit
+   apply; there is no automatic retry or rollback of unknown effects.
+
+4. Consumer security baseline adoption remains consumer-owned. Change it only if
+   its existing gate rejects this exact `identity` job or pin. Keep caller defaults
+   read-only and permit `statuses: write` only for that job. The shared reusable
+   workflow declares its root permission for GitHub's nested permission contract.
+   That caller/status contract was already live-qualified; new repositories need
+   no replay of the entire shared suite merely to restate that proof.
+
+5. Finish with the shared configuration audit:
+
+   ```sh
+   node scripts/audit-commit-author-identity.mjs
+   ```
+
+   Use authorized read-only `gh` access with visibility of the intended scope.
+   The audit verifies callers, immutable implementation files, exact rules and
+   explicit false Actions PR creation/approval at both scopes. Apply reports
+   `configured_not_live_qualification`: configuration audit and actual GitHub
+   TEST workflow/enforcement proof are separate evidence. Neither the workflow
+   nor a green SHA status alone controls PR authorship or proves PR-specific
+   merge eligibility. Preserve external human contributors and their metadata.
+
+On GitHub Free, visible inherited organization rules and repository-specific
+rules are distinct. An exact inherited rule may satisfy the configuration check,
+but there is no promise of automatic organization inheritance. Where required
+checks are unavailable (including the documented private Platform exception),
+report the plan-tier limitation; neither caller installation nor this command
+proves remote enforcement. The additive rule never removes other required checks.
 
 For owner-generated agent changes, use the
 [fresh owner squash guard](../scripts/merge-owner-pr.mjs) with the repository,
