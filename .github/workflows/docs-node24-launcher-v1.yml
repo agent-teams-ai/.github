@@ -1,0 +1,205 @@
+name: Trusted Docs Node24 Launcher V1
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-node24-launcher-v1:
+    name: trusted-node24-launcher-v1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Finite launcher candidate, measured from Central 5a66a8ebbb85484feefc09c720f09d6749575b07.
+            // Independently stage this guard and its test before owner-reviewed required-check cutover.
+            // It cannot authorize its own introduction, modification, or any package/Cohort authority.
+            // Reuses the clock-repair immutable metadata binding and V8 finite forward/inverse tuple.
+            const tuple = [
+              {
+                "path": ".github/workflows/docs-protocol-check.yml",
+                "status": "modified",
+                "old_blob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_bytes": 16954,
+                "old_sha256": "ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6",
+                "new_blob": "f1492257de281f40a262042eb989291558147d5f",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_bytes": 16954,
+                "new_sha256": "f3a1e7bba95a8d309f6f4a97377d1c68fd2b956f2659e9576fc1350599cb514d"
+              },
+              {
+                "path": ".github/workflows/docs-cohort-append-only.yml",
+                "status": "modified",
+                "old_blob": "3c7f54dc24a6a2cd8c1c124df242841cde46df87",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_bytes": 13538,
+                "old_sha256": "9d30a19b9a22022a3ee5e2ce4e56ad52b636c4693f1b03eb2b275f18cc838c02",
+                "new_blob": "71983165ef4da0bb745fcecfe2ace29fe75f6d41",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_bytes": 13538,
+                "new_sha256": "b669ce8769d763046d3d8690fd8a0abf721eff14324d748048480749231db527"
+              },
+              {
+                "path": ".github/workflows/docs-admission-evidence.yml",
+                "status": "modified",
+                "old_blob": "6de75ea253f021c255216862283400ef22c35a13",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_bytes": 17756,
+                "old_sha256": "c307850dd7bc47f7d89f07dc4ccf09085f81bf01ec7ad29e8070a9b54620c0d2",
+                "new_blob": "a95efa08ae173554e1c82b6e5460ee8160810c44",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_bytes": 17756,
+                "new_sha256": "cc0cf40eeb124c1a3d002a789519e3879c67735289b7cf61829ce31547991a72"
+              },
+              {
+                "path": ".github/workflows/docs-fleet-audit.yml",
+                "status": "modified",
+                "old_blob": "cd2cfee3713da2669b7a414a26d57aceff0038ba",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_bytes": 1094,
+                "old_sha256": "82f18b83c81fc31912bebce38f87771219070ebcc82d07a35480451be3145623",
+                "new_blob": "40788593a0a9252baee5fe1c88c712cf2f541864",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_bytes": 1094,
+                "new_sha256": "f40a83b857ca9e7b67e8c62ba71260650994256d6a6532a70cb04cbbb6752bae"
+              },
+              {
+                "path": "scripts/verify-docs-consumer-gate.test.mjs",
+                "status": "modified",
+                "old_blob": "fbc9075057abae2c26af82d0cb704b7d54a85753",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_bytes": 64532,
+                "old_sha256": "cb787cb2763ee344c4d53f1681d71239949e6daa8c230e7369816421074bcce4",
+                "new_blob": "ec7393c93a7186791e7b6df3678cf9302cd1cedb",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_bytes": 69441,
+                "new_sha256": "99f34cb8d11e38f369fdd063efc9f7518066f751adfca20d7ad89f37e4376bf9"
+              }
+            ];
+            const guardPaths = [
+              ".github/workflows/docs-node24-launcher-v1.yml",
+              "scripts/docs-node24-launcher-v1.test.mjs"
+            ];
+            const identity = { id: 1316243981, full_name: "agent-teams-ai/.github" };
+            const repo = { owner: "agent-teams-ai", repo: ".github" };
+            const validSha = (sha) => typeof sha === "string" && /^[0-9a-f]{40}$/u.test(sha) && !/^0{40}$/u.test(sha);
+            const sameRepo = (value) => value?.id === identity.id && value.full_name === identity.full_name;
+            const demand = (condition, message) => { if (!condition) throw new Error(message); };
+            try {
+              demand(context.eventName === "pull_request_target" &&
+                ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(context.payload.action),
+                "Wrong event or action.");
+              demand(context.repo.owner === repo.owner && context.repo.repo === repo.repo &&
+                sameRepo(context.payload.repository) && context.payload.repository.default_branch === "main",
+                "Wrong repository identity or event default branch.");
+              const pullNumber = context.payload.number;
+              demand(Number.isSafeInteger(pullNumber) && pullNumber > 0 && context.issue.number === pullNumber,
+                "Only the identified PR event is eligible.");
+              const pull = context.payload.pull_request;
+              const snapshot = (value) => {
+                demand(value?.number === pullNumber && Number.isSafeInteger(value.id) && value.id > 0,
+                  "Only the identified PR is eligible.");
+                demand(value.state === "open" && value.draft === false && value.merged === false,
+                  "PR must be open, unmerged and ready for review.");
+                demand(sameRepo(value.base?.repo) && sameRepo(value.head?.repo), "Missing or foreign PR repository.");
+                demand(value.base.ref === "main" && typeof value.head.ref === "string" && value.head.ref.length > 0,
+                  "PR must target the default branch with an identified head branch.");
+                demand(validSha(value.base.sha) && validSha(value.head.sha) && value.base.sha !== value.head.sha,
+                  "Nonzero distinct exact base/head revisions required.");
+                demand(value.changed_files === tuple.length, "Exactly five changed files required.");
+                return JSON.stringify([value.id, value.number, value.base.ref, value.base.sha, value.head.ref, value.head.sha]);
+              };
+              const frozen = snapshot(pull);
+              demand(context.sha === pull.base.sha && context.ref === "refs/heads/main",
+                "Execution must be bound to the event default-branch base.");
+              const bindPull = async () => {
+                const live = await github.rest.pulls.get({ ...repo, pull_number: pullNumber });
+                demand(snapshot(live.data) === frozen, "Live PR moved from the event snapshot.");
+              };
+              const bindDefault = async () => {
+                const controller = await github.rest.repos.get(repo);
+                demand(sameRepo(controller.data) && controller.data.default_branch === "main" &&
+                  controller.data.archived === false && controller.data.disabled === false,
+                  "Live repository identity or default branch changed.");
+                const branch = await github.rest.repos.getBranch({ ...repo, branch: "main" });
+                demand(branch.data?.name === "main" && branch.data.commit?.sha === pull.base.sha,
+                  "Live default branch moved or PR base is stale.");
+              };
+              await bindPull();
+              await bindDefault();
+              const changed = await github.paginate(github.rest.pulls.listFiles, { ...repo, pull_number: pullNumber, per_page: 100 });
+              const directions = [{ name: "forward", base: "old", head: "new" }, { name: "rollback", base: "new", head: "old" }];
+              const matching = directions.filter(direction => Array.isArray(changed) && changed.length === tuple.length &&
+                new Set(changed.map(file => file?.filename)).size === tuple.length &&
+                changed.every(file => file && file.previous_filename === undefined &&
+                  tuple.some(item => file.filename === item.path && file.status === item.status && file.sha === item[`${direction.head}_blob`])));
+              demand(matching.length === 1, "Incomplete, duplicate, mixed or ineligible changed-file tuple.");
+              const direction = matching[0];
+              const comparison = await github.rest.repos.compareCommitsWithBasehead({
+                ...repo, basehead: `${pull.base.sha}...${pull.head.sha}`
+              });
+              const compared = comparison.data;
+              demand(compared?.base_commit?.sha === pull.base.sha && compared.merge_base_commit?.sha === pull.base.sha &&
+                compared.status === "ahead" && compared.behind_by === 0 &&
+                Number.isSafeInteger(compared.ahead_by) && compared.ahead_by > 0 && compared.total_commits === compared.ahead_by,
+                "Head must be a nonempty descendant of the exact base.");
+              const authorities = [], leaves = [];
+              for (const [side, revision] of [[direction.base, pull.base.sha], [direction.head, pull.head.sha]]) {
+                const commit = await github.rest.git.getCommit({ ...repo, commit_sha: revision });
+                demand(commit.data?.sha === revision && validSha(commit.data.tree?.sha), "Immutable commit/tree binding required.");
+                const response = await github.rest.git.getTree({ ...repo, tree_sha: commit.data.tree.sha, recursive: "true" });
+                const tree = response.data;
+                demand(tree?.sha === commit.data.tree.sha && tree.truncated === false && Array.isArray(tree.tree) &&
+                  tree.tree.every((entry) => typeof entry?.path === "string" && entry.path.length > 0 && validSha(entry.sha)) &&
+                  new Set(tree.tree.map((entry) => entry.path)).size === tree.tree.length,
+                  "Complete unambiguous immutable tree required.");
+                const regularEntry = (path) => {
+                  const entries = tree.tree.filter((entry) => entry.path === path);
+                  demand(entries.length === 1 && entries[0].mode === "100644" && entries[0].type === "blob",
+                    "Required path must be a unique regular 100644 blob.");
+                  return entries[0];
+                };
+                for (const item of tuple) {
+                  const entry = regularEntry(item.path);
+                  demand(entry.sha === item[`${side}_blob`] && entry.size === item[`${side}_bytes`],
+                    "Exact candidate old/new blob and byte tuple required.");
+                }
+                authorities.push(guardPaths.map(regularEntry));
+                leaves.push(new Map(tree.tree.filter(entry => entry.type !== "tree").map(entry => [entry.path, entry])));
+              }
+              demand(authorities[0].every((entry, index) => entry.sha === authorities[1][index].sha),
+                "Base-owned guard and test must remain unchanged in head.");
+              const owned = new Set(tuple.map(item => item.path));
+              demand(leaves[0].size === leaves[1].size && [...leaves[0]].every(([path, entry]) => {
+                const other = leaves[1].get(path);
+                return other && (owned.has(path) ||
+                  (entry.mode === other.mode && entry.type === other.type && entry.sha === other.sha));
+              }), "Complete immutable trees may differ only by the exact launcher tuple.");
+              // Last metadata operations reject PR, repository/default-branch and branch movement.
+              await bindPull();
+              await bindDefault();
+              const tupleIdentity = require("node:crypto").createHash("sha256").update(JSON.stringify(tuple)).digest("hex");
+              core.info(JSON.stringify({
+                guard: "trusted-node24-launcher-v1", repository: identity.full_name, direction: direction.name,
+                pr: pullNumber, base: pull.base.sha, head: pull.head.sha, tuple_identity: `sha256:${tupleIdentity}`, tuple
+              }));
+            } catch (error) {
+              core.setFailed(`Node24 launcher guard refused: ${error instanceof Error ? error.message : "API or metadata failure"}`);
+            }
