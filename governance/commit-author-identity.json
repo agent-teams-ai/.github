@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "owner": { "login": "777genius", "name": "iliya", "email": "iliyazelenkog@gmail.com" },
+  "actions_workflow_permissions": { "can_approve_pull_request_reviews": false },
+  "ruleset": {
+    "name": "Commit author identity",
+    "target": "branch",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+    "rules": [{
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [{ "context": "commit-author-identity", "integration_id": 15368 }]
+      }
+    }]
+  }
+}

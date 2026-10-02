@@ -180,6 +180,23 @@ passive cooldowns, repeated full CI on unchanged inputs or an abstract platform
 for hypothetical use. Required gates and real external restrictions still apply.
 Prefer small reviewable changes with independent rollback over a large mixed PR.
 
+Owner-generated agent squash merges require the
+[fresh owner PR actor guard](../scripts/merge-owner-pr.mjs): explicit repository,
+PR, reviewed exact head, ordinary Conventional Commit subject and complete
+body file with all issue references. Re-read the authenticated owner and live
+open PR actor/head immediately before merge and independently verify the actual
+merged PR and final commit identity/message afterward. A green SHA status alone
+cannot establish PR-specific UI merge safety. Never reopen or merge Bot staging
+PRs. External human contributions keep their existing PR and original
+authorship through their contributor-preserving flow, outside owner squash.
+The owner-only guard also inspects the complete head-bound source commit list;
+an owner-opened PR containing another contributor's commit cannot use this flow.
+
+Keep the canonical Actions PR creation/approval permission explicitly false at
+the organization default and current repositories. Disabling creation may leave
+a generated Changesets branch without a staging PR; the owner inspects it and
+opens a PR with `gh` before a failed-run rerun/current-input attestation.
+
 ## Where the detailed rules live
 
 | Topic | Canonical entrypoint |
@@ -187,6 +204,7 @@ Prefer small reviewable changes with independent rollback over a large mixed PR.
 | Feature ownership, layers and dependency mechanisms | [Feature Module Standard index](architecture/feature-module-standard/README.md) and [v1](architecture/feature-module-standard/v1.md); the consumer's local adoption profile owns its exact scope |
 | Get Modular construction and consumer adoption, when applicable | [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard); use the consumer's reviewed pin |
 | Reusable development tooling and checks | [Engineering Foundation](https://github.com/agent-teams-ai/engineering-foundation); repository profiles own applicability and actual commands |
+| Commit and PR authorship | [Maintained owner policy](../GOVERNANCE.md#commit-and-pull-request-authorship) and [canonical identity/status rule](../governance/commit-author-identity.json); preserve external human authorship |
 | Contributions and decisions | [Contribution rules](../CONTRIBUTING.md) and [governance boundaries](../GOVERNANCE.md) |
 | Security reporting and organization defaults | [Security policy](../SECURITY.md) and [security baseline](organization-security-baseline.md) |
 | Product architecture, best practices, runbooks and release requirements | The target repository's `AGENTS.md`, `CLAUDE.md`, README/documentation index, accepted ADRs and local profiles |
