@@ -172,3 +172,29 @@ reviewed workflow revision, and record desired/observed admission evidence.
 There is no organization write controller or continuous compliance claim in
 this phase; lifecycle appends, consumer changes, and ruleset configuration
 remain explicit maintainer operations.
+
+## Commit identity onboarding
+
+For every new owned repository and transfer, install the reviewed thin
+[`pull_request_target` caller](../scripts/fixtures/commit-author-identity-caller.yml)
+as `.github/workflows/commit-author-identity.yml`. Replace `CENTRAL_REVISION`
+with the nonzero 40-hex central revision containing the reusable workflow. The
+central repository uses its trusted base-relative caller. Roll out the same
+thin caller to all 13 current repositories using a fresh visible inventory;
+the dated inventory here is not proof of that current count.
+
+After bootstrap and disposable TEST qualification, install the additive
+required-status payload in
+[`commit-author-identity.json`](../governance/commit-author-identity.json).
+Require `commit-author-identity` from Actions integration `15368`, with strict
+up-to-date checking, default-branch scope and no bypass. Preserve existing
+checks and external human authorship. A plan that cannot enforce required
+checks is an explicit limitation, not an inheritance claim.
+
+Run `node scripts/audit-commit-author-identity.mjs` using authorized read-only
+`gh` access. It paginates every visible active repository and ruleset, rejects
+missing/inactive/bypassed/mismatched status rules and broken callers, and reports
+configuration rather than merge qualification. Inaccessible repositories fail;
+visibility of private repositories must be established independently. The worker
+performs no GitHub writes. The trusted CI token reads metadata/contents and writes
+only the exact observed head status; it never checks out or executes PR code.
