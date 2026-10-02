@@ -79,11 +79,13 @@ consumer in the same delivery; that consumer proves the contract and is not an
 incubator for it.
 
 Breaking changes are allowed in every organization repository when they
-deliberately improve the system. No repository has a compatibility commitment
-during the MVP stage; a repository that later needs one must declare it
-explicitly in its `AGENTS.md`, README or accepted decisions. Prefer one clean
-contract over parallel variants, compatibility shims and deprecated paths that
-accumulate legacy and become harder to migrate.
+deliberately improve the system. The MVP stage lasts until the owner records
+its end in this standard or, for one repository, in that repository's
+`AGENTS.md`, README or accepted decisions. A compatibility commitment exists
+only where those repository documents explicitly declare one; commitments
+already declared there stay in force, and the MVP stage implies none. Prefer
+one clean contract over parallel variants, compatibility shims and deprecated
+paths that accumulate legacy and become harder to migrate.
 
 Packages still on 0.x stay on 0.x during the MVP stage and ship a breaking
 change as a minor release; do not bump the major version for each break. A
@@ -150,10 +152,10 @@ DRY means one authoritative source for the same knowledge: a policy, transition,
 schema identity or configuration rule. Similar syntax is not enough to establish
 shared semantics. Do not couple independent contexts to remove a few duplicated
 lines. Extract a reusable abstraction after a second real consumer or a concrete
-repeated need demonstrates its contract and owner. A concern known to serve
+repeated need demonstrates its contract and owner. A concern expected to serve
 several projects is designed as a library from the start; see
-[library-first design](#library-first-design-and-deliberate-evolution). Avoid
-unowned `shared` or `utils` dumping grounds.
+[library-first design](#library-first-design-and-deliberate-evolution).
+Avoid unowned `shared` or `utils` dumping grounds.
 
 Independent test oracles may intentionally state expected behavior separately
 from production mappings. Generate mechanical representations from their one
@@ -176,9 +178,10 @@ same implementation and call that independent evidence.
   manifests, signatures, authorization, enforcement and qualification prove
   different things. Do not fake receipts or silently downgrade an adapter.
 - Preserve durable state, in-flight work and any compatibility commitment a
-  repository has explicitly declared. Plan migrations, rollback and handling of in-flight
-  state for changes that need them. Other contract changes may break
-  deliberately under [library-first design](#library-first-design-and-deliberate-evolution).
+  repository has explicitly declared. Plan additive or otherwise reversible
+  migrations, rollback and handling of in-flight state for changes that need
+  them. Other contract changes may break deliberately under
+  [library-first design](#library-first-design-and-deliberate-evolution).
   Cleanup must release only owned resources and report unresolved debt.
 - Run effectful provider, agent, provisioning, terminal-runtime and recovery
   tests only in disposable or explicitly test projects and approved identities.
