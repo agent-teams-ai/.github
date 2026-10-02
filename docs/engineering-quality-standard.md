@@ -180,6 +180,21 @@ passive cooldowns, repeated full CI on unchanged inputs or an abstract platform
 for hypothetical use. Required gates and real external restrictions still apply.
 Prefer small reviewable changes with independent rollback over a large mixed PR.
 
+Owner-generated agent squash merges require the
+[fresh owner PR actor guard](../scripts/merge-owner-pr.mjs): explicit repository,
+PR, reviewed exact head, ordinary Conventional Commit subject and complete
+body file with all issue references. Re-read the authenticated owner and live
+open PR actor/head immediately before merge and independently verify the actual
+merged PR and final commit identity/message afterward. A green SHA status alone
+cannot establish PR-specific UI merge safety. Never reopen or merge Bot staging
+PRs. External human contributions keep their existing PR and original
+authorship through their contributor-preserving flow, outside owner squash.
+
+Keep the canonical Actions PR creation/approval permission explicitly false at
+the organization default and current repositories. Disabling creation may leave
+a generated Changesets branch without a staging PR; the owner inspects it and
+opens a PR with `gh` before a failed-run rerun/current-input attestation.
+
 ## Where the detailed rules live
 
 | Topic | Canonical entrypoint |

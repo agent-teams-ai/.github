@@ -194,7 +194,22 @@ checks is an explicit limitation, not an inheritance claim.
 Run `node scripts/audit-commit-author-identity.mjs` using authorized read-only
 `gh` access. It paginates every visible active repository and ruleset, rejects
 missing/inactive/bypassed/mismatched status rules and broken callers, and reports
-configuration rather than merge qualification. Inaccessible repositories fail;
-visibility of private repositories must be established independently. The worker
+configuration rather than merge qualification. It also queries
+`orgs/agent-teams-ai/actions/permissions/workflow` and each current active
+repository's `actions/permissions/workflow`: the canonical
+`can_approve_pull_request_reviews` permission must be explicitly false, covering
+GITHUB_TOKEN PR creation as well as approval. True, missing, unknown or
+inaccessible values fail closed; admission and transfers must verify both scopes.
+Inaccessible repositories fail; visibility of private repositories must be
+established independently. The worker
 performs no GitHub writes. The trusted CI token reads metadata/contents and writes
 only the exact observed head status; it never checks out or executes PR code.
+
+For owner-generated agent changes, use the
+[fresh owner squash guard](../scripts/merge-owner-pr.mjs) with the repository,
+PR, exact reviewed head, Conventional Commit subject and complete body-file
+bytes/issue references. SHA statuses are shared between PRs and alone cannot
+guarantee PR-specific UI merge safety. Never reopen or merge Bot staging PRs;
+external human PRs/authorship keep the contributor-preserving flow. Changesets
+may push a generated version branch before disabled PR creation fails: the owner
+opens its inspected PR with `gh` before a failed-run rerun/current-input attestation.
