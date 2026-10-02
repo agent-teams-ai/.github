@@ -46,6 +46,22 @@ function ownerPull(pull, options, owner) {
   assert.equal(pull.head?.sha, options.head, "Stale or unexpected PR head; inspect the current diff before retrying");
 }
 
+function ownerCommits(pages, pull, options, owner) {
+  assert.ok(Array.isArray(pages) && pages.length > 0 && pages.every(Array.isArray), "Incomplete source commit pages");
+  const commits = pages.flat();
+  assert.ok(Number.isSafeInteger(pull.commits) && pull.commits > 0 && pull.commits <= 250 &&
+    commits.length === pull.commits && new Set(commits.map(commit => commit.sha)).size === commits.length &&
+    commits.every(commit => isSha(commit.sha)) && commits.at(-1)?.sha === options.head,
+  "Incomplete or unbound source commit list; inspect the live PR before retrying");
+  for (const commit of commits) {
+    for (const role of ["author", "committer"]) {
+      assert.ok(commit[role]?.type === "User" && commit[role].login === owner.login &&
+        commit.commit?.[role]?.name === "iliya" && commit.commit[role].email === owner.email,
+      "Owner squash requires owner-only source author and committer. Preserve external contributions with the contributor-preserving flow; never squash their attribution into owner identity");
+    }
+  }
+}
+
 async function mergeOwnerPull() {
   const options = inputs(process.argv.slice(2));
   const policy = JSON.parse(await readFile(new URL("../governance/commit-author-identity.json", import.meta.url), "utf8"));
@@ -68,6 +84,14 @@ async function mergeOwnerPull() {
     const before = api(endpoint);
     ownerPull(before, options, owner);
     assert.ok(before.state === "open" && before.merged === false, "PR must be open and unmerged");
+    assert.ok(Number.isSafeInteger(before.commits) && before.commits > 0 && before.commits <= 250,
+      "Source commit count must be known and between 1 and 250");
+    const pages = JSON.parse(gh(["api", "--hostname", "github.com", "--method", "GET", "--paginate", "--slurp", `${endpoint}/commits?per_page=100`]));
+    ownerCommits(pages, before, options, owner);
+    const ready = api(endpoint);
+    ownerPull(ready, options, owner);
+    assert.ok(ready.state === "open" && ready.merged === false && ready.commits === before.commits,
+      "PR changed while inspecting source commits; inspect before retrying");
     attempted = true;
     gh(["pr", "merge", options.pr, "--repo", options.repository, "--squash", "--author-email", owner.email,
       "--match-head-commit", options.head, "--subject", options.subject, "--body-file", frozenBody]);

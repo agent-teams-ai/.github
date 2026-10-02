@@ -65,12 +65,15 @@ function transport(t, scenario) {
 }
 
 const pullEndpoint = "repos/" + repository + "/pulls/13";
+const sourceEndpoint = pullEndpoint + "/commits?per_page=100";
 const commitEndpoint = "repos/" + repository + "/commits/" + mergedSha;
 const statusEndpoint = "repos/" + repository + "/commits/" + head + "/status";
 function ownerScenario() {
-  const pull = { number: 13, state: "open", merged: false, user: owner, head: { sha: head },
+  const pull = { number: 13, state: "open", merged: false, commits: 1, user: owner, head: { sha: head },
     base: { repo: { full_name: repository } }, body };
   return { responses: { user: owner, [pullEndpoint]: pull,
+    [sourceEndpoint]: [{ sha: head, author: owner, committer: owner,
+      commit: { author: { name: "iliya", email }, committer: { name: "iliya", email } } }],
     // Realistic counterexample: a cached owner-PR #12 status shares PR #13's head.
     [statusEndpoint]: { sha: head, state: "success", statuses: [{ context: "commit-author-identity", state: "success" }] },
     ["repos/" + repository + "/pulls/12"]: { ...pull, number: 12 } },
@@ -113,7 +116,41 @@ test("owner CLI uses exact explicit squash identity/head/message and independent
   assert.equal(call.bodyHex, Buffer.from(body).toString("hex"), "All refs, CRLF, Unicode and trailing LF survive transport");
   const apiArgs = ["api", "--hostname", "github.com", "--method", "GET"];
   assert.deepEqual(trace.filter(value => value !== call).map(value => value.args),
-    [apiArgs.concat("user"), apiArgs.concat(pullEndpoint), apiArgs.concat(pullEndpoint), apiArgs.concat(commitEndpoint)]);
+    [apiArgs.concat("user"), apiArgs.concat(pullEndpoint),
+      apiArgs.concat("--paginate", "--slurp", sourceEndpoint), apiArgs.concat(pullEndpoint),
+      apiArgs.concat(pullEndpoint), apiArgs.concat(commitEndpoint)]);
+});
+
+test("owner-opened PR cannot erase external source authorship or admit a technical source committer", t => {
+  for (const mutate of [
+    commit => { commit.author = { login: "alice", type: "User" }; commit.commit.author = { name: "Alice", email: "alice@example.org" }; },
+    commit => { commit.committer = { login: "web-flow", type: "User" }; commit.commit.committer = { name: "GitHub", email: "noreply@github.com" }; },
+    commit => { commit.commit.author.name = "Codex"; },
+    commit => { commit.commit.committer.email = "wrong@example.org"; },
+    commit => { commit.author = null; },
+  ]) {
+    const scenario = ownerScenario(); mutate(scenario.responses[sourceEndpoint][0]);
+    const fake = transport(t, scenario);
+    failed(fake.run(argsFor(fake)), /owner-only source author and committer.*contributor-preserving flow/u);
+    assert.equal(merges(fake.trace()).length, 0);
+  }
+});
+
+test("missing, truncated, duplicate or head-unbound source evidence cannot merge", t => {
+  for (const mutate of [
+    scenario => { delete scenario.responses[pullEndpoint].commits; },
+    scenario => { scenario.responses[pullEndpoint].commits = 251; },
+    scenario => { scenario.responses[pullEndpoint].commits = 2; },
+    scenario => { scenario.responses[sourceEndpoint] = []; },
+    scenario => { scenario.responses[sourceEndpoint] = {}; },
+    scenario => { scenario.responses[sourceEndpoint][0].sha = "c".repeat(40); },
+    scenario => { scenario.responses[pullEndpoint].commits = 2; scenario.responses[sourceEndpoint].push(scenario.responses[sourceEndpoint][0]); },
+  ]) {
+    const scenario = ownerScenario(); mutate(scenario);
+    const fake = transport(t, scenario);
+    failed(fake.run(argsFor(fake)), /Source commit count|Incomplete/u);
+    assert.equal(merges(fake.trace()).length, 0);
+  }
 });
 
 test("argument mistakes and unreadable/invalid UTF-8 body fail before gh is invoked", t => {
