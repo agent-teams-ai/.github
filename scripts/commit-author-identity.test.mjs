@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { assertIdentityRuleset, assertRegularGitFile } from "./audit-commit-author-identity.mjs";
+import { assertActionsWorkflowPermissions, assertIdentityRuleset, assertRegularGitFile } from "./audit-commit-author-identity.mjs";
 
 const workflow = await readFile(".github/workflows/commit-author-identity-check.yml", "utf8");
 const source = workflow.split("          script: |\n")[1].split("\n").map(line => line.slice(12)).join("\n");
@@ -239,4 +239,15 @@ test("rejects symlink/submodule callers and incomplete Git trees even if Content
   for (const tree of [{ truncated: true, tree: [entry] }, { truncated: false, tree: [entry, entry] }, { truncated: false, tree: [{ ...entry, mode: "120000" }] }])
     assert.throws(() => assertRegularGitFile(tree, "caller.yml", { sha: head }));
   assert.throws(() => assertRegularGitFile({ truncated: false, tree: [entry] }, "caller.yml", { sha: base }));
+});
+
+test("canonical Actions permission and observed creation/approval must be explicitly false", () => {
+  assert.equal(policy.actions_workflow_permissions.can_approve_pull_request_reviews, false);
+  assertActionsWorkflowPermissions({ can_approve_pull_request_reviews: false }, policy.actions_workflow_permissions);
+  for (const actual of [null, {}, { can_approve_pull_request_reviews: true },
+    { can_approve_pull_request_reviews: null }, { can_approve_pull_request_reviews: "false" }]) {
+    assert.throws(() => assertActionsWorkflowPermissions(actual, policy.actions_workflow_permissions), /explicitly false/u);
+  }
+  assert.throws(() => assertActionsWorkflowPermissions({ can_approve_pull_request_reviews: false },
+    { can_approve_pull_request_reviews: true }), /Canonical/u);
 });

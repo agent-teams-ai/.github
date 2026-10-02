@@ -14,6 +14,10 @@ export function assertRegularGitFile(tree, path, file) {
   assert.ok(entries.length === 1 && entries[0].type === "blob" && ["100644", "100755"].includes(entries[0].mode) &&
     entries[0].sha === file.sha, "Caller/target must be a regular Git file with matching blob");
 }
+export function assertActionsWorkflowPermissions(actual, expected) {
+  assert.equal(expected?.can_approve_pull_request_reviews, false, "Canonical Actions PR creation/approval permission must be false");
+  assert.equal(actual?.can_approve_pull_request_reviews, false, "Actions PR creation/approval permission must be explicitly false; true/missing/unknown fails closed");
+}
 const api = endpoint => JSON.parse(execFileSync("gh", ["api", "--method", "GET", endpoint], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
 const pages = endpoint => JSON.parse(execFileSync("gh", ["api", "--method", "GET", "--paginate", "--slurp", endpoint],
   { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 })).flat();
@@ -23,11 +27,19 @@ export async function auditIdentity() {
   const implementation = await readFile(new URL("../.github/workflows/commit-author-identity-check.yml", import.meta.url), "utf8");
   const repositories = pages("orgs/agent-teams-ai/repos?type=all&per_page=100");
   assert.ok(repositories.length > 0 && new Set(repositories.map(repo => repo.id)).size === repositories.length, "Incomplete/duplicate inventory");
+  let organization;
+  try {
+    const permissions = api("orgs/agent-teams-ai/actions/permissions/workflow");
+    assertActionsWorkflowPermissions(permissions, policy.actions_workflow_permissions);
+    organization = { organization: "agent-teams-ai", actions_workflow_permissions: permissions };
+  } catch (error) { organization = { organization: "agent-teams-ai", error: error.message }; }
   const results = [];
   for (const repository of repositories.filter(repo => !repo.archived)) {
     try {
       assert.equal(repository.owner.login, "agent-teams-ai");
       const root = `repos/${repository.full_name}`;
+      const permissions = api(`${root}/actions/permissions/workflow`);
+      assertActionsWorkflowPermissions(permissions, policy.actions_workflow_permissions);
       const rules = pages(`${root}/rulesets?includes_parents=true&per_page=100`);
       const candidates = rules.filter(rule => rule.name === policy.ruleset.name);
       assert.equal(candidates.length, 1, "Missing/ambiguous dedicated identity ruleset");
@@ -51,10 +63,10 @@ export async function auditIdentity() {
       assert.equal(current.id, repository.id); assert.equal(current.archived, false);
       assert.equal(current.default_branch, repository.default_branch, "Default branch identity moved during audit");
       assert.equal(api(`${root}/branches/${encodeURIComponent(repository.default_branch)}`).commit.sha, branch.commit.sha, "Default branch moved during audit");
-      results.push({ repository: repository.full_name, head: branch.commit.sha, posture: "configured_not_live_qualification" });
+      results.push({ repository: repository.full_name, head: branch.commit.sha, actions_workflow_permissions: permissions, posture: "configured_not_live_qualification" });
     } catch (error) { results.push({ repository: repository.full_name, error: error.message }); }
   }
-  process.stdout.write(`${JSON.stringify({ visible_active_repositories: results.length, results }, null, 2)}\n`);
-  if (results.some(result => result.error)) { process.exitCode = 1; }
+  process.stdout.write(`${JSON.stringify({ organization, visible_active_repositories: results.length, results }, null, 2)}\n`);
+  if (organization.error || results.some(result => result.error)) { process.exitCode = 1; }
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) { await auditIdentity(); }

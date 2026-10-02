@@ -211,7 +211,10 @@ PRs), preserves external human author metadata, and checks the exact owner
 name/email on owner-associated commits. Unassociated commits bearing the owner
 name also require that identity. This checks metadata, not cryptographic owner
 identity. It rejects Bot PR authors even when every source commit is owner-authored.
-A same-head Bot PR also blocks success on a human PR because statuses share a SHA.
+During a checker run, a same-head Bot PR also blocks success on a human PR.
+GitHub commit statuses belong to a SHA, not a PR number: a Bot PR can reuse a
+previously green owner head, and GITHUB_TOKEN-created PR events are suppressed.
+A per-SHA status alone therefore does not guarantee PR-specific UI merge safety.
 Publishers serialize by repository without cancellation; same-head open PR
 ownership is re-read as the final metadata operation before success, after the
 complete live PR/head/base reread.
@@ -242,17 +245,51 @@ they are supplementary unproven posture and are not shipped as enforcement.
 The canonical payload requires the exact head status from GitHub Actions
 integration `15368`, on `~DEFAULT_BRANCH`, active and without bypass actors.
 Installation and actual merge qualification remain maintainer operations;
-this patch does not claim live enforcement or automatic inheritance on Free.
+this policy does not claim live enforcement or automatic inheritance on Free.
+
+Owner-generated agent changes must use the fresh actor guard in
+[`scripts/merge-owner-pr.mjs`](scripts/merge-owner-pr.mjs) for squash merges.
+Supply `--repository`, `--pr`, the reviewed exact `--expected-head`, an ordinary
+Conventional Commit `--subject`, and `--body-file` containing the complete
+reviewed commit body, including every issue reference. The guard freezes those
+body bytes, requires authenticated User/777genius and a live open User/777genius
+PR on that head, then invokes `gh pr merge` with explicit squash, canonical
+author email and head matching. Bot staging PRs must never be reopened or merged.
+External human PRs retain their existing PR and attribution through the
+contributor-preserving flow; this owner guard refuses them.
+
+After merge the guard independently reads the actual PR and final commit,
+verifying merged state, owner author account, exact email and full supplied
+message/refs. GitHub's technical final committer and owner display name are
+allowed. A mismatch or transport failure is reported for inspection, never a
+history rewrite or automatic retry. The guard neither grants checks nor bypasses
+or changes protection; a queued or otherwise unconfirmed merge is not success.
+
+The canonical `actions_workflow_permissions.can_approve_pull_request_reviews`
+target is explicitly `false` at the organization default and every current
+active repository. GitHub's Actions workflow-permission setting controls
+GITHUB_TOKEN PR **creation and approval**. The read-only identity audit queries
+both actual scopes and rejects true, missing, unknown or inaccessible values
+while retaining caller, implementation-byte, immutable-file and ruleset checks.
+This target is not evidence that the live settings have already been changed.
 
 Foundation version generation must set `setupGitUser: false` after configuring
 its local Git identity from the canonical owner policy. Before reusing an open
 release PR, a read-only freshness guard must confirm the PR author is the owner
 and the observed head/base/diff are the verified tuple. A Bot-owned existing PR
 fails the guard even after its source commits are corrected. Keep existing
-tokens and versions. Do not enable organization-wide Actions PR creation/approval
-or automatic or broader workflow approval. Only failed Release runs may be rerun; manual workflow
-approval requires inspection of the same owner-authored tuple. Required checks,
-ReviewRouter and release attestation must pass for that exact head before merge.
+tokens and versions. Keep Actions PR creation/approval disabled at organization
+and repository scopes; do not enable automatic or broader workflow approval.
+Changesets action at `a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d`
+pushes its generated version branch before attempting PR creation. Disabling
+creation can therefore leave a generated branch without a staging PR. After
+inspecting that exact diff/head/base, the owner opens the PR using `gh pr create`
+before a failed Release rerun and current-input attestation; an existing owner
+PR may be selected/updated by Changesets. Never reopen or merge a Bot staging PR.
+Only failed Release runs may be rerun; manual workflow approval requires
+inspection of the same owner-authored tuple. Required checks, ReviewRouter and
+release attestation must pass for that exact head, followed by the fresh owner
+merge guard.
 
 The older owner-bootstrap Bot-author fields in
 [`governance/actions-policy.json`](governance/actions-policy.json) are historical
