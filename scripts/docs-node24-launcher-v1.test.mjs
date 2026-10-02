@@ -82,11 +82,11 @@ const expectedTuple = [
     "old_type": "blob",
     "old_bytes": 64532,
     "old_sha256": "cb787cb2763ee344c4d53f1681d71239949e6daa8c230e7369816421074bcce4",
-    "new_blob": "ec7393c93a7186791e7b6df3678cf9302cd1cedb",
+    "new_blob": "46e0ecb4621749d5a82a3cc5d85d830a57b72e39",
     "new_mode": "100644",
     "new_type": "blob",
-    "new_bytes": 69441,
-    "new_sha256": "99f34cb8d11e38f369fdd063efc9f7518066f751adfca20d7ad89f37e4376bf9"
+    "new_bytes": 69475,
+    "new_sha256": "cc088aa9d2b098331888cd7417a7ec7001428d448eb13b3da7a6f41776e2df5d"
   }
 ];
 const expectedIdentity = `sha256:${createHash("sha256").update(JSON.stringify(expectedTuple)).digest("hex")}`;
