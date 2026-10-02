@@ -215,7 +215,7 @@ test("late policy/template drift and failure-status write error fail closed", as
 test("audit rejects missing/inactive/bypassed/mismatched default-branch required status rules", () => {
   const rule = { name: "Commit author identity", target: "branch", enforcement: "active", bypass_actors: [],
     conditions: { ref_name: { include: ["~DEFAULT_BRANCH"], exclude: [] } },
-    rules: [{ type: "required_status_checks", parameters: { strict_required_status_checks_policy: true,
+    rules: [{ type: "required_status_checks", parameters: { strict_required_status_checks_policy: true, do_not_enforce_on_create: false,
       required_status_checks: [{ context: "commit-author-identity", integration_id: 15368 }] } }] };
   assertIdentityRuleset(rule, policy.ruleset);
   for (const mutate of [
@@ -224,6 +224,8 @@ test("audit rejects missing/inactive/bypassed/mismatched default-branch required
     f => { f.rules[0].parameters.required_status_checks[0].context = "other"; },
     f => { f.rules[0].parameters.required_status_checks[0].integration_id = null; },
     f => { f.rules[0].parameters.strict_required_status_checks_policy = false; },
+    f => { delete f.rules[0].parameters.do_not_enforce_on_create; },
+    f => { f.rules[0].parameters.do_not_enforce_on_create = true; },
   ]) { const changed = clone(rule); mutate(changed); assert.throws(() => assertIdentityRuleset(changed, policy.ruleset)); }
   assert.throws(() => assertIdentityRuleset(null, policy.ruleset));
 });
