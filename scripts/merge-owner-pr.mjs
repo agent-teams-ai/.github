@@ -91,7 +91,7 @@ async function mergeOwnerPull() {
     return { repository: options.repository, pr: Number(options.pr), head: options.head, merge_commit: final.sha, verified: true };
   } catch (error) {
     if (attempted) {
-      throw new Error(`Merge attempted; no verified success. Inspect the actual PR/commit before any retry; never rewrite history. ${error.message}`);
+      throw new Error(`Merge attempted; no verified success. Inspect the actual PR/commit before any retry; never rewrite history. ${error.message}`, { cause: error });
     }
     throw error;
   } finally {
