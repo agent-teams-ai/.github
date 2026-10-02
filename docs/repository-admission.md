@@ -204,6 +204,8 @@ Inaccessible repositories fail; visibility of private repositories must be
 established independently. The worker
 performs no GitHub writes. The trusted CI token reads metadata/contents and writes
 only the exact observed head status; it never checks out or executes PR code.
+Keep workflow defaults read-only. Grant `statuses: write` only to the exact
+`identity` job; consumers declare that pinned job in their security baseline.
 
 For owner-generated agent changes, use the
 [fresh owner squash guard](../scripts/merge-owner-pr.mjs) with the repository,
