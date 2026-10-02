@@ -132,6 +132,39 @@ test("argument mistakes and unreadable/invalid UTF-8 body fail before gh is invo
   assert.deepEqual(fake.trace(), []);
 });
 
+test("GitHub may omit terminal newlines but interior body and issue references remain exact", t => {
+  const scenario = ownerScenario();
+  scenario.after[commitEndpoint].commit.message = (subject + "\n\n" + body).replace(/(?:\r?\n)+$/u, "");
+  const fake = transport(t, scenario);
+  assert.equal(fake.run(argsFor(fake)).status, 0);
+  const interiorDrift = ownerScenario();
+  interiorDrift.after[commitEndpoint].commit.message = (subject + "\n\n" + body).replace("#12", "#120").trimEnd();
+  const negative = transport(t, interiorDrift);
+  failed(negative.run(argsFor(negative)), /message\/body bytes or issue references/u);
+});
+
+test("final committer allows only the exact ordinary owner or GitHub technical identity", t => {
+  const ordinary = ownerScenario();
+  ordinary.after[commitEndpoint].committer = owner;
+  ordinary.after[commitEndpoint].commit.committer = { name: "iliya", email };
+  const positive = transport(t, ordinary);
+  assert.equal(positive.run(argsFor(positive)).status, 0);
+  for (const mutate of [
+    final => { final.committer = null; },
+    final => { final.committer = { type: "Bot", login: "github-actions[bot]" }; },
+    final => { final.committer.login = "alice"; },
+    final => { final.commit.committer.name = "Codex"; },
+    final => { final.commit.committer.email = "robot@example.org"; },
+    final => { final.commit.committer = null; },
+    final => { final.committer = owner; },
+  ]) {
+    const scenario = ownerScenario(); mutate(scenario.after[commitEndpoint]);
+    const negative = transport(t, scenario);
+    failed(negative.run(argsFor(negative)), /Final commit committer/u);
+    assert.equal(merges(negative.trace()).length, 1, "Reconcile the one attempted merge, never retry or rewrite");
+  }
+});
+
 test("wrong auth, stale head, closed PR and unknown author cannot invoke merge", t => {
   for (const [mutate, expression] of [
     [scenario => { scenario.responses.user = { login: "alice", type: "User" }; }, /Authenticated gh user/u],
@@ -167,7 +200,7 @@ test("post-merge PR/commit, account, email or message drift fails with reconcili
     [scenario => { scenario.after[commitEndpoint].author = null; }, /Final commit author account/u],
     [scenario => { scenario.after[commitEndpoint].commit.author.email = "wrong@example.org"; }, /Final commit author email/u],
     [scenario => { scenario.after[commitEndpoint].commit.message = subject + "\n\nlost references"; }, /message\/body bytes or issue references/u],
-    [scenario => { scenario.after[commitEndpoint].commit.message = subject + "\n\n" + body.trim(); }, /message\/body bytes or issue references/u],
+    [scenario => { scenario.after[commitEndpoint].commit.message = subject + "\n\n" + body.replace("\r\n", "\n"); }, /message\/body bytes or issue references/u],
     [scenario => { scenario.after[commitEndpoint].commit.message = "chore: unexpected subject\n\n" + body; }, /message\/body bytes or issue references/u],
     [scenario => { scenario.failEndpoint = commitEndpoint; }, /API transport failed/u],
   ]) {

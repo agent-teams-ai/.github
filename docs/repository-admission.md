@@ -213,3 +213,7 @@ guarantee PR-specific UI merge safety. Never reopen or merge Bot staging PRs;
 external human PRs/authorship keep the contributor-preserving flow. Changesets
 may push a generated version branch before disabled PR creation fails: the owner
 opens its inspected PR with `gh` before a failed-run rerun/current-input attestation.
+The final committer must be the exact ordinary owner identity or GitHub's
+`web-flow` / `GitHub <noreply@github.com>` technical identity. Message verification
+permits omitted terminal line endings as observed in GitHub squash responses;
+interior text and all issue references must match the frozen body file.

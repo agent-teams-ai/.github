@@ -6,6 +6,8 @@ import path from "node:path";
 
 const usage = "Usage: node scripts/merge-owner-pr.mjs --repository OWNER/REPO --pr NUMBER --expected-head SHA --subject 'fix: description' --body-file PATH";
 const isSha = value => typeof value === "string" && /^(?!0{40}$)[0-9a-f]{40}$/u.test(value);
+// GitHub omits terminal line endings in the squash message; interior bytes stay exact.
+const messageWithoutTerminalNewlines = value => value.replace(/(?:\r?\n)+$/u, "");
 
 function inputs(argv) {
   const flags = ["--repository", "--pr", "--expected-head", "--subject", "--body-file"];
@@ -77,8 +79,15 @@ async function mergeOwnerPull() {
     assert.equal(final.sha, after.merge_commit_sha, "Unexpected final commit SHA");
     assert.ok(final.author?.type === "User" && final.author.login === owner.login, "Final commit author account must be User/777genius");
     assert.equal(final.commit?.author?.email, owner.email, "Final commit author email differs from canonical owner policy");
-    // GitHub's technical committer and the owner's display name are allowed here.
-    assert.equal(final.commit?.message, expectedMessage, "Final commit message/body bytes or issue references differ from the supplied message");
+    const committer = final.commit?.committer;
+    const githubCommitter = final.committer?.type === "User" && final.committer.login === "web-flow" &&
+      committer?.name === "GitHub" && committer.email === "noreply@github.com";
+    const ownerCommitter = final.committer?.type === "User" && final.committer.login === owner.login &&
+      committer?.name === "iliya" && committer.email === owner.email;
+    assert.ok(githubCommitter || ownerCommitter, "Final commit committer must be the exact owner or GitHub web-flow identity");
+    assert.equal(typeof final.commit?.message, "string", "Final commit message is missing");
+    assert.equal(messageWithoutTerminalNewlines(final.commit.message), messageWithoutTerminalNewlines(expectedMessage),
+      "Final commit message/body bytes or issue references differ from the supplied message");
     return { repository: options.repository, pr: Number(options.pr), head: options.head, merge_commit: final.sha, verified: true };
   } catch (error) {
     if (attempted) {
