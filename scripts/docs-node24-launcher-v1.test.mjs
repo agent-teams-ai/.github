@@ -87,6 +87,20 @@ const expectedTuple = [
     "new_type": "blob",
     "new_bytes": 69475,
     "new_sha256": "cc088aa9d2b098331888cd7417a7ec7001428d448eb13b3da7a6f41776e2df5d"
+  },
+  {
+    "path": "scripts/check-community-files.mjs",
+    "status": "modified",
+    "old_blob": "b43b247a4b727974ef878ff09abc05cd17f22d0e",
+    "old_mode": "100644",
+    "old_type": "blob",
+    "old_bytes": 21730,
+    "old_sha256": "2826c86560b2c6d2d483a26a818459709e975465e727b6e0def7577db812dc26",
+    "new_blob": "0cd13eade8a6a146934164e1e2f93dca0a3b35dd",
+    "new_mode": "100644",
+    "new_type": "blob",
+    "new_bytes": 21730,
+    "new_sha256": "22ec9c07e851d4c151703a2f6ab3368be734193e60e2f4c805869d18e4bc3fcd"
   }
 ];
 const expectedIdentity = `sha256:${createHash("sha256").update(JSON.stringify(expectedTuple)).digest("hex")}`;
@@ -94,7 +108,7 @@ const clone = value => structuredClone(value);
 
 function fixture() {
   const pull = {
-    id: 12327336, number: 327, state: "open", draft: false, merged: false, changed_files: 5,
+    id: 12327336, number: 327, state: "open", draft: false, merged: false, changed_files: 6,
     base: { ref: "main", sha: base, repo: clone(repo) },
     head: { ref: "fix/selected-clock", sha: head, repo: clone(repo) },
   };
@@ -188,7 +202,7 @@ test("workflow declares only the read-only metadata step and no caller API", () 
 for (const action of actions) test(`accepts only the independent complete repair tuple on ${action}`, async () => {
   const f = fixture();
   f.context.payload.action = action;
-  // Split/reverse the five files across pages: ordering is not authority.
+  // Split/reverse the six files across pages: ordering is not authority.
   f.pages = f.pages[0].toReversed().map(file => [file]);
   const result = await execute(f);
   assert.deepEqual(result.failures, []);
@@ -196,7 +210,7 @@ for (const action of actions) test(`accepts only the independent complete repair
   assert.deepEqual(JSON.parse(result.evidence[0]), { guard: "trusted-node24-launcher-v1", repository: repo.full_name,
     direction: "forward", pr: 327, base, head, tuple_identity: expectedIdentity, tuple: expectedTuple });
   assert.deepEqual(result.calls.slice(-3).map(call => call.endpoint), ["pulls.get", "repos.get", "repos.getBranch"]);
-  assert.equal(result.calls.filter(call => call.endpoint === "pulls.listFiles").length, 5);
+  assert.equal(result.calls.filter(call => call.endpoint === "pulls.listFiles").length, 6);
 });
 
 // Each row names the authorization bug it would expose if the relevant refusal disappeared.
@@ -241,7 +255,7 @@ const cases = [
   ["wrong list blob", f => { f.pages[0][1].sha = head; }, /changed-file tuple/],
   ["rename source", f => { f.pages[0][0].previous_filename = "old.mjs"; }, /changed-file tuple/],
 ];
-for (const count of [0, 1, 2, 3, 4, 6, "5", null, 5.5]) cases.push([`changed_files ${count}`, f => { f.context.payload.pull_request.changed_files = count; }, /five changed files/]);
+for (const count of [0, 1, 2, 3, 4, 5, 7, "6", null, 6.5]) cases.push([`changed_files ${count}`, f => { f.context.payload.pull_request.changed_files = count; }, /six changed files/]);
 for (const status of ["added", "removed", "renamed", "copied", "changed", "unchanged", undefined]) {
   cases.push([`ineligible status ${status}`, f => { f.pages[0][0].status = status; }, /changed-file tuple/]);
 }
@@ -262,7 +276,7 @@ for (const phase of [0, 1]) {
     [`head ref movement at ${when}`, f => { f.pulls[phase].head.ref = "other"; }, /Live PR moved/],
     [`foreign live head at ${when}`, f => { f.pulls[phase].head.repo.id++; }, /foreign PR repository/],
     [`retargeted live PR at ${when}`, f => { f.pulls[phase].base.ref = "other"; }, /default branch/],
-    [`extra live changes at ${when}`, f => { f.pulls[phase].changed_files++; }, /five changed files/],
+    [`extra live changes at ${when}`, f => { f.pulls[phase].changed_files++; }, /six changed files/],
     [`draft at ${when}`, f => { f.pulls[phase].draft = true; }, /ready for review/],
     [`closed at ${when}`, f => { f.pulls[phase].state = "closed"; }, /open, unmerged/],
     [`PR identity movement at ${when}`, f => { f.pulls[phase].id++; }, /Live PR moved/],

@@ -91,6 +91,20 @@ jobs:
                 "new_type": "blob",
                 "new_bytes": 69475,
                 "new_sha256": "cc088aa9d2b098331888cd7417a7ec7001428d448eb13b3da7a6f41776e2df5d"
+              },
+              {
+                "path": "scripts/check-community-files.mjs",
+                "status": "modified",
+                "old_blob": "b43b247a4b727974ef878ff09abc05cd17f22d0e",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_bytes": 21730,
+                "old_sha256": "2826c86560b2c6d2d483a26a818459709e975465e727b6e0def7577db812dc26",
+                "new_blob": "0cd13eade8a6a146934164e1e2f93dca0a3b35dd",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_bytes": 21730,
+                "new_sha256": "22ec9c07e851d4c151703a2f6ab3368be734193e60e2f4c805869d18e4bc3fcd"
               }
             ];
             const guardPaths = [
@@ -123,7 +137,7 @@ jobs:
                   "PR must target the default branch with an identified head branch.");
                 demand(validSha(value.base.sha) && validSha(value.head.sha) && value.base.sha !== value.head.sha,
                   "Nonzero distinct exact base/head revisions required.");
-                demand(value.changed_files === tuple.length, "Exactly five changed files required.");
+                demand(value.changed_files === tuple.length, "Exactly six changed files required.");
                 return JSON.stringify([value.id, value.number, value.base.ref, value.base.sha, value.head.ref, value.head.sha]);
               };
               const frozen = snapshot(pull);
