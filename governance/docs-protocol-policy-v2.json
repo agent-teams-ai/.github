@@ -151,7 +151,7 @@
         "caller_workflow_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7",
         "default_branch": "main",
         "revision": "b81ef94a35fb1fc70a35ddea6f0c61f567dc653e",
-        "observed_at": "2026-10-03T12:27:27.492978Z"
+        "observed_at": "2026-10-03T12:27:27.492Z"
       },
       "qualification": {
         "status": "qualified",
