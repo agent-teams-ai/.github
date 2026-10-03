@@ -920,7 +920,12 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
         const matches = decisiveCheckRuns((await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
           check.head_sha === head && check.name === evidence.required_context &&
           check.app?.id === evidence.integration_id));
-        if (head === evidence.revision) {
+        if (!advancing && !firstAdmission && currentScope?.has(entry.repository_id) &&
+          entry.repository_id === 1319378484 && overrides.platformPendingSelection?.direction === "inverse") {
+          // Intent cancellation is confined to the captured failed source even
+          // if a different current head has healthy historical checks.
+          rowResult = requirePlatformPending(await overrides.platformPendingSelection.verify(entry, head, adapters), entry, head);
+        } else if (head === evidence.revision) {
           const admitted = matches.find(({ id }) => id === evidence.check_run_id);
           assert(admitted?.html_url === evidence.check_run_url && admitted.conclusion === "success",
             `${entry.repository} current default-branch head is missing its exact successful admitted check.`);
@@ -928,6 +933,12 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
             `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
           currentChecks.push({ repository: entry.repository, revision: head,
             checks: structuredClone(matches) });
+        } else if (!advancing && !firstAdmission && currentScope?.has(entry.repository_id) &&
+          entry.repository_id === 1319378484 && matches.at(-1)?.conclusion === "failure" &&
+          overrides.platformPendingSelection) {
+          // Only the exact changed-row intent operation can admit failed source
+          // evidence. Success and final observation always use the strict path.
+          rowResult = requirePlatformPending(await overrides.platformPendingSelection.verify(entry, head, adapters), entry, head);
         } else if (matches.at(-1)?.conclusion === "failure" &&
           entry.repository_id === 1319378484 && overrides.platformRecovery) {
           // Route the latest decisive failure; the Platform verifier binds its
@@ -1006,7 +1017,10 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
   }
   for (const pending of report.recovery_pending) {
     const entry = candidates.find((row) => row.repository_id === pending.repository_id);
-    if (pending.repository_id === 1319378484 && overrides.platformRecovery) {
+    if (pending.repository_id === 1319378484 && overrides.platformPendingSelection && currentScope?.has(entry.repository_id)) {
+      requirePlatformPending(await overrides.platformPendingSelection.verify(entry, pending.source_head, adapters),
+        entry, pending.source_head);
+    } else if (pending.repository_id === 1319378484 && overrides.platformRecovery) {
       requirePlatformPending(await overrides.platformRecovery.verify(entry, pending.source_head, platformAdapters),
         entry, pending.source_head);
     } else {

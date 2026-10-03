@@ -9,7 +9,8 @@ import { validateDocsGovernanceReferences, validateDocsProtocolExceptions } from
 import { verifyDocsAdmissionEvidence } from "./verify-docs-cohort-evidence.mjs";
 import { POLICY_PATH, REGISTRY_PATH,
   recoveryBlob, prepareAdmissionRecovery, finishAdmissionRecovery } from "./docs-legacy-admission-recovery.mjs";
-import { PLATFORM_RECOVERY_AUTHORITY_PATH, verifyPlatformAdmissionRecovery } from "./docs-platform-admission-recovery.mjs";
+import { PLATFORM_RECOVERY_AUTHORITY_PATH, verifyPlatformAdmissionRecovery,
+  PLATFORM_PENDING_SOURCE_PATH, platformPendingSelectionDirection, verifyPlatformPendingSelection } from "./docs-platform-admission-recovery.mjs";
 import { parseIncidentJson, validateIRecordStructure, validateStagedIRecord } from "./verify-docs-platform-recovery-installation-r317.mjs";
 
 const execute = promisify(execFile);
@@ -181,8 +182,25 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
       return result;
     },
   };
+  let pendingValidity;
+  const pendingDirection = !platformRecovery && platformPendingSelectionDirection(basePolicy, policy);
+  const platformPendingSelection = pendingDirection ? {
+    direction: pendingDirection,
+    verify: async (entry, sourceHead, adapters) => {
+      // No head-owned evidence or override can supply this finite callback.
+      const receiptBytes = await readBaseFile(PLATFORM_PENDING_SOURCE_PATH, execution.base);
+      let checkpoint;
+      const result = await verifyPlatformPendingSelection({ receiptBytes, execution, registrySchema,
+        onVerifiedProof: (verified) => { checkpoint = verified; },
+        asOf: clock(), basePolicyBytes, proposedPolicyBytes: policyBytes, registryBytes }, adapters, entry, sourceHead);
+      need(typeof checkpoint === "function", "Pending verifier did not retain its final source proof.");
+      pendingValidity = { entry, sourceHead, adapters, checkpoint };
+      return result;
+    },
+  } : undefined;
   const report = await verifyDocsAdmissionEvidence(policy, registry, registrySchema, {
-    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution: legacyExecution }, platformRecovery,
+    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution: legacyExecution },
+    platformRecovery, platformPendingSelection,
   });
   // Controller and authority are re-read after the whole fleet, including
   // unrelated rows; a moving base never reuses an earlier result.
@@ -216,6 +234,19 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
       asOf < Date.parse(record.expires_at) &&
       asOf < Date.parse(accepted.deadline),
     "Platform authority or execution expired after final admission rereads.");
+  }
+  if (pendingValidity) {
+    need(isDeepStrictEqual(await readBaseFile(POLICY_PATH, execution.base), basePolicyBytes) &&
+      isDeepStrictEqual(await readBaseFile(REGISTRY_PATH, execution.base), registryBytes),
+    "Pending selection base authority changed after admission rereads.");
+    await verifyController(execution);
+    const { entry, sourceHead, adapters } = pendingValidity;
+    const result = await platformPendingSelection.verify(entry, sourceHead, adapters);
+    need(isDeepStrictEqual(result, report.recovery_pending.find((row) => row.repository_id === entry.repository_id)),
+      "Pending selection classification changed after final controller rereads.");
+    // Close both sides of the last controller await with the retained proof.
+    await verifyController(execution);
+    await pendingValidity.checkpoint();
   }
   return report;
 }

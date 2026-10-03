@@ -1130,3 +1130,181 @@ for (const [generation, schemaVersion] of [[1, 1], [1, 2], [2, 3]]) {
     });
   }
 }
+
+const stable31Root = new URL("./fixtures/platform-stable31-pending-source/", import.meta.url);
+const { gunzipSync: stable31Gunzip } = await import("node:zlib");
+const stable31Bytes = async path => {
+  const zipped = path.endsWith(".mjs") || path.endsWith("docs-qualified-cohorts.json") || path.endsWith(".fixture.json") || path.endsWith("/package.json");
+  const bytes = await readFile(new URL(path + (zipped ? ".gz" : ""), stable31Root));
+  return zipped ? stable31Gunzip(bytes) : bytes;
+};
+const stable31Packet = JSON.parse(await stable31Bytes("packet.json"));
+const stable31Raw = new Map(await Promise.all(stable31Packet.manifest.map(async item => [item.path, await stable31Bytes(item.path)])));
+const stable31ReceiptPath = "governance/evidence/docs-admission/platform-stable31-pending-source.json";
+const stable31ReceiptBytes = await readFile(new URL(`../${stable31ReceiptPath}`, import.meta.url));
+const stable31Meta = JSON.parse(await stable31Bytes("selection-TEST.json"));
+async function stable31Change(t, inverse = false) {
+  const directory = await mkdtemp(join(tmpdir(), "platform-stable31-TEST-")); t.after(() => rm(directory, { recursive: true, force: true }));
+  const before = JSON.parse(await stable31Bytes("selection-policy.fixture.json")), policy = structuredClone(before);
+  const platform = policy.repositories.find(row => row.repository_id === 1319378484);
+  const pending = (inverse ? before : policy).repositories.find(row => row.repository_id === platform.repository_id);
+  pending.desired_cohort_id = "docs-2026-10-03-stable31"; pending.cohort_binding_status = "rollout_pending";
+  const registryBytes = await stable31Bytes("recommended-TEST.fixture.json"), registry = JSON.parse(registryBytes);
+  const execution = { controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 }, pull_number: 338,
+    pull_id: 3381, head_ref: "bounded-TEST", run_id: 3382, run_attempt: 1, base: "e".repeat(40), head: "f".repeat(40),
+    execution_base: "e".repeat(40), changed_files: [POLICY_PATH] };
+  const controller = { id: 1316243981, full_name: "agent-teams-ai/.github", default_branch: "main", archived: false, disabled: false };
+  const pull = { id: 3381, number: 338, state: "open", merged: false, changed_files: 1,
+    base: { sha: execution.base, ref: "main", repo: controller }, head: { sha: execution.head, ref: "bounded-TEST", repo: controller } };
+  const state = { head: stable31Packet.source, controllerCalls: 0, run: JSON.parse(stable31Raw.get("run.json")),
+    checks: JSON.parse(stable31Raw.get("checks.json")).check_runs, jobs: JSON.parse(stable31Raw.get("jobs.json")).jobs,
+    receipt: stable31ReceiptBytes, onController: () => {}, target: false, targetJobs: null };
+  const rowFor = repo => before.repositories.find(row => row.repository === repo);
+  const recordFor = (repo, revision) => registry.cohorts.find(record => record.cohort_id ===
+    (state.target && repo === platform.repository && revision === state.head ? "docs-2026-10-03-stable31" : rowFor(repo).observed_cohort_id));
+  const targetEvidence = () => ({ ...before.repositories.find(row => row.repository_id === 1319378484).observed_default_branch_evidence,
+    revision: state.head, check_run_id: 9004, workflow_run_id: 9000, check_run_url: `https://github.com/${platform.repository}/actions/runs/9000/job/9004`,
+    caller_workflow_digest: recordFor(platform.repository, state.head).assets.caller_workflow.rendered_digest, observed_at: "2026-10-03T06:00:00Z" });
+  const options = { execution, asOf: "2026-10-03T06:00:00Z", clock: () => "2026-10-03T06:00:00Z",
+    verifyController: async value => {
+      state.controllerCalls++; state.onController(state.controllerCalls);
+      return verifyAdmissionController(value, async endpoint => endpoint.endsWith("/pulls/338") ? pull
+        : endpoint.endsWith("/branches/main") ? { commit: { sha: state.staleController ? execution.head : execution.base } } : controller);
+    },
+    readBaseFile: async (path, revision) => {
+      assert.equal(revision, execution.base, "only protected base can supply authority");
+      return path === POLICY_PATH ? encode(before) : path === REGISTRY_PATH ? registryBytes : path === stable31ReceiptPath ? state.receipt
+        : path === "governance/docs-platform-admission-recovery.json" ? readFile(new URL(`../${path}`, import.meta.url)) : null;
+    },
+    getRepository: async repo => repo === platform.repository ? JSON.parse(stable31Raw.get("repository.json"))
+      : { id: rowFor(repo).repository_id, full_name: repo, default_branch: "main", private: false, archived: false, disabled: false },
+    getDefaultBranchHead: async repo => repo === platform.repository ? state.head : rowFor(repo).observed_default_branch_evidence.revision,
+    isCommitAncestor: async () => true,
+    getCheckRuns: async (repo, revision) => {
+      if (repo === platform.repository && revision === stable31Packet.source) return structuredClone(state.checks);
+      const evidence = state.target && repo === platform.repository && revision === state.head ? targetEvidence() : rowFor(repo).observed_default_branch_evidence;
+      return [{ id: evidence.check_run_id, head_sha: revision, name: evidence.required_context, app: { id: evidence.integration_id },
+        status: "completed", conclusion: "success", html_url: evidence.check_run_url }];
+    },
+    getWorkflowRun: async (repo, id) => {
+      if (repo === platform.repository && id === stable31Packet.run) return structuredClone(state.run);
+      const evidence = state.target && repo === platform.repository && id === 9000 ? targetEvidence() : rowFor(repo).observed_default_branch_evidence;
+      const workflow = recordFor(repo, evidence.revision).reusable_workflow;
+      return { id, workflow_id: evidence.workflow_id, run_attempt: 1, head_sha: evidence.revision, head_branch: "main", event: "push",
+        path: evidence.caller_workflow_path, status: "completed", conclusion: "success", repository: { id: rowFor(repo).repository_id, full_name: repo },
+        referenced_workflows: [{ sha: workflow.revision, path: `${workflow.repository}/${workflow.path}@${workflow.revision}` }] };
+    },
+    getWorkflowJobs: async (_repo, id) => id === stable31Packet.run ? structuredClone(state.jobs) : structuredClone(state.targetJobs),
+    getJobLog: async () => Buffer.from(stable31Raw.get("authorize.log")),
+    readGitFile: async (repo, path, revision) => {
+      const coordinate = stable31Packet.manifest.find(item => item.repository === repo && item.repositoryPath === path && item.revision === revision);
+      assert.ok(coordinate); return Buffer.from(stable31Raw.get(coordinate.path));
+    },
+    readRepositoryFile: async (repo, path, revision) => {
+      if (path.endsWith("docs-consumer-integration.json")) return encode({ schemaVersion: 3 });
+      const record = recordFor(repo, revision);
+      if (!path.endsWith("managed-state.json")) return caller(record);
+      const projection = qualifiedCohortProjection(registry, record.cohort_id, { asOf: options.asOf });
+      return encode({ ...projection, repository: { provider: "github", id: String(rowFor(repo).repository_id), nameWithOwner: repo },
+        cohortAuthority: { channel: projection.channel, recordDigest: projection.recordDigest, qualificationEventDigest: projection.qualificationEventDigest,
+          eligibleAfter: projection.eligibleAfter, upgradeFrom: projection.upgradeFrom, rollbackTo: projection.rollbackTo } });
+    },
+  };
+  await mkdir(join(directory, "governance"));
+  for (const name of ["docs-protocol-policy-v2.schema.json", "docs-protocol-exceptions.schema.json", "docs-qualified-cohorts.schema.json", "code-security-defaults.json"])
+    await writeFile(join(directory, "governance", name), await readFile(new URL(`../governance/${name}`, import.meta.url)));
+  await writeFile(join(directory, REGISTRY_PATH), registryBytes);
+  const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
+  await writeFile(paths.exceptions, await readFile(new URL(`../${EXCEPTIONS_PATH}`, import.meta.url)));
+  const saved = { GH_TOKEN: process.env.GH_TOKEN, DOCS_GOVERNANCE_READ_TOKEN: process.env.DOCS_GOVERNANCE_READ_TOKEN };
+  for (const key of Object.keys(saved)) process.env[key] = "synthetic-TEST-only";
+  t.after(() => { for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
+  return { before, policy, platform, registry, state, options, execution, targetEvidence,
+    run: async () => {
+      await writeFile(paths.policy, encode(policy)); const cwd = process.cwd(); process.chdir(directory);
+      try { return await verifyDocsAdmissionChange(paths, { ...options, basePolicyBytes: encode(before) }); }
+      finally { process.chdir(cwd); }
+    } };
+}
+for (const inverse of [false, true]) test(`stable31 real admission composition admits only ${inverse ? "pre-movement inverse" : "pending intent"}`, async t => {
+  const f = await stable31Change(t, inverse), original = structuredClone(f.policy); const report = await f.run();
+  assert.deepEqual(report.historical_verified, stable31Meta.historical_repository_ids);
+  assert.deepEqual(report.recovery_pending, [{ repository_id: 1319378484, source_head: "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+    status: "recovery_pending", qualification: "unverified", semantics: "unverified" }]);
+  assert.deepEqual(report.current_verified, []); assert.equal(report.current_not_evaluated.length, stable31Meta.historical_repository_ids.length - 1);
+  assert.deepEqual(f.policy, original); assert.equal(f.platform.exact_foundation_version, "1.2.0");
+});
+for (const [label, mutate] of Object.entries({
+  "observed25 fabrication": f => { f.platform.observed_cohort_id = "docs-2026-09-16-stable25"; },
+  "bootstrap reset": f => { f.platform.cohort_binding_status = "bootstrap_pending"; },
+  "qualification edit": f => { f.platform.qualification.evidence_paths.push("fabricated"); },
+  "exception edit": f => { f.platform.required_check_exception_id = null; },
+  "second changed row": f => { f.policy.repositories.find(row => row.repository_id === 1333298097).desired_cohort_id = "docs-2026-09-21-stable26"; },
+  "missing protected receipt": f => { f.state.receipt = null; },
+  "head-supplied receipt bytes": f => { f.state.receipt = encode({ status: "current_verified" }); },
+})) test(`stable31 composition rejects ${label}`, async t => { const f = await stable31Change(t); mutate(f); await assert.rejects(f.run()); });
+for (const [label, mutate] of Object.entries({
+  "current head": f => { f.state.head = "a".repeat(40); },
+  "run attempt": f => { f.state.run.run_attempt++; },
+  "jobs": f => { f.state.jobs[0].steps[0].conclusion = "failure"; },
+  "latest checks": f => { f.state.checks.push({ ...f.state.checks.find(c => c.id === 110868628467), id: 110868628468 }); },
+  "controller base": f => { f.state.staleController = true; },
+})) for (const crossing of [3, 4]) test(`stable31 rejects ${label} drift at final controller await ${crossing}`, async t => {
+  const f = await stable31Change(t); f.state.onController = count => { if (count === crossing) mutate(f); }; await assert.rejects(f.run());
+});
+test("stable31 callback override cannot replace the protected-base proof", async t => {
+  const f = await stable31Change(t); let calls = 0; f.state.receipt = null;
+  f.options.platformPendingSelection = { verify: async () => { calls++; return { status: "current_verified" }; } };
+  await assert.rejects(f.run(), /pinned protected-base blob/u); assert.equal(calls, 0);
+});
+test("stable31 direct fleet and absence of exact policy operation keep the real failure strict", async t => {
+  const f = await stable31Change(t); const schema = JSON.parse(await readFile(new URL("../governance/docs-qualified-cohorts.schema.json", import.meta.url)));
+  f.options.platformPendingSelection = { verify: async () => { throw new Error("direct fleet improperly consumed a pending callback"); } };
+  for (const scope of [{}, { basePolicy: f.before, fullFleetCurrent: true }])
+    await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, { ...f.options, ...scope }), /every decisive admitted check to succeed/u);
+});
+function stable31Success(f, finalBinding) {
+  f.state.target = true; f.state.head = "9".repeat(40);
+  const target = f.registry.cohorts.find(record => record.cohort_id === "docs-2026-10-03-stable31");
+  f.state.targetJobs = ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"].map((role, index) => ({
+    id: 9001 + index, run_id: 9000, run_attempt: 1, head_sha: f.state.head, name: `docs-protocol / ${role}`,
+    html_url: `https://github.com/${f.platform.repository}/actions/runs/9000/job/${9001 + index}`, status: "completed", conclusion: "success",
+    steps: successfulSteps(role, 2) }));
+  if (finalBinding) {
+    const prior = f.before.repositories.find(row => row.repository_id === 1319378484);
+    prior.desired_cohort_id = target.cohort_id; prior.cohort_binding_status = "rollout_pending";
+    const packages = new Map(target.packages.map(pkg => [pkg.name, pkg.version]));
+    Object.assign(f.platform, { desired_cohort_id: target.cohort_id, cohort_binding_status: "bound", observed_cohort_id: target.cohort_id,
+      observed_cohort_record_digest: target.record_digest,
+      observed_cohort_event_digest: f.registry.events.find(event => event.cohort_id === target.cohort_id && event.state === "QUALIFIED").event_digest,
+      reusable_workflow_revision: target.reusable_workflow.revision, observed_default_branch_evidence: f.targetEvidence(),
+      exact_package_version: "0.6.2", exact_foundation_version: "1.7.2",
+      exact_cohort_v2_packages: Object.fromEntries(["repository-mutation", "document-authoring", "docs-protocol", "docs-protocol-agent-teams", "engineering-foundation"]
+        .map(name => [name.replaceAll("-", "_"), packages.get(`@agent-teams/${name}`)])) });
+    f.platform.qualification.observed_revision = f.state.head;
+  }
+}
+for (const finalBinding of [false, true]) test(`stable31 ${finalBinding ? "observed advancement" : "current success"} uses ordinary strict execution proof`, async t => {
+  const f = await stable31Change(t); stable31Success(f, finalBinding);
+  const report = await f.run(); assert.deepEqual(report.recovery_pending, []);
+  assert.equal(report.current_verified.find(row => row.repository_id === 1319378484).cohort_id, "docs-2026-10-03-stable31");
+  for (const role of ["trusted-qualification", "docs-protocol-check"]) {
+    const job = f.state.targetJobs.find(job => job.name.endsWith(` / ${role}`)); const step = job.steps.find(step => step.conclusion === "success");
+    step.conclusion = "skipped"; await assert.rejects(f.run(), /qualification\/semantics did not actually execute successfully/u); step.conclusion = "success";
+  }
+});
+test("stable31 inverse cannot reset intent after consumer movement", async t => {
+  const f = await stable31Change(t, true);
+  for (const head of ["9".repeat(40), f.platform.observed_default_branch_evidence.revision]) {
+    f.state.head = head; await assert.rejects(f.run(), /pending source moved or row differs/u);
+  }
+});
+test("unrelated exact policy operation retains ADR-0008 reporting for authentic failed source5d", async t => {
+  const f = await stable31Change(t); Object.assign(f.platform, structuredClone(f.before.repositories.find(row => row.repository_id === 1319378484)));
+  const extension = f.policy.repositories.find(row => row.repository_id === 1333298097);
+  extension.desired_cohort_id = extension.observed_cohort_id; extension.cohort_binding_status = "bound";
+  const report = await f.run(); assert.deepEqual(report.recovery_pending, []);
+  assert.deepEqual(report.current_verified.map(row => row.repository_id), [1333298097]);
+  assert.ok(report.current_not_evaluated.some(row => row.repository_id === 1319378484));
+  assert.deepEqual(report.historical_verified, stable31Meta.historical_repository_ids);
+});
