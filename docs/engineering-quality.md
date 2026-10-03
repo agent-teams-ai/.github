@@ -23,12 +23,13 @@ governed `dist` source. No generated directory becomes an implicit exemption.
 `pnpm test:critical` invokes the existing public `agent-teams-node-test` CLI
 with eight exact mandatory identities in two existing entry files. The local
 adoption gate independently binds both selected files and the complete contract.
-The installed runner requires registration, completion and results. Its current
-nested positive control fails because the public CLI inherits NODE_TEST_CONTEXT
-from a real Node parent test. Foundation issue #363 owns the shared correction;
-Central retains the rejecting regression and adds no environment scrubber or
-wrapper. Standalone disposable controls qualify completion, omission/skip
-rejection and exact OS exceptions. Central's critical inventory has no exceptions.
+The installed runner requires registration, completion and results. Foundation
+1.7.2 includes the shared correction for inherited NODE_TEST_CONTEXT from a real
+Node parent test (Foundation #363/#365). The installed nested positive control
+and all eight mandatory identities pass on the exact adoption candidate; Central
+retains the regression and adds no environment scrubber or wrapper. Disposable
+controls verify completion, omission/skip rejection and exact OS exceptions.
+Central's critical inventory has no exceptions.
 The complete existing `node --test` route still runs all tests.
 
 The owning test/tooling patch moves from Node 24.18.0 to 24.21.0 through
@@ -50,7 +51,7 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 | Public Node preset and source boundaries | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries` |
 | Source census and exact selection | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser |
 | Production source coverage, typed quality and default unknown-assertion bridge | N/A: no production roots or compiler projects; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets |
-| Mandatory Node execution | Wired and fail closed; nested execution is blocked by Foundation #363: `pnpm test:critical`; exact contract and file selection also bound by the precheck |
+| Mandatory Node execution | Active and fail closed on published Foundation 1.7.2: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck |
 | Registry and development-only admission | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only` |
 | SDK growth authority | N/A: no SDK owner or inventory; no grant activation or release eligibility claim |
 | Scaffolding, plugins and native production quality | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary |
