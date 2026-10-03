@@ -1,0 +1,6 @@
+schemaVersion: 2
+project:
+  id: organization-governance
+capabilities:
+  architecture.source-dependencies:
+    configPath: docs/engineering-quality-source-policy.yaml
