@@ -22,6 +22,14 @@ For feature-module architecture:
    validation requires full Git history; the required CI workflow checks out
    `fetch-depth: 0`.
 
+For governance JavaScript quality, read
+[the consumer quality route](docs/engineering-quality.md) and
+[its profile](docs/engineering-quality-profile.json). Use the owning
+`.node-version` tooling pin for `pnpm quality:check` (focused/fast) and
+`pnpm check` (complete); the installed critical-test runner requires Node
+24.21.0 or later in the Node 24 family. Preserve its exact required identities
+and selected entry files.
+
 <!-- agent-teams:quality-standard:start -->
 Before planning, implementing, or reviewing changes, read and follow the
 [organization Engineering Quality Standard](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md).
