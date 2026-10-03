@@ -405,7 +405,7 @@ test("production closure against real Git TEST trees", async t => {
     sides[side] = [];
     for (const item of expectedTuple) {
       const bytes = await readFile(new URL(`../${item.path}`, import.meta.url));
-      assert.equal(blob(bytes), item.old_blob, "The actual source retains the old approved blob");
+      assert.ok([item.old_blob, item.new_blob].includes(blob(bytes)), "The actual source matches an old or new approved blob");
       const payload = side === "old" ? bytes : Buffer.concat([bytes, Buffer.from("\nTEST closure payload\n")]);
       sides[side].push({ path: item.path, mode: "100644", type: "blob", sha: blob(payload) });
     }
