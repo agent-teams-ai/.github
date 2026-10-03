@@ -1,0 +1,364 @@
+﻿2026-10-02T13:48:39.8203667Z Current runner version: '2.337.0'
+2026-10-02T13:48:39.8227494Z ##[group]Runner Image Provisioner
+2026-10-02T13:48:39.8228509Z Hosted Compute Agent
+2026-10-02T13:48:39.8229093Z Version: 20260901.588
+2026-10-02T13:48:39.8229658Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-02T13:48:39.8230364Z Build Date: 2026-09-01T19:56:44Z
+2026-10-02T13:48:39.8230988Z Worker ID: {09fa5c3a-e497-44fe-8211-bfcbcf4ff0c2}
+2026-10-02T13:48:39.8231671Z Azure Region: centralus
+2026-10-02T13:48:39.8232206Z ##[endgroup]
+2026-10-02T13:48:39.8233544Z ##[group]Operating System
+2026-10-02T13:48:39.8234182Z Ubuntu
+2026-10-02T13:48:39.8234645Z 24.04.5
+2026-10-02T13:48:39.8235130Z LTS
+2026-10-02T13:48:39.8235605Z ##[endgroup]
+2026-10-02T13:48:39.8236100Z ##[group]Runner Image
+2026-10-02T13:48:39.8236661Z Image: ubuntu-24.04
+2026-10-02T13:48:39.8237302Z Version: 20260927.320.1
+2026-10-02T13:48:39.8238488Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-02T13:48:39.8239874Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+2026-10-02T13:48:39.8240766Z ##[endgroup]
+2026-10-02T13:48:39.8241793Z ##[group]GITHUB_TOKEN Permissions
+2026-10-02T13:48:39.8243968Z Contents: read
+2026-10-02T13:48:39.8244577Z Metadata: read
+2026-10-02T13:48:39.8245107Z ##[endgroup]
+2026-10-02T13:48:39.8247523Z Secret source: Actions
+2026-10-02T13:48:39.8248375Z Cache mode: write
+2026-10-02T13:48:39.8249321Z Prepare workflow directory
+2026-10-02T13:48:39.8769226Z Prepare all required actions
+2026-10-02T13:48:39.8817370Z Getting action download info
+2026-10-02T13:48:40.2168740Z Download action repository 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd' (SHA:ed597411d8f924073f98dfc5c65a23a2325f34cd)
+2026-10-02T13:48:40.6807360Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-10-02T13:48:40.7078829Z Download action repository 'pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9' (SHA:008330803749db0355799c700092d9a85fd074e9)
+2026-10-02T13:48:41.0551373Z Download action repository 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020' (SHA:820762786026740c76f36085b0efc47a31fe5020)
+2026-10-02T13:48:41.1216074Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)
+2026-10-02T13:48:41.3031455Z Uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:41.3036966Z Complete job name: docs-protocol / trusted-authorize
+2026-10-02T13:48:41.3801896Z ##[group]Run actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+2026-10-02T13:48:41.3803461Z with:
+2026-10-02T13:48:41.3823436Z   script: const expectedRepository = "agent-teams-ai/.github";
+const expectedPath = ".github/workflows/docs-protocol-check.yml";
+const audience = "agent-teams-docs-gate";
+const token = await core.getIDToken(audience);
+const segments = token.split(".");
+if (segments.length !== 3) {
+  throw new Error("GitHub OIDC token is malformed.");
+}
+let claims;
+try {
+  claims = JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8"));
+} catch {
+  throw new Error("GitHub OIDC claims are malformed.");
+}
+const sha = claims.job_workflow_sha;
+const workflowRef = claims.job_workflow_ref;
+const expectedRef = expectedRepository + "/" + expectedPath + "@" + sha;
+if (claims.iss !== "https://token.actions.githubusercontent.com" ||
+    claims.aud !== audience ||
+    claims.repository !== context.repo.owner + "/" + context.repo.repo ||
+    String(claims.repository_id) !== process.env.CALLER_REPOSITORY_ID ||
+    claims.sha !== context.sha || claims.ref !== context.ref ||
+    !/^(?!0{40}$)[0-9a-f]{40}$/.test(sha ?? "") ||
+    workflowRef !== expectedRef) {
+  throw new Error("Called reusable workflow identity is not the exact pinned controller workflow.");
+}
+core.setOutput("workflow-sha", sha);
+core.setOutput("workflow-ref", workflowRef);
+core.setOutput("workflow-repository", expectedRepository);
+core.setOutput("workflow-file-path", expectedPath);
+const controller = await github.rest.repos.get({
+  owner: "agent-teams-ai",
+  repo: ".github"
+});
+if (controller.data.id !== 1316243981 ||
+    controller.data.full_name !== expectedRepository ||
+    controller.data.archived || controller.data.disabled) {
+  throw new Error("Live controller repository identity is invalid.");
+}
+const branch = await github.rest.repos.getBranch({
+  owner: "agent-teams-ai",
+  repo: ".github",
+  branch: controller.data.default_branch
+});
+const revision = branch.data.commit.sha;
+if (!/^(?!0{40}$)[0-9a-f]{40}$/.test(revision)) {
+  throw new Error("Current controller snapshot is not an immutable commit SHA.");
+}
+core.setOutput("controller-sha", revision);
+
+2026-10-02T13:48:41.3850637Z   github-token: ***
+2026-10-02T13:48:41.3851337Z   debug: false
+2026-10-02T13:48:41.3852040Z   user-agent: actions/github-script
+2026-10-02T13:48:41.3852921Z   result-encoding: json
+2026-10-02T13:48:41.3853637Z   retries: 0
+2026-10-02T13:48:41.3854347Z   retry-exempt-status-codes: 400,401,403,404,422
+2026-10-02T13:48:41.3855625Z env:
+2026-10-02T13:48:41.3856941Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:41.3859521Z   AUTHORIZATION_PATH: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/docs-gate-authorization.json
+2026-10-02T13:48:41.3861287Z   CALLER_REPOSITORY_ID: 1319378484
+2026-10-02T13:48:41.3862084Z ##[endgroup]
+2026-10-02T13:48:42.3092692Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+2026-10-02T13:48:42.3094110Z with:
+2026-10-02T13:48:42.3095018Z   repository: agent-teams-ai/.github
+2026-10-02T13:48:42.3096160Z   ref: 757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:42.3097564Z   path: .trusted/governance
+2026-10-02T13:48:42.3098586Z   persist-credentials: false
+2026-10-02T13:48:42.3106073Z   token: ***
+2026-10-02T13:48:42.3106922Z   ssh-strict: true
+2026-10-02T13:48:42.3108004Z   ssh-user: git
+2026-10-02T13:48:42.3108859Z   clean: true
+2026-10-02T13:48:42.3109760Z   sparse-checkout-cone-mode: true
+2026-10-02T13:48:42.3110805Z   fetch-depth: 1
+2026-10-02T13:48:42.3111715Z   fetch-tags: false
+2026-10-02T13:48:42.3112592Z   show-progress: true
+2026-10-02T13:48:42.3113479Z   lfs: false
+2026-10-02T13:48:42.3114297Z   submodules: false
+2026-10-02T13:48:42.3115182Z   set-safe-directory: true
+2026-10-02T13:48:42.3116173Z   allow-unsafe-pr-checkout: false
+2026-10-02T13:48:42.3117317Z env:
+2026-10-02T13:48:42.3118889Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:42.3121508Z   AUTHORIZATION_PATH: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/docs-gate-authorization.json
+2026-10-02T13:48:42.3123418Z ##[endgroup]
+2026-10-02T13:48:42.4051578Z Syncing repository: agent-teams-ai/.github
+2026-10-02T13:48:42.4056077Z ##[group]Getting Git version info
+2026-10-02T13:48:42.4059578Z Working directory is '/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance'
+2026-10-02T13:48:42.4063981Z [command]/usr/bin/git version
+2026-10-02T13:48:42.4131728Z git version 2.55.0
+2026-10-02T13:48:42.4153906Z ##[endgroup]
+2026-10-02T13:48:42.4162753Z Temporarily overriding HOME='/home/runner/work/_temp/32a921af-4439-4312-8e21-e3d3db3d9812' before making global git config changes
+2026-10-02T13:48:42.4167062Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-02T13:48:42.4170192Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:42.4221547Z ##[group]Determining repository object format
+2026-10-02T13:48:42.4224753Z ##[endgroup]
+2026-10-02T13:48:42.4227450Z ##[group]Initializing the repository
+2026-10-02T13:48:42.4230717Z [command]/usr/bin/git init /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:42.4354970Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-02T13:48:42.4359006Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-02T13:48:42.4363529Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-02T13:48:42.4366564Z hint: call:
+2026-10-02T13:48:42.4368058Z hint:
+2026-10-02T13:48:42.4369216Z hint: 	git config --global init.defaultBranch <name>
+2026-10-02T13:48:42.4371438Z hint:
+2026-10-02T13:48:42.4373747Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-02T13:48:42.4377402Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-02T13:48:42.4380407Z hint:
+2026-10-02T13:48:42.4382091Z hint: 	git branch -m <name>
+2026-10-02T13:48:42.4383973Z hint:
+2026-10-02T13:48:42.4386366Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-02T13:48:42.4391360Z Initialized empty Git repository in /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git/
+2026-10-02T13:48:42.4399233Z [command]/usr/bin/git remote add origin https://github.com/agent-teams-ai/.github
+2026-10-02T13:48:42.4410555Z ##[endgroup]
+2026-10-02T13:48:42.4412978Z ##[group]Disabling automatic garbage collection
+2026-10-02T13:48:42.4415228Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-02T13:48:42.4447310Z ##[endgroup]
+2026-10-02T13:48:42.4449724Z ##[group]Setting up auth
+2026-10-02T13:48:42.4452616Z Removing SSH command configuration
+2026-10-02T13:48:42.4464452Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-02T13:48:42.4489436Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-02T13:48:42.4834482Z Removing HTTP extra header
+2026-10-02T13:48:42.4839238Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-02T13:48:42.4871660Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-02T13:48:42.5055933Z Removing includeIf entries pointing to credentials config files
+2026-10-02T13:48:42.5060521Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-02T13:48:42.5088384Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-02T13:48:42.5262509Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-02T13:48:42.5294651Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git.path /home/runner/work/_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:42.5320966Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:42.5349609Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.trusted/governance/.git.path /github/runner_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:42.5377397Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path /github/runner_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:42.5400113Z ##[endgroup]
+2026-10-02T13:48:42.5401609Z ##[group]Fetching the repository
+2026-10-02T13:48:42.5405789Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:43.0901506Z From https://github.com/agent-teams-ai/.github
+2026-10-02T13:48:43.0904521Z  * branch            757122cb08ed15aba6c9eef1b1f655b77d1ac54b -> FETCH_HEAD
+2026-10-02T13:48:43.0912165Z [command]/usr/bin/git rev-parse --verify --quiet 757122cb08ed15aba6c9eef1b1f655b77d1ac54b^{object}
+2026-10-02T13:48:43.0934540Z 757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:43.0938932Z ##[endgroup]
+2026-10-02T13:48:43.0940345Z ##[group]Determining the checkout info
+2026-10-02T13:48:43.0941664Z ##[endgroup]
+2026-10-02T13:48:43.0944106Z [command]/usr/bin/git sparse-checkout disable
+2026-10-02T13:48:43.0989459Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-02T13:48:43.1016134Z ##[group]Checking out the ref
+2026-10-02T13:48:43.1019233Z [command]/usr/bin/git checkout --progress --force 757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:43.1163391Z Note: switching to '757122cb08ed15aba6c9eef1b1f655b77d1ac54b'.
+2026-10-02T13:48:43.1164099Z 
+2026-10-02T13:48:43.1164614Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-10-02T13:48:43.1165705Z changes and commit them, and you can discard any commits you make in this
+2026-10-02T13:48:43.1166825Z state without impacting any branches by switching back to a branch.
+2026-10-02T13:48:43.1167780Z 
+2026-10-02T13:48:43.1168267Z If you want to create a new branch to retain commits you create, you may
+2026-10-02T13:48:43.1169587Z do so (now or later) by using -c with the switch command. Example:
+2026-10-02T13:48:43.1170440Z 
+2026-10-02T13:48:43.1170835Z   git switch -c <new-branch-name>
+2026-10-02T13:48:43.1171313Z 
+2026-10-02T13:48:43.1171679Z Or undo this operation with:
+2026-10-02T13:48:43.1172110Z 
+2026-10-02T13:48:43.1172450Z   git switch -
+2026-10-02T13:48:43.1172844Z 
+2026-10-02T13:48:43.1173359Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-10-02T13:48:43.1174139Z 
+2026-10-02T13:48:43.1174703Z HEAD is now at 757122c fix(docs): verify receipt v3 with UTF-8 canonical ordering (#229)
+2026-10-02T13:48:43.1177189Z ##[endgroup]
+2026-10-02T13:48:43.1207820Z [command]/usr/bin/git log -1 --format=%H
+2026-10-02T13:48:43.1228037Z 757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:43.1240146Z ##[group]Removing auth
+2026-10-02T13:48:43.1241009Z Removing SSH command configuration
+2026-10-02T13:48:43.1242047Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-02T13:48:43.1264659Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-02T13:48:43.1438991Z Removing HTTP extra header
+2026-10-02T13:48:43.1447336Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-02T13:48:43.1474478Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-02T13:48:43.1642330Z Removing includeIf entries pointing to credentials config files
+2026-10-02T13:48:43.1644574Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-02T13:48:43.1694492Z includeif.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git.path
+2026-10-02T13:48:43.1697338Z includeif.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git/worktrees/*.path
+2026-10-02T13:48:43.1700425Z includeif.gitdir:/github/workspace/.trusted/governance/.git.path
+2026-10-02T13:48:43.1702976Z includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path
+2026-10-02T13:48:43.1707848Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git.path
+2026-10-02T13:48:43.1727735Z /home/runner/work/_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:43.1736538Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-d0e94a2e\-f1a8\-4786\-9678\-8277a0bfed3a\.config
+2026-10-02T13:48:43.1765959Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git/worktrees/*.path
+2026-10-02T13:48:43.1785311Z /home/runner/work/_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:43.1792376Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-d0e94a2e\-f1a8\-4786\-9678\-8277a0bfed3a\.config
+2026-10-02T13:48:43.1821370Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.trusted/governance/.git.path
+2026-10-02T13:48:43.1840092Z /github/runner_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:43.1847885Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.trusted/governance/.git.path \/github\/runner_temp\/git\-credentials\-d0e94a2e\-f1a8\-4786\-9678\-8277a0bfed3a\.config
+2026-10-02T13:48:43.1930807Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path
+2026-10-02T13:48:43.1954999Z /github/runner_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config
+2026-10-02T13:48:43.1962714Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-d0e94a2e\-f1a8\-4786\-9678\-8277a0bfed3a\.config
+2026-10-02T13:48:43.1993510Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-02T13:48:43.2166160Z Removing credentials config '/home/runner/work/_temp/git-credentials-d0e94a2e-f1a8-4786-9678-8277a0bfed3a.config'
+2026-10-02T13:48:43.2174862Z ##[endgroup]
+2026-10-02T13:48:43.2325592Z ##[group]Run pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+2026-10-02T13:48:43.2326495Z with:
+2026-10-02T13:48:43.2327366Z   version: 11.18.0
+2026-10-02T13:48:43.2328065Z   run_install: false
+2026-10-02T13:48:43.2328766Z   dest: ~/setup-pnpm
+2026-10-02T13:48:43.2329463Z   cache: false
+2026-10-02T13:48:43.2330184Z   cache_dependency_path: pnpm-lock.yaml
+2026-10-02T13:48:43.2330981Z   package_json_file: package.json
+2026-10-02T13:48:43.2331728Z   standalone: false
+2026-10-02T13:48:43.2332404Z env:
+2026-10-02T13:48:43.2333370Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:43.2334737Z   AUTHORIZATION_PATH: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/docs-gate-authorization.json
+2026-10-02T13:48:43.2335806Z ##[endgroup]
+2026-10-02T13:48:43.3712588Z ##[group]Running self-installer...
+2026-10-02T13:48:44.8045563Z 
+2026-10-02T13:48:44.8046263Z added 1 package, and audited 2 packages in 1s
+2026-10-02T13:48:44.8046652Z 
+2026-10-02T13:48:44.8046776Z 1 package is looking for funding
+2026-10-02T13:48:44.8047064Z   run `npm fund` for details
+2026-10-02T13:48:44.8176836Z 
+2026-10-02T13:48:44.8177460Z 1 high severity vulnerability
+2026-10-02T13:48:44.8177839Z 
+2026-10-02T13:48:44.8178055Z To address all issues, run:
+2026-10-02T13:48:44.8178477Z   npm audit fix --force
+2026-10-02T13:48:44.8178703Z 
+2026-10-02T13:48:44.8178885Z Run `npm audit` for details.
+2026-10-02T13:48:45.3680472Z Checking for updates...
+2026-10-02T13:48:45.5602470Z Switching pnpm from v11.7.0 to v11.18.0...
+2026-10-02T13:48:46.1560468Z .../.bin/global/v11/99d-1a0fcdfe228      | Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-10-02T13:48:46.1579658Z .../.bin/global/v11/99d-1a0fcdfe228      |   +1 +
+2026-10-02T13:48:46.4636815Z .../.bin/global/v11/99d-1a0fcdfe228      | Progress: resolved 1, reused 0, downloaded 1, added 1, done
+2026-10-02T13:48:46.4867721Z [WARN] Detected a pnpm v10 installation layout at PNPM_HOME. The pnpm shims at PNPM_HOME have been refreshed so the new version is active, but pnpm v11 expects bins in PNPM_HOME/bin. Run "pnpm setup" to migrate your PATH to the v11 layout.
+2026-10-02T13:48:46.4892173Z Successfully updated pnpm to v11.18.0
+2026-10-02T13:48:46.7075863Z ##[endgroup]
+2026-10-02T13:48:46.7076336Z Installation Completed!
+2026-10-02T13:48:46.7226056Z ##[group]Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+2026-10-02T13:48:46.7226435Z with:
+2026-10-02T13:48:46.7226651Z   node-version: 24.18.0
+2026-10-02T13:48:46.7226880Z   cache: pnpm
+2026-10-02T13:48:46.7227706Z   cache-dependency-path: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance/pnpm-lock.yaml
+2026-10-02T13:48:46.7228232Z   check-latest: false
+2026-10-02T13:48:46.7230572Z   token: ***
+2026-10-02T13:48:46.7230799Z   package-manager-cache: true
+2026-10-02T13:48:46.7231068Z env:
+2026-10-02T13:48:46.7231481Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:46.7232199Z   AUTHORIZATION_PATH: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/docs-gate-authorization.json
+2026-10-02T13:48:46.7232762Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-10-02T13:48:46.7233057Z ##[endgroup]
+2026-10-02T13:48:46.8393369Z Attempting to download 24.18.0...
+2026-10-02T13:48:47.5885052Z Acquiring 24.18.0 - x64 from https://github.com/actions/node-versions/releases/download/24.18.0-28070977815/node-24.18.0-linux-x64.tar.gz
+2026-10-02T13:48:48.0695600Z Extracting ...
+2026-10-02T13:48:48.0812178Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/4d411ba7-cc35-4153-943e-14dad021475a -f /home/runner/work/_temp/73c17ee4-d45d-4d1e-9636-4104ccb07fdf
+2026-10-02T13:48:49.2454068Z Adding to the cache ...
+2026-10-02T13:48:50.5242443Z ##[group]Environment details
+2026-10-02T13:48:50.7434562Z node: v24.18.0
+2026-10-02T13:48:50.7434895Z npm: 11.16.0
+2026-10-02T13:48:50.7435164Z yarn: 1.22.22
+2026-10-02T13:48:50.7435736Z ##[endgroup]
+2026-10-02T13:48:50.7456610Z [command]/home/runner/setup-pnpm/node_modules/.bin/bin/pnpm store path --silent
+2026-10-02T13:48:51.2838353Z /home/runner/setup-pnpm/node_modules/.bin/store/v11
+2026-10-02T13:48:51.4394522Z pnpm cache is not found
+2026-10-02T13:48:51.4620303Z ##[group]Run pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+2026-10-02T13:48:51.4621095Z [36;1mpnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile --ignore-scripts --ignore-pnpmfile[0m
+2026-10-02T13:48:51.4814260Z shell: /usr/bin/bash -e {0}
+2026-10-02T13:48:51.4814526Z env:
+2026-10-02T13:48:51.4814956Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:51.4815701Z   AUTHORIZATION_PATH: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/docs-gate-authorization.json
+2026-10-02T13:48:51.4816276Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-10-02T13:48:51.4816572Z ##[endgroup]
+2026-10-02T13:48:51.9444041Z ? Verifying lockfile against supply-chain policies (596 entries)...
+2026-10-02T13:48:51.9525562Z Lockfile is up to date, resolution step is skipped
+2026-10-02T13:48:52.0466507Z Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-10-02T13:48:52.1436863Z Packages: +596
+2026-10-02T13:48:52.1441662Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2026-10-02T13:48:53.0501320Z Progress: resolved 596, reused 0, downloaded 0, added 0
+2026-10-02T13:48:53.8485753Z Packages are hard linked from the content-addressable store to the virtual store.
+2026-10-02T13:48:53.8508668Z   Content-addressable store is at: /home/runner/setup-pnpm/node_modules/.bin/store/v11
+2026-10-02T13:48:53.8516635Z   Virtual store is at:             node_modules/.pnpm
+2026-10-02T13:48:54.0588439Z Progress: resolved 596, reused 0, downloaded 97, added 4
+2026-10-02T13:48:55.0268406Z ✓ Lockfile passes supply-chain policies (596 entries in 3s)
+2026-10-02T13:48:55.0742082Z Progress: resolved 596, reused 0, downloaded 258, added 16
+2026-10-02T13:48:56.0750519Z Progress: resolved 596, reused 0, downloaded 596, added 369
+2026-10-02T13:48:56.5256851Z Progress: resolved 596, reused 0, downloaded 596, added 596, done
+2026-10-02T13:48:56.7497774Z 
+2026-10-02T13:48:56.7498447Z devDependencies:
+2026-10-02T13:48:56.7498873Z + ajv 8.20.0
+2026-10-02T13:48:56.7499235Z + renovate 44.24.2
+2026-10-02T13:48:56.7499596Z + yaml 2.9.0
+2026-10-02T13:48:56.7635259Z 
+2026-10-02T13:48:56.7635733Z Done in 5.2s using pnpm v11.18.0
+2026-10-02T13:48:56.8266691Z ##[group]Run node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" authorize
+2026-10-02T13:48:56.8267538Z [36;1mnode "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" authorize[0m
+2026-10-02T13:48:56.8304218Z shell: /usr/bin/bash -e {0}
+2026-10-02T13:48:56.8304493Z env:
+2026-10-02T13:48:56.8304924Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:48:56.8305659Z   AUTHORIZATION_PATH: /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/docs-gate-authorization.json
+2026-10-02T13:48:56.8306220Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-10-02T13:48:56.8308871Z   GITHUB_TOKEN: ***
+2026-10-02T13:48:56.8309146Z   GITHUB_REPOSITORY: agent-teams-ai/agent-teams-platform
+2026-10-02T13:48:56.8309476Z   CALLER_REPOSITORY_ID: 1319378484
+2026-10-02T13:48:56.8309764Z   GITHUB_SHA: 5d3551d02237281a2ae4a97e8e8d7a188c741559
+2026-10-02T13:48:56.8310192Z   CONTROLLER_SNAPSHOT_SHA: 67492e3fff5959fc6bf9f3bb758a95561eb8da2f
+2026-10-02T13:48:56.8310593Z   JOB_WORKFLOW_SHA: 757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:56.8311168Z   JOB_WORKFLOW_REF: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@757122cb08ed15aba6c9eef1b1f655b77d1ac54b
+2026-10-02T13:48:56.8311725Z   JOB_WORKFLOW_REPOSITORY: agent-teams-ai/.github
+2026-10-02T13:48:56.8312094Z   JOB_WORKFLOW_FILE_PATH: .github/workflows/docs-protocol-check.yml
+2026-10-02T13:48:56.8312429Z ##[endgroup]
+2026-10-02T13:49:00.1433446Z DOCS_GATE_POLICY_REJECTED: Central consumer policy does not explicitly match the Cohort generation.
+2026-10-02T13:49:00.1523632Z ##[error]Process completed with exit code 1.
+2026-10-02T13:49:00.1610512Z Post job cleanup.
+2026-10-02T13:49:00.2994664Z Pruning is unnecessary.
+2026-10-02T13:49:00.3177519Z Post job cleanup.
+2026-10-02T13:49:00.4005058Z [command]/usr/bin/git version
+2026-10-02T13:49:00.4061519Z git version 2.55.0
+2026-10-02T13:49:00.4104592Z Temporarily overriding HOME='/home/runner/work/_temp/b438e3ab-61d4-4e8a-bf3a-e56364da45d7' before making global git config changes
+2026-10-02T13:49:00.4105655Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-02T13:49:00.4110487Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/agent-teams-platform/agent-teams-platform/.trusted/governance
+2026-10-02T13:49:00.4141421Z Removing SSH command configuration
+2026-10-02T13:49:00.4149453Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-02T13:49:00.4182678Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-02T13:49:00.4381358Z Removing HTTP extra header
+2026-10-02T13:49:00.4387995Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-02T13:49:00.4419822Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-02T13:49:00.4681910Z Removing includeIf entries pointing to credentials config files
+2026-10-02T13:49:00.4683081Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-02T13:49:00.4698669Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-02T13:49:00.5057058Z Evaluate and set job outputs
+2026-10-02T13:49:00.5063375Z Set output 'workflow-sha'
+2026-10-02T13:49:00.5065033Z Set output 'controller-sha'
+2026-10-02T13:49:00.5066011Z Set output 'workflow-ref'
+2026-10-02T13:49:00.5066367Z Set output 'workflow-repository'
+2026-10-02T13:49:00.5066754Z Set output 'workflow-file-path'
+2026-10-02T13:49:00.5067617Z Cleaning up orphan processes

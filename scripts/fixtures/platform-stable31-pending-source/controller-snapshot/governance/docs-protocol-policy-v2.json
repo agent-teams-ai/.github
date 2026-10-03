@@ -1,0 +1,571 @@
+{
+  "$schema": "./docs-protocol-policy-v2.schema.json",
+  "schema_version": 3,
+  "snapshot_revision": "2026-09-16.1",
+  "observed_at": "2026-09-16",
+  "organization": "agent-teams-ai",
+  "inventory_snapshot_revision": "2026-09-16.1",
+  "continuous_audit": false,
+  "protocol": {
+    "package": "@agent-teams/docs-protocol",
+    "producer_repository": "agent-teams-ai/engineering-foundation",
+    "producer_is_consumer": false,
+    "version_policy": "exact_registry_version",
+    "fixed_gate_command": "pnpm docs:protocol:check",
+    "reusable_workflow": ".github/workflows/docs-protocol-check.yml",
+    "validation_contexts": {
+      "trusted_authorization": {
+        "id_token": "write",
+        "executes_repository_code": false,
+        "verifies": ["oidc_workflow_identity", "exact_head", "managed_projection_schema", "managed_projection_digests", "authorized_path_existence", "v2_qualification_contract_structure"]
+      },
+      "trusted_structural": {
+        "id_token": "none",
+        "executes_repository_code": false,
+        "verifies": ["authorization_digest", "exact_checkout_bytes", "stable_controller_snapshot"]
+      },
+      "untrusted_repository_qualification": {
+        "id_token": "none",
+        "executes_repository_code": true,
+        "qualification_cli_owner": "@agent-teams/docs-protocol",
+        "qualification_command": "agent-teams-docs qualify --consumer . --integration <integration-path> --json",
+        "receipt_verification": "released-cohort receipt digest and evidence bound to exact checkout SHA and Cohort",
+        "semantic_gate_command": "pnpm docs:protocol:check"
+      }
+    }
+  },
+  "admission": {
+    "expected_repository_count": 11,
+    "owned_repository_count": 11,
+    "external_repository_count": 0,
+    "fork_source_count": 0,
+    "new_owned_repository_status": "pending_classification",
+    "qualification_evidence_required": true,
+    "live_drift_audit": {
+      "status": "bounded_ci_observer",
+      "required_credential": "dedicated_read_only_org_inventory_credential",
+      "workflow": ".github/workflows/organization-inventory-drift.yml",
+      "max_pages": 10,
+      "stable_reads": 2,
+      "forbidden_credentials": [
+        "CODEX_AUTH_JSON",
+        "REVIEWROUTER_CODEX_AUTH_JSON",
+        "interactive_user_gh_token"
+      ]
+    }
+  },
+  "repositories": [
+    {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "source_provenance": { "kind": "original", "parent_repository": null },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "governance_controller",
+      "protocol_required": false,
+      "admission_status": "not_applicable",
+      "exact_package_version": null,
+      "exact_foundation_version": null,
+      "cohort_binding_status": "not_applicable",
+      "desired_cohort_id": null,
+      "observed_cohort_id": null,
+      "observed_cohort_record_digest": null,
+      "observed_cohort_event_digest": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "required_check_context": null,
+      "observed_default_branch_evidence": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-architecture-standard", "repository_id": 1347745359,
+      "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
+      "docs_role": "pending_classification", "protocol_required": false, "admission_status": "pending_classification",
+      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "not_applicable", "desired_cohort_id": null, "observed_cohort_id": null,
+      "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
+      "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
+      "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
+      "classification_evidence": { "decision": "pending_authority_decision", "observed_revision": "535ca76726da0db6eaac3c0eee98ff68fe34befe", "evidence_paths": ["SOURCE.md", "spec/core.md", "spec/governance.md"], "rationale": "The neutral normative documentation boundary needs an explicit authority decision before organization-specific documentation protocol adoption.", "v2_qualification_coordinates": null },
+      "exemption": null, "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-runtime",
+      "repository_id": 1314129620,
+      "source_provenance": { "kind": "original", "parent_repository": null },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "consumer",
+      "protocol_required": true,
+      "admission_status": "admitted",
+      "exact_package_version": "0.6.0",
+      "exact_foundation_version": "1.3.3",
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-09-24-stable28",
+      "desired_cohort_generation": 2,
+      "v3_qualification_coordinates": {
+        "profile_schema_version": 3,
+        "cohort_schema_version": 2,
+        "managed_state_schema_version": 2,
+        "receipt_schema_version": 3,
+        "execution_envelope_schema_version": 1,
+        "evidence_class": "cohort-v2-supporting-canary"
+      },
+      "observed_cohort_id": "docs-2026-09-15-stable23",
+      "observed_cohort_generation": 2,
+      "exact_cohort_v2_packages": {
+        "repository_mutation": "0.2.0",
+        "document_authoring": "0.3.0",
+        "docs_protocol": "0.6.0",
+        "docs_protocol_agent_teams": "0.2.8",
+        "engineering_foundation": "1.3.3"
+      },
+      "observed_cohort_record_digest": "sha256:287fca0b66c212e93d865b3a54fcb681eda12f4f8954c077a59148a348a361c9",
+      "observed_cohort_event_digest": "sha256:d65de3c1885c948dcdfa9b7fe79e9638ed74542ac32b85097ece90b5e02866d9",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "required_check_context": "docs-protocol / docs-protocol-check",
+      "observed_default_branch_evidence": {
+        "default_branch": "main",
+        "revision": "6dc04d39dbc0f441adc9d5352707c59b6c93d88e",
+        "required_context": "docs-protocol / docs-protocol-check",
+        "integration_id": 15368,
+        "conclusion": "success",
+        "check_run_id": 104236355291,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/34923357264/job/104236355291",
+        "workflow_run_id": 34923357264,
+        "workflow_id": 335216823,
+        "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+        "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+        "observed_at": "2026-09-15T03:11:42Z"
+      },
+      "qualification": {
+        "status": "qualified",
+        "observed_revision": "6dc04d39dbc0f441adc9d5352707c59b6c93d88e",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json",
+          "architecture/foundation/docs-consumer-integration.json",
+          "architecture/foundation/docs-protocol-managed-state.json"
+        ]
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-token", "repository_id": 1348461381,
+      "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
+      "docs_role": "consumer", "protocol_required": true, "admission_status": "admitted",
+      "exact_package_version": "0.6.0", "exact_foundation_version": "1.4.0", "cohort_binding_status": "bound", "desired_cohort_id": "docs-2026-09-16-stable25", "desired_cohort_generation": 2,
+      "v3_qualification_coordinates": { "profile_schema_version": 3, "cohort_schema_version": 2, "managed_state_schema_version": 2, "receipt_schema_version": 3, "execution_envelope_schema_version": 1, "evidence_class": "cohort-v2-supporting-canary" },
+      "observed_cohort_id": "docs-2026-09-16-stable25", "observed_cohort_generation": 2,
+      "exact_cohort_v2_packages": { "repository_mutation": "0.2.0", "document_authoring": "0.3.0", "docs_protocol": "0.6.0", "docs_protocol_agent_teams": "0.2.9", "engineering_foundation": "1.4.0" },
+      "observed_cohort_record_digest": "sha256:105c34ecc7fc422939b43daaca513f9ce630ce69d4a2820d39423fcdc13dcc61", "observed_cohort_event_digest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b", "profile_path": "architecture/foundation/docs-protocol.yaml", "caller_workflow_path": ".github/workflows/docs-protocol.yml", "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json", "fixed_gate_command": "pnpm docs:protocol:check", "required_check_context": "docs-protocol / docs-protocol-check",
+      "observed_default_branch_evidence": {
+        "default_branch": "main", "revision": "dfe89da4c77a186aefbaead50981a327317f3bc4", "required_context": "docs-protocol / docs-protocol-check", "integration_id": 15368, "conclusion": "success",
+        "check_run_id": 106401408165, "check_run_url": "https://github.com/agent-teams-ai/agent-teams-token/actions/runs/35620108819/job/106401408165", "workflow_run_id": 35620108819, "workflow_id": 344094656,
+        "caller_workflow_path": ".github/workflows/docs-protocol.yml", "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125", "observed_at": "2026-09-21T15:38:50Z"
+      },
+      "qualification": { "status": "qualified", "observed_revision": "dfe89da4c77a186aefbaead50981a327317f3bc4", "evidence_paths": ["package.json", "architecture/foundation/docs-protocol.yaml", ".github/workflows/docs-protocol.yml", "architecture/foundation/docs-protocol-qualification.json", "architecture/foundation/docs-consumer-integration.json", "architecture/foundation/docs-protocol-managed-state.json"] },
+      "classification_evidence": {
+        "decision": "adopted", "observed_revision": "6174b253be76d2d6af151660050e2f545bb98c50", "evidence_paths": ["package.json", "pnpm-lock.yaml", "architecture/foundation/docs-protocol.yaml", ".github/workflows/docs-protocol.yml", "architecture/foundation/docs-protocol-qualification.json", "architecture/foundation/docs-consumer-integration.json", "architecture/foundation/docs-protocol-managed-state.json"],
+        "rationale": "The exact Token default branch proves the stable8 managed integration, qualification v2 contract, released-cohort receipt, and required semantic gate on the exact admitted revision.",
+        "v2_qualification_coordinates": { "schema_version": 2, "integration_path": "architecture/foundation/docs-consumer-integration.json", "contract_path": "architecture/foundation/docs-protocol-qualification.json", "gate_command": "pnpm docs:protocol:check", "qualification_command": "agent-teams-docs qualify --consumer . --integration architecture/foundation/docs-consumer-integration.json --json", "receipt_schema_version": 2, "receipt_evidence_class": "released-cohort", "receipt_transport": "qualification_cli_json_stdout", "trusted_structural_check_context": "docs-protocol / trusted-structural", "untrusted_semantic_check_context": "docs-protocol / docs-protocol-check" }
+      },
+      "exemption": null, "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-orchestrator",
+      "repository_id": 1310245598,
+      "source_provenance": { "kind": "original", "parent_repository": null },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "consumer",
+      "protocol_required": true,
+      "admission_status": "admitted",
+      "exact_package_version": "0.6.0",
+      "exact_foundation_version": "1.3.3",
+      "cohort_binding_status": "bound",
+      "desired_cohort_id": "docs-2026-09-15-stable24",
+      "desired_cohort_generation": 2,
+      "v3_qualification_coordinates": {
+        "profile_schema_version": 3,
+        "cohort_schema_version": 2,
+        "managed_state_schema_version": 2,
+        "receipt_schema_version": 3,
+        "execution_envelope_schema_version": 1,
+        "evidence_class": "cohort-v2-supporting-canary"
+      },
+      "observed_cohort_id": "docs-2026-09-15-stable24",
+      "observed_cohort_generation": 2,
+      "exact_cohort_v2_packages": {
+        "repository_mutation": "0.2.0",
+        "document_authoring": "0.3.0",
+        "docs_protocol": "0.6.0",
+        "docs_protocol_agent_teams": "0.2.8",
+        "engineering_foundation": "1.3.3"
+      },
+      "observed_cohort_record_digest": "sha256:e5cd6960b1ef5aa812deba33448ddafa9729fc6a3c9de72e46494068cc06ac7c",
+      "observed_cohort_event_digest": "sha256:6e6292c895425d451609757d9e327d314fd12badfa5d42aca80402ba59bde588",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "required_check_context": "docs-protocol / docs-protocol-check",
+      "observed_default_branch_evidence": {
+        "default_branch": "main",
+        "revision": "d854413d9fc923246d6f55700773b56898eb36f7",
+        "required_context": "docs-protocol / docs-protocol-check",
+        "integration_id": 15368,
+        "conclusion": "success",
+        "check_run_id": 104685878438,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-teams-orchestrator/actions/runs/35062481538/job/104685878438",
+        "workflow_run_id": 35062481538,
+        "workflow_id": 335216818,
+        "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+        "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+        "observed_at": "2026-09-16T06:13:05Z"
+      },
+      "qualification": {
+        "status": "qualified",
+        "observed_revision": "d854413d9fc923246d6f55700773b56898eb36f7",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json",
+          "architecture/foundation/docs-consumer-integration.json",
+          "architecture/foundation/docs-protocol-managed-state.json"
+        ]
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "repository_id": 1319378484,
+      "source_provenance": { "kind": "original", "parent_repository": null },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "consumer",
+      "protocol_required": true,
+      "admission_status": "admitted",
+      "exact_package_version": "0.6.0",
+      "exact_foundation_version": "1.2.0",
+      "cohort_binding_status": "bound",
+      "desired_cohort_id": "docs-2026-09-12-stable21",
+      "desired_cohort_generation": 2,
+      "v3_qualification_coordinates": {
+        "profile_schema_version": 3,
+        "cohort_schema_version": 2,
+        "managed_state_schema_version": 2,
+        "receipt_schema_version": 3,
+        "execution_envelope_schema_version": 1,
+        "evidence_class": "cohort-v2-supporting-canary"
+      },
+      "observed_cohort_id": "docs-2026-09-12-stable21",
+      "observed_cohort_generation": 2,
+      "exact_cohort_v2_packages": {
+        "repository_mutation": "0.2.0",
+        "document_authoring": "0.3.0",
+        "docs_protocol": "0.6.0",
+        "docs_protocol_agent_teams": "0.2.7",
+        "engineering_foundation": "1.2.0"
+      },
+      "observed_cohort_record_digest": "sha256:bf5220b191c7339533d21acd9b79594c274567ff0f515b72c4818863819ca92a",
+      "observed_cohort_event_digest": "sha256:4608734de08ad19ab6f787448d73bf92990115668c9d3d34cff5bba134efdc3b",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "required_check_context": "docs-protocol / docs-protocol-check",
+      "observed_default_branch_evidence": {
+        "default_branch": "main",
+        "revision": "88707fc1cd574a355f196be0a3cffc02283f05be",
+        "required_context": "docs-protocol / docs-protocol-check",
+        "integration_id": 15368,
+        "conclusion": "success",
+        "check_run_id": 103459003050,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/34659423232/job/103459003050",
+        "workflow_run_id": 34659423232,
+        "workflow_id": 335216820,
+        "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+        "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+        "observed_at": "2026-09-11T23:52:22Z"
+      },
+      "qualification": {
+        "status": "qualified",
+        "observed_revision": "88707fc1cd574a355f196be0a3cffc02283f05be",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json",
+          "architecture/foundation/docs-consumer-integration.json",
+          "architecture/foundation/docs-protocol-managed-state.json"
+        ]
+      },
+      "exemption": null,
+      "required_check_exception_id": "platform-private-required-checks-github-free"
+    },
+    {
+      "repository": "agent-teams-ai/craig-meeting-gateway",
+      "repository_id": 1319652670,
+      "source_provenance": { "kind": "fork", "parent_repository": "CraigChat/craig" },
+      "governance_ownership": "external",
+      "repository_lifecycle": "deleted",
+      "docs_role": "not_applicable",
+      "protocol_required": false,
+      "admission_status": "exception",
+      "exact_package_version": null,
+      "exact_foundation_version": null,
+      "cohort_binding_status": "not_applicable",
+      "desired_cohort_id": null,
+      "observed_cohort_id": null,
+      "observed_cohort_record_digest": null,
+      "observed_cohort_event_digest": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "required_check_context": null,
+      "observed_default_branch_evidence": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": {
+        "id": "external-fork-docs-protocol",
+        "reason": "The upstream-owned fork left the organization (GitHub 404 on 2026-09-16) and is retained only as a deleted tombstone. It must not receive organization-specific documentation machinery or be treated as a live consumer.",
+        "review_triggers": [
+          "fork_detached",
+          "ownership_changed",
+          "organization_specific_docs_added"
+        ]
+      },
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+      "repository_id": 1336577313,
+      "source_provenance": {
+        "kind": "original",
+        "parent_repository": null
+      },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "consumer",
+      "protocol_required": true,
+      "admission_status": "admitted",
+      "exact_package_version": "0.6.0",
+      "exact_foundation_version": "1.2.0",
+      "cohort_binding_status": "bound",
+      "desired_cohort_id": "docs-2026-09-11-stable20",
+      "desired_cohort_generation": 2,
+      "v3_qualification_coordinates": {
+        "profile_schema_version": 3,
+        "cohort_schema_version": 2,
+        "managed_state_schema_version": 2,
+        "receipt_schema_version": 3,
+        "execution_envelope_schema_version": 1,
+        "evidence_class": "cohort-v2-supporting-canary"
+      },
+      "observed_cohort_id": "docs-2026-09-11-stable20",
+      "observed_cohort_generation": 2,
+      "exact_cohort_v2_packages": {
+        "repository_mutation": "0.2.0",
+        "document_authoring": "0.3.0",
+        "docs_protocol": "0.6.0",
+        "docs_protocol_agent_teams": "0.2.7",
+        "engineering_foundation": "1.2.0"
+      },
+      "observed_cohort_record_digest": "sha256:a2c8ac85c2f0afdaea498d5c994cb897ecabcbe6e97690dc3c5d416cd827b810",
+      "observed_cohort_event_digest": "sha256:94ef24e30cc5441fc99a7d8bbbd1952b07438a60642818d429062633a7277d95",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "required_check_context": "docs-protocol / docs-protocol-check",
+      "observed_default_branch_evidence": {
+        "default_branch": "main",
+        "revision": "cfb26622b4add7102c59f67fc146fee744a03cdd",
+        "required_context": "docs-protocol / docs-protocol-check",
+        "integration_id": 15368,
+        "conclusion": "success",
+        "check_run_id": 103181614069,
+        "check_run_url": "https://github.com/agent-teams-ai/docs-protocol-canary-20260817/actions/runs/34573666789/job/103181614069",
+        "workflow_run_id": 34573666789,
+        "workflow_id": 336150203,
+        "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+        "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+        "observed_at": "2026-09-11T07:19:20Z"
+      },
+      "qualification": {
+        "status": "qualified",
+        "observed_revision": "cfb26622b4add7102c59f67fc146fee744a03cdd",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json",
+          "architecture/foundation/docs-consumer-integration.json",
+          "architecture/foundation/docs-protocol-managed-state.json"
+        ]
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/engineering-foundation",
+      "repository_id": 1316243988,
+      "source_provenance": { "kind": "original", "parent_repository": null },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "protocol_producer",
+      "protocol_required": false,
+      "admission_status": "not_applicable",
+      "exact_package_version": null,
+      "exact_foundation_version": null,
+      "cohort_binding_status": "not_applicable",
+      "desired_cohort_id": null,
+      "observed_cohort_id": null,
+      "observed_cohort_record_digest": null,
+      "observed_cohort_event_digest": null,
+      "profile_path": null,
+      "caller_workflow_path": null,
+      "reusable_workflow_revision": null,
+      "qualification_evidence_path": null,
+      "fixed_gate_command": null,
+      "required_check_context": null,
+      "observed_default_branch_evidence": null,
+      "qualification": {
+        "status": "not_applicable",
+        "observed_revision": null,
+        "evidence_paths": []
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/extension-foundation",
+      "repository_id": 1333298097,
+      "source_provenance": { "kind": "original", "parent_repository": null },
+      "governance_ownership": "organization_owned",
+      "repository_lifecycle": "active",
+      "docs_role": "consumer",
+      "protocol_required": true,
+      "admission_status": "admitted",
+      "exact_package_version": "0.6.0",
+      "exact_foundation_version": "1.4.2",
+      "cohort_binding_status": "bound",
+      "desired_cohort_id": "docs-2026-09-21-stable26",
+      "desired_cohort_generation": 2,
+      "v3_qualification_coordinates": {
+        "profile_schema_version": 3,
+        "cohort_schema_version": 2,
+        "managed_state_schema_version": 2,
+        "receipt_schema_version": 3,
+        "execution_envelope_schema_version": 1,
+        "evidence_class": "cohort-v2-supporting-canary"
+      },
+      "observed_cohort_id": "docs-2026-09-21-stable26",
+      "observed_cohort_generation": 2,
+      "exact_cohort_v2_packages": {
+        "repository_mutation": "0.2.0",
+        "document_authoring": "0.3.0",
+        "docs_protocol": "0.6.0",
+        "docs_protocol_agent_teams": "0.2.9",
+        "engineering_foundation": "1.4.2"
+      },
+      "observed_cohort_record_digest": "sha256:c96167d5b3fa35b9f331c528e0b3055643e5ba702eb08d1eee1c412e78889c30",
+      "observed_cohort_event_digest": "sha256:2b4b2b27583a6f2fd188f47ac8ec29e52db8224fcc66ab0ba1a364ba27312589",
+      "profile_path": "architecture/foundation/docs-protocol.yaml",
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+      "fixed_gate_command": "pnpm docs:protocol:check",
+      "required_check_context": "docs-protocol / docs-protocol-check",
+      "observed_default_branch_evidence": {
+        "default_branch": "main",
+        "revision": "8907b6d5f55f3086644acd764f6b2786ac8d827a",
+        "required_context": "docs-protocol / docs-protocol-check",
+        "integration_id": 15368,
+        "conclusion": "success",
+        "check_run_id": 106511651853,
+        "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/35653420043/job/106511651853",
+        "workflow_run_id": 35653420043,
+        "workflow_id": 336590767,
+        "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+        "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+        "observed_at": "2026-09-21T20:53:35Z"
+      },
+      "qualification": {
+        "status": "qualified",
+        "observed_revision": "8907b6d5f55f3086644acd764f6b2786ac8d827a",
+        "evidence_paths": [
+          "package.json",
+          "architecture/foundation/docs-protocol.yaml",
+          ".github/workflows/docs-protocol.yml",
+          "architecture/foundation/docs-protocol-qualification.json",
+          "architecture/foundation/docs-consumer-integration.json",
+          "architecture/foundation/docs-protocol-managed-state.json"
+        ]
+      },
+      "exemption": null,
+      "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/get-modular", "repository_id": 1350689977,
+      "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
+      "docs_role": "pending_classification", "protocol_required": false, "admission_status": "pending_classification",
+      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "not_applicable", "desired_cohort_id": null, "observed_cohort_id": null,
+      "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
+      "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
+      "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
+      "classification_evidence": { "decision": "pending_onboarding", "observed_revision": "6c2f1b9eca03d94ee0f45ce53e5285c5b6736d1a", "evidence_paths": ["package.json", "foundation.config.yaml", "architecture/foundation/source-dependencies.yaml", "docs/architecture/common-assembly.md"], "rationale": "Get Modular is an organization-owned portable Foundation consumer without a managed Docs Protocol adapter. It is not the transferred universal-agent-plugins fork (repository id 1350689977 vs 1341702671). Foundation 1.2.0 and source v3 are already on the default branch. Managed cohort binding and adapter-owned documentation protocol admission remain pending onboarding on the portable path.", "v2_qualification_coordinates": null },
+      "exemption": null, "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/uap-external-submission-fixture", "repository_id": 1341702691,
+      "source_provenance": { "kind": "original", "parent_repository": null }, "governance_ownership": "organization_owned", "repository_lifecycle": "active",
+      "docs_role": "not_applicable", "protocol_required": false, "admission_status": "not_applicable",
+      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "not_applicable", "desired_cohort_id": null, "observed_cohort_id": null,
+      "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
+      "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
+      "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
+      "classification_evidence": { "decision": "not_applicable_test_fixture", "observed_revision": "a5c6f7a5a1615ffd862a65e7b02dc1f56e6f39d9", "evidence_paths": ["submission-e2e/README.md", "submission-e2e/plugin.json"], "rationale": "This repository is a disposable external-submission test fixture, not a documentation protocol consumer.", "v2_qualification_coordinates": null },
+      "exemption": null, "required_check_exception_id": null
+    },
+    {
+      "repository": "agent-teams-ai/universal-agent-plugins", "repository_id": 1341702671,
+      "source_provenance": { "kind": "fork", "parent_repository": "777genius/universal-agent-plugins" }, "governance_ownership": "external", "repository_lifecycle": "deleted",
+      "docs_role": "not_applicable", "protocol_required": false, "admission_status": "exception",
+      "exact_package_version": null, "exact_foundation_version": null, "cohort_binding_status": "not_applicable", "desired_cohort_id": null, "observed_cohort_id": null,
+      "observed_cohort_record_digest": null, "observed_cohort_event_digest": null, "profile_path": null, "caller_workflow_path": null, "reusable_workflow_revision": null,
+      "qualification_evidence_path": null, "fixed_gate_command": null, "required_check_context": null, "observed_default_branch_evidence": null,
+      "qualification": { "status": "not_applicable", "observed_revision": null, "evidence_paths": [] },
+      "classification_evidence": { "decision": "not_applicable_external_fork", "observed_revision": "c897dd01b794e3c3686160eb1f519ca9a453a20a", "evidence_paths": ["SOURCES.md", "README.md"], "rationale": "The upstream-owned external fork left the organization (GitHub 404 on 2026-09-12) and is retained only as a deleted tombstone. It must not receive organization-specific documentation machinery or be treated as a live consumer.", "v2_qualification_coordinates": null },
+      "exemption": { "id": "external-fork-docs-protocol", "reason": "Upstream fork is not an Agent Teams-owned product and must not receive organization-specific documentation machinery.", "review_triggers": ["fork_detached", "ownership_changed", "organization_specific_docs_added"] },
+      "required_check_exception_id": null
+    }
+  ]
+}
