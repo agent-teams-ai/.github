@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "packet_sha256": "sha256:059017c918042d87adb786f0ed1ff8762f5c616c11a5f93e4b7317495d2f4e45",
+  "source_head": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+  "source_cohort_id": "docs-2026-09-16-stable25",
+  "controller_snapshot_sha": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+  "runner_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+  "observation": {
+    "repository": "agent-teams-ai/agent-teams-platform",
+    "repository_id": 1319378484,
+    "source_provenance": {
+      "kind": "original",
+      "parent_repository": null
+    },
+    "governance_ownership": "organization_owned",
+    "repository_lifecycle": "active",
+    "docs_role": "consumer",
+    "protocol_required": true,
+    "admission_status": "admitted",
+    "exact_package_version": "0.6.0",
+    "exact_foundation_version": "1.2.0",
+    "desired_cohort_generation": 2,
+    "v3_qualification_coordinates": {
+      "profile_schema_version": 3,
+      "cohort_schema_version": 2,
+      "managed_state_schema_version": 2,
+      "receipt_schema_version": 3,
+      "execution_envelope_schema_version": 1,
+      "evidence_class": "cohort-v2-supporting-canary"
+    },
+    "observed_cohort_id": "docs-2026-09-12-stable21",
+    "observed_cohort_generation": 2,
+    "exact_cohort_v2_packages": {
+      "repository_mutation": "0.2.0",
+      "document_authoring": "0.3.0",
+      "docs_protocol": "0.6.0",
+      "docs_protocol_agent_teams": "0.2.7",
+      "engineering_foundation": "1.2.0"
+    },
+    "observed_cohort_record_digest": "sha256:bf5220b191c7339533d21acd9b79594c274567ff0f515b72c4818863819ca92a",
+    "observed_cohort_event_digest": "sha256:4608734de08ad19ab6f787448d73bf92990115668c9d3d34cff5bba134efdc3b",
+    "profile_path": "architecture/foundation/docs-protocol.yaml",
+    "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+    "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+    "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
+    "fixed_gate_command": "pnpm docs:protocol:check",
+    "required_check_context": "docs-protocol / docs-protocol-check",
+    "observed_default_branch_evidence": {
+      "default_branch": "main",
+      "revision": "88707fc1cd574a355f196be0a3cffc02283f05be",
+      "required_context": "docs-protocol / docs-protocol-check",
+      "integration_id": 15368,
+      "conclusion": "success",
+      "check_run_id": 103459003050,
+      "check_run_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/34659423232/job/103459003050",
+      "workflow_run_id": 34659423232,
+      "workflow_id": 335216820,
+      "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+      "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+      "observed_at": "2026-09-11T23:52:22Z"
+    },
+    "qualification": {
+      "status": "qualified",
+      "observed_revision": "88707fc1cd574a355f196be0a3cffc02283f05be",
+      "evidence_paths": [
+        "package.json",
+        "architecture/foundation/docs-protocol.yaml",
+        ".github/workflows/docs-protocol.yml",
+        "architecture/foundation/docs-protocol-qualification.json",
+        "architecture/foundation/docs-consumer-integration.json",
+        "architecture/foundation/docs-protocol-managed-state.json"
+      ]
+    },
+    "exemption": null,
+    "required_check_exception_id": "platform-private-required-checks-github-free"
+  },
+  "target": {
+    "cohort_id": "docs-2026-10-03-stable31",
+    "record_digest": "sha256:15ef4d89c312593f5ecee9e0c9890f4ffa487e4d869682dec688460f2f4fc0c8",
+    "qualification_event_digest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f"
+  },
+  "files": [
+    {
+      "path": "platform/architecture/foundation/docs-protocol.yaml",
+      "bytes": 401,
+      "sha256": "sha256:9901b6edd37098b50ba1a2ecd688bdc2b4c4ed0ff082ffb0ce60397b32d61e33",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-protocol.yaml",
+      "gitBlob": "81daa0ccde2d9075374f70ac7f8281f751e9e4c0"
+    },
+    {
+      "path": "platform/.github/workflows/docs-protocol.yml",
+      "bytes": 262,
+      "sha256": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": ".github/workflows/docs-protocol.yml",
+      "gitBlob": "240d13c9528dc56a869bb13e9a7d3712d875484f"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-protocol-managed-state.json",
+      "bytes": 2427,
+      "sha256": "sha256:1f005f531c8e23e970c8a98533807f3e203c916fab339f5dfb4cd691481513b9",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-protocol-managed-state.json",
+      "gitBlob": "ed4e08d2be259269e308b2a38c1a6a3aaf3f0951"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-consumer-integration.json",
+      "bytes": 3083,
+      "sha256": "sha256:f576fc1e596c0502f1b0c5b3eb59a14f43a2a41bbe6bce40df02021e5edd556e",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-consumer-integration.json",
+      "gitBlob": "ddab8fd7ce4be30db0a796aa68be4ec1b0370fd7"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-protocol-qualification.json",
+      "bytes": 2419,
+      "sha256": "sha256:9d4f61e7f03522aad368c086ff1e0eca3d79e5c3143a6badd8a98522f47c3ae0",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-protocol-qualification.json",
+      "gitBlob": "694aceb3ba355a084f28217644fcc2f5cc44bed9"
+    },
+    {
+      "path": "platform/package.json",
+      "bytes": 5950,
+      "sha256": "sha256:167ea3a50dda737ddb9ea5a5891c9a4e611f9c052fb5bd4774df0a3a0115f828",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "package.json",
+      "gitBlob": "8ef6adc5bdc32b39d970a796ba571dd3dd14fc6c"
+    },
+    {
+      "path": "platform/pnpm-lock.yaml",
+      "bytes": 81038,
+      "sha256": "sha256:50eceacc3218f6fc5832272a203238a438beba6a85aafffd571f0a8f8506fe21",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "pnpm-lock.yaml",
+      "gitBlob": "4cacd8997072b5195a777b57feb0ad5d7df36f9b"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-policy-v2.json",
+      "bytes": 33045,
+      "sha256": "sha256:63f3f41433359f4899a3b75257af4dc3e389e5fb6f5a9fcbc99fb4a933c4a20b",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-policy-v2.json",
+      "gitBlob": "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-qualified-cohorts.json",
+      "bytes": 573075,
+      "sha256": "sha256:77a7c3c8d89bad8e0fa72b6f4d2ac5270f78fcbc5806c192e4b05397daa371a0",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-qualified-cohorts.json",
+      "gitBlob": "cfa50d0c90aba39db790f495595c17b55941b2c8"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-exceptions.json",
+      "bytes": 948,
+      "sha256": "sha256:10657f44d0a80adbdf725cf8cebf123086b4dd10790bb09562388f2172c53bae",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-exceptions.json",
+      "gitBlob": "ac336b865d697b62c938623f2960864e85f7698a"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-policy-v2.schema.json",
+      "bytes": 16818,
+      "sha256": "sha256:eb87fda58fc4f600a4a241a3d979a0692ee09fde8d028b2542baf767fd4725f2",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-policy-v2.schema.json",
+      "gitBlob": "d45b368c2967f6347236b978971c6c0545f60b10"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-qualified-cohorts.schema.json",
+      "bytes": 22510,
+      "sha256": "sha256:64fcd7a51966fa4302a9add4e3b4e6c00d30e88f6ba9a100ad450134d174df4d",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-qualified-cohorts.schema.json",
+      "gitBlob": "99ead31926964965e9061d5f3097f1beef1c31e8"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-exceptions.schema.json",
+      "bytes": 2001,
+      "sha256": "sha256:c1d2c2dd8f5da97f744cbcf8b6001f423ac82ef6c5ef42cd6472b2b5e7d6650d",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-exceptions.schema.json",
+      "gitBlob": "b38e37acaa5f238f0000dcab581a3f9f69b33873"
+    },
+    {
+      "path": "pinned-runner/.github/workflows/docs-protocol-check.yml",
+      "bytes": 16954,
+      "sha256": "sha256:ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6",
+      "repository": "agent-teams-ai/.github",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "repositoryPath": ".github/workflows/docs-protocol-check.yml",
+      "gitBlob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+    },
+    {
+      "path": "pinned-runner/scripts/verify-docs-consumer-gate.mjs",
+      "bytes": 79088,
+      "sha256": "sha256:45d0ceded09430450040804944bcdacfc67295a8dd868e1f94b557b79de17de8",
+      "repository": "agent-teams-ai/.github",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "repositoryPath": "scripts/verify-docs-consumer-gate.mjs",
+      "gitBlob": "48f326515fb47ce0b41e49596bc2467020e9655b"
+    }
+  ],
+  "run": {
+    "id": 37015324661,
+    "run_attempt": 1,
+    "workflow_id": 335216820,
+    "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+    "head_branch": "main",
+    "path": ".github/workflows/docs-protocol.yml",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "referenced_workflows": [
+      {
+        "path": "agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+        "sha": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b"
+      }
+    ],
+    "repository": {
+      "id": 1319378484,
+      "full_name": "agent-teams-ai/agent-teams-platform"
+    }
+  },
+  "jobs": [
+    {
+      "id": 110864659636,
+      "run_id": 37015324661,
+      "run_attempt": 1,
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "name": "docs-protocol / trusted-authorize",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110864659636",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Resolve trusted controller snapshot and called-workflow identity",
+          "number": 2,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out exact Cohort-bound validator implementation",
+          "number": 3,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up pnpm for trusted tooling",
+          "number": 4,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up Node for trusted tooling",
+          "number": 5,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install only base-owned validator dependencies",
+          "number": 6,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Authorize exact consumer snapshot without executing consumer code",
+          "number": 7,
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Publish bounded structural authorization for the non-OIDC verifier",
+          "number": 8,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Set up Node for trusted tooling",
+          "number": 14,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Set up pnpm for trusted tooling",
+          "number": 15,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out exact Cohort-bound validator implementation",
+          "number": 16,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "number": 17,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 110865327956,
+      "run_id": 37015324661,
+      "run_attempt": 1,
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "name": "docs-protocol / trusted-qualification",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110865327956",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Require successful trusted structural authorization",
+          "number": 2,
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Initialize isolated qualification paths",
+          "number": 3,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check out exact Cohort-bound validator implementation",
+          "number": 4,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Set up pnpm for legacy trusted qualification tooling",
+          "number": 5,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Set up pnpm for Cohort v2 trusted qualification tooling",
+          "number": 6,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Set up Node for trusted qualification tooling",
+          "number": 7,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install only base-owned qualification verifier dependencies",
+          "number": 8,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Download exact authorization from the OIDC-only job",
+          "number": 9,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Check out authorized immutable consumer snapshot",
+          "number": 10,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Bind checkout bytes to central authorization",
+          "number": 11,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Prepare fresh isolated exact Cohort installation",
+          "number": 12,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify isolated exact lock before package installation",
+          "number": 13,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install isolated exact Cohort graph without lifecycle hooks",
+          "number": 14,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Verify installed Cohort package identities before execution",
+          "number": 15,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run only the exact installed agent-teams-docs qualify CLI",
+          "number": 16,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run Cohort v2 qualification through the trusted base-owned runner",
+          "number": 17,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Bind released-cohort receipt to exact checkout and installed Cohort",
+          "number": 18,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Bind Cohort v2 authorized consumer receipt without asserting central CANARY",
+          "number": 19,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Confirm current controller authority stayed stable through qualification",
+          "number": 20,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Complete job",
+          "number": 21,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 110865329561,
+      "run_id": 37015324661,
+      "run_attempt": 1,
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "name": "docs-protocol / trusted-structural",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110865329561",
+      "status": "completed",
+      "conclusion": "skipped",
+      "steps": []
+    },
+    {
+      "id": 110868628467,
+      "run_id": 37015324661,
+      "run_attempt": 1,
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "name": "docs-protocol / docs-protocol-check",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110868628467",
+      "status": "completed",
+      "conclusion": "failure",
+      "steps": [
+        {
+          "name": "Set up job",
+          "number": 1,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Require successful trusted qualification",
+          "number": 2,
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Check out consumer revision",
+          "number": 3,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Set up pnpm for repository semantic gate",
+          "number": 4,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Set up Node for repository semantic gate",
+          "number": 5,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install consumer dependencies in the untrusted context",
+          "number": 6,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run repository semantic documentation gate",
+          "number": 7,
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Complete job",
+          "number": 8,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": 110864659636,
+      "name": "docs-protocol / trusted-authorize",
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110864659636",
+      "status": "completed",
+      "conclusion": "failure",
+      "app": {
+        "id": 15368
+      }
+    },
+    {
+      "id": 110865327956,
+      "name": "docs-protocol / trusted-qualification",
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110865327956",
+      "status": "completed",
+      "conclusion": "failure",
+      "app": {
+        "id": 15368
+      }
+    },
+    {
+      "id": 110865329561,
+      "name": "docs-protocol / trusted-structural",
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110865329561",
+      "status": "completed",
+      "conclusion": "skipped",
+      "app": {
+        "id": 15368
+      }
+    },
+    {
+      "id": 110868628467,
+      "name": "docs-protocol / docs-protocol-check",
+      "head_sha": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "html_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37015324661/job/110868628467",
+      "status": "completed",
+      "conclusion": "failure",
+      "app": {
+        "id": 15368
+      }
+    }
+  ],
+  "authorize_job_id": 110864659636,
+  "semantic_job_id": 110868628467,
+  "log_digest": "sha256:ffbf323edb2653cc630e2eb138b6d04ac722679ad7838f311c1e6f7202169bca",
+  "qualification": "unverified",
+  "semantics": "unverified",
+  "coverage": "The recorded generation assertion precedes downstream graph and profile validation. Exact captured source bytes and successful setup do not qualify those contracts or consumer execution.",
+  "failure_started_at": "2026-10-02T13:47:15Z"
+}
