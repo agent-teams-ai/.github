@@ -11686,6 +11686,69 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:730286587bc25b7946d0f130175df3eda35e1aedcd0136812d0ed51d0dc0d79e",
       "event_digest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f"
+    },
+    {
+      "sequence": 184,
+      "cohort_id": "docs-2026-10-03-stable31",
+      "state": "CANARY",
+      "effective_at": "2026-10-03T06:11:59Z",
+      "support_until": null,
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-10-03-stable31/canary.json",
+        "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588557/job/111142255197",
+        "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588256/attempts/1"
+      ],
+      "canary_evidence": [
+        {
+          "repository_id": 1333298097,
+          "repository": "agent-teams-ai/extension-foundation",
+          "merge_revision": "bd1f639d2fe06a5a1f796d63141e34314eb3c327",
+          "observed_cohort_id": "docs-2026-10-03-stable31",
+          "observed_record_digest": "sha256:15ef4d89c312593f5ecee9e0c9890f4ffa487e4d869682dec688460f2f4fc0c8",
+          "observed_event_digest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f",
+          "required_context": "docs-protocol / docs-protocol-check",
+          "integration_id": 15368,
+          "conclusion": "success",
+          "check_run_id": 111142255197,
+          "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588557/job/111142255197",
+          "workflow_run_id": 37101588557,
+          "workflow_id": 336590767,
+          "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+          "caller_workflow_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7"
+        }
+      ],
+      "previous_event_digest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f",
+      "event_digest": "sha256:a9163190da1e19c08f8d1d853be39ab9cdc72cb7b16bbf8e848c8e1b998ea745"
+    },
+    {
+      "sequence": 185,
+      "cohort_id": "docs-2026-09-21-stable26",
+      "state": "SUPERSEDED",
+      "effective_at": "2026-10-03T06:11:59Z",
+      "support_until": "2026-11-02T06:11:59Z",
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-10-03-stable31/canary.json",
+        "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588557/job/111142255197",
+        "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588256/attempts/1"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:a9163190da1e19c08f8d1d853be39ab9cdc72cb7b16bbf8e848c8e1b998ea745",
+      "event_digest": "sha256:a2eaf24d77841d80e494175489527f8ea846b8ad61de5bfa72dc99b230762fc9"
+    },
+    {
+      "sequence": 186,
+      "cohort_id": "docs-2026-10-03-stable31",
+      "state": "RECOMMENDED",
+      "effective_at": "2026-10-03T06:11:59Z",
+      "support_until": null,
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-10-03-stable31/canary.json",
+        "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588557/job/111142255197",
+        "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588256/attempts/1"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:a2eaf24d77841d80e494175489527f8ea846b8ad61de5bfa72dc99b230762fc9",
+      "event_digest": "sha256:1d666080047e6a791e681d3aae875edf909a5fed669d93617ebc88d02c8561fd"
     }
   ]
 }
