@@ -1,0 +1,115 @@
+{
+  "cohort_id": "docs-2026-10-03-stable31",
+  "status": "qualified",
+  "classification": "PREPARATORY_SOURCE_FROM_OPERATOR_VERIFIED_PUBLICATION",
+  "recordDigest": "sha256:15ef4d89c312593f5ecee9e0c9890f4ffa487e4d869682dec688460f2f4fc0c8",
+  "runtimeClosureDigest": "sha256:48dcadfa67bcf5f32e8aa7a510d83e9475335d7153b145ff84f00e9b5da993e2",
+  "verifiedEventDigest": "sha256:730286587bc25b7946d0f130175df3eda35e1aedcd0136812d0ed51d0dc0d79e",
+  "qualificationEventDigest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f",
+  "observedAt": "2026-10-03T04:19:57Z",
+  "observationSemantics": "Current offline worker UTC seconds for these proposed lifecycle appends; not a new independent registry, GitHub or consumer observation.",
+  "stackedSourceBaseRevision": "4f1e67a362c9f9b91788480dcbc07361f8d194db",
+  "deliveredQualityMainRevision": "de0cbe6b327fa3ec2d41a75ab30b4a839a6f247f",
+  "publicationSourceRevision": "7047ffcf00a12f168242910d8129202c300b07fa",
+  "publicationSource": {
+    "path": "governance/evidence/docs-cohorts/docs-2026-10-03-stable31/publication.json",
+    "revision": "7047ffcf00a12f168242910d8129202c300b07fa",
+    "url": "https://github.com/agent-teams-ai/.github/blob/7047ffcf00a12f168242910d8129202c300b07fa/governance/evidence/docs-cohorts/docs-2026-10-03-stable31/publication.json",
+    "sha256": "sha256:30e165d35e6efa5daeac4204dc9b25c0f9aa0fb4c68431510b9550e3880e6faf"
+  },
+  "hostedValidation": {
+    "source": "Operator-provided actual successful trusted-validation run packet; this worker did not independently query GitHub or npm.",
+    "repository": "agent-teams-ai/.github",
+    "repositoryId": 1316243981,
+    "pullRequest": 344,
+    "headRevision": "7047ffcf00a12f168242910d8129202c300b07fa",
+    "baseRevision": "408e671c903d7f0bac3c214e5d71cae74dc5b758",
+    "workflowPath": ".github/workflows/docs-cohort-append-only.yml",
+    "workflowRunId": 37094381757,
+    "workflowRunAttempt": 1,
+    "event": "pull_request_target",
+    "status": "completed",
+    "conclusion": "success",
+    "updatedAt": "2026-10-03T03:49:00Z",
+    "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/37094381757/attempts/1",
+    "apiUrl": "https://api.github.com/repos/agent-teams-ai/.github/actions/runs/37094381757",
+    "suppliedPacketPath": ".worker-context/actual-publication-live-run.json",
+    "suppliedPacketSha256": "sha256:4a711054266c9d55a2ede507ba6fe1b6ddba8cab25db4b3c421afcf35dccbbdf"
+  },
+  "verificationScope": "The operator reports successful real base-owned trusted verification of public registry metadata, signatures and provenance for all five exact published coordinates, release/workflow bindings, assets and runtime closure on publication head 7047ffcf00a12f168242910d8129202c300b07fa. The unchanged stable31 record and publication evidence bind that source. This proposed append has no independent worker live verification and needs its own exact-source trusted checks before merge.",
+  "fivePackageProofs": [
+    {
+      "name": "@agent-teams/repository-mutation",
+      "version": "0.2.2",
+      "sourceCommit": "3cdb6dae33772e3c8623432c5764da69bea5484a",
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.2.2",
+      "releaseRunUrl": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/36602046555"
+    },
+    {
+      "name": "@agent-teams/document-authoring",
+      "version": "0.3.2",
+      "sourceCommit": "3cdb6dae33772e3c8623432c5764da69bea5484a",
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.2",
+      "releaseRunUrl": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/36602046555"
+    },
+    {
+      "name": "@agent-teams/docs-protocol",
+      "version": "0.6.2",
+      "sourceCommit": "3cdb6dae33772e3c8623432c5764da69bea5484a",
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.2",
+      "releaseRunUrl": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/36602046555"
+    },
+    {
+      "name": "@agent-teams/docs-protocol-agent-teams",
+      "version": "0.3.2",
+      "sourceCommit": "279b568caa8a541df6be1e891ffc22f0d117f421",
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.3.2",
+      "releaseRunUrl": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/37085366442"
+    },
+    {
+      "name": "@agent-teams/engineering-foundation",
+      "version": "1.7.2",
+      "sourceCommit": "279b568caa8a541df6be1e891ffc22f0d117f421",
+      "attestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@1.7.2",
+      "releaseRunUrl": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/37085366442"
+    }
+  ],
+  "runtimeClosure": {
+    "path": "governance/docs-runtime-closures/sha256-48dcadfa67bcf5f32e8aa7a510d83e9475335d7153b145ff84f00e9b5da993e2.json",
+    "digest": "sha256:48dcadfa67bcf5f32e8aa7a510d83e9475335d7153b145ff84f00e9b5da993e2",
+    "packageManager": "pnpm@11.20.0",
+    "packageCount": 83
+  },
+  "reusableWorkflow": {
+    "repository": "agent-teams-ai/.github",
+    "repository_id": 1316243981,
+    "path": ".github/workflows/docs-protocol-check.yml",
+    "revision": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+    "blob_sha": "f1492257de281f40a262042eb989291558147d5f"
+  },
+  "preservedReleaseFacts": "The first three coordinates retain mint attempt 1 and separately recorded successful reconciliation attempt 2. Adapter 0.3.2 and Foundation 1.7.2 retain their actual published source and attempt. Existing records, release facts and evidence are unchanged; full signature/package evidence remains in publication.json.",
+  "lifecycleSemantics": "VERIFIED then QUALIFIED are proposed evidence-gated events. Accepted ADR-0001 item 9 imposes no passive cooldown; eligible_after remains informational unchanged metadata. Neither event asserts CANARY or RECOMMENDED.",
+  "xfDesiredOnly": {
+    "repository": "agent-teams-ai/extension-foundation",
+    "repositoryId": 1333298097,
+    "admissionStatus": "admitted",
+    "bindingStatus": "rollout_pending",
+    "desiredCohortId": "docs-2026-10-03-stable31",
+    "desiredCohortGeneration": 2,
+    "observedCohortId": "docs-2026-09-21-stable26",
+    "observedFacts": "Existing stable26 coordinates, digests, workflow pin and default-branch green evidence are preserved byte for byte."
+  },
+  "localLiveVerificationPerformed": false,
+  "canaryExecuted": false,
+  "consumerFinalChecksCompleted": false,
+  "generalConsumerEligibility": false,
+  "defaultBranchDeliveryClaimed": false,
+  "pending": [
+    "Independent review and merge of the stacked publication dependency; this source is preparatory and the main dependency remains pending.",
+    "Ordinary operator-owned commits, independent source review, full owning checks and fresh real trusted live verification for the exact proposed lifecycle source.",
+    "Separate reviewed XF desired-only policy rollout source: the current trusted lifecycle workflow forbids policy changes in a registry/evidence PR.",
+    "XF consumer adoption and final consumer checks, immutable hosted default-branch CANARY evidence bound to the new QUALIFIED event, and a later separate CANARY append.",
+    "Evidence-gated recommendation and any subsequent consumer rollout; only XF is currently an eligible declared canary.",
+    "Local production schema/lifecycle/reference checks cannot execute in this worker because ajv/dist/2020.js and repository dependencies are absent; dependency bootstrap is forbidden. No gate is waived."
+  ]
+}
