@@ -227,7 +227,7 @@ jobs:
                 demand(matches(origin, "old"), "Frozen base old forty-file authority required.");
                 demand(guardPaths.every(path => !origin.has(path)), "Guard must be separately staged after the frozen base.");
                 // No arbitrary ancestor changes. Additional policy observations need exact reviewed coordinates.
-                closure(origin, before, new Set([...owned, ...guardPaths]), true);
+                closure(origin, direction === "forward" ? before : after, new Set(guardPaths));
                 const checked = new Set();
                 for (const side of ["old", "new"]) for (const item of tuple) {
                   const sha = item[`${side}_blob`];

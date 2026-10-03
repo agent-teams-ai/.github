@@ -463,6 +463,26 @@ test("refuses omission from both full API trees even when their projected diff s
   for (const revision of [f.base, f.head]) treeAt(f, revision).tree = entriesAt(f, revision).filter(entry => entry.path !== "README.md");
   await refused(f, /tree object hash/);
 });
+// The old side may stage only the guard pair, even under a future fixture ancestor.
+// These are genuine Git commit histories: an empty tree can vanish from terminal diffs.
+for (const direction of ["forward", "rollback"]) test("refuses an unreviewed empty directory on the " + direction + " old side", async () => {
+  const f = fixture(direction);
+  const prematureRoot = writeTree([...fixed, ...guards, ...tupleLeaves("old"),
+    { path: "scripts/fixtures/platform-stable31-pending-source", mode: "040000", type: "tree", sha: empty }]);
+  const prematureCommit = commit(prematureRoot, originCommit);
+  const advancedCommit = commit(forwardRoot, prematureCommit);
+  const retainedCommit = commit(prematureRoot, advancedCommit);
+  f.trees[prematureRoot] = recursive(prematureRoot);
+  for (const [revision, root] of [[prematureCommit, prematureRoot], [advancedCommit, forwardRoot], [retainedCommit, prematureRoot]]) {
+    f.commits[revision] = { sha: revision, tree: { sha: root } };
+  }
+  if (direction === "forward") replacePull(f, prematureCommit, advancedCommit);
+  else replacePull(f, advancedCommit, retainedCommit);
+  assert.equal(git(["diff-tree", "--no-renames", "--name-only", "-r", f.base, f.head]).trim().split("\n").length, 40,
+    "Actual Git terminal diff still has exactly the reviewed forty paths");
+  await refused(f, /Complete immutable trees/);
+});
+
 test("refuses arbitrary inherited frozen-base differences despite unchanged PR outer slice", async () => {
   const f = fixture();
   for (const revision of [f.base, f.head]) replaceTree(f, revision, leavesAt(f, revision).map(entry =>
