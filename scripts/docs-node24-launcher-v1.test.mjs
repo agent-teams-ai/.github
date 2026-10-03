@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { Script, createContext } from "node:vm";
 
@@ -10,7 +13,8 @@ const workflowSource = await readFile(new URL(`../${workflowPath}`, import.meta.
 // Execute the real metadata program. YAML/Actions execution remains a separate hosted gate.
 const block = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflowSource)?.groups?.source;
 assert.notEqual(block, undefined);
-const program = new Script(`(async () => {\n${block.split("\n").map(line => line.slice(12)).join("\n")}\n})()`, { filename: workflowPath });
+const programSource = block.split("\n").map(line => line.slice(12)).join("\n");
+const program = new Script(`(async () => {\n${programSource}\n})()`, { filename: workflowPath });
 const base = "a".repeat(40), head = "b".repeat(40);
 const roots = { [base]: "c".repeat(40), [head]: "d".repeat(40) };
 const repo = { id: 1316243981, full_name: "agent-teams-ai/.github", default_branch: "main", archived: false, disabled: false };
@@ -115,6 +119,9 @@ function fixture() {
   const trees = Object.fromEntries([[base, "old"], [head, "new"]].map(([revision, side]) => [roots[revision], {
     sha: roots[revision], truncated: false,
     tree: [
+      ...[".github", ".github/workflows", "scripts"].map((path, index) => ({ path, mode: "040000", type: "tree",
+        sha: String((side === "old" ? 1 : 4) + index).repeat(40) })),
+      { path: "unrelated-empty", mode: "040000", type: "tree", sha: "4b825dc642cb6eb9a060e54bf8d69288fbee4904" },
       ...expectedTuple.map(item => ({ path: item.path, mode: "100644", type: "blob", sha: item[`${side}_blob`], size: item[`${side}_bytes`] })),
       ...[workflowPath, testPath].map((path, index) => ({ path, mode: "100644", type: "blob", sha: (index ? "f" : "e").repeat(40) })),
     ],
@@ -356,6 +363,12 @@ for (const [name, mutate, reason] of [
       sha: revision === base ? "1".repeat(40) : "2".repeat(40) });
   }, /Complete immutable trees/],
   ["silent unrelated addition", f => { f.trees[roots[head]].tree.push({ path: "unexpected.txt", mode: "100644", type: "blob", sha: "1".repeat(40) }); }, /Complete immutable trees/],
+  ["unrelated empty directory addition", f => { f.trees[roots[head]].tree.push({ path: "extra-empty", mode: "040000", type: "tree",
+    sha: "4b825dc642cb6eb9a060e54bf8d69288fbee4904" }); }, /Complete immutable trees/],
+  ["unrelated empty directory removal", f => { f.trees[roots[head]].tree = f.trees[roots[head]].tree.filter(entry => entry.path !== "unrelated-empty"); }, /Complete immutable trees/],
+  ["unrelated directory SHA change", f => { f.trees[roots[head]].tree.find(entry => entry.path === "unrelated-empty").sha = "1".repeat(40); }, /Complete immutable trees/],
+  ["ancestor directory mode change", f => { f.trees[roots[head]].tree.find(entry => entry.path === ".github").mode = "100644"; }, /Complete immutable trees/],
+  ["ancestor directory type change", f => { f.trees[roots[head]].tree.find(entry => entry.path === "scripts").type = "blob"; }, /Complete immutable trees/],
   ["archived controller", f => { f.repositories[1].archived = true; }, /Live repository identity/],
   ["disabled controller", f => { f.repositories[0].disabled = true; }, /Live repository identity/],
 ]) test(`refuses ${name}`, async () => {
@@ -364,4 +377,97 @@ for (const [name, mutate, reason] of [
   assert.equal(result.failures.length, 1);
   assert.match(result.failures[0], reason);
   assert.deepEqual(result.evidence, []);
+});
+
+test("production closure against real Git TEST trees", async t => {
+  // Execute the exact projection and closure, not a test implementation of either.
+  // TEST blob changes cover closure only; the full program above checks the frozen byte tuple.
+  const projection = /^\s*(?<collection>\w+)\.push\(new Map\(tree\.tree[^\n]+\);$/mu.exec(programSource);
+  const start = programSource.indexOf("const owned = ");
+  const end = programSource.indexOf("// Last metadata operations", start);
+  assert.ok(projection && start >= 0 && end > start, "Locate the production tree closure");
+  const closure = new Script(`{ const ${projection.groups.collection} = [];
+    for (const tree of recursiveTrees) { ${projection[0]} }
+    ${programSource.slice(start, end)} }`, { filename: `${workflowPath}:tree-closure` });
+  const directory = await mkdtemp(join(tmpdir(), "TEST-docs-node24-tree-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const git = (args, input) => execFileSync("git", ["-C", directory, ...args],
+    { input, encoding: "utf8", timeout: 10000, maxBuffer: 1024 * 1024 });
+  git(["init", "--quiet", "--object-format=sha1"]);
+  const blob = bytes => git(["hash-object", "-w", "--stdin"], bytes).trim();
+  const empty = git(["mktree"], "").trim();
+  const fixed = [];
+  for (const path of [workflowPath, testPath]) fixed.push({ path, mode: "100644", type: "blob",
+    sha: blob(await readFile(new URL(`../${path}`, import.meta.url))) });
+  fixed.push({ path: "unrelated/kept.txt", mode: "100644", type: "blob", sha: blob("TEST unchanged content\n") });
+  const sides = {};
+  for (const side of ["old", "new"]) {
+    sides[side] = [];
+    for (const item of expectedTuple) {
+      const bytes = await readFile(new URL(`../${item.path}`, import.meta.url));
+      assert.equal(blob(bytes), item.old_blob, "The actual source retains the old approved blob");
+      const payload = side === "old" ? bytes : Buffer.concat([bytes, Buffer.from("\nTEST closure payload\n")]);
+      sides[side].push({ path: item.path, mode: "100644", type: "blob", sha: blob(payload) });
+    }
+  }
+  const writeTree = entries => {
+    const root = new Map();
+    for (const entry of entries) {
+      const segments = entry.path.split("/");
+      let parent = root;
+      for (const segment of segments.slice(0, -1)) {
+        if (!parent.has(segment)) parent.set(segment, new Map());
+        parent = parent.get(segment);
+      }
+      parent.set(segments.at(-1), entry);
+    }
+    const write = children => git(["mktree", "-z"], [...children].map(([name, entry]) =>
+      `${entry instanceof Map ? `040000 tree ${write(entry)}` : `${entry.mode} ${entry.type} ${entry.sha}`}\t${name}\0`).join("")).trim();
+    return write(root);
+  };
+  const makeTree = (side, mutation) => {
+    const entries = [...fixed, ...sides[side]];
+    if (mutation !== "removal") entries.push({ path: "unrelated/empty", mode: "040000", type: "tree",
+      sha: mutation === "changed empty subtree" ? git(["mktree"], `040000 tree ${empty}\tnested-empty\n`).trim() : empty });
+    if (mutation === "addition" || mutation === "addition inside allowed ancestor") entries.push({
+      path: mutation === "addition" ? "undeclared-empty" : ".github/workflows/undeclared-empty",
+      mode: "040000", type: "tree", sha: empty });
+    return writeTree(entries);
+  };
+  const mutations = ["addition", "removal", "changed empty subtree", "addition inside allowed ancestor"];
+  const objects = Object.fromEntries(["old", "new"].map(side => [side, Object.fromEntries(
+    ["baseline", ...mutations].map(mutation => [mutation, makeTree(side, mutation)]))]));
+  git(["fsck", "--strict", "--no-reflogs", "--no-dangling"]);
+  assert.ok(!git(["cat-file", "--batch-all-objects", "--batch-check=%(objecttype)"]).split("\n").includes("commit"),
+    "The disposable TEST repository contains no commits");
+  const recursive = sha => ({ sha, truncated: false, tree: git(["ls-tree", "-r", "-t", "-z", sha]).split("\0").filter(Boolean).map(record => {
+    const [metadata, path] = record.split("\t");
+    const [mode, type, entrySha] = metadata.split(" ");
+    return { path, mode, type, sha: entrySha };
+  }) });
+  const close = (before, after) => closure.runInNewContext({ recursiveTrees: [recursive(before), recursive(after)], tuple: expectedTuple,
+    demand: (condition, message) => { if (!condition) throw new Error(message); } }, { timeout: 1000 });
+  const diff = (before, after) => git(["diff-tree", "--no-renames", "--name-status", "-r", before, after]).trim().split("\n");
+  const expectedDiff = expectedTuple.map(item => `M\t${item.path}`).sort();
+  for (const direction of ["forward", "rollback"]) {
+    const before = objects[direction === "forward" ? "old" : "new"].baseline;
+    const candidates = objects[direction === "forward" ? "new" : "old"];
+    const beforeEntries = recursive(before).tree;
+    const afterEntries = recursive(candidates.baseline).tree;
+    for (const path of [".github", ".github/workflows", "scripts"]) assert.notEqual(
+      beforeEntries.find(entry => entry.path === path).sha, afterEntries.find(entry => entry.path === path).sha,
+      "Legitimate file ancestors really change their Git tree SHAs");
+    for (const mutation of mutations) await t.test(`${direction} rejects ${mutation} with the same six-file diff`, sub => {
+      assert.deepEqual(diff(before, candidates.baseline).sort(), expectedDiff);
+      assert.doesNotThrow(() => close(before, candidates.baseline), "Accept the baseline before mutation");
+      assert.deepEqual(diff(before, candidates[mutation]).sort(), expectedDiff, "Git leaf diff cannot see this mutation");
+      let refusal;
+      try { close(before, candidates[mutation]); } catch (error) { refusal = error.message; }
+      sub.diagnostic(JSON.stringify({ direction, mutation, before, baseline: candidates.baseline, mutated: candidates[mutation],
+        baselineAccepted: true, mutationAccepted: refusal === undefined, refusal, diff: expectedDiff, fsck: "strict pass", commits: 0 }));
+      assert.match(refusal ?? "", /Complete immutable trees/u, "Refuse the real undeclared directory mutation");
+      assert.doesNotThrow(() => close(before, candidates.baseline), "Restoring the valid tree passes again");
+      sub.diagnostic("corrected tree accepted");
+    });
+  }
 });

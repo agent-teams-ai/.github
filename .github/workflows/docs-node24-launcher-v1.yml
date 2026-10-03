@@ -174,7 +174,7 @@ jobs:
                 compared.status === "ahead" && compared.behind_by === 0 &&
                 Number.isSafeInteger(compared.ahead_by) && compared.ahead_by > 0 && compared.total_commits === compared.ahead_by,
                 "Head must be a nonempty descendant of the exact base.");
-              const authorities = [], leaves = [];
+              const authorities = [], entries = [];
               for (const [side, revision] of [[direction.base, pull.base.sha], [direction.head, pull.head.sha]]) {
                 const commit = await github.rest.git.getCommit({ ...repo, commit_sha: revision });
                 demand(commit.data?.sha === revision && validSha(commit.data.tree?.sha), "Immutable commit/tree binding required.");
@@ -196,15 +196,21 @@ jobs:
                     "Exact candidate old/new blob and byte tuple required.");
                 }
                 authorities.push(guardPaths.map(regularEntry));
-                leaves.push(new Map(tree.tree.filter(entry => entry.type !== "tree").map(entry => [entry.path, entry])));
+                entries.push(new Map(tree.tree.map(entry => [entry.path, entry])));
               }
               demand(authorities[0].every((entry, index) => entry.sha === authorities[1][index].sha),
                 "Base-owned guard and test must remain unchanged in head.");
               const owned = new Set(tuple.map(item => item.path));
-              demand(leaves[0].size === leaves[1].size && [...leaves[0]].every(([path, entry]) => {
-                const other = leaves[1].get(path);
+              const ancestors = new Set(tuple.flatMap(item => {
+                const parts = item.path.split("/");
+                return parts.slice(0, -1).map((_, index) => parts.slice(0, index + 1).join("/"));
+              }));
+              // Git's leaf diff omits empty subtrees; preserve every directory path, mode and type.
+              demand(entries[0].size === entries[1].size && [...entries[0]].every(([path, entry]) => {
+                const other = entries[1].get(path);
                 return other && (owned.has(path) ||
-                  (entry.mode === other.mode && entry.type === other.type && entry.sha === other.sha));
+                  (entry.mode === other.mode && entry.type === other.type &&
+                    (entry.sha === other.sha || (entry.type === "tree" && ancestors.has(path)))));
               }), "Complete immutable trees may differ only by the exact launcher tuple.");
               // Last metadata operations reject PR, repository/default-branch and branch movement.
               await bindPull();
