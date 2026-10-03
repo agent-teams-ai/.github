@@ -1,0 +1,258 @@
+name: Trusted Platform Stable31 Pending Transition
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-platform-stable31-pending-transition:
+    name: trusted-platform-stable31-pending-transition
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Central#338/PR350: only exact 9625c6e..f4d8539 forty-file source correction.
+            // Owner review and a separate required-check cutover stage this guard first.
+            // This program cannot authorize its own introduction or modification.
+            const anchor = "9625c6e6a73555d747cc4b0ba99a29549a75f107";
+            const tuple = [
+              {"path": "docs/repository-admission.md", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "4e4c31086d83ae23eed318767bf0dcbb6eaf831a", "old_bytes": 17202, "old_sha256": "f6582f79457f2711a9875760e49036d23672434cb8e5da24d2805cadd23ec8d8", "new_mode": "100644", "new_type": "blob", "new_blob": "67a37f1d507503dbe169dc6ba97f4d1b3f613eea", "new_bytes": 18484, "new_sha256": "fcccceb03d1b9094d336abf221f94717d845e922568068ac39da25be0fd91828"},
+              {"path": "governance/evidence/docs-admission/platform-stable31-pending-source.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "b8f952fb216422940d64214cc1f4cdf9836ecde8", "new_bytes": 21938, "new_sha256": "cb0149d6c7e0f8de3f6b7241c9f93acde920074567a3c4656e7308a6cd2df3e1"},
+              {"path": "scripts/docs-admission-change.test.mjs", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "9a7129d981eebeeea26eaf93cf9b48b80ce9a79d", "old_bytes": 73387, "old_sha256": "730bd268412db0e1a44c9b6151e59b751aaa906fcbe7a209cf54720a30b2c11d", "new_mode": "100644", "new_type": "blob", "new_blob": "9b8de5a33f50656356d9f86d12e1cf9f28cb2c7e", "new_bytes": 89359, "new_sha256": "8d5de01b1da587ee96c00568a01b4c19a031c8e78d710c68fb4ce6fca0ff736e"},
+              {"path": "scripts/docs-admission-workflow.test.mjs", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "42804fde7fa4b84101520ac2f2355a7ac94f8b3f", "old_bytes": 12609, "old_sha256": "4714d63aa9ae689b176b54c4026a9c76a3ad38ea7fb55a3c5d94529c0752b848", "new_mode": "100644", "new_type": "blob", "new_blob": "de5abd077b84b7d3dc102670efe32328e17f7ebb", "new_bytes": 13796, "new_sha256": "32e9381d13460cd1577405b657770a478c8d9ad73961f6663c8c55b43f020ecb"},
+              {"path": "scripts/docs-platform-admission-recovery.mjs", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "ffbd9f0dcc0d2dc2038cc4560cad9b274d747a6d", "old_bytes": 25434, "old_sha256": "885ea5127fc5dbd1ce6be5262e7032ef96793ad3896da6b0d0d7c2a7169b9f4a", "new_mode": "100644", "new_type": "blob", "new_blob": "27e4ba4d6b2d89e196821918352124fd81e30ba5", "new_bytes": 36008, "new_sha256": "0250b134cb306ca52b67f648305706abf28e0734e960e9a1d38f57cea0799a6d"},
+              {"path": "scripts/docs-platform-admission-recovery.test.mjs", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "47ea1d52d179bf8ed1c8219321e407f02f8b9f31", "old_bytes": 27761, "old_sha256": "0dff340520dcbbc75318cdaa6ed1e652cb08fe6eb6a3346632e02e9b884e0cb7", "new_mode": "100644", "new_type": "blob", "new_blob": "8e083b1c6d9ce830d6c331752f21247a84430718", "new_bytes": 39122, "new_sha256": "0d4cfca3742eda616ba5d8d2b784b77740afb4c6c70d0a0400d7e8473ee7fec5"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/README.md", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "1bdc391614478e18733c0a0b633135e079aa4800", "new_bytes": 1128, "new_sha256": "f1ee42d2eb3ad9f42edf446c2fe4dcf9ccff9ec968e6b3a0bea9c06ad898d46a"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/authorize.log", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "ced2fbdeeaa39f4831a91ab643cc14cee8d308dd", "new_bytes": 29495, "new_sha256": "ffbf323edb2653cc630e2eb138b6d04ac722679ad7838f311c1e6f7202169bca"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/checks.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "b2997997918d710e5988634c9e133f64bf49f36b", "new_bytes": 37619, "new_sha256": "c47a793ed4aa64a76fefa0e0fe220d21203b37b9724679d82130d74c2c671b69"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/controller-snapshot/governance/docs-protocol-exceptions.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "ac336b865d697b62c938623f2960864e85f7698a", "new_bytes": 948, "new_sha256": "10657f44d0a80adbdf725cf8cebf123086b4dd10790bb09562388f2172c53bae"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/controller-snapshot/governance/docs-protocol-exceptions.schema.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "b38e37acaa5f238f0000dcab581a3f9f69b33873", "new_bytes": 2001, "new_sha256": "c1d2c2dd8f5da97f744cbcf8b6001f423ac82ef6c5ef42cd6472b2b5e7d6650d"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/controller-snapshot/governance/docs-protocol-policy-v2.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad", "new_bytes": 33045, "new_sha256": "63f3f41433359f4899a3b75257af4dc3e389e5fb6f5a9fcbc99fb4a933c4a20b"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/controller-snapshot/governance/docs-protocol-policy-v2.schema.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "d45b368c2967f6347236b978971c6c0545f60b10", "new_bytes": 16818, "new_sha256": "eb87fda58fc4f600a4a241a3d979a0692ee09fde8d028b2542baf767fd4725f2"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/controller-snapshot/governance/docs-qualified-cohorts.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "d631f2e12666d210e07996cc6a830961d468d429", "new_bytes": 38613, "new_sha256": "b76ef1cfaeb192351ca6e95670d7ea6f0a5957cfc86f5a5d4af6364b2a2bc49a"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/controller-snapshot/governance/docs-qualified-cohorts.schema.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "99ead31926964965e9061d5f3097f1beef1c31e8", "new_bytes": 22510, "new_sha256": "64fcd7a51966fa4302a9add4e3b4e6c00d30e88f6ba9a100ad450134d174df4d"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/jobs.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "2c60a43cc99daf330b6403f65dfedf31863829ee", "new_bytes": 11577, "new_sha256": "c07fd5ea3da046a40fd0d4648049ce9b9e2a4f49e755bc156f23c098ee3b52ea"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/main.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "b918681533754d2a673c18759b3581a5fa9268cf", "new_bytes": 5813, "new_sha256": "d39246e5fa2e5b136bc441daac4d42667a6e14fdc606e0144e9fd4a7c4bee151"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/packet.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "e31e99de004015c38e3536ee946d7eac2a963a07", "new_bytes": 8073, "new_sha256": "059017c918042d87adb786f0ed1ff8762f5c616c11a5f93e4b7317495d2f4e45"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/pinned-runner/.github/workflows/docs-protocol-check.yml", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1", "new_bytes": 16954, "new_sha256": "ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/pinned-runner/scripts/verify-docs-consumer-gate.mjs.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "b0017b707bd42f46fe86ae342e3f651194011194", "new_bytes": 17807, "new_sha256": "fc04a307c012f929ac704e0443d82d81e5bf8627411f807d809984cf02d6fb09"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/.github/workflows/docs-protocol.yml", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "240d13c9528dc56a869bb13e9a7d3712d875484f", "new_bytes": 262, "new_sha256": "d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/architecture/foundation/docs-consumer-integration.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "ddab8fd7ce4be30db0a796aa68be4ec1b0370fd7", "new_bytes": 3083, "new_sha256": "f576fc1e596c0502f1b0c5b3eb59a14f43a2a41bbe6bce40df02021e5edd556e"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/architecture/foundation/docs-protocol-managed-state.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "ed4e08d2be259269e308b2a38c1a6a3aaf3f0951", "new_bytes": 2427, "new_sha256": "1f005f531c8e23e970c8a98533807f3e203c916fab339f5dfb4cd691481513b9"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/architecture/foundation/docs-protocol-qualification.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "694aceb3ba355a084f28217644fcc2f5cc44bed9", "new_bytes": 2419, "new_sha256": "9d4f61e7f03522aad368c086ff1e0eca3d79e5c3143a6badd8a98522f47c3ae0"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/architecture/foundation/docs-protocol.yaml", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "81daa0ccde2d9075374f70ac7f8281f751e9e4c0", "new_bytes": 401, "new_sha256": "9901b6edd37098b50ba1a2ecd688bdc2b4c4ed0ff082ffb0ce60397b32d61e33"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/package.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "ca80c15a48410d540baa652e3f0d43ce4ed67e15", "new_bytes": 1408, "new_sha256": "a4b2be9c6e0354d9ea66f4e63fdc1929aef2218df1ad833a522c21f4c01b1968"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/platform/pnpm-lock.yaml", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "4cacd8997072b5195a777b57feb0ad5d7df36f9b", "new_bytes": 81038, "new_sha256": "50eceacc3218f6fc5832272a203238a438beba6a85aafffd571f0a8f8506fe21"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/qualified-base.fixture.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "344707395ff859bc04c53c5bf57fdc0b22f6c999", "new_bytes": 40852, "new_sha256": "dcd59aacce68c54ae59b2d2f7d6a9e49c67bbb10b9aae974487979d60a537063"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/recommended-TEST.fixture.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "c9a5fde60b7f7ecf9e914229de4fcbecbc2fd3de", "new_bytes": 41295, "new_sha256": "9c7078474b6fd747395a9c48d73f2d0c54709ccba4abbdd5cded5594dd33a428"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/replay-support.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "85aa854679880419c2534173a0acd28532124b28", "new_bytes": 1919, "new_sha256": "279405f596d1996693c5de312bec3847a982f34bdb38cbc262cc7ecdf31787ab"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/replay-support/governance/docs-protocol-exceptions.schema.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "83543d4f8bf49dd0f5bae6f74431ab9f79359760", "new_bytes": 650, "new_sha256": "c976ed7418a11c5c09573465a5e6ae2c9f80781721a4873e7f9a7aac03db3dc7"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/replay-support/governance/docs-protocol-policy-v2.schema.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "db0b8d9933ed28edbd10b9630142c20687128887", "new_bytes": 3216, "new_sha256": "a988b45391e292735132a59244c0ec3347444a237faa00dc75aeccba1f54f867"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/replay-support/governance/docs-qualified-cohorts.schema.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "c33d14dcb85634a03ee961a4ee1f9970c7826654", "new_bytes": 3220, "new_sha256": "c82d2fa0159885f43ec052e6306a7f4fad714ce219a39b92d6c531b8636f52c2"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/replay-support/scripts/docs-cohort-policy.mjs.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "dc7e4eef9da7a6c5a0ae9632380aa1d1969fe86b", "new_bytes": 10567, "new_sha256": "942adf1453e333d2df3e9c6cf3b3105350b8d4c8d61c3ec77c554e958295e8d6"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/repository.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "7583ef66ecc7053113b5ec3c7e035b8881746eaf", "new_bytes": 7744, "new_sha256": "b3d796498e8bedfdbd12d07312ee41013e213624086c907044081cadf4b25efb"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/run.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "87d0e5e672435c41bf8dbaf55afc9190744c5a2c", "new_bytes": 14126, "new_sha256": "207aec512382524d7330b5bdb8e364b87183111a0e30fc2728f3050965c1a26f"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/selection-TEST.json", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "dd1f9c0608f1762df31f2255f0d4d4e7590a30a7", "new_bytes": 608, "new_sha256": "f8ad2922d8e82fe07fb993ca6471ef56993a25f380cae0e5c0b602514e55595f"},
+              {"path": "scripts/fixtures/platform-stable31-pending-source/selection-policy.fixture.json.gz", "status": "added", "old_mode": null, "old_type": null, "old_blob": null, "old_bytes": null, "old_sha256": null, "new_mode": "100644", "new_type": "blob", "new_blob": "11ee6e2ecc62b430a0a8b458c975ecdf87f9df58", "new_bytes": 4694, "new_sha256": "fa86d117144c824b4681f04947964828b1f3e8eb7dbb92a3dd2c62d96b12c45e"},
+              {"path": "scripts/verify-docs-admission-change.mjs", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "b88a13d5a8932e2bfbb41a6d21aac79f089ff38a", "old_bytes": 14713, "old_sha256": "64662498c90c3c3ee8baaf984244730cfa34fa56cc643e0be7d34022758246b1", "new_mode": "100644", "new_type": "blob", "new_blob": "fb0342d9f192a9a4cb8ce0e0fdbfc1fbda032e6c", "new_bytes": 16645, "new_sha256": "eaf8b8288bef7e7392e9ba07c64801a1e4e04b930f32d1b78b40a068b921a48b"},
+              {"path": "scripts/verify-docs-cohort-evidence.mjs", "status": "modified", "old_mode": "100644", "old_type": "blob", "old_blob": "f9858bc2bf5846cd2cbf5b41a1b7762c9ce27ffd", "old_bytes": 66704, "old_sha256": "8196e9c107de3cd2951626cc0e1a6137396d3fe6923ebe70fd7448226036104b", "new_mode": "100644", "new_type": "blob", "new_blob": "273619d433192f6ac208d23c7da9ea06add6d865", "new_bytes": 68007, "new_sha256": "c3ab8a2ed1b4af4b52da98bef5e3fe691470c69bebc979382c6aa37feb149fc5"}
+            ];
+            const guardPaths = [
+              ".github/workflows/docs-platform-stable31-pending-transition.yml",
+              "scripts/docs-platform-stable31-pending-transition.test.mjs"
+            ];
+            const identity = { id: 1316243981, full_name: "agent-teams-ai/.github" };
+            const repo = { owner: "agent-teams-ai", repo: ".github" };
+            const { createHash } = require("node:crypto");
+            const validSha = sha => typeof sha === "string" && /^[0-9a-f]{40}$/u.test(sha) && !/^0{40}$/u.test(sha);
+            const sameRepo = value => value?.id === identity.id && value.full_name === identity.full_name;
+            const demand = (condition, message) => { if (!condition) throw new Error(message); };
+            const hash = (kind, bytes) => createHash("sha1").update(`${kind} ${bytes.length}\0`).update(bytes).digest("hex");
+            const regular = entry => entry?.mode === "100644" && entry.type === "blob";
+            const sameEntry = (left, right) => left === undefined ? right === undefined :
+              right !== undefined && left.mode === right.mode && left.type === right.type && left.sha === right.sha && left.size === right.size;
+            const owned = new Set(tuple.map(item => item.path));
+            // Reuse existing closed authority classification; no directory-prefix authorization.
+            const installNames = new Set([
+              ".node-version", ".nvmrc", ".yarnrc.yml", "yarn.lock", "package-lock.json", "npm-shrinkwrap.json",
+              ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
+              "renovate-config.json", "renovate.json", "foundation.config.yaml", "oxlint.json"
+            ]);
+            const isAuthorityPath = path => owned.has(path) || guardPaths.includes(path) ||
+              [".github/", "scripts/", "tools/"].some(prefix => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installNames.has(path.split("/").at(-1));
+            try {
+              demand(context.eventName === "pull_request_target" &&
+                ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(context.payload.action),
+                "Wrong event or action.");
+              demand(context.repo.owner === repo.owner && context.repo.repo === repo.repo &&
+                sameRepo(context.payload.repository) && context.payload.repository.default_branch === "main",
+                "Wrong repository identity or event default branch.");
+              const pullNumber = context.payload.number;
+              demand(Number.isSafeInteger(pullNumber) && pullNumber > 0 && context.issue.number === pullNumber,
+                "Only the identified PR event is eligible.");
+              const pull = context.payload.pull_request;
+              const snapshot = value => {
+                demand(value?.number === pullNumber && Number.isSafeInteger(value.id) && value.id > 0,
+                  "Only the identified PR is eligible.");
+                demand(value.state === "open" && value.draft === false && value.merged === false,
+                  "PR must be open, unmerged and ready for review.");
+                demand(sameRepo(value.base?.repo) && sameRepo(value.head?.repo), "Missing or foreign PR repository.");
+                demand(value.base.ref === "main" && typeof value.head.ref === "string" && value.head.ref.length > 0,
+                  "PR must target the default branch with an identified head branch.");
+                demand(validSha(value.base.sha) && validSha(value.head.sha) && value.base.sha !== value.head.sha,
+                  "Nonzero distinct exact base/head revisions required.");
+                demand(Number.isSafeInteger(value.changed_files) && value.changed_files > 0 && value.changed_files <= 3000,
+                  "Positive bounded PR changed_files required.");
+                demand(value.user?.type === "User" && typeof value.user.login === "string" && value.user.login.length > 0,
+                  "An identified human PR author is required.");
+                return JSON.stringify([value.id, value.number, value.base.ref, value.base.sha, value.head.ref,
+                  value.head.sha, value.changed_files, value.user.type, value.user.login]);
+              };
+              const frozen = snapshot(pull);
+              demand(context.sha === pull.base.sha && context.ref === "refs/heads/main",
+                "Execution must be bound to the event default-branch base.");
+              const bindPull = async () => {
+                const live = await github.rest.pulls.get({ ...repo, pull_number: pullNumber });
+                demand(snapshot(live.data) === frozen, "Live PR moved from the event snapshot.");
+              };
+              const bindDefault = async () => {
+                const controller = await github.rest.repos.get(repo);
+                demand(sameRepo(controller.data) && controller.data.default_branch === "main" &&
+                  controller.data.archived === false && controller.data.disabled === false,
+                  "Live repository identity or default branch changed.");
+                const branch = await github.rest.repos.getBranch({ ...repo, branch: "main" });
+                demand(branch.data?.name === "main" && branch.data.commit?.sha === pull.base.sha,
+                  "Live default branch moved or PR base is stale.");
+              };
+              await bindPull();
+              await bindDefault();
+              const descendant = async (before, after) => {
+                const { data } = await github.rest.repos.compareCommitsWithBasehead({ ...repo, basehead: `${before}...${after}` });
+                demand(data?.base_commit?.sha === before && data.merge_base_commit?.sha === before &&
+                  data.status === "ahead" && data.behind_by === 0 && Number.isSafeInteger(data.ahead_by) &&
+                  data.ahead_by > 0 && data.total_commits === data.ahead_by,
+                  "Genuine nonempty ancestry of the exact immutable base required.");
+              };
+              await descendant(pull.base.sha, pull.head.sha);
+              const readTree = async revision => {
+                const commit = await github.rest.git.getCommit({ ...repo, commit_sha: revision });
+                demand(commit.data?.sha === revision && validSha(commit.data.tree?.sha), "Immutable commit/tree binding required.");
+                const { data: tree } = await github.rest.git.getTree({ ...repo, tree_sha: commit.data.tree.sha, recursive: "true" });
+                const validEntry = entry => {
+                  if (typeof entry?.path !== "string" || entry.path.includes("\0") ||
+                    entry.path.split("/").some(part => !part || part === "." || part === "..") || !validSha(entry.sha)) return false;
+                  if (entry.type === "tree") return entry.mode === "040000" && entry.size === undefined;
+                  if (entry.type === "commit") return entry.mode === "160000" && entry.size === undefined;
+                  return entry.type === "blob" && ["100644", "100755", "120000"].includes(entry.mode) &&
+                    Number.isSafeInteger(entry.size) && entry.size >= 0;
+                };
+                demand(tree?.sha === commit.data.tree.sha && tree.truncated === false && Array.isArray(tree.tree) &&
+                  tree.tree.every(validEntry) && new Set(tree.tree.map(entry => entry.path)).size === tree.tree.length,
+                  "Complete well-formed unambiguous immutable tree required.");
+                const entries = new Map(tree.tree.map(entry => [entry.path, entry]));
+                const children = new Map([["", []]]);
+                for (const entry of tree.tree) if (entry.type === "tree") children.set(entry.path, []);
+                for (const entry of tree.tree) {
+                  const parent = entry.path.includes("/") ? entry.path.slice(0, entry.path.lastIndexOf("/")) : "";
+                  demand(children.has(parent), "Complete immutable tree parent hierarchy required.");
+                  children.get(parent).push(entry);
+                }
+                // Reconstruct every Git tree, including empty subtrees. An omitted API entry cannot hide a change.
+                for (const [path, direct] of children) {
+                  const name = entry => entry.path.split("/").at(-1);
+                  direct.sort((left, right) => Buffer.compare(Buffer.from(name(left) + (left.type === "tree" ? "/" : "")),
+                    Buffer.from(name(right) + (right.type === "tree" ? "/" : ""))));
+                  const bytes = Buffer.concat(direct.flatMap(entry => [
+                    Buffer.from(`${entry.mode.replace(/^0/u, "")} ${name(entry)}\0`), Buffer.from(entry.sha, "hex")
+                  ]));
+                  demand(hash("tree", bytes) === (path ? entries.get(path).sha : tree.sha),
+                    "Complete immutable tree object hash required.");
+                }
+                return entries;
+              };
+              const before = await readTree(pull.base.sha);
+              const after = await readTree(pull.head.sha);
+              for (const path of guardPaths) demand(regular(before.get(path)) && sameEntry(before.get(path), after.get(path)),
+                "Inherited base-owned guard and test must remain unchanged regular files.");
+              const changedPaths = [...new Set([...before.keys(), ...after.keys()])].filter(path => {
+                const left = before.get(path), right = after.get(path);
+                return !sameEntry(left, right) && ((left !== undefined && left.type !== "tree") ||
+                  (right !== undefined && right.type !== "tree"));
+              });
+              demand(changedPaths.length === pull.changed_files, "PR changed_files must match the complete immutable terminal diff.");
+              // Directory identities may change only along paths to reviewed terminal changes.
+              const closure = (left, right, paths, ordinary = false) => {
+                const ancestors = new Set([...paths].flatMap(path => {
+                  const parts = path.split("/");
+                  return parts.slice(0, -1).map((_, index) => parts.slice(0, index + 1).join("/"));
+                }));
+                demand([...new Set([...left.keys(), ...right.keys()])].every(path => {
+                  if (paths.has(path)) return true;
+                  const entry = left.get(path), other = right.get(path);
+                  return sameEntry(entry, other) || (ancestors.has(path) && (
+                    (entry?.type === "tree" && other?.type === "tree" && entry.mode === other.mode) ||
+                    (ordinary && ((entry === undefined && other?.type === "tree") ||
+                      (other === undefined && entry?.type === "tree")))));
+                }), "Complete immutable trees may differ only at reviewed paths and unchanged ancestor modes/types.");
+              };
+              let direction;
+              if (!changedPaths.some(isAuthorityPath)) {
+                closure(before, after, new Set(changedPaths), true);
+                direction = "noop";
+              } else {
+                demand(pull.user.login === "777genius", "Only the owner human PR may carry this finite authority transition.");
+                demand(changedPaths.length === tuple.length && changedPaths.every(path => owned.has(path)),
+                  "Only the complete exact forty-file authority transition is eligible.");
+                const matches = (tree, side) => tuple.every(item => {
+                  const entry = tree.get(item.path), blob = item[`${side}_blob`];
+                  return blob === null ? entry === undefined : regular(entry) && entry.mode === item[`${side}_mode`] &&
+                    entry.type === item[`${side}_type`] && entry.sha === blob && entry.size === item[`${side}_bytes`];
+                });
+                const directions = [{ name: "forward", base: "old", head: "new" }, { name: "rollback", base: "new", head: "old" }];
+                const matching = directions.filter(value => matches(before, value.base) && matches(after, value.head));
+                demand(matching.length === 1, "Exact old/new modes, types, blobs, bytecounts and addition/removal tuple required.");
+                const selected = matching[0];
+                direction = selected.name;
+                closure(before, after, owned, true);
+                await descendant(anchor, pull.base.sha);
+                const origin = await readTree(anchor);
+                demand(matches(origin, "old"), "Frozen base old forty-file authority required.");
+                demand(guardPaths.every(path => !origin.has(path)), "Guard must be separately staged after the frozen base.");
+                // No arbitrary ancestor changes. Additional policy observations need exact reviewed coordinates.
+                closure(origin, before, new Set([...owned, ...guardPaths]), true);
+                const checked = new Set();
+                for (const side of ["old", "new"]) for (const item of tuple) {
+                  const sha = item[`${side}_blob`];
+                  if (sha === null || checked.has(sha)) continue;
+                  const { data } = await github.rest.git.getBlob({ ...repo, file_sha: sha });
+                  demand(data?.sha === sha && data.encoding === "base64" && typeof data.content === "string" &&
+                    data.size === item[`${side}_bytes`] && /^[A-Za-z0-9+/=\r\n]*$/u.test(data.content),
+                    "Exact immutable blob encoding and bytecount required.");
+                  const encoded = data.content.replace(/[\r\n]/gu, "");
+                  const bytes = Buffer.from(encoded, "base64");
+                  demand(bytes.toString("base64") === encoded && bytes.length === item[`${side}_bytes`] &&
+                    hash("blob", bytes) === sha && createHash("sha256").update(bytes).digest("hex") === item[`${side}_sha256`],
+                    "Exact immutable blob length, Git identity and SHA256 required.");
+                  checked.add(sha);
+                }
+              }
+              // Last metadata operations reject changes made while immutable trees/blobs were read.
+              await bindPull();
+              await bindDefault();
+              core.info(JSON.stringify({
+                guard: "trusted-platform-stable31-pending-transition", repository: identity.full_name,
+                direction, pr: pullNumber, base: pull.base.sha, head: pull.head.sha, anchor,
+                tuple_identity: `sha256:${createHash("sha256").update(JSON.stringify(tuple)).digest("hex")}`,
+                tuple: direction === "noop" ? [] : tuple
+              }));
+            } catch (error) {
+              core.setFailed(`Platform stable31 pending guard refused: ${error instanceof Error ? error.message : "API or metadata failure"}`);
+            }
