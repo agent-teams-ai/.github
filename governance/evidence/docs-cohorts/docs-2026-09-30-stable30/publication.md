@@ -1,8 +1,8 @@
 # stable30 publication proposal
 
 This proposal appends one generation-2 `docs-2026-09-30-stable30` record and
-event 180, `PUBLISHED_UNQUALIFIED`, against merged main
-`1d3bd96e3f92006d253eb0f4887b375e8d39a0de` after PR326. The retained publication
+event 180, `PUBLISHED_UNQUALIFIED`, against actual merged main
+`b30455e32cf5d54ade6d8301637701347e4ce57c` after PR340. The retained publication
 observation in publication.json still names its historical main base. The event uses the latest actual
 publication, `2026-09-29T17:54:07.257Z`, and the existing event-179 predecessor.
 `publication.json` records the exact digests and inspected host observations.
@@ -88,10 +88,13 @@ The existing V2 resolver uses a fresh lockfile-only pnpm11.20 resolution from
 three exact direct roots. Non-managed dependency ranges can select newer patches
 later, so this correction remains tied to the captured public resolution. Fresh
 LIVE verification can drift again; the exact-source equality guard remains in force.
-This data correction changes no resolver, validator, schema, launcher or pin.
-PR339 remains the separate active floor workstream. The reusable workflow stays
-at revision 757122cb08ed15aba6c9eef1b1f655b77d1ac54b and blob
-9bcbe54dfec6280045ac596e55c1f14ce5f176e1; no re-pin is proposed.
+This workflow refresh changes only proposed data bindings and supporting evidence.
+PR340 is merged at actual main b30455e32cf5d54ade6d8301637701347e4ce57c;
+its six-file floor delta and original supplied PR evidence are retained in
+`sources/workflow-refresh-2026-10-03.json`. Local Git inspection confirms the
+new workflow blob f1492257de281f40a262042eb989291558147d5f and seven launcher
+literals at Node24.21.0. The unchanged mandatory current-main equality check at
+`scripts/verify-docs-cohort-evidence.mjs:1164` rejects the old 757122/9bcbe tuple.
 
 This correction inspects supplied observations and exact data bytes only.
 No validator or test is executed by this worker. Main must independently check
@@ -101,3 +104,41 @@ new bytes or replace the failed required trusted-validation.
 The separate producer author-identity incident remains with its owner; successful
 signature and ancestry checks do not resolve it. No consumer or agent operation
 was performed.
+
+## Deliberate unmerged workflow binding refresh
+
+Only the unaccepted stable30 record and event 180 are refreshed. Proposed workflow
+revision is b30455e32cf5d54ade6d8301637701347e4ce57c, blob
+f1492257de281f40a262042eb989291558147d5f. All five package coordinates/SRIs,
+83-node 422aed0b closure, publication attempts and timestamps remain unchanged.
+The original 42 accepted records and 179-event chain retain their bytes.
+
+ADR-0001 item 10 and verifier lines 521-574 distinguish immutable published
+caller-template bytes from their authority-tuple rendering. The unchanged
+published template digest remains
+`sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac`.
+Substituting its three placeholders with the proposed repository/path/revision
+produces rendered digest
+`sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7`.
+This is a byte rendering, not execution or a published-asset amendment.
+Verifier lines 471-518 bind all 19 historical migration projections and caller
+files to accepted authority. They include stable25 and exclude stable30; every
+historical binding and the declared stable25 migration edges are preserved.
+
+Record digest is
+`sha256:af5796c98a60a2b3b1b8c6e08a67bc85a641695606e12310712467cbd5ab2729`;
+event digest is
+`sha256:da22d83e551be25d3a0db9260aedd11434980f7f0e6cb3bd94c0d9c28bec7555`.
+The prior event-179 digest, original effective_at and empty canary_evidence remain.
+Both proposed evidence lists retain the historical workflow reference and append
+the actual-main workflow reference plus the new workflow-refresh source.
+
+The unchanged npm proof, old workflow-tree capture and original publication
+inspection remain historical 757122/9bcbe and 3c4f observations. The retained
+runtime-closure refresh source describes the earlier unmerged registration;
+its embedded proposed_registration digests remain that snapshot. The new source
+and publication.json explicitly distinguish those observations from the new
+proposed workflow binding. No new signature audit, executed caller, CANARY or
+qualification result is claimed. Node24 remains default; managed Node26 is
+unqualified. Main actual CI, FULL live verification, final owning gate and
+independent exact-head/base review remain pending.

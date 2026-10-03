@@ -4,12 +4,12 @@
   "protected_main_base": "3fe0f135ffc446b3bb174397c6b5783f72a008a2",
   "host_observed_at": "2026-09-30T15:54:30.208Z",
   "host_node": "v24.21.0",
-  "record_digest": "sha256:adf924539bf189e4e394d02d4b9eb0a95e2334bab6ae149df09a4de7f91366ea",
+  "record_digest": "sha256:af5796c98a60a2b3b1b8c6e08a67bc85a641695606e12310712467cbd5ab2729",
   "event": {
     "sequence": 180,
     "effective_at": "2026-09-29T17:54:07.257Z",
     "previous_event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
-    "event_digest": "sha256:739e63896ea6b186667e8967bfd8fc3ef217e909381fa3a3c81cbd9e60da34c2"
+    "event_digest": "sha256:da22d83e551be25d3a0db9260aedd11434980f7f0e6cb3bd94c0d9c28bec7555"
   },
   "scope": "Generation 2, exact five packages, Token only, managed Node >=24.18.0 <25; MCP excluded. No VERIFIED, QUALIFIED, CANARY, consumer adoption or Node26 process authorization.",
   "packages": [
@@ -506,8 +506,8 @@
     "repository": "agent-teams-ai/.github",
     "repository_id": 1316243981,
     "path": ".github/workflows/docs-protocol-check.yml",
-    "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
-    "blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+    "revision": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+    "blob_sha": "f1492257de281f40a262042eb989291558147d5f"
   },
   "runtime_closure": {
     "schema_version": 2,
@@ -567,5 +567,27 @@
     "classification": "ACTUAL_PUBLIC_NPM_RESOLUTION_NEWTEST_NOT_COHORT_QUALIFICATION",
     "historical_observation_scope": "protected_main_base, host_observed_at, host_node, signature_audit and supplied_host_response_sha256 retain the original 2026-09-30 publication observation. They do not assert verification of the refreshed closure.",
     "capture_scope": "Supplied actual 2026-10-03 public resolution on Node24.21.0 with pinned pnpm11.20.0. See the receipt for machine, source revision and file-mtime semantics. This worker did not perform a live resolution or signature verification."
+  },
+  "workflow_refresh_capture": {
+    "evidence_reference": "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/workflow-refresh-2026-10-03.json",
+    "classification": "UNMERGED_PROPOSAL_WORKFLOW_REFRESH_FROM_SUPPLIED_ACTUAL_MAIN_AND_LOCAL_GIT",
+    "input_head": "dbf98cf07fbb38cf9e37c4672dde03652bb67857",
+    "input_tree": "1b78b96b4e03308cfbc366c50331bebdc46e5402",
+    "integration_base": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+    "retained_historical_reusable_workflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+    },
+    "proposed_caller_workflow": {
+      "package": "@agent-teams/docs-protocol-agent-teams",
+      "path": "assets/docs-protocol.yml",
+      "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac",
+      "rendered_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7"
+    },
+    "historical_observation_scope": "protected_main_base, host_observed_at, host_node, signature_audit, release_attempts, protected_ancestry, worker_inspection and supplied_host_response_sha256 retain the original 2026-09-30 publication observation of 757122/9bcbe and 3c4f. They do not verify the refreshed reusable_workflow, rendering or 422aed0b closure.",
+    "capture_scope": "Retained actual PR340/main packet plus local Git six-file delta and exact workflow blob inspection. reusable_workflow now denotes proposed current-main authority; this is no new cryptographic audit, caller execution, CANARY or qualification claim. Historical runtime-capture proposed_registration digests remain its pre-workflow-refresh snapshot."
   }
 }

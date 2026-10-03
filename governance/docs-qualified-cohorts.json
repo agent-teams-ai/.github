@@ -7458,8 +7458,8 @@
         "repository": "agent-teams-ai/.github",
         "repository_id": 1316243981,
         "path": ".github/workflows/docs-protocol-check.yml",
-        "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
-        "blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+        "revision": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+        "blob_sha": "f1492257de281f40a262042eb989291558147d5f"
       },
       "schemas": {
         "consumer_integration": 3,
@@ -7481,7 +7481,7 @@
           "package": "@agent-teams/docs-protocol-agent-teams",
           "path": "assets/docs-protocol.yml",
           "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac",
-          "rendered_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125"
+          "rendered_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7"
         },
         "asset_catalog": {
           "package": "@agent-teams/docs-protocol-agent-teams",
@@ -7540,13 +7540,15 @@
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.json",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/npm-signatures-and-closure.json",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.md",
-        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json"
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json",
+        "https://github.com/agent-teams-ai/.github/blob/b30455e32cf5d54ade6d8301637701347e4ce57c/.github/workflows/docs-protocol-check.yml",
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/workflow-refresh-2026-10-03.json"
       ],
       "eligible_after": "2026-09-30T17:54:08Z",
       "rollback_to": [
         "docs-2026-09-16-stable25"
       ],
-      "record_digest": "sha256:adf924539bf189e4e394d02d4b9eb0a95e2334bab6ae149df09a4de7f91366ea"
+      "record_digest": "sha256:af5796c98a60a2b3b1b8c6e08a67bc85a641695606e12310712467cbd5ab2729"
     }
   ],
   "events": [
@@ -11357,11 +11359,13 @@
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.json",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/npm-signatures-and-closure.json",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.md",
-        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json"
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json",
+        "https://github.com/agent-teams-ai/.github/blob/b30455e32cf5d54ade6d8301637701347e4ce57c/.github/workflows/docs-protocol-check.yml",
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/workflow-refresh-2026-10-03.json"
       ],
       "canary_evidence": [],
       "previous_event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
-      "event_digest": "sha256:739e63896ea6b186667e8967bfd8fc3ef217e909381fa3a3c81cbd9e60da34c2"
+      "event_digest": "sha256:da22d83e551be25d3a0db9260aedd11434980f7f0e6cb3bd94c0d9c28bec7555"
     }
   ]
 }
