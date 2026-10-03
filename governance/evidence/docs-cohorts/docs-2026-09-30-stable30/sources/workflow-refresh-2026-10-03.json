@@ -1,0 +1,189 @@
+{
+  "classification": "UNMERGED_PROPOSAL_WORKFLOW_REFRESH_FROM_SUPPLIED_ACTUAL_MAIN_AND_LOCAL_GIT",
+  "scope": "Bounded DATA-only refresh of unaccepted PR325 stable30 registration after merged PR340. Source-packet review and local Git object inspection only; no independent online research, new signature audit, caller execution, CANARY evidence or Cohort qualification.",
+  "input_candidate": {
+    "head": "dbf98cf07fbb38cf9e37c4672dde03652bb67857",
+    "tree": "1b78b96b4e03308cfbc366c50331bebdc46e5402"
+  },
+  "supplied_packet": {
+    "path": ".node26-inputs/actual-floor-main.json",
+    "bytes": 3981,
+    "sha256": "sha256:21c8747fe0fb3718bd2efd86d810df0c4147e8118471dc02bca560b39b516cc3",
+    "semantics": "Parsed capture copied in full below, including original PR340 body and six-file metadata. Its author-supplied check/review statements are retained evidence, not checks independently performed by this worker.",
+    "value": {
+      "head": "dbf98cf07fbb38cf9e37c4672dde03652bb67857",
+      "tree": "1b78b96b4e03308cfbc366c50331bebdc46e5402",
+      "protectedMain": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+      "workflowBlob": "f1492257de281f40a262042eb989291558147d5f",
+      "oldWorkflowBlob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+      "PR340": {
+        "body": "Managed Docs qualification and Central authority installs still start Node 24.18.0. Foundation required-test enforcement needs Node 24.21.0. Update the seven launcher literals and their strict owning assertions within the Node 24 family.\n\nThis exact six-file transition preserves OIDC, trusted install isolation, managed qualification, package/cohort identities and the base-owned finite forward/rollback guard. Node 26 is unchanged and outside scope.\n\nFinal head afef1655b1a31cab5e32449e2b5215ff8da7bdae is based on merged #339 at b2840491075494cc8c649ad1d9ad23061a733835. Complete Git tree fc03ef8138564a86d06820059fcab6d5bb92b885 is identical to independently approved d653250c9124b2303fe96a26324f1b88e08126c1. Exact-tree qualification: 375/375 focused tests, full pnpm check and independent source APPROVE, zero skipped. Live base-owned trusted-node24-launcher-v1 and all ordinary required checks must pass before owner merge.\n\nHistorical finite v8 rejects this different tuple; that failure remains evidence. The owner-approved bounded required-check replacement uses the genuinely passing Node24 guard, preserves identity and every other rule, and immediately restores the original ruleset after the merge.\n\nRefs #338\n\n\n<!-- This is an auto-generated description by cubic. -->\n---\n## Summary by cubic\nUpdates all managed Docs launchers from Node 24.18.0 to 24.21.0 so Foundation required-test enforcement uses the correct tooling floor.\n\n- Bumps the seven launcher literals across four workflow files and the `scripts/check-community-files.mjs` validator.\n- Adds two tests asserting every owned Docs job pins exactly one `actions/setup-node@` launcher at 24.21.0 before installation, and that the OIDC resolver rejects changed repository identities.\n\nRefs #338\n\n<sup>Written for commit afef1655b1a31cab5e32449e2b5215ff8da7bdae. Summary will update on new commits.</sup>\n\n<a href=\"https://cubic.dev/pr/agent-teams-ai/.github/pull/340?utm_source=github\" target=\"_blank\" rel=\"noopener noreferrer\" data-no-image-dialog=\"true\"><picture><source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-dark.svg\"><source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.cubic.dev/buttons/review-in-cubic-light.svg\"><img alt=\"Review in cubic\" src=\"https://www.cubic.dev/buttons/review-in-cubic-dark.svg\"></picture></a>\n\n<!-- End of auto-generated description by cubic. -->\n\n",
+        "files": [
+          {
+            "path": ".github/workflows/docs-admission-evidence.yml",
+            "additions": 1,
+            "deletions": 1,
+            "changeType": "MODIFIED"
+          },
+          {
+            "path": ".github/workflows/docs-cohort-append-only.yml",
+            "additions": 1,
+            "deletions": 1,
+            "changeType": "MODIFIED"
+          },
+          {
+            "path": ".github/workflows/docs-fleet-audit.yml",
+            "additions": 1,
+            "deletions": 1,
+            "changeType": "MODIFIED"
+          },
+          {
+            "path": ".github/workflows/docs-protocol-check.yml",
+            "additions": 4,
+            "deletions": 4,
+            "changeType": "MODIFIED"
+          },
+          {
+            "path": "scripts/check-community-files.mjs",
+            "additions": 4,
+            "deletions": 4,
+            "changeType": "MODIFIED"
+          },
+          {
+            "path": "scripts/verify-docs-consumer-gate.test.mjs",
+            "additions": 85,
+            "deletions": 0,
+            "changeType": "MODIFIED"
+          }
+        ],
+        "headRefOid": "afef1655b1a31cab5e32449e2b5215ff8da7bdae",
+        "mergeCommit": {
+          "oid": "b30455e32cf5d54ade6d8301637701347e4ce57c"
+        },
+        "title": "ci(docs): qualify managed launchers on Node 24.21"
+      }
+    }
+  },
+  "local_git_observations": {
+    "prior_main": "b2840491075494cc8c649ad1d9ad23061a733835",
+    "actual_main": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+    "actual_main_tree": "fc03ef8138564a86d06820059fcab6d5bb92b885",
+    "input_head_parents": [
+      "b53df94dc18ba80d146f2575cce9a0a9dc187e74",
+      "b30455e32cf5d54ade6d8301637701347e4ce57c"
+    ],
+    "actual_main_is_input_head_ancestor": true,
+    "floor_delta": [
+      {
+        "path": ".github/workflows/docs-admission-evidence.yml",
+        "mode": "100644",
+        "type": "blob",
+        "prior_blob_sha": "6de75ea253f021c255216862283400ef22c35a13",
+        "actual_main_blob_sha": "a95efa08ae173554e1c82b6e5460ee8160810c44"
+      },
+      {
+        "path": ".github/workflows/docs-cohort-append-only.yml",
+        "mode": "100644",
+        "type": "blob",
+        "prior_blob_sha": "3c7f54dc24a6a2cd8c1c124df242841cde46df87",
+        "actual_main_blob_sha": "71983165ef4da0bb745fcecfe2ace29fe75f6d41"
+      },
+      {
+        "path": ".github/workflows/docs-fleet-audit.yml",
+        "mode": "100644",
+        "type": "blob",
+        "prior_blob_sha": "cd2cfee3713da2669b7a414a26d57aceff0038ba",
+        "actual_main_blob_sha": "40788593a0a9252baee5fe1c88c712cf2f541864"
+      },
+      {
+        "path": ".github/workflows/docs-protocol-check.yml",
+        "mode": "100644",
+        "type": "blob",
+        "prior_blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+        "actual_main_blob_sha": "f1492257de281f40a262042eb989291558147d5f"
+      },
+      {
+        "path": "scripts/check-community-files.mjs",
+        "mode": "100644",
+        "type": "blob",
+        "prior_blob_sha": "b43b247a4b727974ef878ff09abc05cd17f22d0e",
+        "actual_main_blob_sha": "0cd13eade8a6a146934164e1e2f93dca0a3b35dd"
+      },
+      {
+        "path": "scripts/verify-docs-consumer-gate.test.mjs",
+        "mode": "100644",
+        "type": "blob",
+        "prior_blob_sha": "fbc9075057abae2c26af82d0cb704b7d54a85753",
+        "actual_main_blob_sha": "46e0ecb4621749d5a82a3cc5d85d830a57b72e39"
+      }
+    ],
+    "floor_delta_semantics": "Exactly six regular files: seven launcher literals 24.18.0 -> 24.21.0, four strict validator assertions, and 85 added test lines. Git bytes/ancestry inspected; remote branch protection remains supplied context."
+  },
+  "existing_contract": {
+    "published_contents": "scripts/verify-docs-cohort-evidence.mjs:542-574",
+    "template_rendering": "scripts/verify-docs-cohort-evidence.mjs:521-539",
+    "migration_binding": "scripts/verify-docs-cohort-evidence.mjs:471-518",
+    "current_main_equality": "scripts/verify-docs-cohort-evidence.mjs:1143-1174",
+    "append_only": "scripts/docs-cohort-policy.mjs:932-942",
+    "conclusion": "Immutable caller template contains exactly three authority placeholders; the proposed rendering may change. The 19 historical migration targets include stable25 and exclude stable30. Their fixed projections, caller files and digests are preserved."
+  },
+  "retained_historical_observations": {
+    "reusable_workflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "blob_sha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+    },
+    "runtime_closure": {
+      "digest": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+    },
+    "npm_proof": {
+      "path": "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/npm-signatures-and-closure.json",
+      "sha256": "sha256:88611d3ed29fe33569da7502817d69b79ad41cbc6679b7f4b3e312b3a76c5865",
+      "observed_at": "2026-09-30T15:54:30.208Z"
+    },
+    "workflow_tree_entry": "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/node26-central-workflow-tree-entry.json",
+    "runtime_capture": "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json",
+    "semantics": "Original publication observation remains scoped to 757122/9bcbe and 3c4f. The runtime-capture source remains a snapshot of the earlier unmerged registration and 422aed0b public resolution; its embedded proposed_registration digests describe that earlier snapshot. Neither source proves the new workflow binding, a new signature check or caller execution."
+  },
+  "superseded_unmerged_registration": {
+    "record_digest": "sha256:adf924539bf189e4e394d02d4b9eb0a95e2334bab6ae149df09a4de7f91366ea",
+    "event_digest": "sha256:739e63896ea6b186667e8967bfd8fc3ef217e909381fa3a3c81cbd9e60da34c2",
+    "caller_rendered_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125"
+  },
+  "proposed_registration": {
+    "cohort_id": "docs-2026-09-30-stable30",
+    "state": "PUBLISHED_UNQUALIFIED",
+    "event_sequence": 180,
+    "record_digest": "sha256:af5796c98a60a2b3b1b8c6e08a67bc85a641695606e12310712467cbd5ab2729",
+    "event_digest": "sha256:da22d83e551be25d3a0db9260aedd11434980f7f0e6cb3bd94c0d9c28bec7555",
+    "previous_event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
+    "effective_at": "2026-09-29T17:54:07.257Z",
+    "reusable_workflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "b30455e32cf5d54ade6d8301637701347e4ce57c",
+      "blob_sha": "f1492257de281f40a262042eb989291558147d5f"
+    },
+    "caller_workflow": {
+      "package": "@agent-teams/docs-protocol-agent-teams",
+      "path": "assets/docs-protocol.yml",
+      "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac",
+      "rendered_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7"
+    },
+    "caller_rendering_semantics": "Exact retained UTF-8 template with its three placeholders replaced by this proposed repository/path/revision, preserving LF. This is a deterministic byte rendering, not a published asset rewrite or an executed caller.",
+    "runtime_closure": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 83,
+      "projection_path": "governance/docs-runtime-closures/sha256-422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c.json",
+      "digest": "sha256:422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c"
+    }
+  },
+  "pending": "ActualMain CI, final owning gate, FULL live verification and independent review on the resulting exact head/base remain pending with Main. No pass receipt is added.",
+  "timestamp_semantics": "No new remote observation or invocation timestamp is invented. Original timestamps are retained verbatim in their original evidence."
+}
