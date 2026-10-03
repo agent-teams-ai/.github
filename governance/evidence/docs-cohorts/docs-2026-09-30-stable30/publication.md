@@ -1,8 +1,9 @@
 # stable30 publication proposal
 
 This proposal appends one generation-2 `docs-2026-09-30-stable30` record and
-event 180, `PUBLISHED_UNQUALIFIED`, against protected main
-`3fe0f135ffc446b3bb174397c6b5783f72a008a2`. The event uses the latest actual
+event 180, `PUBLISHED_UNQUALIFIED`, against merged main
+`1d3bd96e3f92006d253eb0f4887b375e8d39a0de` after PR326. The retained publication
+observation in publication.json still names its historical main base. The event uses the latest actual
 publication, `2026-09-29T17:54:07.257Z`, and the existing event-179 predecessor.
 `publication.json` records the exact digests and inspected host observations.
 
@@ -37,9 +38,17 @@ Supplied protected-main branch and comparison responses establish producer
 source ancestry and controller pin ancestry at the observation. Recomputed Git
 blob identity and decoded workflow bytes match
 `9bcbe54dfec6280045ac596e55c1f14ce5f176e1` at both the qualified controller pin
-and observed main. The current ruleset requires V8. The exact trusted-pnpm11.20
-closure rederives to the retained 83-package source, evidence and authority
-SHA256 `3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca`.
+and observed main at that historical observation. The prior pnpm11.20 closure
+proof remains in the byte-identical npm artifact and applies only to SHA256
+`3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca`.
+The proposed registration now uses the actual fresh public 83-package capture
+at `sources/runtime-closure-refresh-2026-10-03.json` and exact projection SHA256
+`422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c`.
+That supplied capture used physical Node24.21.0 and pinned pnpm11.20.0 on
+2026-10-03; its receipt retains machine, source revision and file-mtime metadata.
+Only transitive Microsoft tsdoc-config 0.18.2 -> 0.18.3 and tsdoc 0.17.0 -> 0.17.1
+changed. The five coordinate versions/SRIs and seven managed edges are identical.
+The retained signature audit does not claim verification of this new closure.
 
 All 19 published historical target projections and bundled asset digests match
 immutable central authority. Both migration edges name qualified stable25
@@ -61,21 +70,34 @@ nor the retained 24-hour field enforces a passive wait.
 
 ## Integration constraint
 
-The unchanged trusted-validation materializer derives required new closure
-paths from existing **registered Cohorts**, then requires matching create-only
-closure additions in the PR. Stable30's exact projection already exists in this
-base from the staging checkpoint, but no registered Cohort references it. Thus
-this minimal append cannot present that existing projection as a new file and
-the current materializer rejects it with:
-`New runtime closure evidence must be create-only and referenced exactly by an appended Cohort record.`
-This is a separate base-owned integration constraint; this proposal changes no
-workflow or closure bytes to bypass it. The root operator must resolve the
-constraint through the owning authority before this data PR can pass hosted
-trusted-validation. A changed base requires fresh append and exact-head review.
+The unchanged trusted-validation materializer requires each newly registered
+closure path to be a matching added file in the exact PR delta against main.
+PR326 removed the old unregistered projection from merged main. This incremental
+correction removes that file only from the unmerged PR325 candidate and adds the
+fresh 422aed0b projection as a NEW regular file. Historical checkpoints and the
+npm proof retain their original bytes and old closure references. Their complete
+old source remains embedded in the unchanged npm proof; no accepted file is deleted.
 
-Offline checks inspect supplied observations and validate structure, schema,
-digests, append-only history and existing regression coverage. They do not
-replace the root's authentic live verifier or hosted exact-head validation.
+Required LIVE trusted-validation run 37084004233 failed with
+`Published package runtime closure differs from the immutable Cohort authority.`
+The retained complete log and capture provenance are in the fresh evidence file.
+This is an observed runtime-closure equality failure, not a floor or permission
+failure. Prior owning/check success cannot satisfy that failed required gate.
+
+The existing V2 resolver uses a fresh lockfile-only pnpm11.20 resolution from
+three exact direct roots. Non-managed dependency ranges can select newer patches
+later, so this correction remains tied to the captured public resolution. Fresh
+LIVE verification can drift again; the exact-source equality guard remains in force.
+This data correction changes no resolver, validator, schema, launcher or pin.
+PR339 remains the separate active floor workstream. The reusable workflow stays
+at revision 757122cb08ed15aba6c9eef1b1f655b77d1ac54b and blob
+9bcbe54dfec6280045ac596e55c1f14ce5f176e1; no re-pin is proposed.
+
+This correction inspects supplied observations and exact data bytes only.
+No validator or test is executed by this worker. Main must independently check
+history, closure and digests, obtain fresh full LIVE validation, and run one final
+owning gate for the corrected head. Existing check success does not validate these
+new bytes or replace the failed required trusted-validation.
 The separate producer author-identity incident remains with its owner; successful
 signature and ancestry checks do not resolve it. No consumer or agent operation
 was performed.

@@ -7513,8 +7513,8 @@
         "package_manager": "pnpm@11.20.0",
         "lockfile_version": "9.0",
         "package_count": 83,
-        "projection_path": "governance/docs-runtime-closures/sha256-3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca.json",
-        "digest": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+        "projection_path": "governance/docs-runtime-closures/sha256-422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c.json",
+        "digest": "sha256:422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c"
       },
       "upgrade_from": [
         "docs-2026-09-16-stable25"
@@ -7539,13 +7539,14 @@
         "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.json",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/npm-signatures-and-closure.json",
-        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.md"
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.md",
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json"
       ],
       "eligible_after": "2026-09-30T17:54:08Z",
       "rollback_to": [
         "docs-2026-09-16-stable25"
       ],
-      "record_digest": "sha256:c88f17c88528211ede980562d1381d09078528cd3015f159d66f0ba4e4c7aad9"
+      "record_digest": "sha256:adf924539bf189e4e394d02d4b9eb0a95e2334bab6ae149df09a4de7f91366ea"
     }
   ],
   "events": [
@@ -11355,11 +11356,12 @@
         "https://github.com/agent-teams-ai/.github/blob/757122cb08ed15aba6c9eef1b1f655b77d1ac54b/.github/workflows/docs-protocol-check.yml",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.json",
         "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/npm-signatures-and-closure.json",
-        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.md"
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/publication.md",
+        "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json"
       ],
       "canary_evidence": [],
       "previous_event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
-      "event_digest": "sha256:f0c48341a50865eaa644003bb50f4522358c4909522cb7ebe20b456970a58e18"
+      "event_digest": "sha256:739e63896ea6b186667e8967bfd8fc3ef217e909381fa3a3c81cbd9e60da34c2"
     }
   ]
 }

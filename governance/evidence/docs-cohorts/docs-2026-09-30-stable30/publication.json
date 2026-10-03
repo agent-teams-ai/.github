@@ -4,12 +4,12 @@
   "protected_main_base": "3fe0f135ffc446b3bb174397c6b5783f72a008a2",
   "host_observed_at": "2026-09-30T15:54:30.208Z",
   "host_node": "v24.21.0",
-  "record_digest": "sha256:c88f17c88528211ede980562d1381d09078528cd3015f159d66f0ba4e4c7aad9",
+  "record_digest": "sha256:adf924539bf189e4e394d02d4b9eb0a95e2334bab6ae149df09a4de7f91366ea",
   "event": {
     "sequence": 180,
     "effective_at": "2026-09-29T17:54:07.257Z",
     "previous_event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
-    "event_digest": "sha256:f0c48341a50865eaa644003bb50f4522358c4909522cb7ebe20b456970a58e18"
+    "event_digest": "sha256:739e63896ea6b186667e8967bfd8fc3ef217e909381fa3a3c81cbd9e60da34c2"
   },
   "scope": "Generation 2, exact five packages, Token only, managed Node >=24.18.0 <25; MCP excluded. No VERIFIED, QUALIFIED, CANARY, consumer adoption or Node26 process authorization.",
   "packages": [
@@ -515,8 +515,8 @@
     "package_manager": "pnpm@11.20.0",
     "lockfile_version": "9.0",
     "package_count": 83,
-    "projection_path": "governance/docs-runtime-closures/sha256-3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca.json",
-    "digest": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+    "projection_path": "governance/docs-runtime-closures/sha256-422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c.json",
+    "digest": "sha256:422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c"
   },
   "migration": {
     "upgrade_from": [
@@ -531,8 +531,8 @@
   },
   "eligible_after": "2026-09-30T17:54:08Z",
   "eligible_after_semantics": "Preserved conservative compatibility metadata. ADR-0001 item 9 makes qualification evidence-gated; the 24-hour age is not an enforced wait.",
-  "worker_inspection": "All five supplied current npm view/time results match retained integrity, shasum, tarball, engines, dependencies and publication times. Each exact returned verified entry has two complete bundles equal to retained raw bundles; subject SHA512/source/workflow/invocation match. Both exact runs and single release jobs reconcile failure to success. Supplied protected-main compare responses and recomputed Git blob match the pin and current workflow. Existing closure implementation reproduces identical source/evidence/authority for all 83 packages. All 19 retained historical projections and assets match immutable central authority.",
-  "validation_scope": "Inspection of supplied host observations and offline structural checks only. Authentic live verification and full trusted exact-head checks remain the root operator and hosted base-owned gate responsibility.",
+  "worker_inspection": "Historical 2026-09-30 inspection; its closure claim applies only to sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca. Original inspection: All five supplied current npm view/time results match retained integrity, shasum, tarball, engines, dependencies and publication times. Each exact returned verified entry has two complete bundles equal to retained raw bundles; subject SHA512/source/workflow/invocation match. Both exact runs and single release jobs reconcile failure to success. Supplied protected-main compare responses and recomputed Git blob match the pin and current workflow. Existing closure implementation reproduces identical source/evidence/authority for all 83 packages. All 19 retained historical projections and assets match immutable central authority.",
+  "validation_scope": "Inspection of retained publication observations and the supplied actual 2026-10-03 public resolution only. Canonical source is copied exactly; offline digest and byte comparisons do not replace Main fresh complete LIVE verification and trusted exact-head validation.",
   "supplied_host_response_sha256": {
     "central-main-branch.json": "sha256:ea20f3739f6b429ae5d2aab8444625f1705ebf62344f0cfac614237a20e7c7f4",
     "central-main-ruleset-19979783.json": "sha256:6d2f9f5a4c970883615854e8c0a52bf615bdcdfd85b55ad603874fe285c0f410",
@@ -559,5 +559,13 @@
     "release-attempt2-jobs.json": "sha256:6c77711e43d570b80a2cc29ec86fcda2b8485460b145759635888c7c136c4c4d",
     "release-attempt2.json": "sha256:440e9f552a38153f614834b6bd95b14ea2a0c0070ed28c13f268b81cf2b455cf",
     "retained-registry-metadata.json": "sha256:8712127a601243eb6a8a99cd820bff8a00559e475201122f9f672d79ce492538"
+  },
+  "runtime_closure_capture": {
+    "evidence_reference": "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/runtime-closure-refresh-2026-10-03.json",
+    "integration_base": "1d3bd96e3f92006d253eb0f4887b375e8d39a0de",
+    "prior_unmerged_head": "c6dd04cb7ff45782c3e8bad98fb98ae175a7ff48",
+    "classification": "ACTUAL_PUBLIC_NPM_RESOLUTION_NEWTEST_NOT_COHORT_QUALIFICATION",
+    "historical_observation_scope": "protected_main_base, host_observed_at, host_node, signature_audit and supplied_host_response_sha256 retain the original 2026-09-30 publication observation. They do not assert verification of the refreshed closure.",
+    "capture_scope": "Supplied actual 2026-10-03 public resolution on Node24.21.0 with pinned pnpm11.20.0. See the receipt for machine, source revision and file-mtime semantics. This worker did not perform a live resolution or signature verification."
   }
 }
