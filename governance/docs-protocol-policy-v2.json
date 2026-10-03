@@ -100,7 +100,10 @@
     {
       "repository": "agent-teams-ai/agent-runtime",
       "repository_id": 1314129620,
-      "source_provenance": { "kind": "original", "parent_repository": null },
+      "source_provenance": {
+        "kind": "original",
+        "parent_repository": null
+      },
       "governance_ownership": "organization_owned",
       "repository_lifecycle": "active",
       "docs_role": "consumer",
@@ -137,22 +140,22 @@
       "fixed_gate_command": "pnpm docs:protocol:check",
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
-        "default_branch": "main",
-        "revision": "399ffc224a685f60ea71a934dd883660f14b8ec4",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 111175358769,
-        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/37113225292/job/111175358769",
-        "workflow_run_id": 37113225292,
+        "check_run_id": 111194925922,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/37120231523/job/111194925922",
+        "workflow_run_id": 37120231523,
         "workflow_id": 335216823,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
         "caller_workflow_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7",
-        "observed_at": "2026-10-03T09:50:30Z"
+        "default_branch": "main",
+        "revision": "aa262b658379a1ea3873feb7f6b37940d4185528",
+        "observed_at": "2026-10-03T12:15:34Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "399ffc224a685f60ea71a934dd883660f14b8ec4",
+        "observed_revision": "aa262b658379a1ea3873feb7f6b37940d4185528",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
@@ -259,15 +262,18 @@
     {
       "repository": "agent-teams-ai/agent-teams-platform",
       "repository_id": 1319378484,
-      "source_provenance": { "kind": "original", "parent_repository": null },
+      "source_provenance": {
+        "kind": "original",
+        "parent_repository": null
+      },
       "governance_ownership": "organization_owned",
       "repository_lifecycle": "active",
       "docs_role": "consumer",
       "protocol_required": true,
       "admission_status": "admitted",
-      "exact_package_version": "0.6.0",
-      "exact_foundation_version": "1.2.0",
-      "cohort_binding_status": "rollout_pending",
+      "exact_package_version": "0.6.2",
+      "exact_foundation_version": "1.7.2",
+      "cohort_binding_status": "bound",
       "desired_cohort_id": "docs-2026-10-03-stable31",
       "desired_cohort_generation": 2,
       "v3_qualification_coordinates": {
@@ -278,40 +284,40 @@
         "execution_envelope_schema_version": 1,
         "evidence_class": "cohort-v2-supporting-canary"
       },
-      "observed_cohort_id": "docs-2026-09-12-stable21",
+      "observed_cohort_id": "docs-2026-10-03-stable31",
       "observed_cohort_generation": 2,
       "exact_cohort_v2_packages": {
-        "repository_mutation": "0.2.0",
-        "document_authoring": "0.3.0",
-        "docs_protocol": "0.6.0",
-        "docs_protocol_agent_teams": "0.2.7",
-        "engineering_foundation": "1.2.0"
+        "repository_mutation": "0.2.2",
+        "document_authoring": "0.3.2",
+        "docs_protocol": "0.6.2",
+        "docs_protocol_agent_teams": "0.3.2",
+        "engineering_foundation": "1.7.2"
       },
-      "observed_cohort_record_digest": "sha256:bf5220b191c7339533d21acd9b79594c274567ff0f515b72c4818863819ca92a",
-      "observed_cohort_event_digest": "sha256:4608734de08ad19ab6f787448d73bf92990115668c9d3d34cff5bba134efdc3b",
+      "observed_cohort_record_digest": "sha256:15ef4d89c312593f5ecee9e0c9890f4ffa487e4d869682dec688460f2f4fc0c8",
+      "observed_cohort_event_digest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f",
       "profile_path": "architecture/foundation/docs-protocol.yaml",
       "caller_workflow_path": ".github/workflows/docs-protocol.yml",
-      "reusable_workflow_revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "reusable_workflow_revision": "b30455e32cf5d54ade6d8301637701347e4ce57c",
       "qualification_evidence_path": "architecture/foundation/docs-protocol-qualification.json",
       "fixed_gate_command": "pnpm docs:protocol:check",
       "required_check_context": "docs-protocol / docs-protocol-check",
       "observed_default_branch_evidence": {
-        "default_branch": "main",
-        "revision": "88707fc1cd574a355f196be0a3cffc02283f05be",
         "required_context": "docs-protocol / docs-protocol-check",
         "integration_id": 15368,
         "conclusion": "success",
-        "check_run_id": 103459003050,
-        "check_run_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/34659423232/job/103459003050",
-        "workflow_run_id": 34659423232,
+        "check_run_id": 111198581992,
+        "check_run_url": "https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37121491053/job/111198581992",
+        "workflow_run_id": 37121491053,
         "workflow_id": 335216820,
         "caller_workflow_path": ".github/workflows/docs-protocol.yml",
-        "caller_workflow_digest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
-        "observed_at": "2026-09-11T23:52:22Z"
+        "caller_workflow_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7",
+        "default_branch": "main",
+        "revision": "2c8cf54a1ed28d9ef299e999b4d0bab2cea5ba28",
+        "observed_at": "2026-10-03T12:15:34Z"
       },
       "qualification": {
         "status": "qualified",
-        "observed_revision": "88707fc1cd574a355f196be0a3cffc02283f05be",
+        "observed_revision": "2c8cf54a1ed28d9ef299e999b4d0bab2cea5ba28",
         "evidence_paths": [
           "package.json",
           "architecture/foundation/docs-protocol.yaml",
