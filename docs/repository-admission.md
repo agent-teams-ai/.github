@@ -116,23 +116,15 @@ fleet audit require current success for every consumer. Unrelated consumer
 commits need no central JSON rewrite, and a failed current check is never
 reported as success.
 
-The bounded correction for .github#338 permits only Platform's desired stable21
-→ stable31 selection (`bound` → `rollout_pending`) on exact source
-`5d3551d02237281a2ae4a97e8e8d7a188c741559`. Protected base code reads the pinned
-[inert failed-source receipt](../governance/evidence/docs-admission/platform-stable31-pending-source.json).
-Target31 must have genuine Extension Foundation CANARY and RECOMMENDED authority
-and explicit observed21→31 and source25→31 edges. Every observed21 fact and every
-other policy row remain unchanged; run 37015324661 attempt 1 remains failed.
-Admission reports only `recovery_pending`, with qualification and semantics
-`unverified`. Direct fleet audits retain strict current-success requirements.
-
-Before movement off that exact source, the inverse changes only desired31 back
-to desired21 and `rollout_pending` back to `bound`; it still reports the known
-failed source. It does not run an old dependency graph. Actual target31 success
-and observed advancement use ordinary strict `verifyAdmissionRevision` proof.
-Remove the bounded route through reviewed cleanup after normal binding. The
-implementation cannot authorize its own protected delivery; the separately
-reviewed exact delivery manifest and installation remain owner operations.
+The temporary .github#338 Platform stable31 pending-source callback is retired
+after Platform main `2c8cf54a1ed28d9ef299e999b4d0bab2cea5ba28` achieved
+[Docs run 37121491053](https://github.com/agent-teams-ai/agent-teams-platform/actions/runs/37121491053)
+with all four jobs successful. The
+[inert failed-source receipt](../governance/evidence/docs-admission/platform-stable31-pending-source.json)
+and pinned replay fixtures remain historical evidence. They grant no live
+pending intent or inverse acceptance. Changed Platform rows and direct fleet
+audits use ordinary strict current-source admission proof. Corresponding observed
+policy binding was delivered separately in Central PR #354 before this cleanup.
 
 ## Existing exceptions
 

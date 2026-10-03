@@ -432,7 +432,8 @@ for (const [label, mutate, pattern] of [
   });
 }
 
-// stable31 uses the supplied Mac GH packet, independently of the a3 fixture.
+// Historical stable31 replay uses the supplied Mac GH packet, independently of
+// the a3 fixture; it provides no live admission callback.
 const pendingRoot = new URL("./fixtures/platform-stable31-pending-source/", import.meta.url);
 const pendingBytes = async (path) => {
   const compressed = path.endsWith(".mjs") || path.endsWith("docs-qualified-cohorts.json") || path.endsWith(".fixture.json") || path.endsWith("/package.json");
@@ -451,7 +452,7 @@ assert.equal(recoveryDigest(await pendingBytes("packet.json")), JSON.parse(pendi
 const pendingPolicy = JSON.parse(await pendingBytes("selection-policy.fixture.json"));
 const pendingRegistry = await pendingBytes("recommended-TEST.fixture.json");
 const pendingSchema = JSON.parse(await readFile(new URL("../governance/docs-qualified-cohorts.schema.json", import.meta.url)));
-const { verifyPlatformPendingSelection } = await import("./docs-platform-admission-recovery.mjs");
+const { verifyHistoricalPlatformPendingSelection } = await import("./docs-platform-admission-recovery.mjs");
 function pendingFixture(inverse = false) {
   const before = structuredClone(pendingPolicy), after = structuredClone(pendingPolicy);
   const selected = (inverse ? before : after).repositories.find(row => row.repository_id === 1319378484);
@@ -475,7 +476,7 @@ function pendingFixture(inverse = false) {
       pull_number: 338, pull_id: 3381, run_id: 3382, run_attempt: 1 } };
   const entry = after.repositories.find(row => row.repository_id === 1319378484);
   return { before, after, entry, input, state, adapters,
-    verify: () => verifyPlatformPendingSelection(input, adapters, entry, state.head) };
+    verify: () => verifyHistoricalPlatformPendingSelection(input, adapters, entry, state.head) };
 }
 test("stable31 replays the actual pinned authorization function and real schemas on the authentic failed packet", async (t) => {
   const support = JSON.parse(await pendingBytes("replay-support.json"));
@@ -526,7 +527,7 @@ test("stable31 replays the actual pinned authorization function and real schemas
   const invalidSchemaInput = structuredClone(input); invalidSchemaInput.policy.repositories[0].repository_id = "wrong";
   assert.throws(() => authorizeConsumerGate(invalidSchemaInput), /policy schema validation failed/u);
 });
-for (const inverse of [false, true]) test(`stable31 exact ${inverse ? "pre-movement inverse" : "forward"} retains the whole observation and failed truth`, async () => {
+for (const inverse of [false, true]) test(`historical stable31 exact ${inverse ? "pre-movement inverse" : "forward"} retains the whole observation and failed truth`, async () => {
   const f = pendingFixture(inverse); const before = structuredClone(f.before), after = structuredClone(f.after);
   assert.deepEqual(await f.verify(), { repository_id: 1319378484, source_head: "5d3551d02237281a2ae4a97e8e8d7a188c741559",
     status: "recovery_pending", qualification: "unverified", semantics: "unverified" });
