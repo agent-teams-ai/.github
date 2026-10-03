@@ -1226,12 +1226,9 @@ async function stable31Change(t, inverse = false) {
       finally { process.chdir(cwd); }
     } };
 }
-for (const inverse of [false, true]) test(`stable31 real admission composition admits only ${inverse ? "pre-movement inverse" : "pending intent"}`, async t => {
-  const f = await stable31Change(t, inverse), original = structuredClone(f.policy); const report = await f.run();
-  assert.deepEqual(report.historical_verified, stable31Meta.historical_repository_ids);
-  assert.deepEqual(report.recovery_pending, [{ repository_id: 1319378484, source_head: "5d3551d02237281a2ae4a97e8e8d7a188c741559",
-    status: "recovery_pending", qualification: "unverified", semantics: "unverified" }]);
-  assert.deepEqual(report.current_verified, []); assert.equal(report.current_not_evaluated.length, stable31Meta.historical_repository_ids.length - 1);
+for (const inverse of [false, true]) test(`retired stable31 ${inverse ? "inverse" : "pending intent"} rejects the authentic failed source`, async t => {
+  const f = await stable31Change(t, inverse), original = structuredClone(f.policy);
+  await assert.rejects(f.run(), /Current source failed without trusted base incident authorization/u);
   assert.deepEqual(f.policy, original); assert.equal(f.platform.exact_foundation_version, "1.2.0");
 });
 for (const [label, mutate] of Object.entries({
@@ -1240,22 +1237,12 @@ for (const [label, mutate] of Object.entries({
   "qualification edit": f => { f.platform.qualification.evidence_paths.push("fabricated"); },
   "exception edit": f => { f.platform.required_check_exception_id = null; },
   "second changed row": f => { f.policy.repositories.find(row => row.repository_id === 1333298097).desired_cohort_id = "docs-2026-09-21-stable26"; },
-  "missing protected receipt": f => { f.state.receipt = null; },
-  "head-supplied receipt bytes": f => { f.state.receipt = encode({ status: "current_verified" }); },
 })) test(`stable31 composition rejects ${label}`, async t => { const f = await stable31Change(t); mutate(f); await assert.rejects(f.run()); });
-for (const [label, mutate] of Object.entries({
-  "current head": f => { f.state.head = "a".repeat(40); },
-  "run attempt": f => { f.state.run.run_attempt++; },
-  "jobs": f => { f.state.jobs[0].steps[0].conclusion = "failure"; },
-  "latest checks": f => { f.state.checks.push({ ...f.state.checks.find(c => c.id === 110868628467), id: 110868628468 }); },
-  "controller base": f => { f.state.staleController = true; },
-})) for (const crossing of [3, 4]) test(`stable31 rejects ${label} drift at final controller await ${crossing}`, async t => {
-  const f = await stable31Change(t); f.state.onController = count => { if (count === crossing) mutate(f); }; await assert.rejects(f.run());
-});
-test("stable31 callback override cannot replace the protected-base proof", async t => {
+
+test("retired stable31 callback override cannot admit the failed source", async t => {
   const f = await stable31Change(t); let calls = 0; f.state.receipt = null;
   f.options.platformPendingSelection = { verify: async () => { calls++; return { status: "current_verified" }; } };
-  await assert.rejects(f.run(), /pinned protected-base blob/u); assert.equal(calls, 0);
+  await assert.rejects(f.run(), /Current source failed without trusted base incident authorization/u); assert.equal(calls, 0);
 });
 test("stable31 direct fleet and absence of exact policy operation keep the real failure strict", async t => {
   const f = await stable31Change(t); const schema = JSON.parse(await readFile(new URL("../governance/docs-qualified-cohorts.schema.json", import.meta.url)));
@@ -1293,11 +1280,13 @@ for (const finalBinding of [false, true]) test(`stable31 ${finalBinding ? "obser
     step.conclusion = "skipped"; await assert.rejects(f.run(), /qualification\/semantics did not actually execute successfully/u); step.conclusion = "success";
   }
 });
-test("stable31 inverse cannot reset intent after consumer movement", async t => {
+test("retired stable31 inverse uses ordinary strict current-source proof", async t => {
   const f = await stable31Change(t, true);
-  for (const head of ["9".repeat(40), f.platform.observed_default_branch_evidence.revision]) {
-    f.state.head = head; await assert.rejects(f.run(), /pending source moved or row differs/u);
-  }
+  f.state.head = "9".repeat(40);
+  await assert.rejects(f.run(), /live workflow run does not bind the observed default-branch push/u);
+  f.state.head = f.platform.observed_default_branch_evidence.revision;
+  const report = await f.run(); assert.deepEqual(report.recovery_pending, []);
+  assert.equal(report.current_verified.find(row => row.repository_id === 1319378484).cohort_id, f.platform.observed_cohort_id);
 });
 test("unrelated exact policy operation retains ADR-0008 reporting for authentic failed source5d", async t => {
   const f = await stable31Change(t); Object.assign(f.platform, structuredClone(f.before.repositories.find(row => row.repository_id === 1319378484)));

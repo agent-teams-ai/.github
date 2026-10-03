@@ -164,14 +164,13 @@ export function validatePlatformRecoveryRecord(record, input, incident = PLATFOR
 }
 
 const GENERATION_DIAGNOSTIC = "Central consumer policy does not explicitly match the Cohort generation.";
-// Finite source evidence, consumed only from protected base code and Git bytes.
-// This is an intent correction; it grants no executable-delivery authority.
-export const PLATFORM_PENDING_SOURCE_PATH = "governance/evidence/docs-admission/platform-stable31-pending-source.json";
+// Historical failed-source replay only. Live admission no longer consumes this
+// proof or grants the former stable31 pending-selection exception.
 const PLATFORM_PENDING_SOURCE_BLOB = "b8f952fb216422940d64214cc1f4cdf9836ecde8";
 const PENDING_TARGET = "docs-2026-10-03-stable31";
 const withoutIntent = ({ desired_cohort_id: _desired, cohort_binding_status: _binding, ...facts }) => facts;
 
-export function platformPendingSelectionDirection(before, after) {
+function platformPendingSelectionDirection(before, after) {
   if (!before || !after || !isDeepStrictEqual(changedKeys(before, after), ["repositories"]) ||
     before.repositories?.length !== after.repositories?.length) {return null;}
   const changed = before.repositories.filter((row, index) => !isDeepStrictEqual(row, after.repositories[index]));
@@ -197,7 +196,7 @@ function pendingChecks(checks) {
     .toSorted((a, b) => a.id - b.id);
 }
 
-export async function verifyPlatformPendingSelection(input, adapters, entry, sourceHead) {
+export async function verifyHistoricalPlatformPendingSelection(input, adapters, entry, sourceHead) {
   need(Buffer.isBuffer(input.receiptBytes) && recoveryBlob(input.receiptBytes) === PLATFORM_PENDING_SOURCE_BLOB,
     "pending source receipt is not the pinned protected-base blob");
   const receipt = JSON.parse(input.receiptBytes);
@@ -292,7 +291,6 @@ export async function verifyPlatformPendingSelection(input, adapters, entry, sou
     need(await adapters.getDefaultBranchHead(repo, "main") === head, "pending final source head changed");
   };
   await checkpoint();
-  input.onVerifiedProof?.(checkpoint);
   return { repository_id: entry.repository_id, source_head: head,
     status: "recovery_pending", qualification: "unverified", semantics: "unverified" };
 }
