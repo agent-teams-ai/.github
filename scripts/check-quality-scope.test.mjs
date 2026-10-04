@@ -22,6 +22,8 @@ test("actual repository adopts the Foundation preset through the canonical route
 test("actual tracked source census distinguishes tooling, tests, and authority data", () => {
   assert.equal(classifySourcePath("scripts/validate-governance.mjs"), "tooling");
   assert.equal(classifySourcePath("scripts/governance-policy.test.mjs"), "test");
+  assert.equal(classifySourcePath("scripts/qualification-input-proof.mts"), "tooling");
+  assert.equal(classifySourcePath("scripts/qualification-input-proof.test.mts"), "test");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.mjs"), "tooling");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.test.mjs"), "test");
   for (const authority of ["governance/policy.json", ".github/workflows/ci.yml", "GOVERNANCE.md"]) {
@@ -33,11 +35,20 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 22);
+  assert.equal(paths.length, 24);
+  assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
+  assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
 const mutations = {
+  "a ranged tooling compiler": value => { value.manifest.devDependencies.typescript = "^7.0.2"; },
+  "foreign Node type definitions": value => { value.manifest.devDependencies["@types/node"] = "26.6.4"; },
+  "disabled strict typechecking": value => { value.toolingTsconfig.compilerOptions.strict = false; },
+  "blanket library typecheck suppression": value => { value.toolingTsconfig.compilerOptions.skipLibCheck = true; },
+  "a dropped typed test entry": value => { value.toolingTsconfig.include.pop(); },
+  "a missing mts test glob": value => { value.manifest.scripts.test = value.manifest.scripts.test.replace(" scripts/*.test.mts", ""); },
+  "excluded typed lint selection": value => { value.profile.lint.includedExtensions = []; },
   "an unsupported critical tooling patch": value => { value.nodeVersion = "24.18.0\n"; },
   "Node 26 activation": value => { value.manifest.engines.node = "^24.18.0 || ^26.0.0"; },
   "a dropped critical entry file": value => { value.manifest.scripts["test:critical"] = value.manifest.scripts["test:critical"].replace(" tools/feature-module-standard/check.test.mjs", ""); },
@@ -112,6 +123,12 @@ test("installed source boundary rejects missing inputs and governed dist source"
   await put("tools/feature-module-standard/check.mjs", "export const value = 1;\n");
   const run = () => runInstalled(foundationCli, ["check", "architecture.source-dependencies", "--format", "json"], root);
   assert.equal(run().status, 0, "ordinary declared tooling must qualify");
+  // Failure: the installed parser silently exempts typed imports in governed roots.
+  await put("scripts/forbidden.mts", 'import "node:net";\n');
+  const typedViolation = run();
+  assert.equal(typedViolation.status, 1, outputOf(typedViolation));
+  assert.match(outputOf(typedViolation), /node:net/u);
+  await rm(join(root, "scripts/forbidden.mts"));
   await rm(join(root, "tools/feature-module-standard/check.mjs"));
   const missing = run();
   assert.equal(missing.status, 1, outputOf(missing));

@@ -12,13 +12,15 @@ const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", "
 const FOUNDATION_PRESET = "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json";
 const EXPECTED_SCRIPTS = {
   precheck: "node scripts/check-quality-scope.mjs",
-  check: "pnpm quality:lint && pnpm quality:boundaries && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
+  check: "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
   "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
   "quality:lint": "node scripts/run-quality-lint.mjs",
-  "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm test:critical",
+  "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
   "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
   "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
-  test: "node --test scripts/*.test.mjs tools/feature-module-standard/check.test.mjs",
+  "quality:typecheck": "tsc --project tsconfig.tooling.json",
+  "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
+  test: "node --test scripts/*.test.mjs scripts/*.test.mts tools/feature-module-standard/check.test.mjs",
 };
 
 const isTrackedSource = relativePath => SOURCE_SUFFIXES.some(suffix => relativePath.endsWith(suffix));
@@ -26,9 +28,9 @@ const isTrackedSource = relativePath => SOURCE_SUFFIXES.some(suffix => relativeP
 export function classifySourcePath(relativePath) {
   const normalized = relativePath.replaceAll("\\", "/");
   if (!isTrackedSource(normalized)) {return "non-source";}
-  if (/^scripts\/[^/]+\.test\.mjs$/u.test(normalized) ||
+  if (/^scripts\/[^/]+\.test\.(?:mjs|mts)$/u.test(normalized) ||
       normalized === "tools/feature-module-standard/check.test.mjs") {return "test";}
-  if (/^scripts\/[^/]+\.mjs$/u.test(normalized) ||
+  if (/^scripts\/[^/]+\.(?:mjs|mts)$/u.test(normalized) ||
       normalized === "tools/feature-module-standard/check.mjs") {return "tooling";}
   return null;
 }
@@ -46,7 +48,8 @@ export function classifyTrackedPaths(trackedPaths) {
 
 export function deriveLintPaths(census, profile) {
   return census.classified
-    .filter(entry => profile.lint.includedRoles.includes(entry.role))
+    .filter(entry => profile.lint.includedRoles.includes(entry.role) ||
+      profile.lint.includedExtensions.some(suffix => entry.path.endsWith(suffix)))
     .map(entry => entry.path)
     .toSorted();
 }
@@ -73,27 +76,54 @@ function assertWorkflow(workflowText) {
     "pnpm check step cannot be conditional or continue on error");
 }
 
-export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion }) {
+export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig }) {
   assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.7.2",
     "Foundation dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint dependency must use the exact pin");
+  assert.equal(manifest.devDependencies?.typescript, "7.0.2", "tooling compiler must use the exact public pin");
+  assert.equal(manifest.devDependencies?.["@types/node"], "24.19.1", "tooling types must stay in the Node 24 family");
   for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) {
     assert.equal(manifest.scripts?.[name], command, `${name} route must stay canonical`);
   }
   assert.deepEqual(profile, {
     schemaVersion: "consumer-quality-profile-v1",
     status: "active-foundation",
-    languages: ["javascript"],
+    languages: ["javascript", "typescript"],
     sourceRoots: {
-      tooling: ["scripts/**/*.mjs", "tools/feature-module-standard/check.mjs"],
-      tests: ["scripts/**/*.test.mjs", "tools/feature-module-standard/check.test.mjs"],
+      tooling: ["scripts/**/*.mjs", "scripts/**/*.mts", "tools/feature-module-standard/check.mjs"],
+      tests: ["scripts/**/*.test.mjs", "scripts/**/*.test.mts", "tools/feature-module-standard/check.test.mjs"],
     },
     typedCoverage: false,
     requiredRoute: "pnpm check",
     foundation: { version: "1.7.2", publicPreset: FOUNDATION_PRESET },
-    lint: { configPath: "oxlint.json", includedRoles: ["tooling"] },
+    lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts"] },
+    typedTooling: {
+      configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
+      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts"],
+    },
     toolchain: { node: "24.21.0", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
+  assert.deepEqual(toolingTsconfig, {
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "scripts/qualification-input-proof.mts",
+    "scripts/qualification-input-proof.test.mts"
+  ]
+}, "strict compiler scope and settings must stay exact");
   assert.deepEqual(requiredTests, {
   "schemaVersion": 1,
   "required": [
@@ -263,6 +293,7 @@ export async function readQualityAdoption(base = root) {
     manifest: await readJson("package.json"),
     profile: await readJson("docs/engineering-quality-profile.json"),
     lintConfig: await readJson("oxlint.json"),
+    toolingTsconfig: await readJson("tsconfig.tooling.json"),
     requiredTests: await readJson("docs/engineering-quality-required-tests.json"),
     sourcePolicy: parseYaml(await readFile(new URL("docs/engineering-quality-source-policy.yaml", base), "utf8")),
     foundationConfig: parseYaml(await readFile(new URL("foundation.config.yaml", base), "utf8")),
