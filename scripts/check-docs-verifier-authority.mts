@@ -8,7 +8,7 @@ import { parseDocument } from "yaml";
 const protectedPaths = [
   ...["ci", "commit-author-identity", "commit-author-identity-check", "docs-authority-evolution",
     "docs-cohort-authority-evolution-v8", "docs-cohort-append-only", "docs-admission-evidence",
-    "docs-protocol-check"].map(name => `.github/workflows/${name}.yml`),
+    "docs-admission-authority-evolution-v1", "docs-protocol-check"].map(name => `.github/workflows/${name}.yml`),
   ...["check-docs-verifier-authority.mts", "check-docs-verifier-authority.test.mts",
     "docs-cohort-authority-evolution-v8.test.mjs", "check-cohort-append-only.mjs",
     "check-cohort-emergency-append.mjs", "check-community-files.mjs", "docs-cohort-policy.mjs",
@@ -127,7 +127,7 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
     assert.ok(file.previous_filename === undefined || validPath(file.previous_filename), "Invalid rename origin");
     assert.ok(file.status !== "renamed" || file.previous_filename !== undefined, "Missing rename origin");
     const origin = String(file.previous_filename ?? file.filename);
-    declared.add(file.filename); declared.add(origin);
+    declared.add(file.filename); if (file.status === "renamed") {declared.add(origin);}
     const oldEntry = base.get(origin), newEntry = head.get(file.filename);
     assert.ok(file.status === "added" || oldEntry, "Missing base file");
     assert.ok(file.status === "removed" ? oldEntry?.sha === file.sha && !newEntry : newEntry?.sha === file.sha, "Unbound changed-file blob");
@@ -141,8 +141,9 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
   }
   for (const path of new Set([...base.keys(), ...head.keys()])) {
     const oldEntry = base.get(path), newEntry = head.get(path);
-    if (oldEntry?.type === "tree" || newEntry?.type === "tree") {continue;}
-    if (oldEntry?.sha !== newEntry?.sha || oldEntry?.mode !== newEntry?.mode || oldEntry?.type !== newEntry?.type)
+    const oldLeaf = oldEntry?.type === "tree" ? undefined : oldEntry;
+    const newLeaf = newEntry?.type === "tree" ? undefined : newEntry;
+    if (oldLeaf?.sha !== newLeaf?.sha || oldLeaf?.mode !== newLeaf?.mode || oldLeaf?.type !== newLeaf?.type)
       {assert.ok(declared.has(path), `Unlisted changed Git leaf: ${path}`);}
   }
   for (const path of protectedPaths) {

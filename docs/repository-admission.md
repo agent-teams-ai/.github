@@ -179,10 +179,10 @@ remain authority changes. Complete paginated metadata and Git trees, exact
 same-repository revisions and a live current default-branch base are required
 even for an ordinary no-op.
 
-Root registry development dependencies may evolve while all other manifest
-fields (including native CI commands and module resolution), lock globals,
-Ajv/YAML manifest/importer bindings and the six complete verifier package and
-snapshot records remain exact: `ajv@8.20.0`, `yaml@2.9.0`,
+This verifier-authority guard permits root registry development dependencies to
+evolve while all other manifest fields (including native CI commands and module
+resolution), lock globals, Ajv/YAML manifest/importer bindings and the six complete
+verifier package and snapshot records remain exact: `ajv@8.20.0`, `yaml@2.9.0`,
 `fast-deep-equal@3.1.3`, `fast-uri@3.1.5`, `json-schema-traverse@1.0.0` and
 `require-from-string@2.0.2`. Integrity and dependency edges are part of each
 record. The base-owned helper executes using base dependencies; head manifest
@@ -191,6 +191,9 @@ storage and are never installed or executed. This feature-local helper is
 Central admission policy inside existing CI tooling, with no new module node,
 manager or shared-library merge authority. Both helper and tests receive strict
 compilation through `pnpm quality:typecheck` and the required `pnpm check`.
+Package-edit acceptance does not grant source import admission. Governed tooling
+still follows the allowed packages and dependency directions in
+`docs/engineering-quality-source-policy.yaml`, enforced by `pnpm quality:boundaries`.
 
 `trusted-validation` rejects mixed dependency/executable changes in Cohort data
 mode. Its registry no-op runs before that allowlist; full append-only/live

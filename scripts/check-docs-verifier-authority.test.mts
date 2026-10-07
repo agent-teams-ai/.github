@@ -71,7 +71,7 @@ test("rejects unbound or non-registry dependency metadata rather than expanding 
 });
 
 function authorityFixture() {
-  const tree = execFileSync("git", ["ls-tree", "-r", "HEAD"], { encoding: "utf8" }).trim().split("\n").map(line => {
+  const tree = execFileSync("git", ["ls-tree", "-r", "-t", "HEAD"], { encoding: "utf8" }).trim().split("\n").map(line => {
     const [header, path] = line.split("\t"); const [mode, type, sha] = header!.split(" ");
     return { path: path!, mode: mode!, type: type!, sha: sha! };
   });
@@ -86,6 +86,84 @@ function authorityFixture() {
   return { changedFiles: 1, files, baseTree: { tree, truncated: false }, headTree: { tree: headTree, truncated: false }, headData };
 }
 const check = (evidence: unknown) => assertVerifierAuthority(evidence, manifestBytes, lockBytes);
+
+test("rejects an unlisted directory-to-blob replacement with declared descendant removal", () => {
+  const fixture = authorityFixture(), path = "ordinary-TEST", child = `${path}/leaf.md`;
+  fixture.baseTree.tree.push({ path, mode: "040000", type: "tree", sha: "e".repeat(40) },
+    { path: child, mode: "100644", type: "blob", sha: "f".repeat(40) });
+  fixture.headTree.tree.push({ path, mode: "100644", type: "blob", sha: "c".repeat(40) });
+  fixture.files.push({ filename: child, status: "removed", sha: "f".repeat(40), previous_filename: undefined });
+  fixture.changedFiles = fixture.files.length;
+  assert.throws(() => check(fixture), /Unlisted changed Git leaf: ordinary-TEST$/u);
+});
+
+test("rejects an unlisted blob-to-directory replacement with declared descendant addition", () => {
+  const fixture = authorityFixture(), path = "ordinary-TEST", child = `${path}/leaf.md`;
+  fixture.baseTree.tree.push({ path, mode: "100644", type: "blob", sha: "c".repeat(40) });
+  fixture.headTree.tree.push({ path, mode: "040000", type: "tree", sha: "e".repeat(40) },
+    { path: child, mode: "100644", type: "blob", sha: "f".repeat(40) });
+  fixture.files.push({ filename: child, status: "added", sha: "f".repeat(40), previous_filename: undefined });
+  fixture.changedFiles = fixture.files.length;
+  assert.throws(() => check(fixture), /Unlisted changed Git leaf: ordinary-TEST$/u);
+});
+
+test("allows ancestor tree SHA changes when all changed leaves are declared", () => {
+  const fixture = authorityFixture(), path = "docs/ordinary-TEST.md", sha = "b".repeat(40);
+  fixture.headTree.tree.find(entry => entry.path === "docs")!.sha = "c".repeat(40);
+  fixture.headTree.tree.push({ path, mode: "100644", type: "blob", sha });
+  fixture.files.push({ filename: path, status: "added", sha, previous_filename: undefined });
+  fixture.changedFiles = fixture.files.length;
+  assert.equal(check(fixture), "noop");
+});
+
+// Independent safety contract: the six required checks, identity routes and reusable Docs gate.
+const guardWorkflows = ["ci", "docs-authority-evolution", "docs-cohort-authority-evolution-v8",
+  "docs-cohort-append-only", "docs-admission-evidence", "docs-admission-authority-evolution-v1",
+  "commit-author-identity", "commit-author-identity-check", "docs-protocol-check"]
+  .map(name => `.github/workflows/${name}.yml`);
+
+test("rejects declared changes to every required guard and reusable workflow", () => {
+  for (const path of guardWorkflows) {
+    const fixture = authorityFixture(), sha = "b".repeat(40);
+    fixture.headTree.tree.find(entry => entry.path === path)!.sha = sha;
+    fixture.files.push({ filename: path, status: "modified", sha, previous_filename: undefined });
+    fixture.changedFiles = fixture.files.length;
+    assert.throws(() => check(fixture), /Protected authority path/u, path);
+  }
+});
+
+test("rejects rename origins for every required guard and reusable workflow", () => {
+  for (const path of guardWorkflows) {
+    const fixture = authorityFixture(), target = ".github/workflows/ordinary-TEST.yml";
+    const original = fixture.baseTree.tree.find(entry => entry.path === path)!;
+    fixture.headTree.tree = fixture.headTree.tree.filter(entry => entry.path !== path);
+    fixture.headTree.tree.push({ ...original, path: target });
+    fixture.files.push({ filename: target, status: "renamed", sha: original.sha, previous_filename: path });
+    fixture.changedFiles = fixture.files.length;
+    assert.throws(() => check(fixture), /Protected authority path/u, path);
+  }
+});
+
+test("requires every required guard and reusable workflow even when absent from both trees", () => {
+  for (const path of guardWorkflows) {
+    const fixture = authorityFixture();
+    fixture.baseTree.tree = fixture.baseTree.tree.filter(entry => entry.path !== path);
+    fixture.headTree.tree = fixture.headTree.tree.filter(entry => entry.path !== path);
+    assert.throws(() => check(fixture), /Missing protected input/u, path);
+  }
+});
+
+test("allows declared unrelated workflow changes and their ancestor tree SHA changes", () => {
+  const fixture = authorityFixture(), path = ".github/workflows/reviewrouter-interaction.yml", sha = "b".repeat(40);
+  fixture.headTree.tree.find(entry => entry.path === path)!.sha = sha;
+  for (const ancestor of [".github", ".github/workflows"]) {
+    fixture.headTree.tree.find(entry => entry.path === ancestor)!.sha = "c".repeat(40);
+  }
+  fixture.files.push({ filename: path, status: "modified", sha, previous_filename: undefined });
+  fixture.changedFiles = fixture.files.length;
+  assert.equal(check(fixture), "noop");
+});
+
 test("allows ordinary tooling changes but rejects recovery, receipt, guard and installer authority including rename origins", () => {
   assert.equal(check(authorityFixture()), "noop");
   for (const path of ["scripts/docs-platform-admission-recovery.mjs", "scripts/docs-legacy-admission-recovery.mjs",
@@ -114,4 +192,19 @@ test("rejects mode drift, omitted authority, incomplete trees/pagination and dat
   ];
   for (const mutate of mutations) { const fixture = authorityFixture(); mutate(fixture); assert.throws(() => check(fixture)); }
   assert.throws(() => assertVerifierAuthority(authorityFixture(), Buffer.from("{}"), lockBytes), /Trusted checkout/u);
+});
+
+test("copy origins do not declare an omitted source modification", () => {
+  const fixture = authorityFixture(), source = "ordinary-source-TEST.md", target = "ordinary-copy-TEST.md", sha = "c".repeat(40);
+  fixture.baseTree.tree.push({ path: source, mode: "100644", type: "blob", sha });
+  fixture.headTree.tree.push({ path: source, mode: "100644", type: "blob", sha },
+    { path: target, mode: "100644", type: "blob", sha });
+  fixture.files.push({ filename: target, status: "copied", sha, previous_filename: source });
+  fixture.changedFiles = fixture.files.length;
+  assert.equal(check(fixture), "noop");
+  fixture.headTree.tree.find(entry => entry.path === source)!.sha = "f".repeat(40);
+  assert.throws(() => check(fixture), /Unlisted changed Git leaf: ordinary-source-TEST\.md$/u);
+  fixture.files.push({ filename: source, status: "modified", sha: "f".repeat(40), previous_filename: undefined });
+  fixture.changedFiles = fixture.files.length;
+  assert.equal(check(fixture), "noop");
 });
