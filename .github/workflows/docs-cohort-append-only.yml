@@ -27,35 +27,6 @@ jobs:
             const allowedRegistryPath = "governance/docs-qualified-cohorts.json";
             const allowedEvidence = /^governance\/evidence\/docs-cohorts\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
             const allowedRuntimeClosure = /^governance\/docs-runtime-closures\/sha256-[0-9a-f]{64}\.json$/;
-            const authorityPaths = new Set([
-              ".github/workflows/docs-cohort-append-only.yml",
-              ".github/workflows/docs-admission-evidence.yml",
-              ".github/workflows/docs-protocol-check.yml",
-              ".node-version",
-              ".npmrc",
-              "governance/docs-protocol-exceptions.schema.json",
-              "governance/docs-protocol-policy.schema.json",
-              "governance/docs-qualified-cohorts.schema.json",
-              "package.json",
-              "pnpm-lock.yaml",
-              "pnpm-workspace.yaml",
-              "renovate-config.json",
-              "renovate.json",
-              "scripts/check-cohort-append-only.mjs",
-              "scripts/check-cohort-emergency-append.mjs",
-              "scripts/check-community-files.mjs",
-              "scripts/docs-cohort-policy.mjs",
-              "scripts/governance-policy.mjs",
-              "scripts/validate-governance.mjs",
-              "scripts/verify-docs-cohort-evidence.mjs",
-              "scripts/verify-docs-admission-change.mjs",
-              "scripts/verify-docs-consumer-gate.mjs"
-            ]);
-            const installAuthorityNames = new Set([
-              ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"
-            ]);
-            const isInstallAuthority = (entry) =>
-              installAuthorityNames.has(entry.split("/").at(-1));
             const changedFileCap = 3000;
             if (!Number.isSafeInteger(pull.changed_files) || pull.changed_files < 1 ||
                 pull.changed_files > changedFileCap) {
@@ -71,13 +42,6 @@ jobs:
             if (changed.length !== pull.changed_files ||
                 new Set(changed.map(({ filename }) => filename)).size !== changed.length) {
               core.setFailed("Paginated PR file evidence is incomplete or contains duplicate filenames.");
-              return;
-            }
-            const changedAuthority = changed.filter(({ filename, previous_filename: prior }) =>
-              [filename, prior].filter(Boolean).some((entry) =>
-                authorityPaths.has(entry) || isInstallAuthority(entry)));
-            if (changedAuthority.length > 0) {
-              core.setFailed(`Authority files require a separately staged successor check and ruleset cutover; they cannot pass or bypass this base-owned check: ${changedAuthority.map(({ filename, previous_filename: prior }) => prior ? prior + " -> " + filename : filename).join(", ")}`);
               return;
             }
             const changesRegistry = changed.some(({ filename, previous_filename: prior }) =>

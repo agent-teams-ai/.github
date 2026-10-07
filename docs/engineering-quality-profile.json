@@ -44,7 +44,9 @@
     "nodeTypes": "24.19.1",
     "entryFiles": [
       "scripts/qualification-input-proof.mts",
-      "scripts/qualification-input-proof.test.mts"
+      "scripts/qualification-input-proof.test.mts",
+      "scripts/check-docs-verifier-authority.mts",
+      "scripts/check-docs-verifier-authority.test.mts"
     ]
   }
 }

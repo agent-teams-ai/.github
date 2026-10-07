@@ -404,8 +404,9 @@ test("production closure against real Git TEST trees", async t => {
   for (const side of ["old", "new"]) {
     sides[side] = [];
     for (const item of expectedTuple) {
-      const bytes = await readFile(new URL(`../${item.path}`, import.meta.url));
-      assert.ok([item.old_blob, item.new_blob].includes(blob(bytes)), "The actual source matches an old or new approved blob");
+      // Historical launcher qualification uses its immutable Git blob, even after current workflows evolve.
+      const bytes = execFileSync("git", ["cat-file", "blob", item.new_blob], { maxBuffer: 1024 * 1024 });
+      assert.equal(blob(bytes), item.new_blob, "The historical fixture matches its exact approved blob");
       const payload = side === "old" ? bytes : Buffer.concat([bytes, Buffer.from("\nTEST closure payload\n")]);
       sides[side].push({ path: item.path, mode: "100644", type: "blob", sha: blob(payload) });
     }

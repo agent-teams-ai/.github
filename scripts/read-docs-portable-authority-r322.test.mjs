@@ -11,6 +11,7 @@ import { classifyPortableTransition, parsePortableJson, portableRecordDigest, va
 import { classifyPortableIntent, makePortableApi, portableReviewBody, validatePortableAcceptance, verifyPortableExecution } from './read-docs-portable-authority-r322.mjs';
 import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from './check-quality-scope.mjs';
 import { selectOxlintFiles } from './run-quality-lint.mjs';
+import { assertVerifierAuthority } from './check-docs-verifier-authority.mts';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -283,13 +284,14 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
   const pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
   const censusRow = record.manifest.find((r) => r.path === 'scripts/check-quality-scope.test.mjs');
   const live = Buffer.from(read(censusRow.path));
-  // Reviewed 17b48d5 current source is distinct from either historical descriptor.
-  const current = { type: 'blob', mode: '100644', blob: '5088e9d03570bd092984a468be45b0e63bd82f5c',
-    bytes: 12923, sha256: 'sha256:503b90d00c67d5b9750708aabc777e5833c3a6bfcffdfa1ec8f708e0b0c71d74' };
+  // Reviewed accepted-main composition is distinct from either historical descriptor.
+  const current = { type: 'blob', mode: '100644', blob: '3a025636bcfd0e1796695b5b0ad0b5f398b2709b',
+    bytes: 13076, sha256: 'sha256:8bc75ef356c9a4c2e2eb1031e54b59e73d52c6b955232519ab844f1593ec4e4b' };
   verifyPortableBlob(live, current);
-  assert.equal(pre.length, 26);
+  assert.equal(pre.length, 28);
   for (const p of ['scripts/docs-portable-authority-r322.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
-    'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts']) {assert.ok(pre.includes(p));}
+    'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts',
+    'scripts/check-docs-verifier-authority.mts', 'scripts/check-docs-verifier-authority.test.mts']) {assert.ok(pre.includes(p));}
   assert.deepEqual(await selectOxlintFiles(pre), pre);
   for (const side of ['old', 'new']) {
     const historical = historicalBody(censusRow, side);
@@ -300,7 +302,20 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
 });
 
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
-const oldV8 = YAML.parse(read('.github/workflows/docs-cohort-authority-evolution-v8.yml'));
+const legacyV8Descriptor = { type: 'blob', mode: '100644', blob: 'd6300f609345b190d9ce65758a1ff62f456c5fca',
+  bytes: 6953, sha256: 'sha256:ccd6b9895b372d460b51399fe59044d0d408def33baaf971e8046443f462e756' };
+function authenticatedLegacyV8(bytes) {
+  verifyPortableBlob(bytes, legacyV8Descriptor);
+  return YAML.parse(bytes.toString('utf8'));
+}
+const legacyV8Bytes = Buffer.from(read('scripts/fixtures/docs-portable-authority-r322/historical-legacy-v8.yml'));
+const oldV8 = authenticatedLegacyV8(legacyV8Bytes);
+test('legacy V8 authenticates its frozen predecessor before parsing, never the live successor', () => {
+  assert.deepEqual(authenticatedLegacyV8(legacyV8Bytes), oldV8);
+  const changed = Buffer.from(legacyV8Bytes); changed[0] ^= 1;
+  assert.throws(() => authenticatedLegacyV8(changed), /digest/u);
+  assert.throws(() => authenticatedLegacyV8(Buffer.from(read('.github/workflows/docs-cohort-authority-evolution-v8.yml'))), /length|digest/u);
+});
 const oldValidation = YAML.parse(historicalBody(record.manifest.find((row) =>
   row.path === '.github/workflows/docs-cohort-append-only.yml'), 'old').toString('utf8'));
 const currentValidation = YAML.parse(read('.github/workflows/docs-cohort-append-only.yml'));
@@ -318,6 +333,7 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
     'scripts/fixtures/docs-portable-authority-r322/old-overrides.json',
     'scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json',
     'governance/docs-current-composition-source-r322-e4.json',
+    'scripts/fixtures/docs-portable-authority-r322/historical-legacy-v8.yml',
   ];
   async function probe(filenames) {
     const failures = [], outputs = [];
@@ -339,13 +355,78 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
     return { failures, outputs };
   }
   assert.deepEqual(await probe([...paths, "scripts/check-quality-scope.test.mjs"]), { failures: [], outputs: [['mode', 'noop']] });
-  for (const basename of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
-    const collision = `scripts/fixtures/docs-portable-authority-r322/new-additions/scripts/node-compatibility-tooling/${basename}`;
-    const result = await probe([...paths, collision]);
-    assert.equal(result.outputs.length, 0, basename);
-    assert.match(result.failures[0], /Authority files require a separately staged successor check/u,
-      basename);
+});
+// Fixed accepted base, actual composed Git head: no moving branch or synthesized positive leaves.
+const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
+const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
+const gitBlob = (bytes) => createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+function completeGitTree(revision) {
+  return { truncated: false, tree: gitBytes('ls-tree', '-r', '-t', '-z', revision).toString('utf8')
+    .split('\0').filter(Boolean).map((line) => {
+      const [header, path] = line.split('\t'), [mode, type, sha] = header.split(' ');
+      return { path, mode, type, sha };
+    }) };
+}
+function currentGAuthority() {
+  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree('HEAD');
+  const before = new Map(baseTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
+  const after = new Map(headTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
+  const files = [...new Set([...before.keys(), ...after.keys()])].sort().flatMap((filename) => {
+    const old = before.get(filename), next = after.get(filename);
+    return old?.sha === next?.sha && old?.mode === next?.mode && old?.type === next?.type ? [] :
+      [{ filename, status: !old ? 'added' : !next ? 'removed' : 'modified', sha: (next ?? old).sha }];
+  });
+  const headData = Object.fromEntries(['package.json', 'pnpm-lock.yaml'].map((p) => [p, {
+    encoding: 'base64', content: gitBytes('show', `HEAD:${p}`).toString('base64'), sha: after.get(p).sha,
+  }]));
+  return { changedFiles: files.length, files, baseTree, headTree, headData };
+}
+// Rebuild all directory descriptors from the complete mutated leaf inventory, including new ancestry.
+function withLeaf(tree, path, bytes) {
+  const leaves = tree.tree.filter((e) => e.type !== 'tree' && e.path !== path);
+  const sha = gitBlob(bytes); leaves.push({ path, type: 'blob', mode: '100644', sha });
+  const directories = [];
+  function assemble(prefix) {
+    const children = new Map();
+    for (const leaf of leaves.filter((e) => e.path.startsWith(prefix))) {
+      const rest = leaf.path.slice(prefix.length), name = rest.split('/')[0];
+      children.set(name, rest.includes('/') ? { name, directory: true } : { ...leaf, name, directory: false });
+    }
+    const entries = [...children.values()].map((e) => e.directory ?
+      { ...e, mode: '040000', sha: assemble(`${prefix}${e.name}/`) } : e);
+    entries.sort((a, b) => Buffer.compare(Buffer.from(a.name + (a.directory ? '/' : '')), Buffer.from(b.name + (b.directory ? '/' : ''))));
+    const body = Buffer.concat(entries.map((e) => Buffer.concat([
+      Buffer.from(`${e.directory ? '40000' : e.mode} ${e.name}\0`), Buffer.from(e.sha, 'hex'),
+    ])));
+    const oid = createHash('sha1').update(`tree ${body.length}\0`).update(body).digest('hex');
+    if (prefix) {directories.push({ path: prefix.slice(0, -1), type: 'tree', mode: '040000', sha: oid });}
+    return oid;
   }
+  assemble(''); tree.tree = [...leaves, ...directories]; return sha;
+}
+test('actual current G composition is noop under the accepted base verifier and rejects installation/authority drift', () => {
+  const positive = currentGAuthority();
+  const check = (evidence) => assertVerifierAuthority(evidence,
+    gitBytes('show', `${acceptedMain}:package.json`), gitBytes('show', `${acceptedMain}:pnpm-lock.yaml`));
+  const expected = [...G.slice(0, 7), 'scripts/check-quality-scope.test.mjs',
+    ...['README.md', 'new-additions.json', 'new-overrides.json', 'old-overrides.json',
+      'historical-old-bodies.json', 'historical-legacy-v8.yml'].map((p) => `scripts/fixtures/docs-portable-authority-r322/${p}`),
+    'governance/docs-current-composition-source-r322-e4.json'].sort();
+  assert.equal(positive.changedFiles, 15);
+  assert.deepEqual(positive.files.map((f) => f.filename), expected);
+  assert.equal(check(positive), 'noop');
+  for (const basename of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
+    const denied = structuredClone(positive), filename = `scripts/fixtures/docs-portable-authority-r322/TEST-install/${basename}`;
+    const sha = withLeaf(denied.headTree, filename, Buffer.from('untrusted installation authority\n'));
+    denied.files.push({ filename, status: 'added', sha }); denied.changedFiles = denied.files.length;
+    assert.throws(() => check(denied), /Protected authority path/u, basename);
+  }
+  const denied = structuredClone(positive), filename = 'scripts/check-docs-verifier-authority.mts';
+  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `HEAD:${filename}`), Buffer.from('\n// TEST drift\n')]));
+  denied.files.push({ filename, status: 'modified', sha }); denied.changedFiles = denied.files.length;
+  assert.throws(() => check(denied), /Protected authority path/u);
+  const omitted = structuredClone(positive); omitted.files.pop();
+  assert.throws(() => check(omitted), /Incomplete pagination/u);
 });
 const finalIds = ['trusted_cohort_authority_portable_r322', 'trusted_validation_portable_r322'];
 function verifyValidation(steps) {
