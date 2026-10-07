@@ -301,9 +301,11 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
 
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
 const oldV8 = YAML.parse(read('.github/workflows/docs-cohort-authority-evolution-v8.yml'));
-const oldValidation = YAML.parse(read('.github/workflows/docs-cohort-append-only.yml'));
+const oldValidation = YAML.parse(historicalBody(record.manifest.find((row) =>
+  row.path === '.github/workflows/docs-cohort-append-only.yml'), 'old').toString('utf8'));
+const currentValidation = YAML.parse(read('.github/workflows/docs-cohort-append-only.yml'));
 test('protected-base trusted-validation accepts the G-only tree after consolidation', async () => {
-  const source = oldValidation.jobs['trusted-validation'].steps.find((step) =>
+  const source = currentValidation.jobs['trusted-validation'].steps.find((step) =>
     step.id === 'materialize').with.script;
   const materialize = new Script(`(async () => {\n${source}\n})()`, {
     filename: '.github/workflows/docs-cohort-append-only.yml',
