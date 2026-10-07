@@ -211,6 +211,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
           "feature-module-standard"
         ],
         "packages": [
+          "@agent-teams/ci-input-proof",
           "ajv",
           "yaml"
         ],

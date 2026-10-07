@@ -73,10 +73,22 @@ Foundation installation does not adopt Get Modular or change architecture.
 ## Shared qualification input proof checkpoint
 
 `scripts/qualification-input-proof.mts` exports the version-1 readonly schema and
-`compareQualificationInputs(expected, qualified, current)`. The future Runtime
-selector and canonical central owner merge guard must consume this same contract
-and comparator. Neither adapter is implemented or activated by this checkpoint;
-there is no new package/release, Assembly handle or adoption/ADR change.
+`compareQualificationInputs(expected, qualified, current)`. It retains Central's
+identity/origin/fingerprint wrapper and delegates leaf relations to the public
+`@agent-teams/ci-input-proof@0.1.0-rc.0` development dependency. This exact,
+qualified RC pin is a fixed library dependency within the existing tooling owner;
+it introduces no Core/Assembly boundary, new package release or merge authority.
+Neither the future historical Runtime selector nor Central owner merge guard is
+implemented or activated by this checkpoint.
+
+The kernel compares independent expected F to each proof separately. Qualified F
+permits no content changes; current H uses the existing structural permissions.
+Structural rejection across either relation precedes content rejection. Raw own
+data arrays and record fields are checked before copying: accessors, custom array
+iterators, holes and extra keys reject without normalization. Executable Proxies
+and modified JavaScript intrinsics are outside this inert-input contract.
+The kernel additionally rejects drive-prefixed paths conservatively. Consumers
+must use the exact dependency and lock integrity, never the registry `latest` tag.
 
 Independent adapter context supplies repository, current candidate H, full-main
 ancestor F, five canonical SHA256 fingerprints (suite, policy, implementation,
