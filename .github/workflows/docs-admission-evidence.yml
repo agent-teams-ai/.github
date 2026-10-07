@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ["24.18.0", "26.10.0"]
+        node-version: ["24.21.0", "26.10.0"]
     permissions:
       contents: read
     steps:
@@ -38,7 +38,7 @@ jobs:
           version: 11.18.0
           run_install: false
       - name: Install isolated compatibility parser
-        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+        run: pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
       - name: Check bounded Node compatibility contract
         run: |
           node scripts/check-node-compatibility.mjs
@@ -293,12 +293,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         if: steps.materialize.outputs.mode == 'admission'
         with:
-          node-version: 24.18.0
+          node-version: 24.21.0
           cache: pnpm
       - name: Prove selected Node runtime
         if: steps.materialize.outputs.mode == 'admission'
         env:
-          EXPECTED_NODE_VERSION: 24.18.0
+          EXPECTED_NODE_VERSION: 24.21.0
         run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
       - if: steps.materialize.outputs.mode == 'admission'
         run: >-

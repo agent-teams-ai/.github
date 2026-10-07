@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "cohortId": "docs-2026-10-03-stable31",
+  "recordDigest": "sha256:15ef4d89c312593f5ecee9e0c9890f4ffa487e4d869682dec688460f2f4fc0c8",
+  "qualificationEventDigest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f",
+  "source": "Actual default-main push check, not PR-head substitution",
+  "canaryEvidence": {
+    "repository_id": 1333298097,
+    "repository": "agent-teams-ai/extension-foundation",
+    "merge_revision": "bd1f639d2fe06a5a1f796d63141e34314eb3c327",
+    "observed_cohort_id": "docs-2026-10-03-stable31",
+    "observed_record_digest": "sha256:15ef4d89c312593f5ecee9e0c9890f4ffa487e4d869682dec688460f2f4fc0c8",
+    "observed_event_digest": "sha256:7273eab4e9b555bde22a2c89f4b98735c0d668afb6144b5983e030ee942c420f",
+    "required_context": "docs-protocol / docs-protocol-check",
+    "integration_id": 15368,
+    "conclusion": "success",
+    "check_run_id": 111142255197,
+    "check_run_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588557/job/111142255197",
+    "workflow_run_id": 37101588557,
+    "workflow_id": 336590767,
+    "caller_workflow_path": ".github/workflows/docs-protocol.yml",
+    "caller_workflow_digest": "sha256:27d2ec2d28219b5d0a3aeaf2bf45480694ea317003799e9e43c04f8d3b73d8b7"
+  },
+  "controllerSnapshot": "29217aa0f801594f9c4517ba1f44c6188c7337bd",
+  "consumerSourceTree": "73b47de497e27c379e3ed1a2a4468b25d7473079",
+  "fullQualification": {
+    "runId": 37101588256,
+    "sourceRevision": "bd1f639d2fe06a5a1f796d63141e34314eb3c327",
+    "url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/37101588256/attempts/1",
+    "status": "success"
+  },
+  "earlierFinalSourceQualification": {
+    "head": "e4bdb7618b40879b2781aba44194c0b6880d5fe4",
+    "ciRun": 37100794656,
+    "docsRun": 37100794871,
+    "sourceReview": "SOURCE_APPROVE",
+    "unchangedMergeTree": true
+  },
+  "supportWindow": "Retain existing 30-day supersession convention, no passive wait or forced consumer rollback",
+  "pending": "Other three consumers still require official migrations and actual final default-main evidence; no SDK/Node26/hosting grant"
+}

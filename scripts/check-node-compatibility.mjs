@@ -4,14 +4,20 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
-const toolingRequire = createRequire(new URL("./node-compatibility-tooling/package.json", import.meta.url));
+const toolingRequire = createRequire(new URL("../tools/node-compatibility-tooling/package.json", import.meta.url));
 const { parse: parseYaml } = toolingRequire("yaml");
 
 export const NODE_COMPATIBILITY = Object.freeze({
-  productionDefault: "24.18.0",
+  productionDefault: "24.21.0",
   compatibility: "26.10.0",
   skippedMajor: 25,
   engine: ">=24.18.0 <25 || >=26.10.0 <27",
+});
+
+const ACCEPTED_DOCS_WORKFLOW = Object.freeze({
+  path: ".github/workflows/docs-protocol-check.yml",
+  revision: "05b30bcc00cdf07cfde9ba60a1136bb9df7f7571",
+  sha256: "f3a1e7bba95a8d309f6f4a97377d1c68fd2b956f2659e9576fc1350599cb514d",
 });
 
 const requiredWorkflowPaths = Object.freeze([
@@ -87,7 +93,7 @@ function verifyIsolatedParser(workflow, path) {
         setup.uses === "pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9" &&
         setup.with?.version === "11.18.0" && setup.with?.run_install === false &&
         setup.if === undefined && setup["continue-on-error"] === undefined &&
-        install.run === `pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true` &&
+        install.run === `pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true` &&
         install.if === undefined && install.shell === undefined && install["continue-on-error"] === undefined &&
         install["working-directory"] === undefined &&
         check.run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n" &&
@@ -115,7 +121,11 @@ function verifyCompatibilityLane(source, path) {
 
 function verifySplitInteractionLane(source, path) {
   const jobs = parseYaml(source).jobs ?? {};
-  const setupVersion = name => jobs[name]?.steps?.find(step => step.uses?.startsWith("actions/setup-node@"))?.with?.["node-version"];
+  const nodeSetup = name => jobs[name]?.steps?.find(step => step.uses?.startsWith("actions/setup-node@"));
+  const setupVersion = name => nodeSetup(name)?.with?.["node-version"] ??
+    (path === ".github/workflows/ci.yml" && name === "check" &&
+      nodeSetup(name)?.with?.["node-version-file"] === ".node-version"
+      ? NODE_COMPATIBILITY.productionDefault : undefined);
   if (path === ".github/workflows/ci.yml") {
     assert(
       jobs.check?.name === "check" && jobs.check?.strategy?.matrix === undefined &&
@@ -123,12 +133,17 @@ function verifySplitInteractionLane(source, path) {
         jobs["node26-compatibility"]?.needs === undefined,
       "CI must emit the exact required check context and keep the Node 26 job independent.",
     );
+    assert(
+      nodeSetup("check")?.with?.["node-version-file"] === ".node-version" &&
+        nodeSetup("check")?.with?.["node-version"] === undefined,
+      "CI must select the Node 24 production runtime from .node-version.",
+    );
   }
   assert(
     (setupVersion(path === ".github/workflows/ci.yml" ? "check" : "node-compatibility") === NODE_COMPATIBILITY.productionDefault) &&
       setupVersion("node26-compatibility") === NODE_COMPATIBILITY.compatibility &&
       !Object.values(jobs).some(job => Array.isArray(job.strategy?.matrix?.["node-version"])),
-    `${path} must keep independent literal Node 24 and Node 26 compatibility lanes.`,
+    `${path} must keep independent exact Node 24 and Node 26 compatibility lanes.`,
   );
 }
 
@@ -139,9 +154,9 @@ export async function checkNodeCompatibility(root = process.cwd()) {
   const nodeVersion = (await read(".node-version")).trim();
   const npmrc = await read(".npmrc");
   const workspace = await read("pnpm-workspace.yaml");
-  const toolingPackage = JSON.parse(await read("scripts/node-compatibility-tooling/package.json"));
-  const toolingWorkspace = await read("scripts/node-compatibility-tooling/pnpm-workspace.yaml");
-  const toolingLock = parseYaml(await read("scripts/node-compatibility-tooling/pnpm-lock.yaml"));
+  const toolingPackage = JSON.parse(await read("tools/node-compatibility-tooling/package.json"));
+  const toolingWorkspace = await read("tools/node-compatibility-tooling/pnpm-workspace.yaml");
+  const toolingLock = parseYaml(await read("tools/node-compatibility-tooling/pnpm-lock.yaml"));
 
   assert(
     packageJson.engines?.node === NODE_COMPATIBILITY.engine,
@@ -160,14 +175,25 @@ export async function checkNodeCompatibility(root = process.cwd()) {
     ".npmrc must retain strict peer-dependency enforcement.",
   );
   assert(workspace.includes("minimumReleaseAge:"), "pnpm-workspace.yaml must remain present.");
+  assert(
+    Object.keys(toolingPackage).toSorted().join("\0") ===
+      ["name", "version", "private", "packageManager", "engines", "dependencies"].toSorted().join("\0") &&
+      toolingPackage.name === "node-compatibility-tooling" &&
+      toolingPackage.version === "0.0.0" && toolingPackage.private === true &&
+      Object.keys(toolingPackage.engines ?? {}).toSorted().join("\0") === "node" &&
+      toolingPackage.engines.node === NODE_COMPATIBILITY.engine &&
+      Object.keys(toolingPackage.dependencies ?? {}).toSorted().join("\0") === "yaml",
+    "Compatibility parser must remain an exact private passive metadata package with one dependency and no executable package surface.",
+  );
   assert(toolingPackage.packageManager === "pnpm@11.18.0" && toolingPackage.dependencies?.yaml === "2.9.1", "Compatibility parser must retain exact pnpm and YAML pins.");
   assert(toolingWorkspace.includes("packages:\n  - .") && toolingLock.importers?.["."]?.dependencies?.yaml?.version === "2.9.1" && toolingLock.packages?.["yaml@2.9.1"]?.resolution?.integrity === "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==", "Compatibility parser must retain isolated workspace and exact lock integrity.");
 
-  // Stable30 binds these exact bytes; source compatibility runs in central CI.
-  const frozenWorkflow = await read(".github/workflows/docs-protocol-check.yml");
+  // Guard the current public workflow at accepted main. Historical stable30
+  // workflow digests remain bound to their independently recorded snapshots.
+  const acceptedWorkflowBytes = await readFile(join(root, ACCEPTED_DOCS_WORKFLOW.path));
   assert(
-    createHash("sha256").update(frozenWorkflow).digest("hex") === "ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6",
-    "The stable30 Docs reusable workflow must retain its exact frozen Node 24 bytes.",
+    createHash("sha256").update(acceptedWorkflowBytes).digest("hex") === ACCEPTED_DOCS_WORKFLOW.sha256,
+    `The current public Docs reusable workflow must retain its accepted-main bytes (${ACCEPTED_DOCS_WORKFLOW.revision}).`,
   );
 
   const workflowSources = new Map();
@@ -201,12 +227,12 @@ export async function checkNodeCompatibility(root = process.cwd()) {
     verifyIsolatedParser(parseYaml(source), path);
     verifyCompatibilityLane(source, path);
     assert(
-      source.includes('EXPECTED_NODE_VERSION: 24.18.0'),
+      source.includes('EXPECTED_NODE_VERSION: 24.21.0'),
       `${path} must prove the literal Node 24 production site.`,
     );
     if (path !== ".github/workflows/organization-inventory-drift.yml") {
       assert(
-        source.includes("node-version: 24.18.0"),
+        source.includes("node-version: 24.21.0"),
         `${path} must retain its literal Node 24 production site.`,
       );
     }
@@ -227,7 +253,7 @@ export async function checkNodeCompatibility(root = process.cwd()) {
         "git diff --exit-code -- pnpm-lock.yaml\n",
     "CI must use a frozen strict install and lockgraph peer check in the Node 24 check job.",
   );
-  assert(ci26Steps.some(step => step.run?.includes("scripts/node-compatibility-tooling install --frozen-lockfile")) &&
+  assert(ci26Steps.some(step => step.run?.includes("tools/node-compatibility-tooling install --frozen-lockfile")) &&
     ci26Steps.some(step => step.run === "node scripts/check-node-compatibility.mjs\nnode --test scripts/check-node-compatibility.test.mjs\n") &&
     !ci26Steps.some(step => step.run?.includes("pnpm install --frozen-lockfile --config.engine-strict=true")),
   "CI Node 26 must check source with isolated parser, without the unsupported root install.");

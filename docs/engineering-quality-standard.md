@@ -63,6 +63,47 @@ or requirement to build a universal platform before a useful feature.
 
 Repository agent instructions link here; they do not duplicate this priority.
 
+## Library-first design and deliberate evolution
+
+Owner direction recorded on 2026-10-01: Agent Teams projects are at an early
+stage. Treat this as a serious engineering rule, not a style preference.
+
+Design a concern that is expected to serve several projects as a universal,
+well-structured library from the start, with one owner and one contract.
+Extracting consumer-local code into a library later and migrating every copy
+costs more than adapting consumers to a deliberate change. Unify one concern
+behind one implementation instead of letting each project keep its own variant.
+Before choosing a shape, reason explicitly about how the contract will evolve
+and scale. Validate it with disposable test projects and at least one real
+consumer in the same delivery; that consumer proves the contract and is not an
+incubator for it.
+
+Breaking changes are allowed in every organization repository when they
+deliberately improve the system. The MVP stage lasts until the owner records
+its end in this standard or, for one repository, in that repository's
+`AGENTS.md`, README or accepted decisions. A compatibility commitment exists
+only where those repository documents explicitly declare one; commitments
+already declared there stay in force, and the MVP stage implies none. Prefer
+one clean contract over parallel variants, compatibility shims and deprecated
+paths that accumulate legacy and become harder to migrate.
+
+Packages still on 0.x stay on 0.x during the MVP stage and ship a breaking
+change as a minor release; do not bump the major version for each break. A
+package already at 1.0 or later marks a break with a major release, because a
+caret range would otherwise install it silently. Every breaking release has a
+changelog entry and a migration guide that states why the new shape is better
+and how to move to it. Consumers adapt when they upgrade. Do not leave an old
+and a new variant side by side without an owner and a removal step.
+
+This direction does not relax minimalism, security or data safety. A library
+carries only mechanism with a concrete need, product policy stays with its
+owner, and speculative features, universal managers and service bags remain
+out. Persisted user data, durable recovery state and in-flight work still need
+a safe migration. Accepted decisions and pinned standards still change through
+their successor process.
+
+Repository agent instructions link here; they do not duplicate this direction.
+
 ## Clean Architecture and ownership
 
 - Put invariants and policy with their semantic owner. Application use cases
@@ -111,8 +152,10 @@ DRY means one authoritative source for the same knowledge: a policy, transition,
 schema identity or configuration rule. Similar syntax is not enough to establish
 shared semantics. Do not couple independent contexts to remove a few duplicated
 lines. Extract a reusable abstraction after a second real consumer or a concrete
-repeated need demonstrates its stable contract and owner. Avoid unowned `shared`
-or `utils` dumping grounds.
+repeated need demonstrates its contract and owner. A concern expected to serve
+several projects is designed as a library from the start; see
+[library-first design](#library-first-design-and-deliberate-evolution).
+Avoid unowned `shared` or `utils` dumping grounds.
 
 Independent test oracles may intentionally state expected behavior separately
 from production mappings. Generate mechanical representations from their one
@@ -134,9 +177,12 @@ same implementation and call that independent evidence.
 - Separate an observed result from an asserted guarantee. Tests, configuration,
   manifests, signatures, authorization, enforcement and qualification prove
   different things. Do not fake receipts or silently downgrade an adapter.
-- Preserve compatibility of public and durable contracts. Plan additive
+- Preserve durable state, in-flight work and any compatibility commitment a
+  repository has explicitly declared. Plan additive or otherwise reversible
   migrations, rollback and handling of in-flight state for changes that need
-  them. Cleanup must release only owned resources and report unresolved debt.
+  them. Other contract changes may break deliberately under
+  [library-first design](#library-first-design-and-deliberate-evolution).
+  Cleanup must release only owned resources and report unresolved debt.
 - Run effectful provider, agent, provisioning, terminal-runtime and recovery
   tests only in disposable or explicitly test projects and approved identities.
   Real user projects and irreversible external operations require the relevant
@@ -180,6 +226,23 @@ passive cooldowns, repeated full CI on unchanged inputs or an abstract platform
 for hypothetical use. Required gates and real external restrictions still apply.
 Prefer small reviewable changes with independent rollback over a large mixed PR.
 
+Owner-generated agent squash merges require the
+[fresh owner PR actor guard](../scripts/merge-owner-pr.mjs): explicit repository,
+PR, reviewed exact head, ordinary Conventional Commit subject and complete
+body file with all issue references. Re-read the authenticated owner and live
+open PR actor/head immediately before merge and independently verify the actual
+merged PR and final commit identity/message afterward. A green SHA status alone
+cannot establish PR-specific UI merge safety. Never reopen or merge Bot staging
+PRs. External human contributions keep their existing PR and original
+authorship through their contributor-preserving flow, outside owner squash.
+The owner-only guard also inspects the complete head-bound source commit list;
+an owner-opened PR containing another contributor's commit cannot use this flow.
+
+Keep the canonical Actions PR creation/approval permission explicitly false at
+the organization default and current repositories. Disabling creation may leave
+a generated Changesets branch without a staging PR; the owner inspects it and
+opens a PR with `gh` before a failed-run rerun/current-input attestation.
+
 ## Where the detailed rules live
 
 | Topic | Canonical entrypoint |
@@ -187,6 +250,7 @@ Prefer small reviewable changes with independent rollback over a large mixed PR.
 | Feature ownership, layers and dependency mechanisms | [Feature Module Standard index](architecture/feature-module-standard/README.md) and [v1](architecture/feature-module-standard/v1.md); the consumer's local adoption profile owns its exact scope |
 | Get Modular construction and consumer adoption, when applicable | [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard); use the consumer's reviewed pin |
 | Reusable development tooling and checks | [Engineering Foundation](https://github.com/agent-teams-ai/engineering-foundation); repository profiles own applicability and actual commands |
+| Commit and PR authorship | [Maintained owner policy](../GOVERNANCE.md#commit-and-pull-request-authorship) and [canonical identity/status rule](../governance/commit-author-identity.json); preserve external human authorship |
 | Contributions and decisions | [Contribution rules](../CONTRIBUTING.md) and [governance boundaries](../GOVERNANCE.md) |
 | Security reporting and organization defaults | [Security policy](../SECURITY.md) and [security baseline](organization-security-baseline.md) |
 | Product architecture, best practices, runbooks and release requirements | The target repository's `AGENTS.md`, `CLAUDE.md`, README/documentation index, accepted ADRs and local profiles |

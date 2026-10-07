@@ -1,0 +1,14 @@
+{
+  "classification": "TEST only: original protected-base bytes plus simulated future CANARY/SUPERSEDED/RECOMMENDED prerequisites. No real canary, recommendation or consumer qualification is claimed.",
+  "protected_base": "29217aa0f801594f9c4517ba1f44c6188c7337bd",
+  "original_policy_sha256": "sha256:35d036b1a5c0d4d76fb432342e8cf9da9715c9fa7a2bd32b53b9f3bb78436af7",
+  "original_registry_sha256": "sha256:ffd496077aa1438677f0406de4392e67a609ff3c6011d2415d89af4b9840ccd4",
+  "historical_repository_ids": [
+    1314129620,
+    1348461381,
+    1310245598,
+    1319378484,
+    1336577313,
+    1333298097
+  ]
+}

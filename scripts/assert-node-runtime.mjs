@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-export const supportedNodeVersions = Object.freeze(["24.18.0", "26.10.0"]);
+export const supportedNodeVersions = Object.freeze(["24.21.0", "26.10.0"]);
 
 export function assertNodeRuntime(expectedVersion, actualVersion = process.version) {
   if (!supportedNodeVersions.includes(expectedVersion)) {
@@ -15,7 +15,7 @@ export function assertNodeRuntime(expectedVersion, actualVersion = process.versi
   return Object.freeze({
     expectedVersion,
     actualVersion,
-    lane: expectedVersion === "24.18.0" ? "production-default" : "node26-compatibility",
+    lane: expectedVersion === "24.21.0" ? "production-default" : "node26-compatibility",
   });
 }
 

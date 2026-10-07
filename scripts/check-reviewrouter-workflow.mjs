@@ -147,7 +147,7 @@ assert(
   `${interactionPath} must gate interaction only on Node 24 and keep Node 26 independent.`,
 );
 assert(
-  requiredNodeCompatibilityJob?.name === "node-compatibility (Node 24.18.0)" &&
+  requiredNodeCompatibilityJob?.name === "node-compatibility (Node 24.21.0)" &&
     node26CompatibilityJob?.name === "node26-compatibility (Node 26.10.0)",
   `${interactionPath} must expose separate exact Node 24 and experimental Node 26 lanes.`,
 );

@@ -11,22 +11,22 @@ const strictFlags = "--config.engine-strict=true --config.strict-peer-dependenci
 const workflowSource = async (name) => readFile(new URL(`../.github/workflows/${name}`, import.meta.url), "utf8");
 const ciWorkflow = await workflowSource("ci.yml");
 const compatibilityWorkflow = await workflowSource("reviewrouter-codex.yml");
-const centralWorkflow = await workflowSource("docs-protocol-check.yml");
+const acceptedDocsWorkflow = await workflowSource("docs-protocol-check.yml");
 
 async function makeFixture() {
   const root = await mkdtemp(join(tmpdir(), "node-compatibility-"));
   const paths = {
-    "scripts/node-compatibility-tooling/package.json": await readFile(new URL("./node-compatibility-tooling/package.json", import.meta.url), "utf8"),
-    "scripts/node-compatibility-tooling/pnpm-workspace.yaml": await readFile(new URL("./node-compatibility-tooling/pnpm-workspace.yaml", import.meta.url), "utf8"),
-    "scripts/node-compatibility-tooling/pnpm-lock.yaml": await readFile(new URL("./node-compatibility-tooling/pnpm-lock.yaml", import.meta.url), "utf8"),
+    "tools/node-compatibility-tooling/package.json": await readFile(new URL("../tools/node-compatibility-tooling/package.json", import.meta.url), "utf8"),
+    "tools/node-compatibility-tooling/pnpm-workspace.yaml": await readFile(new URL("../tools/node-compatibility-tooling/pnpm-workspace.yaml", import.meta.url), "utf8"),
+    "tools/node-compatibility-tooling/pnpm-lock.yaml": await readFile(new URL("../tools/node-compatibility-tooling/pnpm-lock.yaml", import.meta.url), "utf8"),
     "package.json": JSON.stringify({
       engines: { node: ">=24.18.0 <25 || >=26.10.0 <27" },
     }),
-    ".node-version": "24.18.0\n",
+    ".node-version": "24.21.0\n",
     ".npmrc": "engine-strict=true\nstrict-peer-dependencies=true\n",
     "pnpm-workspace.yaml": "minimumReleaseAge: 0\n",
     ".github/workflows/ci.yml": ciWorkflow,
-    ".github/workflows/docs-protocol-check.yml": centralWorkflow,
+    ".github/workflows/docs-protocol-check.yml": acceptedDocsWorkflow,
     ".github/workflows/reviewrouter-codex.yml": compatibilityWorkflow,
     ".github/workflows/reviewrouter-interaction.yml": await workflowSource("reviewrouter-interaction.yml"),
     ".github/workflows/docs-fleet-audit.yml": await workflowSource("docs-fleet-audit.yml"),
@@ -47,7 +47,7 @@ test("accepts explicit Node 24 and Node 26 lanes with strict installs", async ()
   const root = await makeFixture();
   try {
     assert.deepEqual(await checkNodeCompatibility(root), {
-      productionDefault: "24.18.0",
+      productionDefault: "24.21.0",
       compatibility: "26.10.0",
       skippedMajor: 25,
       strictInstall: true,
@@ -62,7 +62,7 @@ test("rejects a renamed required CI context", async () => {
   try {
     await writeFile(
       join(root, ".github/workflows/ci.yml"),
-      ciWorkflow.replace("    name: check\n", "    name: check (Node 24.18.0)\n"),
+      ciWorkflow.replace("    name: check\n", "    name: check (Node 24.21.0)\n"),
     );
     await assert.rejects(checkNodeCompatibility(root), /exact required check context/u);
   } finally {
@@ -155,10 +155,7 @@ test("rejects a matrix-coupled ReviewRouter interaction compatibility lane", asy
       join(root, ".github/workflows/reviewrouter-interaction.yml"),
       compatibilityWorkflow,
     );
-    await assert.rejects(
-      checkNodeCompatibility(root),
-      /retain its node26-compatibility compatibility job/u,
-    );
+    await assert.rejects(checkNodeCompatibility(root), /retain its node26-compatibility compatibility job/u);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -166,7 +163,10 @@ test("rejects a matrix-coupled ReviewRouter interaction compatibility lane", asy
 
 test("runtime proof rejects Node 25 and version mismatches", () => {
   assert.throws(() => assertNodeRuntime("25.0.0", "v25.0.0"), /Unsupported Node compatibility version/u);
+  assert.throws(() => assertNodeRuntime("24.18.0", "v24.18.0"), /Unsupported Node compatibility version/u);
+  assert.throws(() => assertNodeRuntime("24.21.0", "v24.18.0"), /Expected Node v24\.21\.0/u);
   assert.throws(() => assertNodeRuntime("26.10.0", "v24.21.0"), /Expected Node v26\.10\.0/u);
+  assert.equal(assertNodeRuntime("24.21.0", "v24.21.0").lane, "production-default");
   assert.equal(assertNodeRuntime("26.10.0", "v26.10.0").lane, "node26-compatibility");
 });
 
@@ -226,10 +226,10 @@ test("rejects proof steps allowed to continue after failure", async () => {
 test("rejects a fresh compatibility job without its isolated parser install", async () => {
   const root = await makeFixture();
   try {
-    const source = await readFile(new URL("../.github/workflows/reviewrouter-codex.yml", import.meta.url), "utf8");
+    const source = await workflowSource("reviewrouter-codex.yml");
     await writeFile(
       join(root, ".github/workflows/reviewrouter-codex.yml"),
-      source.replace("      - name: Install isolated compatibility parser\n        run: pnpm --dir scripts/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n", ""),
+      source.replace("      - name: Install isolated compatibility parser\n        run: pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true\n", ""),
     );
     await assert.rejects(checkNodeCompatibility(root), /install its pinned isolated parser/u);
   } finally {
@@ -275,7 +275,7 @@ test("rejects a strict lockgraph step whose shell can hide a failed peer check",
 test("rejects a parser tool that loses the exact package manager pin", async () => {
   const root = await makeFixture();
   try {
-    const manifestPath = join(root, "scripts/node-compatibility-tooling/package.json");
+    const manifestPath = join(root, "tools/node-compatibility-tooling/package.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     manifest.packageManager = "pnpm@11.17.0";
     await writeFile(manifestPath, JSON.stringify(manifest));
@@ -297,6 +297,25 @@ async function rejectsWorkflowMutation(name, source, change, expected) {
   }
 }
 
+test("rejects replacing the CI file pin with a literal production runtime", async () => {
+  await rejectsWorkflowMutation("ci.yml", ciWorkflow,
+    source => source.replace("node-version-file: .node-version", "node-version: 24.21.0"),
+    /CI must select the Node 24 production runtime from .node-version/u);
+});
+
+test("rejects stale Node 24 default and proof pins", async () => {
+  const root = await makeFixture();
+  try {
+    await writeFile(join(root, ".node-version"), "24.18.0\n");
+    await assert.rejects(checkNodeCompatibility(root), /Node 24 production default/u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+  await rejectsWorkflowMutation("ci.yml", ciWorkflow,
+    source => source.replace("EXPECTED_NODE_VERSION: 24.21.0", "EXPECTED_NODE_VERSION: 24.18.0"),
+    /execute the selected Node version comparison/u);
+});
+
 test("required parser steps reject skipped setup, install, and check", async () => {
   const name = "reviewrouter-codex.yml";
   for (const marker of [
@@ -310,15 +329,27 @@ test("required parser steps reject skipped setup, install, and check", async () 
   }
 });
 
-test("rejects widening the frozen stable30 workflow runtime", async () => {
-  await rejectsWorkflowMutation("docs-protocol-check.yml", centralWorkflow,
-    source => source.replace("node-version: 24.18.0", "node-version: 26.10.0"),
-    /exact frozen Node 24 bytes/u);
+test("rejects runtime drift in the current accepted public Docs workflow", async () => {
+  await rejectsWorkflowMutation("docs-protocol-check.yml", acceptedDocsWorkflow,
+    source => source.replaceAll("node-version: 24.21.0", "node-version: 26.10.0"),
+    /current public Docs reusable workflow must retain its accepted-main bytes/u);
+});
+
+test("rejects substituting historical runtime pins into the current public Docs workflow", async () => {
+  await rejectsWorkflowMutation("docs-protocol-check.yml", acceptedDocsWorkflow,
+    source => source.replaceAll("node-version: 24.21.0", "node-version: 24.18.0"),
+    /current public Docs reusable workflow must retain its accepted-main bytes/u);
+});
+
+test("rejects byte drift even when the current public Docs workflow semantics are unchanged", async () => {
+  await rejectsWorkflowMutation("docs-protocol-check.yml", acceptedDocsWorkflow,
+    source => `${source}\n`,
+    /current public Docs reusable workflow must retain its accepted-main bytes/u);
 });
 
 test("CI Node 26 rejects a reused root install and weakened parser isolation", async () => {
   for (const change of [
-    source => source.replaceAll("pnpm --dir scripts/node-compatibility-tooling install", "pnpm install"),
+    source => source.replaceAll("pnpm --dir tools/node-compatibility-tooling install", "pnpm install"),
     source => source.replaceAll("--frozen-lockfile --ignore-scripts --ignore-pnpmfile", "--ignore-scripts --ignore-pnpmfile"),
     source => source.replaceAll("--config.strict-peer-dependencies=true", "--config.strict-peer-dependencies=false"),
   ]) {
@@ -330,10 +361,11 @@ test("rejects parser version or integrity drift", async () => {
   for (const [path, change, expected] of [
     ["package.json", source => source.replace("2.9.1", "2.9.0"), /exact pnpm and YAML pins/u],
     ["pnpm-lock.yaml", source => source.replace("sha512-3NxN8+78", "sha512-4NxN8+78"), /exact lock integrity/u],
+    ["package.json", source => JSON.stringify({ ...JSON.parse(source), scripts: { postinstall: "node unexpected.mjs" } }), /private passive metadata package/u],
   ]) {
     const root = await makeFixture();
     try {
-      const target = join(root, "scripts/node-compatibility-tooling", path);
+      const target = join(root, "tools/node-compatibility-tooling", path);
       const source = await readFile(target, "utf8");
       const mutated = change(source);
       assert.notEqual(mutated, source);

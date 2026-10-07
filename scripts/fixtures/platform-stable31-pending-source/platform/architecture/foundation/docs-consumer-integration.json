@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 3,
+  "repository": {
+    "provider": "github",
+    "id": "1319378484",
+    "nameWithOwner": "agent-teams-ai/agent-teams-platform"
+  },
+  "integrationRoot": ".",
+  "packageManager": "pnpm",
+  "profilePath": "architecture/foundation/docs-protocol.yaml",
+  "skillPath": ".agents/skills/docs-authoring/SKILL.md",
+  "callerWorkflowPath": ".github/workflows/docs-protocol.yml",
+  "managedStatePath": "architecture/foundation/docs-protocol-managed-state.json",
+  "qualification": {
+    "contractPath": "architecture/foundation/docs-protocol-qualification.json",
+    "gateCommand": "pnpm docs:protocol:check"
+  },
+  "governedDocsRoots": [
+    "docs"
+  ],
+  "cohort": {
+    "schemaVersion": 2,
+    "cohortId": "docs-2026-09-16-stable25",
+    "channel": "stable",
+    "recordDigest": "sha256:105c34ecc7fc422939b43daaca513f9ce630ce69d4a2820d39423fcdc13dcc61",
+    "qualificationEventDigest": "sha256:090325fe7992c7ca15e03a5375188d006d8c410f7a895a219fafb4e735f5d28b",
+    "eligibleAfter": "2026-09-19T15:22:11Z",
+    "upgradeFrom": [
+      "docs-2026-09-12-stable21"
+    ],
+    "rollbackTo": [
+      "docs-2026-09-12-stable21"
+    ],
+    "packages": {
+      "repositoryMutation": {
+        "version": "0.2.0",
+        "integrity": "sha512-a02kzLlWtQjPAG2fFo/HyC+T6D+hW+FJ+aNCYoTLuTdKqeuL50hIvSnQLMUbGajWBb4nAvaINvW2jvmJ+Qku0g=="
+      },
+      "documentAuthoring": {
+        "version": "0.3.0",
+        "integrity": "sha512-LdNT8VHPQxXvuyXsCblFSeCmbEEZcXwiCTY1E+c0ZEWWJG0V2qoi95F8fHAwI4ngZLDmLr/yzHGyDqwkd9GBrA=="
+      },
+      "docsProtocol": {
+        "version": "0.6.0",
+        "integrity": "sha512-xSlc0DFTGh0jed9581LoToHAXwxxZMhzlItbPeoc67YNBSDxLCP8XNwK0LCMs4w8MLqY6silJDtpzsHFw2XSVg=="
+      },
+      "docsProtocolAgentTeams": {
+        "version": "0.2.9",
+        "integrity": "sha512-3wFo/xK/l0eLNseN2H8xrdPHWmjVIyZFy3OkAvyfLfMYVTT0Rm9L/R+33U4h2JeN5Mqb9kK8nCEvEfMY9Vxq0Q=="
+      },
+      "engineeringFoundation": {
+        "version": "1.4.0",
+        "integrity": "sha512-m8rLOvctyXu+kqN4LyCW4LIz303a7p+ZIvx+oieYIwst6DNBpsWUu/Ux7UZM3fZH5JTYhB4eSEBEfi5lUTt4vQ=="
+      }
+    },
+    "workflow": {
+      "repository": "agent-teams-ai/.github",
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "blobSha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+    },
+    "assets": {
+      "skillDigest": "sha256:a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5",
+      "callerWorkflowDigest": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+      "assetCatalogDigest": "sha256:3ec380a1a6dd8534824ba82ff23affba993e19e9cb6b3c5e424ea9973ad686da",
+      "transitionCatalogDigest": "sha256:3b8d0895ed9fe39dfe14a90518bdc2c03fdb38e782bcd70411e0b7af0412f535"
+    },
+    "schemas": {
+      "consumerIntegration": 3,
+      "managedState": 2,
+      "docsProtocol": 1
+    },
+    "runtime": {
+      "node": ">=24.18.0 <25",
+      "pnpm": ">=11.17.0 <12",
+      "runtimeClosureDigest": "sha256:87cb5e3495848f453c1ac0e4dc8caa7d66828f0cab270cefd46d73dee2ea341a"
+    }
+  }
+}

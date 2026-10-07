@@ -1,7 +1,7 @@
 # Node Runtime Compatibility
 
 Node 24 remains the production and repository default runtime. The current
-default is exactly `24.18.0`, as recorded in `.node-version`. Do not change a
+default is exactly `24.21.0`, as recorded in `.node-version`. Do not change a
 release, published cohort, receipt, or accepted decision to imply a production
 runtime cutover.
 
@@ -32,12 +32,25 @@ then installs the separate Cohort v2 pnpm binary. The Node 26 compatibility job
 checks the runtime contract separately from Cohort qualification; it does not qualify or promote a
 Docs Cohort.
 
-The parser is provisioned from `scripts/node-compatibility-tooling`, a private,
+The parser is provisioned from `tools/node-compatibility-tooling`, a private,
 exactly pinned one-dependency workspace. Its own workspace file prevents pnpm
 from climbing into the repository root. Central CI runs the source checker in
 independent Node 24 and Node 26 jobs.
-The stable30 Docs reusable workflow retains its exact pinned Node 24 bytes and
-existing safe-closure validator; it does not acquire a Node 26 compatibility job.
+
+Engineering Foundation 1.7.2 selects that exact package root and gives it a
+disjoint governed root and one package-owned Source boundary. The consumer
+quality profile classifies its three metadata files as a passive parser helper
+owned by governance tooling. The closed inventory rejects additional files;
+this package coverage declaration introduces no composition capability.
+
+The source checker guards the current public Docs reusable workflow against its
+exact accepted-main bytes at `05b30bcc00cdf07cfde9ba60a1136bb9df7f7571`:
+SHA-256 `f3a1e7bba95a8d309f6f4a97377d1c68fd2b956f2659e9576fc1350599cb514d`.
+This is a regression assertion for the current public file. Historical stable30
+workflow bytes, their recorded digests, and their safe-closure validator remain
+bound to their original snapshots. Updating this source assertion leaves the
+public workflow and release qualification and publication mechanisms unchanged.
+
 Node 24 continues to run the full frozen root installation,
 lockfile peer check, and repository gate. Node 26 does not claim a full root
 installation while published Engineering Foundation packages retain Node 24-only

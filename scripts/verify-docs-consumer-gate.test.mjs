@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
+import { Script, createContext } from "node:vm";
 
 import { parseDocument, stringify as stringifyYaml } from "yaml";
 
@@ -1362,6 +1363,90 @@ test("isolates exact Cohort qualification from the untrusted semantic gate", asy
   assert.doesNotMatch(JSON.stringify(semantic.steps), /agent-teams-docs qualify|verify-docs-qualification-receipt/u);
   assert.match(JSON.stringify(semantic.steps), /pnpm docs:protocol:check/u);
   assert.equal(semantic.needs, "trusted-qualification");
+});
+
+test("declares the exact Node24 patch before every owned Docs installation", async () => {
+  // Workflow configuration evidence; this does not execute actions/setup-node.
+  const launchers = [
+    ["docs-protocol-check.yml", ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"]],
+    ["docs-cohort-append-only.yml", ["trusted-validation"]],
+    ["docs-admission-evidence.yml", ["trusted-admission-evidence"]],
+    ["docs-fleet-audit.yml", ["current-fleet"]],
+  ];
+  for (const [file, jobs] of launchers) {
+    const workflow = parseDocument(await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8"),
+      { strict: true, uniqueKeys: true }).toJS();
+    for (const name of jobs) {
+      const steps = workflow.jobs[name].steps;
+      const nodes = steps.filter(step => step.uses?.startsWith("actions/setup-node@"));
+      assert.equal(nodes.length, 1, `${file}:${name} must select exactly one Node launcher`);
+      assert.equal(nodes[0].uses, "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020");
+      assert.equal(nodes[0].with["node-version"], "24.21.0", `${file}:${name} must support the new consumer floor`);
+      assert.ok(steps.indexOf(nodes[0]) < steps.findIndex(step => /(?:\bpnpm|"\$DOCS_COHORT_PNPM_V1_BIN") install/u.test(step.run ?? "")),
+        `${file}:${name} selects Node before installation`);
+    }
+  }
+});
+
+test("executes the reusable OIDC resolver and rejects changed identities before checkout", async () => {
+  const workflow = parseDocument(await readFile(new URL("../.github/workflows/docs-protocol-check.yml", import.meta.url), "utf8"),
+    { strict: true, uniqueKeys: true }).toJS();
+  const program = new Script(`(async () => {\n${workflow.jobs["trusted-authorize"].steps[0].with.script}\n})()`);
+  const calledSha = "a".repeat(40), controllerSha = "b".repeat(40), callerSha = "c".repeat(40);
+  const workflowRef = `agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@${calledSha}`;
+  const claims = {
+    iss: "https://token.actions.githubusercontent.com", aud: "agent-teams-docs-gate",
+    repository: "agent-teams-ai/agent-runtime", repository_id: "1314129620",
+    sha: callerSha, ref: "refs/heads/main", job_workflow_sha: calledSha, job_workflow_ref: workflowRef,
+  };
+  const run = async (changes = {}, repositoryChanges = {}, revision = controllerSha) => {
+    const outputs = new Map(), reads = [];
+    const sandbox = createContext({ Buffer,
+      context: { repo: { owner: "agent-teams-ai", repo: "agent-runtime" }, sha: callerSha, ref: "refs/heads/main" },
+      process: { env: { CALLER_REPOSITORY_ID: "1314129620" } },
+      core: {
+        getIDToken: async audience => {
+          assert.equal(audience, "agent-teams-docs-gate");
+          return `header.${Buffer.from(JSON.stringify({ ...claims, ...changes })).toString("base64url")}.signature`;
+        },
+        setOutput: (key, value) => outputs.set(key, value),
+      },
+      github: { rest: { repos: {
+        get: async args => {
+          assert.deepEqual(structuredClone(args), { owner: "agent-teams-ai", repo: ".github" });
+          reads.push("repository");
+          return { data: { id: 1316243981, full_name: "agent-teams-ai/.github", default_branch: "main",
+            archived: false, disabled: false, ...repositoryChanges } };
+        },
+        getBranch: async args => {
+          assert.deepEqual(structuredClone(args), { owner: "agent-teams-ai", repo: ".github", branch: "main" });
+          reads.push("branch");
+          return { data: { commit: { sha: revision } } };
+        },
+      } } },
+    });
+    await program.runInContext(sandbox, { timeout: 1000 });
+    return { outputs, reads };
+  };
+  const accepted = await run();
+  assert.deepEqual(Object.fromEntries(accepted.outputs), {
+    "workflow-sha": calledSha, "workflow-ref": workflowRef, "workflow-repository": "agent-teams-ai/.github",
+    "workflow-file-path": ".github/workflows/docs-protocol-check.yml", "controller-sha": controllerSha,
+  });
+  assert.deepEqual(accepted.reads, ["repository", "branch"]);
+  for (const changes of [
+    { iss: "https://foreign.invalid" }, { aud: "other" }, { repository: "foreign/consumer" },
+    { repository_id: "7" }, { sha: controllerSha }, { ref: "refs/heads/other" },
+    { job_workflow_sha: "0".repeat(40) }, { job_workflow_sha: "main" },
+    { job_workflow_ref: workflowRef.replace(".github/.github/", ".github/other/") },
+    { job_workflow_ref: workflowRef.replace(calledSha, controllerSha) },
+  ]) {
+    await assert.rejects(() => run(changes), /exact pinned controller workflow/u);
+  }
+  for (const changes of [{ id: 7 }, { full_name: "foreign/.github" }, { archived: true }, { disabled: true }]) {
+    await assert.rejects(() => run({}, changes), /controller repository identity/u);
+  }
+  await assert.rejects(() => run({}, {}, "0".repeat(40)), /immutable commit SHA/u);
 });
 
 test("later controller main changes only mutable lifecycle data, never pinned validator code", async () => {

@@ -12,23 +12,29 @@
   },
   "scripts": {
     "precheck": "node scripts/check-quality-scope.mjs",
-    "check": "pnpm quality:lint && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test",
+    "check": "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
     "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
     "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
     "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
     "governance:inventory:audit": "node scripts/observe-org-repository-inventory.mjs --audit",
     "governance:validate": "node scripts/validate-governance.mjs",
-    "test": "node --test scripts/*.test.mjs tools/feature-module-standard/check.test.mjs",
+    "test": "node --test scripts/*.test.mjs scripts/*.test.mts tools/feature-module-standard/check.test.mjs",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json",
     "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
     "quality:lint": "node scripts/run-quality-lint.mjs",
-    "quality:check": "pnpm quality:scope && pnpm quality:lint"
+    "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
+    "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
+    "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs scripts/node-compatibility-package-ownership.test.mts",
+    "quality:typecheck": "tsc --project tsconfig.tooling.json",
+    "test:input-proof": "node --test scripts/qualification-input-proof.test.mts"
   },
   "devDependencies": {
-    "@agent-teams/engineering-foundation": "1.5.0",
+    "@agent-teams/engineering-foundation": "1.7.2",
+    "@types/node": "24.19.1",
     "ajv": "8.20.0",
     "oxlint": "1.85.0",
     "renovate": "44.24.2",
+    "typescript": "7.0.2",
     "yaml": "2.9.0"
   }
 }

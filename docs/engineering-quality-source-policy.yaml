@@ -1,0 +1,71 @@
+schemaVersion: 3
+workspace:
+  kind: pnpm
+  manifest: pnpm-workspace.yaml
+rootPackage: true
+packageRoots:
+  - tools/node-compatibility-tooling
+governedRoots:
+  - scripts
+  - tools/feature-module-standard
+  - tools/node-compatibility-tooling
+boundaries:
+  - id: governance-tooling
+    dependencyMode: development
+    roots:
+      - scripts
+    entrypoints: []
+    allow:
+      boundaries:
+        - feature-module-standard
+      packages:
+        - ajv
+        - yaml
+      builtins:
+        - node:assert/strict
+        - node:child_process
+        - node:crypto
+        - node:fs
+        - node:fs/promises
+        - node:module
+        - node:os
+        - node:path
+        - node:test
+        - node:url
+        - node:util
+        - node:vm
+        - node:zlib
+      runtimeReferences:
+        - commonjs
+        - dynamic
+  - id: feature-module-standard
+    dependencyMode: development
+    roots:
+      - tools/feature-module-standard
+    entrypoints:
+      - tools/feature-module-standard/check.mjs
+    allow:
+      boundaries: []
+      packages: []
+      builtins:
+        - node:assert/strict
+        - node:child_process
+        - node:crypto
+        - node:fs
+        - node:fs/promises
+        - node:os
+        - node:path
+        - node:test
+        - node:url
+        - node:util
+      runtimeReferences: []
+  - id: node-compatibility-tooling
+    dependencyMode: development
+    roots:
+      - tools/node-compatibility-tooling
+    entrypoints: []
+    allow:
+      boundaries: []
+      packages: []
+      builtins: []
+      runtimeReferences: []

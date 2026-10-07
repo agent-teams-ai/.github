@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { selectLatestFailedSourceCheck } from "./verify-docs-platform-recovery-installation-r317.mjs";
@@ -426,5 +429,140 @@ for (const [label, mutate, pattern] of [
   test(`hosted fixture rejects ${label}`, async () => {
     const f = hostedFixture(); mutate(f);
     await assert.rejects(f.run(), pattern);
+  });
+}
+
+// Historical stable31 replay uses the supplied Mac GH packet, independently of
+// the a3 fixture; it provides no live admission callback.
+const pendingRoot = new URL("./fixtures/platform-stable31-pending-source/", import.meta.url);
+const pendingBytes = async (path) => {
+  const compressed = path.endsWith(".mjs") || path.endsWith("docs-qualified-cohorts.json") || path.endsWith(".fixture.json") || path.endsWith("/package.json");
+  const bytes = await readFile(new URL(path + (compressed ? ".gz" : ""), pendingRoot));
+  return compressed ? gunzipSync(bytes, { maxOutputLength: 4 * 1024 * 1024 }) : bytes;
+};
+const pendingPacket = JSON.parse(await pendingBytes("packet.json"));
+const pendingRaw = new Map(await Promise.all(pendingPacket.manifest.map(async (item) => {
+  const bytes = await pendingBytes(item.path);
+  assert.equal(bytes.length, item.bytes); assert.equal(recoveryDigest(bytes), item.sha256);
+  if (item.gitBlob) assert.equal(recoveryBlob(bytes), item.gitBlob);
+  return [item.path, bytes];
+})));
+const pendingReceipt = await readFile(new URL("../governance/evidence/docs-admission/platform-stable31-pending-source.json", import.meta.url));
+assert.equal(recoveryDigest(await pendingBytes("packet.json")), JSON.parse(pendingReceipt).packet_sha256);
+const pendingPolicy = JSON.parse(await pendingBytes("selection-policy.fixture.json"));
+const pendingRegistry = await pendingBytes("recommended-TEST.fixture.json");
+const pendingSchema = JSON.parse(await readFile(new URL("../governance/docs-qualified-cohorts.schema.json", import.meta.url)));
+const { verifyHistoricalPlatformPendingSelection } = await import("./docs-platform-admission-recovery.mjs");
+function pendingFixture(inverse = false) {
+  const before = structuredClone(pendingPolicy), after = structuredClone(pendingPolicy);
+  const selected = (inverse ? before : after).repositories.find(row => row.repository_id === 1319378484);
+  selected.desired_cohort_id = "docs-2026-10-03-stable31"; selected.cohort_binding_status = "rollout_pending";
+  const state = { head: pendingPacket.source, run: JSON.parse(pendingRaw.get("run.json")),
+    checks: JSON.parse(pendingRaw.get("checks.json")).check_runs, jobs: JSON.parse(pendingRaw.get("jobs.json")).jobs };
+  const adapters = {
+    getRepository: async () => JSON.parse(pendingRaw.get("repository.json")),
+    getDefaultBranchHead: async () => state.head, isCommitAncestor: async () => true,
+    getCheckRuns: async () => structuredClone(state.checks), getWorkflowRun: async () => structuredClone(state.run),
+    getWorkflowJobs: async () => structuredClone(state.jobs), getJobLog: async () => Buffer.from(pendingRaw.get("authorize.log")),
+    readGitFile: async (repo, path, revision) => {
+      const coordinate = pendingPacket.manifest.find(item => item.repository === repo && item.repositoryPath === path && item.revision === revision);
+      assert.ok(coordinate, `${repo}:${path}@${revision}`); return Buffer.from(pendingRaw.get(coordinate.path));
+    },
+  };
+  const input = { receiptBytes: pendingReceipt, basePolicyBytes: Buffer.from(JSON.stringify(before)),
+    proposedPolicyBytes: Buffer.from(JSON.stringify(after)), registryBytes: pendingRegistry, registrySchema: pendingSchema,
+    asOf: "2026-10-03T06:00:00Z", execution: { controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 },
+      base: "e".repeat(40), head: "f".repeat(40), execution_base: "e".repeat(40), changed_files: ["governance/docs-protocol-policy-v2.json"],
+      pull_number: 338, pull_id: 3381, run_id: 3382, run_attempt: 1 } };
+  const entry = after.repositories.find(row => row.repository_id === 1319378484);
+  return { before, after, entry, input, state, adapters,
+    verify: () => verifyHistoricalPlatformPendingSelection(input, adapters, entry, state.head) };
+}
+test("stable31 replays the actual pinned authorization function and real schemas on the authentic failed packet", async (t) => {
+  const support = JSON.parse(await pendingBytes("replay-support.json"));
+  const sources = new Map();
+  for (const item of support.manifest) {
+    const bytes = gunzipSync(await readFile(new URL(item.path, pendingRoot)));
+    assert.equal(bytes.length, item.bytes); assert.equal(recoveryDigest(bytes), item.sha256);
+    assert.equal(recoveryBlob(bytes), item.gitBlob); sources.set(item.repositoryPath, bytes);
+  }
+  assert.equal(recoveryBlob(sources.get("scripts/docs-cohort-policy.mjs")), "4d05735b16bdb4dd06eb75712a356fc98376edc2");
+  // Retarget only module specifiers: the real pinned function and its real
+  // pinned policy owner run unchanged, with actual installed Ajv and YAML.
+  // Real file modules preserve the pinned runner's file-URL entrypoint guard.
+  // Only import specifiers change; authorization and CLI guard code are intact.
+  const moduleRoot = await mkdtemp(join(tmpdir(), "TEST-platform-pinned-replay-"));
+  t.after(() => rm(moduleRoot, { recursive: true, force: true }));
+  const cohortPath = join(moduleRoot, "docs-cohort-policy.mjs");
+  const runnerPath = join(moduleRoot, "verify-docs-consumer-gate.mjs");
+  const cohort = sources.get("scripts/docs-cohort-policy.mjs").toString().replace('"ajv/dist/2020.js"', JSON.stringify(import.meta.resolve("ajv/dist/2020.js")));
+  const runner = pendingRaw.get("pinned-runner/scripts/verify-docs-consumer-gate.mjs").toString()
+    .replace('"ajv/dist/2020.js"', JSON.stringify(import.meta.resolve("ajv/dist/2020.js")))
+    .replace('"yaml"', JSON.stringify(import.meta.resolve("yaml")))
+    .replace('"./docs-cohort-policy.mjs"', JSON.stringify(pathToFileURL(cohortPath).href));
+  await writeFile(cohortPath, cohort);
+  await writeFile(runnerPath, runner);
+  const { authorizeConsumerGate } = await import(pathToFileURL(runnerPath).href);
+  const schema = path => JSON.parse(sources.get(`governance/${path}.schema.json`));
+  const workflow = { repository: "agent-teams-ai/.github", filePath: ".github/workflows/docs-protocol-check.yml", sha: pendingPacket.pinnedRunner };
+  workflow.ref = `${workflow.repository}/${workflow.filePath}@${workflow.sha}`;
+  const fileCoordinates = pendingPacket.manifest.filter(item => item.repository === "agent-teams-ai/agent-teams-platform");
+  const input = { policy: JSON.parse(pendingRaw.get("controller-snapshot/governance/docs-protocol-policy-v2.json")),
+    registry: JSON.parse(pendingRaw.get("controller-snapshot/governance/docs-qualified-cohorts.json")),
+    exceptions: JSON.parse(pendingRaw.get("controller-snapshot/governance/docs-protocol-exceptions.json")),
+    policySchema: schema("docs-protocol-policy-v2"), registrySchema: schema("docs-qualified-cohorts"), exceptionsSchema: schema("docs-protocol-exceptions"),
+    workflowIdentity: workflow, calledWorkflowBlobSha: "9bcbe54dfec6280045ac596e55c1f14ce5f176e1", callerSha: pendingPacket.source,
+    controllerSnapshotSha: pendingPacket.controllerSnapshot, asOf: "2026-10-02T13:49:00Z",
+    repository: { id: 1319378484, fullName: pendingPacket.repository, defaultBranch: "main" },
+    tree: fileCoordinates.map(item => ({ path: item.repositoryPath, type: "blob", mode: "100644", sha: item.gitBlob })),
+    files: Object.fromEntries(fileCoordinates.map(item => [item.repositoryPath, pendingRaw.get(item.path).toString()])) };
+  const diagnostic = "Central consumer policy does not explicitly match the Cohort generation.";
+  assert.throws(() => authorizeConsumerGate(input), error => error.message === diagnostic);
+  assert.ok(pendingRaw.get("authorize.log").toString().includes(`DOCS_GATE_POLICY_REJECTED: ${diagnostic}`));
+  const altered = structuredClone(input); const projection = JSON.parse(altered.files["architecture/foundation/docs-protocol-managed-state.json"]);
+  projection.packages = { forged: { version: "99.0.0" } };
+  altered.files["architecture/foundation/docs-protocol-managed-state.json"] = JSON.stringify(projection);
+  assert.throws(() => authorizeConsumerGate(altered), error => error.message === diagnostic,
+    "generation fails before graph validation; it cannot certify downstream source qualification");
+  const invalidSchemaInput = structuredClone(input); invalidSchemaInput.policy.repositories[0].repository_id = "wrong";
+  assert.throws(() => authorizeConsumerGate(invalidSchemaInput), /policy schema validation failed/u);
+});
+for (const inverse of [false, true]) test(`historical stable31 exact ${inverse ? "pre-movement inverse" : "forward"} retains the whole observation and failed truth`, async () => {
+  const f = pendingFixture(inverse); const before = structuredClone(f.before), after = structuredClone(f.after);
+  assert.deepEqual(await f.verify(), { repository_id: 1319378484, source_head: "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+    status: "recovery_pending", qualification: "unverified", semantics: "unverified" });
+  assert.deepEqual(f.before, before); assert.deepEqual(f.after, after);
+  assert.equal(f.entry.observed_cohort_id, "docs-2026-09-12-stable21");
+});
+const pendingMutations = {
+  "unqualified actual target": async f => { f.input.registryBytes = await pendingBytes("qualified-base.fixture.json"); },
+  "receipt tamper": f => { f.input.receiptBytes = Buffer.concat([f.input.receiptBytes, Buffer.from(" ")]); },
+  "source movement": f => { f.state.head = "a".repeat(40); },
+  "wrong attempt": f => { f.state.run.run_attempt++; },
+  "wrong run snapshot": f => {
+    const read = f.adapters.readGitFile;
+    f.adapters.readGitFile = async (repo, path, revision) => revision === pendingPacket.controllerSnapshot
+      ? Buffer.from("wrong snapshot") : read(repo, path, revision);
+  },
+  "wrong run identity": f => { f.state.run.id++; },
+  "wrong check URL": f => { f.state.checks.find(c => c.id === 110868628467).html_url += "?forged"; },
+  "wrong semantic job": f => { f.state.jobs.find(j => j.id === 110868628467).id++; },
+  "wrong App": f => { f.state.checks.find(c => c.id === 110868628467).app.id = 1; },
+  "wrong check head": f => { f.state.checks.find(c => c.id === 110868628467).head_sha = "a".repeat(40); },
+  "newer decisive run": f => { f.state.checks.push({ ...f.state.checks.find(c => c.id === 110868628467), id: 110868628468 }); },
+  "independent qualification failure": f => { f.state.jobs.find(j => j.id === 110865327956).steps[11].conclusion = "failure"; },
+  "executed consumer semantics": f => { f.state.jobs.find(j => j.id === 110868628467).steps[6].conclusion = "success"; },
+  "tampered log": f => { f.adapters.getJobLog = async () => Buffer.from("DOCS_GATE_POLICY_REJECTED: unrelated failure\n"); },
+};
+for (const [label, mutate] of Object.entries(pendingMutations)) test(`stable31 rejects ${label}`, async () => {
+  const f = pendingFixture(); await mutate(f); await assert.rejects(f.verify());
+});
+for (const path of ["package.json", "pnpm-lock.yaml", "architecture/foundation/docs-protocol.yaml",
+  ".github/workflows/docs-protocol.yml", "architecture/foundation/docs-protocol-managed-state.json",
+  "architecture/foundation/docs-consumer-integration.json", "architecture/foundation/docs-protocol-qualification.json"]) {
+  test(`stable31 binds authentic source ${path}`, async () => {
+    const f = pendingFixture(); const read = f.adapters.readGitFile;
+    f.adapters.readGitFile = async (repo, name, revision) => name === path ? Buffer.from("tampered") : read(repo, name, revision);
+    await assert.rejects(f.verify(), /immutable source/u);
   });
 }

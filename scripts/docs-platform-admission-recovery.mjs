@@ -2,7 +2,8 @@ import { isDeepStrictEqual } from "node:util";
 import { recoveryBlob, recoveryDigest, recoveryTarget, verifyLegacyFailureJobs,
   POLICY_PATH } from "./docs-legacy-admission-recovery.mjs";
 import { docsCohortTransitionKind, isDocsCohortSelectableForRepository,
-  validateDocsQualifiedCohorts } from "./docs-cohort-policy.mjs";
+  validateDocsQualifiedCohorts, validateDocsProtocolExceptions } from "./docs-cohort-policy.mjs";
+import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
 import { parseIncidentJson, selectLatestFailedSourceCheck } from
   "./verify-docs-platform-recovery-installation-r317.mjs";
 
@@ -163,6 +164,137 @@ export function validatePlatformRecoveryRecord(record, input, incident = PLATFOR
 }
 
 const GENERATION_DIAGNOSTIC = "Central consumer policy does not explicitly match the Cohort generation.";
+// Historical failed-source replay only. Live admission no longer consumes this
+// proof or grants the former stable31 pending-selection exception.
+const PLATFORM_PENDING_SOURCE_BLOB = "b8f952fb216422940d64214cc1f4cdf9836ecde8";
+const PENDING_TARGET = "docs-2026-10-03-stable31";
+const withoutIntent = ({ desired_cohort_id: _desired, cohort_binding_status: _binding, ...facts }) => facts;
+
+function platformPendingSelectionDirection(before, after) {
+  if (!before || !after || !isDeepStrictEqual(changedKeys(before, after), ["repositories"]) ||
+    before.repositories?.length !== after.repositories?.length) {return null;}
+  const changed = before.repositories.filter((row, index) => !isDeepStrictEqual(row, after.repositories[index]));
+  if (changed.length !== 1 || changed[0].repository_id !== PLATFORM_RECOVERY.repository_id) {return null;}
+  const prior = changed[0], next = after.repositories[before.repositories.indexOf(prior)];
+  if (!isDeepStrictEqual(withoutIntent(prior), withoutIntent(next))) {return null;}
+  if (prior.desired_cohort_id === PLATFORM_RECOVERY.observed && prior.cohort_binding_status === "bound" &&
+    next.desired_cohort_id === PENDING_TARGET && next.cohort_binding_status === "rollout_pending") {return "forward";}
+  if (prior.desired_cohort_id === PENDING_TARGET && prior.cohort_binding_status === "rollout_pending" &&
+    next.desired_cohort_id === PLATFORM_RECOVERY.observed && next.cohort_binding_status === "bound") {return "inverse";}
+  return null;
+}
+
+const pendingFields = (value, keys) => Object.fromEntries(keys.split(" ").map((key) => [key, value?.[key]]));
+function pendingJobs(jobs) {
+  return jobs.map((job) => ({ ...pendingFields(job, "id run_id run_attempt head_sha name html_url status conclusion"),
+    steps: job.steps.map((step) => pendingFields(step, "name number status conclusion")) }))
+    .toSorted((a, b) => a.id - b.id);
+}
+function pendingChecks(checks) {
+  return checks.filter((check) => check.name?.startsWith("docs-protocol / "))
+    .map((check) => ({ ...pendingFields(check, "id name head_sha html_url status conclusion"), app: { id: check.app?.id } }))
+    .toSorted((a, b) => a.id - b.id);
+}
+
+export async function verifyHistoricalPlatformPendingSelection(input, adapters, entry, sourceHead) {
+  need(Buffer.isBuffer(input.receiptBytes) && recoveryBlob(input.receiptBytes) === PLATFORM_PENDING_SOURCE_BLOB,
+    "pending source receipt is not the pinned protected-base blob");
+  const receipt = JSON.parse(input.receiptBytes);
+  const before = JSON.parse(input.basePolicyBytes), after = JSON.parse(input.proposedPolicyBytes);
+  const execution = input.execution;
+  equal(execution?.controller, { repository: "agent-teams-ai/.github", repository_id: 1316243981 }, "pending central identity");
+  need(execution.execution_base === execution.base && SHA.test(execution.base) && SHA.test(execution.head) &&
+    execution.base !== execution.head && [execution.pull_number, execution.pull_id, execution.run_id, execution.run_attempt]
+      .every(positive), "pending intent lacks its trusted PR/base/head execution");
+  equal(execution.changed_files, [POLICY_PATH], "pending complete policy-only diff");
+  need(platformPendingSelectionDirection(before, after), "pending operation is not the exact forward/pre-movement inverse");
+  equal(withoutIntent(entry), receipt.observation, "entire preserved Platform observation");
+  equal(entry, after.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id), "pending changed row");
+  need(sourceHead === receipt.source_head && entry.repository_id === PLATFORM_RECOVERY.repository_id,
+    "pending source moved or row differs");
+  const registry = JSON.parse(input.registryBytes);
+  const lifecycle = validateDocsQualifiedCohorts(registry, input.registrySchema, { asOf: input.asOf });
+  const target = recoveryTarget(registry, PENDING_TARGET);
+  equal({ cohort_id: target.cohort_id, record_digest: target.record_digest,
+    qualification_event_digest: target.event_digest }, receipt.target, "pending immutable target");
+  const targetRecord = lifecycle.cohortById.get(PENDING_TARGET);
+  need(target.generation === 2 && lifecycle.stateById.get(PENDING_TARGET) === "RECOMMENDED" &&
+    targetRecord.upgrade_from.includes(PLATFORM_RECOVERY.observed) &&
+    targetRecord.upgrade_from.includes(receipt.source_cohort_id) &&
+    registry.events.some((event) => event.cohort_id === PENDING_TARGET && event.state === "CANARY"),
+  "pending target lacks recommended canary authority or explicit 21/25 migration edges");
+  const repo = entry.repository, head = receipt.source_head;
+  const repository = await adapters.getRepository(repo);
+  need(repository.id === entry.repository_id && repository.full_name === repo && repository.default_branch === "main" &&
+    repository.archived === false && repository.disabled === false &&
+    await adapters.getDefaultBranchHead(repo, "main") === head &&
+    await adapters.isCommitAncestor(repo, entry.observed_default_branch_evidence.revision, head),
+  "pending repository identity, lifecycle, ancestry or source head changed");
+  // Failure inputs belong to the logged historical snapshot, independently of
+  // today's selection registry. Each source and runner file is immutable.
+  const files = new Map();
+  for (const coordinate of receipt.files) {
+    const bytes = await adapters.readGitFile(coordinate.repository, coordinate.repositoryPath, coordinate.revision);
+    need(Buffer.isBuffer(bytes) && bytes.length === coordinate.bytes &&
+      recoveryBlob(bytes) === coordinate.gitBlob && recoveryDigest(bytes) === coordinate.sha256,
+    `pending immutable source ${coordinate.path} differs`);
+    files.set(coordinate.path, bytes);
+  }
+  const failedPolicy = JSON.parse(files.get("controller-snapshot/governance/docs-protocol-policy-v2.json"));
+  const failedRegistry = JSON.parse(files.get("controller-snapshot/governance/docs-qualified-cohorts.json"));
+  // Recheck the captured controller prerequisites against real captured schemas.
+  // These are structural prerequisites, not downstream source qualification.
+  validateDocsProtocolPolicy(failedPolicy,
+    JSON.parse(files.get("controller-snapshot/governance/docs-protocol-policy-v2.schema.json")));
+  validateDocsQualifiedCohorts(failedRegistry,
+    JSON.parse(files.get("controller-snapshot/governance/docs-qualified-cohorts.schema.json")), { asOf: receipt.failure_started_at });
+  validateDocsProtocolExceptions(JSON.parse(files.get("controller-snapshot/governance/docs-protocol-exceptions.json")),
+    JSON.parse(files.get("controller-snapshot/governance/docs-protocol-exceptions.schema.json")),
+    { asOf: receipt.failure_started_at.slice(0, 10) });
+  equal(withoutIntent(failedPolicy.repositories.find((row) => row.repository_id === entry.repository_id)),
+    receipt.observation, "failed snapshot observation");
+  const projection = JSON.parse(files.get("platform/architecture/foundation/docs-protocol-managed-state.json"));
+  const source = recoveryTarget(failedRegistry, receipt.source_cohort_id);
+  need(projection.cohortId === source.cohort_id && projection.cohortAuthority.recordDigest === source.record_digest &&
+    projection.cohortAuthority.qualificationEventDigest === source.event_digest &&
+    source.generation === 2 && source.workflow.revision === receipt.runner_revision &&
+    failedPolicy.repositories.find((row) => row.repository_id === entry.repository_id).desired_cohort_id === PLATFORM_RECOVERY.observed,
+  "failed source projection/snapshot does not bind the captured generation rejection");
+  const checks = await adapters.getCheckRuns(repo, head);
+  equal(pendingChecks(checks), receipt.checks, "complete pending Docs checks/context/App/head/latest execution");
+  const run = await adapters.getWorkflowRun(repo, receipt.run.id);
+  equal({ ...pendingFields(run, "id run_attempt workflow_id head_sha head_branch path event status conclusion referenced_workflows"),
+    repository: pendingFields(run.repository, "id full_name") }, receipt.run, "pending exact failed push/run/attempt/runner");
+  const jobs = await adapters.getWorkflowJobs(repo, run.id, run.run_attempt);
+  // Preserve the legacy comparator unchanged. Exact captured step identities
+  // additionally bind this source's skipped qualification/consumer execution.
+  verifyLegacyFailureJobs(jobs, { id: run.id, attempt: run.run_attempt, head, repository: repo }, receipt.authorize_job_id);
+  equal(pendingJobs(jobs), receipt.jobs, "pending authentic four-role jobs and complete steps");
+  const log = await adapters.getJobLog(repo, receipt.authorize_job_id);
+  need(Buffer.isBuffer(log) && recoveryDigest(log) === receipt.log_digest, "pending authorize log digest differs");
+  const text = log.toString("utf8");
+  for (const [name, value] of [["CONTROLLER_SNAPSHOT_SHA", receipt.controller_snapshot_sha],
+    ["JOB_WORKFLOW_SHA", receipt.runner_revision], ["GITHUB_SHA", head]]) {
+    const declarations = [...text.matchAll(new RegExp(`(?:^|\\n)(?:[0-9T:.Z-]+ )? *${name}: ([^\\r\\n]+)`, "gu"))];
+    need(declarations.length === 1 && declarations[0][1] === value, `pending log does not uniquely bind ${name}`);
+  }
+  need(text.split(/\r?\n/u).filter((line) => line.endsWith(`DOCS_GATE_POLICY_REJECTED: ${GENERATION_DIAGNOSTIC}`)).length === 1,
+    "pending log lacks the exact generation diagnostic");
+  const checkpoint = async () => {
+    equal(await adapters.getCheckRuns(repo, head), checks, "pending final complete checks");
+    equal(await adapters.getWorkflowRun(repo, run.id), run, "pending final run attempt");
+    equal(await adapters.getWorkflowJobs(repo, run.id, run.run_attempt), jobs, "pending final jobs/steps");
+    equal(await adapters.getJobLog(repo, receipt.authorize_job_id), log, "pending final authorization log");
+    const finalRepository = await adapters.getRepository(repo);
+    equal(pendingFields(finalRepository, "id full_name default_branch archived disabled"),
+      pendingFields(repository, "id full_name default_branch archived disabled"), "pending final repository");
+    need(await adapters.getDefaultBranchHead(repo, "main") === head, "pending final source head changed");
+  };
+  await checkpoint();
+  return { repository_id: entry.repository_id, source_head: head,
+    status: "recovery_pending", qualification: "unverified", semantics: "unverified" };
+}
+
 const GENERATION_SOURCE = `  const selectedGeneration = policyEntry.desired_cohort_id === record.cohort_id
     ? policyEntry.desired_cohort_generation
     : policyEntry.observed_cohort_id === record.cohort_id

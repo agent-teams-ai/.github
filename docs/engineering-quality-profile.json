@@ -2,33 +2,65 @@
   "schemaVersion": "consumer-quality-profile-v1",
   "status": "active-foundation",
   "languages": [
-    "javascript"
+    "javascript",
+    "typescript"
   ],
   "sourceRoots": {
     "tooling": [
       "scripts/**/*.mjs",
+      "scripts/**/*.mts",
       "tools/feature-module-standard/check.mjs"
     ],
     "tests": [
       "scripts/**/*.test.mjs",
+      "scripts/**/*.test.mts",
       "tools/feature-module-standard/check.test.mjs"
     ]
   },
   "typedCoverage": false,
   "requiredRoute": "pnpm check",
   "foundation": {
-    "version": "1.5.0",
+    "version": "1.7.2",
     "publicPreset": "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
   },
   "lint": {
     "configPath": "oxlint.json",
     "includedRoles": [
       "tooling"
+    ],
+    "includedExtensions": [
+      ".mts"
     ]
   },
   "toolchain": {
-    "node": "24.18.0",
+    "node": "24.21.0",
     "pnpm": "11.18.0",
     "oxlint": "1.85.0"
-  }
+  },
+  "typedTooling": {
+    "configPath": "tsconfig.tooling.json",
+    "command": "pnpm quality:typecheck",
+    "compiler": "7.0.2",
+    "nodeTypes": "24.19.1",
+    "entryFiles": [
+      "scripts/qualification-input-proof.mts",
+      "scripts/qualification-input-proof.test.mts",
+      "scripts/node-compatibility-package-ownership.test.mts"
+    ]
+  },
+  "passiveHelpers": [
+    {
+      "id": "node-compatibility-tooling",
+      "owner": "governance-tooling",
+      "classification": "passive-parser-metadata",
+      "packageRoot": "tools/node-compatibility-tooling",
+      "sourceBoundary": "node-compatibility-tooling",
+      "compositionCapability": false,
+      "files": [
+        "tools/node-compatibility-tooling/package.json",
+        "tools/node-compatibility-tooling/pnpm-workspace.yaml",
+        "tools/node-compatibility-tooling/pnpm-lock.yaml"
+      ]
+    }
+  ]
 }

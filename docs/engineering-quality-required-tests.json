@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "required": [
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "actual repository adopts the Foundation preset through the canonical route"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "actual tracked source census distinguishes tooling, tests, and authority data"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "actual derived tooling paths exactly match Oxlint debug selection"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tools/feature-module-standard/check.test.mjs",
+      "names": [
+        "accepts the checked-in immutable Feature Module Standard"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tools/feature-module-standard/check.test.mjs",
+      "names": [
+        "rejects digest, path, marker, and manifest-shape drift"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tools/feature-module-standard/check.test.mjs",
+      "names": [
+        "allows append-only successors but rejects mutation or removal"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "installed source boundary rejects missing inputs and governed dist source"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "installed mandatory runner rejects omitted and skipped identities with exact OS exceptions"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/node-compatibility-package-ownership.test.mts",
+      "names": [
+        "installed source boundary accepts the relocated passive parser and rejects ownership drift"
+      ],
+      "kind": "test"
+    }
+  ],
+  "exceptions": []
+}
