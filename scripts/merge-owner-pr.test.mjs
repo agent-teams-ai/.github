@@ -54,6 +54,8 @@ function transport(t, scenario) {
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const config = path.join(directory, "scenario.json"), log = path.join(directory, "calls.jsonl");
   const bodyFile = path.join(directory, "reviewed body.txt"), effect = path.join(directory, "effect");
+  // Scope the extensionless CommonJS transport independently of ambient package metadata.
+  writeFileSync(path.join(directory, "package.json"), JSON.stringify({ type: "commonjs" }) + "\n");
   writeFileSync(path.join(directory, "gh"), "#!" + process.execPath + "\n(" + fakeTransport.toString() + ")();\n", { mode: 0o700 });
   writeFileSync(config, JSON.stringify(scenario));
   writeFileSync(log, "");

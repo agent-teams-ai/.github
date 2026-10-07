@@ -396,20 +396,53 @@ test("production closure against real Git TEST trees", async t => {
   git(["init", "--quiet", "--object-format=sha1"]);
   const blob = bytes => git(["hash-object", "-w", "--stdin"], bytes).trim();
   const empty = git(["mktree"], "").trim();
+  // Independent structural coordinates and inert payloads: no moving source file
+  // is treated as an admitted historical blob or copied into this TEST repository.
+  const structuralPaths = [
+    ".github/workflows/docs-protocol-check.yml",
+    ".github/workflows/docs-cohort-append-only.yml",
+    ".github/workflows/docs-admission-evidence.yml",
+    ".github/workflows/docs-fleet-audit.yml",
+    "scripts/verify-docs-consumer-gate.test.mjs",
+    "scripts/check-community-files.mjs",
+  ];
+  assert.deepEqual(expectedTuple.map(item => item.path).sort(), [...structuralPaths].sort(),
+    "The structural fixture must retain exactly the six independent historical paths");
   const fixed = [];
   for (const path of [workflowPath, testPath]) fixed.push({ path, mode: "100644", type: "blob",
-    sha: blob(await readFile(new URL(`../${path}`, import.meta.url))) });
+    sha: blob(`TEST unchanged base-owned fixture at ${path}\n`) });
   fixed.push({ path: "unrelated/kept.txt", mode: "100644", type: "blob", sha: blob("TEST unchanged content\n") });
+  // The relocated parser metadata remains unrelated, unchanged TEST data.
+  // Its bytes are independent literals; no old or current metadata paths are read.
+  const metadataPath = "tools/node-compatibility-tooling/package.json";
+  for (const [path, bytes] of [
+    [metadataPath, '{"name":"TEST-structural-parser","private":true}\n'],
+    ["tools/node-compatibility-tooling/pnpm-workspace.yaml", "packages:\n  - .\n"],
+    ["tools/node-compatibility-tooling/pnpm-lock.yaml", "lockfileVersion: '9.0'\nimporters: {}\n"],
+  ]) fixed.push({ path, mode: "100644", type: "blob", sha: blob(bytes) });
   const sides = {};
   for (const side of ["old", "new"]) {
     sides[side] = [];
-    for (const item of expectedTuple) {
-      const bytes = await readFile(new URL(`../${item.path}`, import.meta.url));
-      assert.ok([item.old_blob, item.new_blob].includes(blob(bytes)), "The actual source matches an old or new approved blob");
-      const payload = side === "old" ? bytes : Buffer.concat([bytes, Buffer.from("\nTEST closure payload\n")]);
-      sides[side].push({ path: item.path, mode: "100644", type: "blob", sha: blob(payload) });
+    for (const path of structuralPaths) {
+      const payload = Buffer.from(`TEST closure-only ${side} payload for ${path}\n`);
+      const sha = blob(payload);
+      const historical = expectedTuple.find(item => item.path === path);
+      assert.ok(![historical.old_blob, historical.new_blob].includes(sha),
+        "Synthetic structural bytes must not impersonate either admitted historical blob");
+      sides[side].push({ path, mode: "100644", type: "blob", sha });
     }
   }
+  for (const path of structuralPaths) assert.notEqual(
+    sides.old.find(entry => entry.path === path).sha, sides.new.find(entry => entry.path === path).sha,
+    "Each of the six structural TEST leaves must actually change");
+  // Passing the closure slice cannot admit these synthetic bytes through the
+  // unchanged full production guard. Exercise that independent negative gate.
+  const syntheticAttempt = fixture();
+  syntheticAttempt.pages = [sides.new.map(entry => ({ filename: entry.path, status: "modified", sha: entry.sha }))];
+  const syntheticRefusal = await execute(syntheticAttempt);
+  assert.equal(syntheticRefusal.failures.length, 1, "The full frozen-tuple guard must refuse synthetic closure bytes");
+  assert.match(syntheticRefusal.failures[0], /changed-file tuple/u);
+  assert.deepEqual(syntheticRefusal.evidence, [], "Structural TEST acceptance grants no historical admission evidence");
   const writeTree = entries => {
     const root = new Map();
     for (const entry of entries) {
@@ -426,17 +459,27 @@ test("production closure against real Git TEST trees", async t => {
     return write(root);
   };
   const makeTree = (side, mutation) => {
-    const entries = [...fixed, ...sides[side]];
+    const entries = clone([...fixed, ...sides[side]]);
     if (mutation !== "removal") entries.push({ path: "unrelated/empty", mode: "040000", type: "tree",
       sha: mutation === "changed empty subtree" ? git(["mktree"], `040000 tree ${empty}\tnested-empty\n`).trim() : empty });
     if (mutation === "addition" || mutation === "addition inside allowed ancestor") entries.push({
       path: mutation === "addition" ? "undeclared-empty" : ".github/workflows/undeclared-empty",
       mode: "040000", type: "tree", sha: empty });
+    const metadata = entries.find(entry => entry.path === metadataPath);
+    if (mutation === "unrelated metadata content change") metadata.sha = blob('{"name":"TEST-drifted-parser","private":true}\n');
+    if (mutation === "unrelated metadata mode change") metadata.mode = "100755";
+    if (mutation === "unrelated metadata type change") Object.assign(metadata,
+      { mode: "120000", type: "blob", sha: blob("TEST-symlink-target\n") });
     return writeTree(entries);
   };
   const mutations = ["addition", "removal", "changed empty subtree", "addition inside allowed ancestor"];
+  const metadataMutations = [
+    { name: "unrelated metadata content change", diff: `M\t${metadataPath}` },
+    { name: "unrelated metadata mode change", diff: `M\t${metadataPath}` },
+    { name: "unrelated metadata type change", diff: `T\t${metadataPath}` },
+  ];
   const objects = Object.fromEntries(["old", "new"].map(side => [side, Object.fromEntries(
-    ["baseline", ...mutations].map(mutation => [mutation, makeTree(side, mutation)]))]));
+    ["baseline", ...mutations, ...metadataMutations.map(item => item.name)].map(mutation => [mutation, makeTree(side, mutation)]))]));
   git(["fsck", "--strict", "--no-reflogs", "--no-dangling"]);
   assert.ok(!git(["cat-file", "--batch-all-objects", "--batch-check=%(objecttype)"]).split("\n").includes("commit"),
     "The disposable TEST repository contains no commits");
@@ -448,7 +491,7 @@ test("production closure against real Git TEST trees", async t => {
   const close = (before, after) => closure.runInNewContext({ recursiveTrees: [recursive(before), recursive(after)], tuple: expectedTuple,
     demand: (condition, message) => { if (!condition) throw new Error(message); } }, { timeout: 1000 });
   const diff = (before, after) => git(["diff-tree", "--no-renames", "--name-status", "-r", before, after]).trim().split("\n");
-  const expectedDiff = expectedTuple.map(item => `M\t${item.path}`).sort();
+  const expectedDiff = structuralPaths.map(path => `M\t${path}`).sort();
   for (const direction of ["forward", "rollback"]) {
     const before = objects[direction === "forward" ? "old" : "new"].baseline;
     const candidates = objects[direction === "forward" ? "new" : "old"];
@@ -466,6 +509,20 @@ test("production closure against real Git TEST trees", async t => {
       sub.diagnostic(JSON.stringify({ direction, mutation, before, baseline: candidates.baseline, mutated: candidates[mutation],
         baselineAccepted: true, mutationAccepted: refusal === undefined, refusal, diff: expectedDiff, fsck: "strict pass", commits: 0 }));
       assert.match(refusal ?? "", /Complete immutable trees/u, "Refuse the real undeclared directory mutation");
+      assert.doesNotThrow(() => close(before, candidates.baseline), "Restoring the valid tree passes again");
+      sub.diagnostic("corrected tree accepted");
+    });
+    for (const { name: mutation, diff: extraDiff } of metadataMutations) await t.test(`${direction} rejects ${mutation}`, sub => {
+      assert.deepEqual(diff(before, candidates.baseline).sort(), expectedDiff);
+      assert.doesNotThrow(() => close(before, candidates.baseline), "Accept the baseline before mutation");
+      const expectedMutationDiff = [...expectedDiff, extraDiff].sort();
+      assert.deepEqual(diff(before, candidates[mutation]).sort(), expectedMutationDiff,
+        "The independent leaf diff must expose exactly the additional metadata mutation");
+      let refusal;
+      try { close(before, candidates[mutation]); } catch (error) { refusal = error.message; }
+      sub.diagnostic(JSON.stringify({ direction, mutation, before, baseline: candidates.baseline, mutated: candidates[mutation],
+        baselineAccepted: true, mutationAccepted: refusal === undefined, refusal, diff: expectedMutationDiff, fsck: "strict pass", commits: 0 }));
+      assert.match(refusal ?? "", /Complete immutable trees/u, "Refuse unrelated metadata content, mode or type drift");
       assert.doesNotThrow(() => close(before, candidates.baseline), "Restoring the valid tree passes again");
       sub.diagnostic("corrected tree accepted");
     });
