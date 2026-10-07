@@ -86,8 +86,10 @@ jobs:
                 const before = maps[0].get(name), after = maps[1].get(name);
                 const same = before?.sha === after?.sha && before?.mode === after?.mode && before?.type === after?.type;
                 if (name.split("/").includes("node_modules")) need(same, "Resolution shadow changed.");
-                if (before?.type === "tree" || after?.type === "tree") continue;
-                need(same || declared.has(name), "Unlisted change outside Cohort data.");
+                const beforeLeaf = before?.type === "tree" ? undefined : before;
+                const afterLeaf = after?.type === "tree" ? undefined : after;
+                const sameLeaf = beforeLeaf?.sha === afterLeaf?.sha && beforeLeaf?.mode === afterLeaf?.mode && beforeLeaf?.type === afterLeaf?.type;
+                need(sameLeaf || declared.has(name), "Unlisted change outside Cohort data.");
               }
               await currentBase();
               core.setOutput("mode", "noop");

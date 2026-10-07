@@ -19,7 +19,7 @@ const manifest = await readFile("package.json"), lock = await readFile("pnpm-loc
 const blob = bytes => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 
 async function classify(mutate = () => {}, script = execute) {
-  const tree = execFileSync("git", ["ls-tree", "-r", "HEAD"], { encoding: "utf8" }).trim().split("\n").map(line => {
+  const tree = execFileSync("git", ["ls-tree", "-r", "-t", "HEAD"], { encoding: "utf8" }).trim().split("\n").map(line => {
     const [header, filePath] = line.split("\t"), [mode, type, sha] = header.split(" ");
     return { path: filePath, mode, type, sha };
   });
@@ -67,6 +67,63 @@ async function classify(mutate = () => {}, script = execute) {
   } catch (error) { failures.push(error.message); }
   return { ...state, failures, outputs, writes };
 }
+
+async function classifyCohort(mutate = () => {}) {
+  return classify(state => {
+    state.headTree.tree = structuredClone(state.baseTree.tree);
+    const entry = state.headTree.tree.find(item => item.path === "governance/docs-qualified-cohorts.json");
+    entry.sha = "e".repeat(40);
+    state.files = [{ filename: entry.path, status: "modified", sha: entry.sha }];
+    mutate(state);
+    state.pull.changed_files = state.files.length;
+    state.live = structuredClone(state.pull);
+  });
+}
+
+test("v8 Cohort noop rejects an omitted evidence blob replaced by a directory with a declared child", async () => {
+  const result = await classifyCohort(state => {
+    const parent = "governance/evidence/docs-cohorts/shortcut-test.md", child = `${parent}/receipt.md`;
+    state.baseTree.tree.push({ path: parent, mode: "100644", type: "blob", sha: "f".repeat(40) });
+    state.headTree.tree.push({ path: parent, mode: "040000", type: "tree", sha: "e".repeat(40) },
+      { path: child, mode: "100644", type: "blob", sha: "f".repeat(40) });
+    state.files.push({ filename: child, status: "added", sha: "f".repeat(40) });
+  });
+  assert.deepEqual(result.failures, ["Unlisted change outside Cohort data."]);
+  assert.equal(result.outputs.has("mode"), false);
+  assert.equal(result.contentCalls, 0); assert.equal(result.writes.size, 0);
+});
+
+test("v8 Cohort noop preserves declared leaves, new descendant trees and changed ancestor tree SHAs", async () => {
+  for (const addEvidence of [false, true]) {
+    const result = await classifyCohort(state => {
+      if (addEvidence) {
+        const parent = "governance/evidence/docs-cohorts/shortcut-test", child = `${parent}/receipt.md`;
+        state.headTree.tree.push({ path: parent, mode: "040000", type: "tree", sha: "e".repeat(40) },
+          { path: child, mode: "100644", type: "blob", sha: "f".repeat(40) });
+        state.files.push({ filename: child, status: "added", sha: "f".repeat(40) });
+      }
+      const ancestors = addEvidence ? ["governance", "governance/evidence", "governance/evidence/docs-cohorts"] : ["governance"];
+      for (const name of ancestors) state.headTree.tree.find(entry => entry.path === name).sha = "e".repeat(40);
+    });
+    assert.deepEqual(result.failures, []); assert.equal(result.outputs.get("mode"), "noop");
+    assert.equal(result.contentCalls, 0); assert.equal(result.writes.size, 0);
+  }
+});
+
+test("v8 Cohort noop rejects omitted leaf existence, type, mode and SHA changes", async () => {
+  for (const mutate of [
+    state => { state.headTree.tree.find(entry => entry.path === "README.md").sha = "f".repeat(40); },
+    state => { state.headTree.tree.find(entry => entry.path === "README.md").mode = "100755"; },
+    state => { Object.assign(state.headTree.tree.find(entry => entry.path === "README.md"), { type: "commit", mode: "160000" }); },
+    state => { state.headTree.tree = state.headTree.tree.filter(entry => entry.path !== "README.md"); },
+    state => { state.headTree.tree.push({ path: "unlisted-test.md", type: "blob", mode: "100644", sha: "f".repeat(40) }); },
+  ]) {
+    const result = await classifyCohort(mutate);
+    assert.deepEqual(result.failures, ["Unlisted change outside Cohort data."]);
+    assert.equal(result.outputs.has("mode"), false);
+    assert.equal(result.contentCalls, 0); assert.equal(result.writes.size, 0);
+  }
+});
 
 test("actual v8 materializes Git-bound head data and base-owned comparator admits an ordinary devDependency", async () => {
   const result = await classify(); assert.deepEqual(result.failures, []); assert.equal(result.mode, "dependencies");
