@@ -1,0 +1,213 @@
+{
+  "classification": "ACTUAL_PUBLIC_NPM_RESOLUTION_NEWTEST_NOT_COHORT_QUALIFICATION",
+  "scope": "Supplied actual fresh public npm resolution for correction of the UNMERGED stable30 proposal only. No new cryptographic audit, Cohort qualification, canary evidence, consumer adoption or Node26 authorization is asserted.",
+  "integration_base": "1d3bd96e3f92006d253eb0f4887b375e8d39a0de",
+  "prior_unmerged_head": "c6dd04cb7ff45782c3e8bad98fb98ae175a7ff48",
+  "supplied_capture_receipt": {
+    "classification": "ACTUAL_PUBLIC_NPM_RESOLUTION_NEWTEST_NOT_COHORT_QUALIFICATION",
+    "machineId": "d856d40da5ad4e23b4f67773e5942842",
+    "sourceHead": "c6dd04cb7ff45782c3e8bad98fb98ae175a7ff48",
+    "node": "24.21.0",
+    "pnpm": "11.20.0",
+    "actualAuthority": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 83,
+      "projection_path": "governance/docs-runtime-closures/sha256-422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c.json",
+      "digest": "sha256:422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c"
+    },
+    "capturedFileMtimeUTC": "2026-10-03T01:02:51.590113+00:00",
+    "sourceSHA256": "422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c",
+    "all285TrackedPinsUnchanged": true,
+    "gitStatus": "",
+    "releasesOrCredentialsOrGHMutations": false
+  },
+  "timestamp_semantics": "capturedFileMtimeUTC is the supplied capture file modification time, not a measured resolver invocation start or completion timestamp.",
+  "resolver_source": {
+    "revision": "c6dd04cb7ff45782c3e8bad98fb98ae175a7ff48",
+    "path": "scripts/verify-docs-cohort-evidence.mjs",
+    "blob_sha": "f9858bc2bf5846cd2cbf5b41a1b7762c9ce27ffd",
+    "function": "resolvePublishedRuntimeClosure",
+    "cohort_generation": 2
+  },
+  "canonical_projection_source": {
+    "revision": "c6dd04cb7ff45782c3e8bad98fb98ae175a7ff48",
+    "path": "scripts/docs-cohort-policy.mjs",
+    "blob_sha": "27ea96fe6822ffd806875086d8b59e4178e278d1",
+    "function": "docsRuntimeClosureV2Evidence",
+    "serialization": "Existing canonical JSON plus one LF; SHA256 of those exact UTF-8 bytes."
+  },
+  "projection": {
+    "path": "governance/docs-runtime-closures/sha256-422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c.json",
+    "bytes": 25864,
+    "sha256": "sha256:422aed0b43d9ba095320ae38c1f236354e6114063e9ac60eb238982d7196ce5c",
+    "git_blob_sha": "a3bf02593c980e5f22076d902ef869d57d09a5c2",
+    "package_count": 83
+  },
+  "supplied_packet_fingerprints": [
+    {
+      "path": ".node26-inputs/actual-runtime-closure.json",
+      "bytes": 54355,
+      "sha256": "sha256:bfdc020e0cd10bce40a993be019057377e7db0bcd8b5c0b3a54b5694618dc0a2"
+    },
+    {
+      "path": ".node26-inputs/actual-capture-receipt.json",
+      "bytes": 917,
+      "sha256": "sha256:19cc0dfe50cfd611b2a4ea75e52be6da011ca7ced28fe17ee0dd5d2efb3f6543"
+    },
+    {
+      "path": ".node26-inputs/closure-delta.json",
+      "bytes": 2056,
+      "sha256": "sha256:c9af191b17ae8ff4adfe9f1f5fd2e4a1e3da9bb9331774fb96bd4a0f58bc20d5"
+    },
+    {
+      "path": ".node26-inputs/actual-trusted-validation-failure.log",
+      "bytes": 4711,
+      "sha256": "sha256:d3e869a0691712a606ebc111107f7d786f96fbbc298cfe4b785b47b262600d2b"
+    },
+    {
+      "path": ".node26-inputs/expected-cohort.json",
+      "bytes": 8347,
+      "sha256": "sha256:042d7a3c3587b5c50e75222f96b578137ec8c218159a565a0f7e9a7bcff8eb6b"
+    },
+    {
+      "path": ".node26-inputs/current-PR325-candidate.json",
+      "bytes": 878,
+      "sha256": "sha256:a2f3946796021a44e30d06579a547e47eb976e22a051a3de5241756804c7f5c5"
+    }
+  ],
+  "supplied_result_semantics": "actual-runtime-closure.json is the supplied resolver wrapper (evidence, source, authority). Its packet-file SHA256 differs from the canonical source SHA256. The new projection copies its source string byte-for-byte; it is not a synthetic re-resolution.",
+  "retained_historical_proof": {
+    "path": "governance/evidence/docs-cohorts/docs-2026-09-30-stable30/sources/npm-signatures-and-closure.json",
+    "sha256": "sha256:88611d3ed29fe33569da7502817d69b79ad41cbc6679b7f4b3e312b3a76c5865",
+    "observed_at": "2026-09-30T15:54:30.208Z",
+    "node": "v24.21.0",
+    "runtime_closure": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 83,
+      "projection_path": "governance/docs-runtime-closures/sha256-3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca.json",
+      "digest": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+    },
+    "scope": "This file remains byte-identical. Its verified bundles support the unchanged five published coordinates; its sameClosure result applies only to its 2026-09-30 capture and does not verify the new closure."
+  },
+  "superseded_unmerged_registration": {
+    "record_digest": "sha256:c88f17c88528211ede980562d1381d09078528cd3015f159d66f0ba4e4c7aad9",
+    "event_digest": "sha256:f0c48341a50865eaa644003bb50f4522358c4909522cb7ebe20b456970a58e18",
+    "runtime_closure": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 83,
+      "projection_path": "governance/docs-runtime-closures/sha256-3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca.json",
+      "digest": "sha256:3c4f174ddd0709a66055bc94fdc71907323407488db07fe95461cd624d8e47ca"
+    },
+    "scope": "Proposed, unaccepted PR325 bytes. Accepted main history and protected historical drafts are not edited."
+  },
+  "proposed_registration": {
+    "cohort_id": "docs-2026-09-30-stable30",
+    "state": "PUBLISHED_UNQUALIFIED",
+    "record_digest": "sha256:adf924539bf189e4e394d02d4b9eb0a95e2334bab6ae149df09a4de7f91366ea",
+    "event_sequence": 180,
+    "previous_event_digest": "sha256:2e4d4573a5e9a2a667cf4067956075c2a0a714871162a35fb2e6d1cc7afa37d3",
+    "event_digest": "sha256:739e63896ea6b186667e8967bfd8fc3ef217e909381fa3a3c81cbd9e60da34c2",
+    "effective_at": "2026-09-29T17:54:07.257Z"
+  },
+  "observed_delta": [
+    {
+      "path": "/pnpmLock/packages/@microsoft/tsdoc-config@0.18.2",
+      "old": {
+        "resolution": {
+          "integrity": "sha512-4ymuLTQ9lFwJXK15f41iPcNHflymjk02Ltq5f5wo3fA02O1nHIGSc1TIZwzTSQZep+jXHM644jobt4Q8O3vtqg=="
+        }
+      },
+      "new": null
+    },
+    {
+      "path": "/pnpmLock/packages/@microsoft/tsdoc-config@0.18.3",
+      "old": null,
+      "new": {
+        "resolution": {
+          "integrity": "sha512-0I0rGXo1eJziw3EEErkDS9p/0RzBcyOiV+zbSDqOZTeURmhtut+WIvpih0LM5g+ZpZ9SyFxDfkhAcl/r8e2zGw=="
+        }
+      }
+    },
+    {
+      "path": "/pnpmLock/packages/@microsoft/tsdoc@0.17.0",
+      "old": {
+        "resolution": {
+          "integrity": "sha512-p68VexhnH7ojf3U27RdryUDqnKJgKaWUbCL96vJR7N0mqDuhKG5OIECk3sCPPdynxjk+yoVhRkScqtv5KQjzsw=="
+        }
+      },
+      "new": null
+    },
+    {
+      "path": "/pnpmLock/packages/@microsoft/tsdoc@0.17.1",
+      "old": null,
+      "new": {
+        "resolution": {
+          "integrity": "sha512-VHyYyyoH63jFoO3shpw9Zfijk5v/9p/VrClW35z0/q6ooK7sSmxpzOkS4iZPxs3vO4XtBW4H38HRAKkAMIK7DA=="
+        }
+      }
+    },
+    {
+      "path": "/pnpmLock/snapshots/@microsoft/api-extractor-model@7.33.10/dependencies/@microsoft/tsdoc-config",
+      "old": "0.18.2",
+      "new": "0.18.3"
+    },
+    {
+      "path": "/pnpmLock/snapshots/@microsoft/api-extractor@7.58.12/dependencies/@microsoft/tsdoc-config",
+      "old": "0.18.2",
+      "new": "0.18.3"
+    },
+    {
+      "path": "/pnpmLock/snapshots/@microsoft/tsdoc-config@0.18.2",
+      "old": {
+        "dependencies": {
+          "@microsoft/tsdoc": "0.17.0",
+          "ajv": "8.18.0",
+          "jju": "1.4.0",
+          "resolve": "1.22.12"
+        }
+      },
+      "new": null
+    },
+    {
+      "path": "/pnpmLock/snapshots/@microsoft/tsdoc-config@0.18.3",
+      "old": null,
+      "new": {
+        "dependencies": {
+          "@microsoft/tsdoc": "0.17.1",
+          "ajv": "8.18.0",
+          "jju": "1.4.0",
+          "resolve": "1.22.12"
+        }
+      }
+    },
+    {
+      "path": "/pnpmLock/snapshots/@microsoft/tsdoc@0.17.0",
+      "old": {},
+      "new": null
+    },
+    {
+      "path": "/pnpmLock/snapshots/@microsoft/tsdoc@0.17.1",
+      "old": null,
+      "new": {}
+    }
+  ],
+  "failed_required_validation": {
+    "workflow_run_id": 37084004233,
+    "workflow_run_id_source": "Task-supplied metadata; the retained log excerpt itself has no run-ID field.",
+    "conclusion": "failure",
+    "error": "Published package runtime closure differs from the immutable Cohort authority.",
+    "meaning": "The existing live verifier resolved the public runtime closure and rejected equality with the old proposal. This excerpt shows an assertion failure, not a launcher floor or permission error.",
+    "supplied_log_utf8": "trusted-validation\tVerify live evidence for every appended Cohort record or event\t﻿2026-10-03T00:55:06.4652883Z ##[group]Run node scripts/verify-docs-cohort-evidence.mjs --registry \"$DOCS_COHORT_CURRENT_PATH\" --schema governance/docs-qualified-cohorts.schema.json --changed-from \"$DOCS_COHORT_BASE_PATH\"\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4654095Z \u001b[36;1mnode scripts/verify-docs-cohort-evidence.mjs --registry \"$DOCS_COHORT_CURRENT_PATH\" --schema governance/docs-qualified-cohorts.schema.json --changed-from \"$DOCS_COHORT_BASE_PATH\"\u001b[0m\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4690478Z shell: /usr/bin/bash -e {0}\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4690814Z env:\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4691148Z   PNPM_HOME: /home/runner/work/_temp/docs-cohort-pnpm-v2/node_modules/.bin\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4692069Z   GH_TOKEN: ***\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4692410Z   DOCS_COHORT_BASE_PATH: /home/runner/work/_temp/docs-cohort-base.json\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4692864Z   DOCS_COHORT_CURRENT_PATH: /home/runner/work/_temp/docs-cohort-head.json\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4693316Z   DOCS_COHORT_EVIDENCE_REF: c6dd04cb7ff45782c3e8bad98fb98ae175a7ff48\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4693847Z   DOCS_COHORT_PNPM_V1_BIN: /home/runner/work/_temp/docs-cohort-pnpm-v1/node_modules/.bin/bin/pnpm\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4694504Z   DOCS_COHORT_PNPM_V2_BIN: /home/runner/work/_temp/docs-cohort-pnpm-v2/node_modules/.bin/bin/pnpm\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.4694942Z ##[endgroup]\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:06.5688231Z Organization defaults verified: 39 files\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0798675Z file:///home/runner/work/.github/.github/scripts/verify-docs-cohort-evidence.mjs:36\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0799587Z   if (!condition) {throw new Error(message);}\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0800384Z                          ^\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0800611Z \ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0801236Z Error: Published package runtime closure differs from the immutable Cohort authority.\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0802249Z     at assert (file:///home/runner/work/.github/.github/scripts/verify-docs-cohort-evidence.mjs:36:26)\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0803454Z     at verifyDocsCohortEvidence (file:///home/runner/work/.github/.github/scripts/verify-docs-cohort-evidence.mjs:1133:3)\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0804426Z     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0805530Z     at async verifyChangedDocsCohortEvidence (file:///home/runner/work/.github/.github/scripts/verify-docs-cohort-evidence.mjs:1216:5)\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0806668Z     at async file:///home/runner/work/.github/.github/scripts/verify-docs-cohort-evidence.mjs:1251:21\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0807111Z \ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0807346Z Node.js v24.18.0\ntrusted-validation\tVerify live evidence for every appended Cohort record or event\t2026-10-03T00:55:24.0869896Z ##[error]Process completed with exit code 1.\n"
+  },
+  "temporal_behavior": "V2 resolves three exact direct roots in a fresh temporary pnpm@11.20.0 lockfile-only install. Non-managed ranges can select later public patches. Another fresh resolution can drift again while the five coordinate versions, SRIs and seven managed edges remain unchanged. Exact-source equality remains mandatory.",
+  "worker_scope": "Offline reading, byte comparison, canonical digest calculation and patch construction only. No live resolution, signature verification, validator, tests or network/GitHub/runtime operations. Main owns fresh complete LIVE validation and the final owning gate."
+}

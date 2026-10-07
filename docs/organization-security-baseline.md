@@ -83,3 +83,10 @@ scope, so it did not replace that observation or become authoritative. Platform
 retains exception
 `platform-private-required-checks-github-free` only for protected required
 checks; it does not weaken the organization-wide action-reference policy.
+
+The Bot-author owner-bootstrap fields in the dated Actions snapshot are
+historical. Follow the [maintained commit and PR author policy](../GOVERNANCE.md#commit-and-pull-request-authorship)
+for current release instructions. Native commit-email metadata restrictions
+failed TEST merge qualification and do not prove merge prevention. The trusted
+exact-head status requires separately qualified repository installation; it is
+not an automatically inherited organization security default.

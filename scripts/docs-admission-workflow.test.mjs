@@ -197,3 +197,22 @@ test("ordinary code-only no-op is not reported as trusted recovery", async () =>
   assert.match(workflow, /const inventoryPath = "governance\/organization-repository-inventory\.json"/u);
   assert.match(workflow, /allowedData = new Set\(\[policyPath, exceptionsPath, inventoryPath\]\)/u);
 });
+
+test("pending source evidence in a policy PR cannot become head-owned authority", async () => {
+  const receiptPath = "governance/evidence/docs-admission/platform-stable31-pending-source.json";
+  for (const path of [receiptPath, "scripts/fixtures/platform-stable31-pending-source/packet.json"]) {
+    const result = await fixture(state => {
+      state.headFiles[path] = '{"platformPendingSelection":"head callback"}\n';
+      state.files.push({ filename: path, status: "added", sha: recoveryBlob(Buffer.from(state.headFiles[path])) });
+      state.context.payload.pull_request.changed_files++;
+    });
+    assert.ok(result.failures.length); assert.equal(result.writes.size, 0); assert.equal(result.contentCalls, 0);
+  }
+});
+test("inert pending receipt by itself supplies neither an admission tuple nor executable callback", async () => {
+  const result = await fixture(state => {
+    state.files = [{ filename: "governance/evidence/docs-admission/platform-stable31-pending-source.json", status: "added" }];
+  });
+  assert.deepEqual(result.failures, []); assert.equal(result.outputs.get("mode"), "noop");
+  assert.equal(result.writes.size, 0); assert.equal(result.contentCalls, 0);
+});

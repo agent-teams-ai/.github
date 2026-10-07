@@ -92,7 +92,7 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
   validateDocsProtocolPolicy(policy, policySchema);
   validateDocsProtocolPolicy(basePolicy, policySchema);
   validateDocsProtocolExceptions(exceptions, exceptionsSchema, { asOf: clock().slice(0, 10) });
-  validateDocsGovernanceReferences(registry, exceptions, policy, security);
+  validateDocsGovernanceReferences(registry, exceptions, policy, security, { asOf: clock() });
   if (paths.inventory) {
     const inventory = JSON.parse(await readFile(paths.inventory));
     const [inventorySchema, ledger, actions] = await Promise.all([
@@ -182,7 +182,8 @@ export async function verifyDocsAdmissionChange(paths, overrides = {}) {
     },
   };
   const report = await verifyDocsAdmissionEvidence(policy, registry, registrySchema, {
-    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution: legacyExecution }, platformRecovery,
+    ...overrides, basePolicy, requireCredential: true, recovery: { getCapability, execution: legacyExecution },
+    platformRecovery,
   });
   // Controller and authority are re-read after the whole fleet, including
   // unrelated rows; a moving base never reuses an earlier result.

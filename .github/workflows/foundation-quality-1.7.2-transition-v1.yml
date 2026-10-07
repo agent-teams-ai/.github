@@ -1,0 +1,372 @@
+name: Trusted Foundation Quality 1.7.2 Transition V1
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  trusted-foundation-quality-1-7-2-transition-v1:
+    name: trusted-foundation-quality-1-7-2-transition-v1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            // Central#338: only 562b2aa..6a311ae's eleven-file Foundation 1.7.2 tuple.
+            // Owner review and a separate required-check cutover stage this guard first.
+            // This program cannot authorize its own introduction or modification.
+            const anchor = "562b2aab7e08016e3bb600888760600ca0d33d3f";
+            const tuple = [
+              {
+                "path": ".node-version",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "ca5c350055ccb6dacb495a786f60c8232abed8f2",
+                "old_bytes": 8,
+                "old_sha256": "55075b5ec4e8b31936cbbc282b8829116d1fd48f2f2f1856dee592a6650700ce",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "df6ae3370f9f89272d88629c442cf554d6c1f9fb",
+                "new_bytes": 8,
+                "new_sha256": "73fb1b615e2043a933be1c0895cde4358036acc28d785692509b822aa53c761f"
+              },
+              {
+                "path": "AGENTS.md",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "b38a4549eb9fc17f5b08109bc0065d009ed63787",
+                "old_bytes": 1713,
+                "old_sha256": "aaa6f77ca7050fbc441e31648543854632324aff0bbf384ea5301168ee71c9c8",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "5103769cb5f5f26438b15c5ce11b1234f505a748",
+                "new_bytes": 2136,
+                "new_sha256": "a6b81e5aa0d0f6acef3014a0fef1195814e94eff5ff301c492d05b50672e4bb3"
+              },
+              {
+                "path": "docs/engineering-quality-profile.json",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "49dbc437d164d08247cb9db7860384e4bd980bc8",
+                "old_bytes": 742,
+                "old_sha256": "02b59a8a66b48947aae8f4406e183e53c29f9f76d8569c8fc094a27c1b2d7416",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "0b2bcf6a6fdb3a29a5d8a7daf8f1000fd3a7664b",
+                "new_bytes": 742,
+                "new_sha256": "84aad8cde8077cbe931b248d23caf97d7b8ec6db7e7b29fe0ecec1c1e952a469"
+              },
+              {
+                "path": "docs/engineering-quality-required-tests.json",
+                "status": "added",
+                "old_blob": null,
+                "old_mode": null,
+                "old_type": null,
+                "old_bytes": null,
+                "old_sha256": null,
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "d90a48373e7594417dae254b9b2c06b0caba81b0",
+                "new_bytes": 1639,
+                "new_sha256": "d13f97d67e30ecb7609f18690755d301a2875d7684f3052c741170d72245d1a5"
+              },
+              {
+                "path": "docs/engineering-quality-source-policy.yaml",
+                "status": "added",
+                "old_blob": null,
+                "old_mode": null,
+                "old_type": null,
+                "old_bytes": null,
+                "old_sha256": null,
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "7aa5774b9a8483f4cea3b80c4c13f14b206420e2",
+                "new_bytes": 1228,
+                "new_sha256": "9bdf9adbb2b8cbc158ce023ac1b9c1a55f59f07dca462464a1e683b2a35debce"
+              },
+              {
+                "path": "docs/engineering-quality.md",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "0c36b59b105d3d2d6fd9431b344bbdbd8519130d",
+                "old_bytes": 1188,
+                "old_sha256": "ade02f83dc264d2683605f5f29f7bdd876c0e124691ba7e0eb99f1b6b65d9f66",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "06842b030ace3cf6b6252478ea5de5b0829e944c",
+                "new_bytes": 4831,
+                "new_sha256": "50548a39c1e303a6c778f6365c87f906d5bab410bb34fc4a4bf34191b8a23c83"
+              },
+              {
+                "path": "foundation.config.yaml",
+                "status": "added",
+                "old_blob": null,
+                "old_mode": null,
+                "old_type": null,
+                "old_bytes": null,
+                "old_sha256": null,
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "5393daf76787b763e1cb175b412ad4267ea7acc1",
+                "new_bytes": 166,
+                "new_sha256": "12db7e101882d84f03b927f1c0094e9da2cf18d6713ffa9ce2a9ca127f651736"
+              },
+              {
+                "path": "package.json",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "b4bee381c864b24ee01f3da9a47582f304a61514",
+                "old_bytes": 1607,
+                "old_sha256": "abd7a46e8db0a46159c0dfa09848da9b27d701708522ec21b41a488998b701a0",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "e7adba793ce650b1053c7e6a3105e7683f99b962",
+                "new_bytes": 1983,
+                "new_sha256": "bdf3eb08aaddcf4e66636c854811c8cc6b54b8de4bc4f83acccd856c38025eb0"
+              },
+              {
+                "path": "pnpm-lock.yaml",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "df452a9eb24ed934162c830410245ef35731ee26",
+                "old_bytes": 197604,
+                "old_sha256": "a5be3d2e0dc38d7970a951e75a53918429ebffa89d3924a556d2970499b30afb",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "de5922104f75e66f046aa585b239377f430eaba4",
+                "new_bytes": 197616,
+                "new_sha256": "2ba916f545ec1db84dd5ec151c60dfe07d107e433394aed9451f61d3cd926d47"
+              },
+              {
+                "path": "scripts/check-quality-scope.mjs",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "105403b63038c5a1076c6754abe66a75275e2915",
+                "old_bytes": 5991,
+                "old_sha256": "b8b2dc43a877581a68a4d2a5619a84a26cfeaed223b4e43bb4381320251d668d",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "d390eacf48f1032a5d30418dfde40dec557ae5c2",
+                "new_bytes": 10985,
+                "new_sha256": "075d43c3110f23bc4ec13d7141f641058cd5786319be92e47744b359914f9f19"
+              },
+              {
+                "path": "scripts/check-quality-scope.test.mjs",
+                "status": "modified",
+                "old_mode": "100644",
+                "old_type": "blob",
+                "old_blob": "83eaf21369287918aa348bc2ef573fbd83e63374",
+                "old_bytes": 3963,
+                "old_sha256": "b383769326f4dc264cfd39cb395ce03447e50921a7584c2376306e070cf1954f",
+                "new_mode": "100644",
+                "new_type": "blob",
+                "new_blob": "0b0b1b721800c9b602e1e2fb879d4e8546d4c412",
+                "new_bytes": 11361,
+                "new_sha256": "3d0b5e668816a0456141f5251452c5bfc029aa8acdfe46421d8fc88807842867"
+              }
+            ];
+            const guardPaths = [
+              ".github/workflows/foundation-quality-1.7.2-transition-v1.yml",
+              "scripts/foundation-quality-1.7.2-transition-v1.test.mjs"
+            ];
+            const identity = { id: 1316243981, full_name: "agent-teams-ai/.github" };
+            const repo = { owner: "agent-teams-ai", repo: ".github" };
+            const { createHash } = require("node:crypto");
+            const validSha = sha => typeof sha === "string" && /^[0-9a-f]{40}$/u.test(sha) && !/^0{40}$/u.test(sha);
+            const sameRepo = value => value?.id === identity.id && value.full_name === identity.full_name;
+            const demand = (condition, message) => { if (!condition) throw new Error(message); };
+            const hash = (kind, bytes) => createHash("sha1").update(`${kind} ${bytes.length}\0`).update(bytes).digest("hex");
+            const regular = entry => entry?.mode === "100644" && entry.type === "blob";
+            const sameEntry = (left, right) => left === undefined ? right === undefined :
+              right !== undefined && left.mode === right.mode && left.type === right.type && left.sha === right.sha && left.size === right.size;
+            const owned = new Set(tuple.map(item => item.path));
+            // Preserve the existing quality-authority classification, including this new tuple.
+            const installNames = new Set([
+              ".node-version", ".nvmrc", ".yarnrc.yml", "yarn.lock", "package-lock.json", "npm-shrinkwrap.json",
+              ".npmrc", ".pnpmfile.cjs", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml",
+              "renovate-config.json", "renovate.json", "foundation.config.yaml", "oxlint.json"
+            ]);
+            const isAuthorityPath = path => owned.has(path) || guardPaths.includes(path) ||
+              [".github/", "scripts/", "tools/"].some(prefix => path.startsWith(prefix)) ||
+              (path.startsWith("governance/") && path.endsWith(".schema.json")) ||
+              installNames.has(path.split("/").at(-1));
+            try {
+              demand(context.eventName === "pull_request_target" &&
+                ["opened", "synchronize", "reopened", "edited", "ready_for_review"].includes(context.payload.action),
+                "Wrong event or action.");
+              demand(context.repo.owner === repo.owner && context.repo.repo === repo.repo &&
+                sameRepo(context.payload.repository) && context.payload.repository.default_branch === "main",
+                "Wrong repository identity or event default branch.");
+              const pullNumber = context.payload.number;
+              demand(Number.isSafeInteger(pullNumber) && pullNumber > 0 && context.issue.number === pullNumber,
+                "Only the identified PR event is eligible.");
+              const pull = context.payload.pull_request;
+              const snapshot = value => {
+                demand(value?.number === pullNumber && Number.isSafeInteger(value.id) && value.id > 0,
+                  "Only the identified PR is eligible.");
+                demand(value.state === "open" && value.draft === false && value.merged === false,
+                  "PR must be open, unmerged and ready for review.");
+                demand(sameRepo(value.base?.repo) && sameRepo(value.head?.repo), "Missing or foreign PR repository.");
+                demand(value.base.ref === "main" && typeof value.head.ref === "string" && value.head.ref.length > 0,
+                  "PR must target the default branch with an identified head branch.");
+                demand(validSha(value.base.sha) && validSha(value.head.sha) && value.base.sha !== value.head.sha,
+                  "Nonzero distinct exact base/head revisions required.");
+                demand(Number.isSafeInteger(value.changed_files) && value.changed_files > 0 && value.changed_files <= 3000,
+                  "Positive bounded PR changed_files required.");
+                demand(value.user?.type === "User" && typeof value.user.login === "string" && value.user.login.length > 0,
+                  "An identified human PR author is required.");
+                return JSON.stringify([value.id, value.number, value.base.ref, value.base.sha, value.head.ref,
+                  value.head.sha, value.changed_files, value.user.type, value.user.login]);
+              };
+              const frozen = snapshot(pull);
+              demand(context.sha === pull.base.sha && context.ref === "refs/heads/main",
+                "Execution must be bound to the event default-branch base.");
+              const bindPull = async () => {
+                const live = await github.rest.pulls.get({ ...repo, pull_number: pullNumber });
+                demand(snapshot(live.data) === frozen, "Live PR moved from the event snapshot.");
+              };
+              const bindDefault = async () => {
+                const controller = await github.rest.repos.get(repo);
+                demand(sameRepo(controller.data) && controller.data.default_branch === "main" &&
+                  controller.data.archived === false && controller.data.disabled === false,
+                  "Live repository identity or default branch changed.");
+                const branch = await github.rest.repos.getBranch({ ...repo, branch: "main" });
+                demand(branch.data?.name === "main" && branch.data.commit?.sha === pull.base.sha,
+                  "Live default branch moved or PR base is stale.");
+              };
+              await bindPull();
+              await bindDefault();
+              const descendant = async (before, after) => {
+                const { data } = await github.rest.repos.compareCommitsWithBasehead({ ...repo, basehead: `${before}...${after}` });
+                demand(data?.base_commit?.sha === before && data.merge_base_commit?.sha === before &&
+                  data.status === "ahead" && data.behind_by === 0 && Number.isSafeInteger(data.ahead_by) &&
+                  data.ahead_by > 0 && data.total_commits === data.ahead_by,
+                  "Genuine nonempty ancestry of the exact immutable base required.");
+              };
+              await descendant(pull.base.sha, pull.head.sha);
+              const readTree = async revision => {
+                const commit = await github.rest.git.getCommit({ ...repo, commit_sha: revision });
+                demand(commit.data?.sha === revision && validSha(commit.data.tree?.sha), "Immutable commit/tree binding required.");
+                const { data: tree } = await github.rest.git.getTree({ ...repo, tree_sha: commit.data.tree.sha, recursive: "true" });
+                const validEntry = entry => {
+                  if (typeof entry?.path !== "string" || entry.path.includes("\0") ||
+                    entry.path.split("/").some(part => !part || part === "." || part === "..") || !validSha(entry.sha)) return false;
+                  if (entry.type === "tree") return entry.mode === "040000" && entry.size === undefined;
+                  if (entry.type === "commit") return entry.mode === "160000" && entry.size === undefined;
+                  return entry.type === "blob" && ["100644", "100755", "120000"].includes(entry.mode) &&
+                    Number.isSafeInteger(entry.size) && entry.size >= 0;
+                };
+                demand(tree?.sha === commit.data.tree.sha && tree.truncated === false && Array.isArray(tree.tree) &&
+                  tree.tree.every(validEntry) && new Set(tree.tree.map(entry => entry.path)).size === tree.tree.length,
+                  "Complete well-formed unambiguous immutable tree required.");
+                const entries = new Map(tree.tree.map(entry => [entry.path, entry]));
+                const children = new Map([["", []]]);
+                for (const entry of tree.tree) if (entry.type === "tree") children.set(entry.path, []);
+                for (const entry of tree.tree) {
+                  const parent = entry.path.includes("/") ? entry.path.slice(0, entry.path.lastIndexOf("/")) : "";
+                  demand(children.has(parent), "Complete immutable tree parent hierarchy required.");
+                  children.get(parent).push(entry);
+                }
+                // Reconstruct every Git tree, including empty subtrees. An omitted API entry cannot hide a change.
+                for (const [path, direct] of children) {
+                  const name = entry => entry.path.split("/").at(-1);
+                  direct.sort((left, right) => Buffer.compare(Buffer.from(name(left) + (left.type === "tree" ? "/" : "")),
+                    Buffer.from(name(right) + (right.type === "tree" ? "/" : ""))));
+                  const bytes = Buffer.concat(direct.flatMap(entry => [
+                    Buffer.from(`${entry.mode.replace(/^0/u, "")} ${name(entry)}\0`), Buffer.from(entry.sha, "hex")
+                  ]));
+                  demand(hash("tree", bytes) === (path ? entries.get(path).sha : tree.sha),
+                    "Complete immutable tree object hash required.");
+                }
+                return entries;
+              };
+              const before = await readTree(pull.base.sha);
+              const after = await readTree(pull.head.sha);
+              for (const path of guardPaths) demand(regular(before.get(path)) && sameEntry(before.get(path), after.get(path)),
+                "Inherited base-owned guard and test must remain unchanged regular files.");
+              const changedPaths = [...new Set([...before.keys(), ...after.keys()])].filter(path => {
+                const left = before.get(path), right = after.get(path);
+                return !sameEntry(left, right) && ((left !== undefined && left.type !== "tree") ||
+                  (right !== undefined && right.type !== "tree"));
+              });
+              demand(changedPaths.length === pull.changed_files, "PR changed_files must match the complete immutable terminal diff.");
+              // Directory identities may change only along paths to reviewed terminal changes.
+              const closure = (left, right, paths, ordinary = false) => {
+                const ancestors = new Set([...paths].flatMap(path => {
+                  const parts = path.split("/");
+                  return parts.slice(0, -1).map((_, index) => parts.slice(0, index + 1).join("/"));
+                }));
+                demand([...new Set([...left.keys(), ...right.keys()])].every(path => {
+                  if (paths.has(path)) return true;
+                  const entry = left.get(path), other = right.get(path);
+                  return sameEntry(entry, other) || (ancestors.has(path) && (
+                    (entry?.type === "tree" && other?.type === "tree" && entry.mode === other.mode) ||
+                    (ordinary && ((entry === undefined && other?.type === "tree") ||
+                      (other === undefined && entry?.type === "tree")))));
+                }), "Complete immutable trees may differ only at reviewed paths and unchanged ancestor modes/types.");
+              };
+              let direction;
+              if (!changedPaths.some(isAuthorityPath)) {
+                closure(before, after, new Set(changedPaths), true);
+                direction = "noop";
+              } else {
+                demand(pull.user.login === "777genius", "Only the owner human PR may carry this finite authority transition.");
+                demand(changedPaths.length === tuple.length && changedPaths.every(path => owned.has(path)),
+                  "Only the complete exact eleven-file authority transition is eligible.");
+                const matches = (tree, side) => tuple.every(item => {
+                  const entry = tree.get(item.path), blob = item[`${side}_blob`];
+                  return blob === null ? entry === undefined : regular(entry) && entry.mode === item[`${side}_mode`] &&
+                    entry.type === item[`${side}_type`] && entry.sha === blob && entry.size === item[`${side}_bytes`];
+                });
+                const directions = [{ name: "forward", base: "old", head: "new" }, { name: "rollback", base: "new", head: "old" }];
+                const matching = directions.filter(value => matches(before, value.base) && matches(after, value.head));
+                demand(matching.length === 1, "Exact old/new modes, types, blobs, bytecounts and addition/removal tuple required.");
+                const selected = matching[0];
+                direction = selected.name;
+                closure(before, after, owned);
+                await descendant(anchor, pull.base.sha);
+                const origin = await readTree(anchor);
+                demand(matches(origin, "old"), "Frozen base old eleven-file authority required.");
+                demand(guardPaths.every(path => !origin.has(path)), "Guard must be separately staged after the frozen base.");
+                // No arbitrary ancestor changes. Additional policy observations need exact reviewed coordinates.
+                closure(origin, before, new Set([...owned, ...guardPaths]));
+                const checked = new Set();
+                for (const side of ["old", "new"]) for (const item of tuple) {
+                  const sha = item[`${side}_blob`];
+                  if (sha === null || checked.has(sha)) continue;
+                  const { data } = await github.rest.git.getBlob({ ...repo, file_sha: sha });
+                  demand(data?.sha === sha && data.encoding === "base64" && typeof data.content === "string" &&
+                    data.size === item[`${side}_bytes`] && /^[A-Za-z0-9+/=\r\n]*$/u.test(data.content),
+                    "Exact immutable blob encoding and bytecount required.");
+                  const encoded = data.content.replace(/[\r\n]/gu, "");
+                  const bytes = Buffer.from(encoded, "base64");
+                  demand(bytes.toString("base64") === encoded && bytes.length === item[`${side}_bytes`] &&
+                    hash("blob", bytes) === sha && createHash("sha256").update(bytes).digest("hex") === item[`${side}_sha256`],
+                    "Exact immutable blob length, Git identity and SHA256 required.");
+                  checked.add(sha);
+                }
+              }
+              // Last metadata operations reject changes made while immutable trees/blobs were read.
+              await bindPull();
+              await bindDefault();
+              core.info(JSON.stringify({
+                guard: "trusted-foundation-quality-1-7-2-transition-v1", repository: identity.full_name,
+                direction, pr: pullNumber, base: pull.base.sha, head: pull.head.sha, anchor,
+                tuple_identity: `sha256:${createHash("sha256").update(JSON.stringify(tuple)).digest("hex")}`,
+                tuple: direction === "noop" ? [] : tuple
+              }));
+            } catch (error) {
+              core.setFailed(`Foundation quality 1.7.2 guard refused: ${error instanceof Error ? error.message : "API or metadata failure"}`);
+            }

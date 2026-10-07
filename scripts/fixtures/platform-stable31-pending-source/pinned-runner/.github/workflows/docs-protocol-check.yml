@@ -1,0 +1,346 @@
+name: Documentation Protocol Check
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  trusted-authorize:
+    name: trusted-authorize
+    permissions:
+      contents: read
+      id-token: write
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      workflow-sha: ${{ steps.authority.outputs.workflow-sha }}
+      controller-sha: ${{ steps.authority.outputs.controller-sha }}
+      workflow-ref: ${{ steps.authority.outputs.workflow-ref }}
+      workflow-repository: ${{ steps.authority.outputs.workflow-repository }}
+      workflow-file-path: ${{ steps.authority.outputs.workflow-file-path }}
+      qualification-profile: ${{ steps.authorization.outputs.qualification-profile }}
+    env:
+      TRUSTED_GOVERNANCE_ROOT: ${{ github.workspace }}/.trusted/governance
+      AUTHORIZATION_PATH: ${{ github.workspace }}/.trusted/docs-gate-authorization.json
+    steps:
+      - name: Resolve trusted controller snapshot and called-workflow identity
+        id: authority
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          CALLER_REPOSITORY_ID: ${{ github.repository_id }}
+        with:
+          script: |
+            const expectedRepository = "agent-teams-ai/.github";
+            const expectedPath = ".github/workflows/docs-protocol-check.yml";
+            const audience = "agent-teams-docs-gate";
+            const token = await core.getIDToken(audience);
+            const segments = token.split(".");
+            if (segments.length !== 3) {
+              throw new Error("GitHub OIDC token is malformed.");
+            }
+            let claims;
+            try {
+              claims = JSON.parse(Buffer.from(segments[1], "base64url").toString("utf8"));
+            } catch {
+              throw new Error("GitHub OIDC claims are malformed.");
+            }
+            const sha = claims.job_workflow_sha;
+            const workflowRef = claims.job_workflow_ref;
+            const expectedRef = expectedRepository + "/" + expectedPath + "@" + sha;
+            if (claims.iss !== "https://token.actions.githubusercontent.com" ||
+                claims.aud !== audience ||
+                claims.repository !== context.repo.owner + "/" + context.repo.repo ||
+                String(claims.repository_id) !== process.env.CALLER_REPOSITORY_ID ||
+                claims.sha !== context.sha || claims.ref !== context.ref ||
+                !/^(?!0{40}$)[0-9a-f]{40}$/.test(sha ?? "") ||
+                workflowRef !== expectedRef) {
+              throw new Error("Called reusable workflow identity is not the exact pinned controller workflow.");
+            }
+            core.setOutput("workflow-sha", sha);
+            core.setOutput("workflow-ref", workflowRef);
+            core.setOutput("workflow-repository", expectedRepository);
+            core.setOutput("workflow-file-path", expectedPath);
+            const controller = await github.rest.repos.get({
+              owner: "agent-teams-ai",
+              repo: ".github"
+            });
+            if (controller.data.id !== 1316243981 ||
+                controller.data.full_name !== expectedRepository ||
+                controller.data.archived || controller.data.disabled) {
+              throw new Error("Live controller repository identity is invalid.");
+            }
+            const branch = await github.rest.repos.getBranch({
+              owner: "agent-teams-ai",
+              repo: ".github",
+              branch: controller.data.default_branch
+            });
+            const revision = branch.data.commit.sha;
+            if (!/^(?!0{40}$)[0-9a-f]{40}$/.test(revision)) {
+              throw new Error("Current controller snapshot is not an immutable commit SHA.");
+            }
+            core.setOutput("controller-sha", revision);
+
+      - name: Check out exact Cohort-bound validator implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.authority.outputs.workflow-repository }}
+          ref: ${{ steps.authority.outputs.workflow-sha }}
+          path: .trusted/governance
+          persist-credentials: false
+
+      - name: Set up pnpm for trusted tooling
+        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+
+      - name: Set up Node for trusted tooling
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: ${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml
+
+      - name: Install only base-owned validator dependencies
+        run: >-
+          pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile
+          --ignore-scripts --ignore-pnpmfile
+
+      - name: Authorize exact consumer snapshot without executing consumer code
+        id: authorization
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" authorize
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CALLER_REPOSITORY_ID: ${{ github.repository_id }}
+          GITHUB_SHA: ${{ github.sha }}
+          CONTROLLER_SNAPSHOT_SHA: ${{ steps.authority.outputs.controller-sha }}
+          JOB_WORKFLOW_SHA: ${{ steps.authority.outputs.workflow-sha }}
+          JOB_WORKFLOW_REF: ${{ steps.authority.outputs.workflow-ref }}
+          JOB_WORKFLOW_REPOSITORY: ${{ steps.authority.outputs.workflow-repository }}
+          JOB_WORKFLOW_FILE_PATH: ${{ steps.authority.outputs.workflow-file-path }}
+
+      - name: Publish bounded structural authorization for the non-OIDC verifier
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-gate-authorization-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.AUTHORIZATION_PATH }}
+          if-no-files-found: error
+          retention-days: 1
+
+  trusted-structural:
+    name: trusted-structural
+    needs: trusted-authorize
+    permissions:
+      contents: read
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TRUSTED_GOVERNANCE_ROOT: ${{ github.workspace }}/.trusted/governance
+      CONSUMER_CHECKOUT: ${{ github.workspace }}/.trusted/consumer
+      AUTHORIZATION_PATH: ${{ github.workspace }}/.trusted/docs-gate-authorization.json
+    steps:
+      - name: Check out exact Cohort-bound validator implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ needs.trusted-authorize.outputs.workflow-repository }}
+          ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}
+          path: .trusted/governance
+          persist-credentials: false
+      - name: Set up pnpm for trusted tooling
+        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+      - name: Set up Node for trusted tooling
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: ${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml
+      - name: Install only base-owned validator dependencies
+        run: >-
+          pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile
+          --ignore-scripts --ignore-pnpmfile
+      - name: Download exact authorization from the OIDC-only job
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docs-gate-authorization-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ github.workspace }}/.trusted
+      - name: Check out authorized immutable consumer snapshot
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          path: .trusted/consumer
+          persist-credentials: false
+
+      - name: Bind checkout bytes to central authorization
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-checkout
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CALLER_REPOSITORY_ID: ${{ github.repository_id }}
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Confirm current controller authority stayed stable through structural validation
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-controller-snapshot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  trusted-qualification:
+    name: trusted-qualification
+    needs: [trusted-authorize, trusted-structural]
+    if: always() && (github.event_name != 'push' || github.ref_name == github.event.repository.default_branch)
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TRUSTED_GOVERNANCE_ROOT: ${{ github.workspace }}/.trusted/governance
+      CONSUMER_CHECKOUT: ${{ github.workspace }}/.trusted/consumer
+      AUTHORIZATION_PATH: ${{ github.workspace }}/.trusted/docs-gate-authorization.json
+    steps:
+      - name: Require successful trusted structural authorization
+        if: needs.trusted-authorize.result != 'success' || needs.trusted-structural.result != 'success'
+        run: exit 1
+      - name: Initialize isolated qualification paths
+        shell: bash
+        run: |
+          case "$RUNNER_TEMP" in
+            /*) ;;
+            *) echo "RUNNER_TEMP must be an absolute path" >&2; exit 1 ;;
+          esac
+          {
+            printf 'TRUSTED_INSTALL_ROOT=%s/docs-qualification-install\n' "$RUNNER_TEMP"
+            printf 'INSTALL_EVIDENCE_PATH=%s/docs-qualification-install-evidence.json\n' "$RUNNER_TEMP"
+            printf 'QUALIFICATION_RECEIPT=%s/docs-qualification-receipt.json\n' "$RUNNER_TEMP"
+          } >> "$GITHUB_ENV"
+      - name: Check out exact Cohort-bound validator implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ needs.trusted-authorize.outputs.workflow-repository }}
+          ref: ${{ needs.trusted-authorize.outputs.workflow-sha }}
+          path: .trusted/governance
+          persist-credentials: false
+      - name: Set up pnpm for legacy trusted qualification tooling
+        if: needs.trusted-authorize.outputs.qualification-profile != 'cohort-v2'
+        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+      - name: Set up pnpm for Cohort v2 trusted qualification tooling
+        if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
+        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.20.0
+          run_install: false
+      - name: Set up Node for trusted qualification tooling
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: ${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml
+      - name: Install only base-owned qualification verifier dependencies
+        run: >-
+          pnpm install --dir "$TRUSTED_GOVERNANCE_ROOT" --frozen-lockfile
+          --ignore-scripts --ignore-pnpmfile
+      - name: Download exact authorization from the OIDC-only job
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: docs-gate-authorization-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ github.workspace }}/.trusted
+      - name: Check out authorized immutable consumer snapshot
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          path: .trusted/consumer
+          persist-credentials: false
+      - name: Bind checkout bytes to central authorization
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-checkout
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CALLER_REPOSITORY_ID: ${{ github.repository_id }}
+          GITHUB_SHA: ${{ github.sha }}
+      - name: Prepare fresh isolated exact Cohort installation
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" prepare-install
+      - name: Verify isolated exact lock before package installation
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-install-lock
+      - name: Install isolated exact Cohort graph without lifecycle hooks
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
+        run: >-
+          pnpm install --dir "$TRUSTED_INSTALL_ROOT" --frozen-lockfile
+          --ignore-scripts --ignore-pnpmfile
+      - name: Verify installed Cohort package identities before execution
+        id: trusted-install
+        if: needs.trusted-authorize.outputs.qualification-profile != 'none'
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-install
+      - name: Run only the exact installed agent-teams-docs qualify CLI
+        if: needs.trusted-authorize.outputs.qualification-profile == 'legacy'
+        shell: bash
+        run: |
+          set -o pipefail
+          node "${{ steps.trusted-install.outputs.cli }}" qualify \
+            --consumer "$CONSUMER_CHECKOUT" \
+            --integration architecture/foundation/docs-consumer-integration.json --json \
+            | tee "$QUALIFICATION_RECEIPT"
+      - name: Run Cohort v2 qualification through the trusted base-owned runner
+        if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" run-qualification-v3
+      - name: Bind released-cohort receipt to exact checkout and installed Cohort
+        if: needs.trusted-authorize.outputs.qualification-profile == 'legacy'
+        run: >-
+          node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-qualification-receipt.mjs"
+          --consumer "$CONSUMER_CHECKOUT" --install-root "$TRUSTED_INSTALL_ROOT"
+          --authorization "$AUTHORIZATION_PATH" --install-evidence "$INSTALL_EVIDENCE_PATH"
+          --receipt "$QUALIFICATION_RECEIPT"
+          --caller-sha "${{ github.sha }}"
+      - name: Bind Cohort v2 authorized consumer receipt without asserting central CANARY
+        if: needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'
+        run: >-
+          node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-cohort-v2-receipt.mjs"
+          --consumer "$CONSUMER_CHECKOUT" --install-root "$TRUSTED_INSTALL_ROOT"
+          --authorization "$AUTHORIZATION_PATH" --install-evidence "$INSTALL_EVIDENCE_PATH"
+          --receipt "$QUALIFICATION_RECEIPT"
+          --caller-sha "${{ github.sha }}"
+      - name: Confirm current controller authority stayed stable through qualification
+        run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-controller-snapshot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  docs-protocol-check:
+    name: docs-protocol-check
+    needs: trusted-qualification
+    if: always() && (github.event_name != 'push' || github.ref_name == github.event.repository.default_branch)
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Require successful trusted qualification
+        if: needs.trusted-qualification.result != 'success'
+        run: exit 1
+      - name: Check out consumer revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up pnpm for repository semantic gate
+        uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          run_install: false
+      - name: Set up Node for repository semantic gate
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - name: Install consumer dependencies in the untrusted context
+        run: pnpm install --frozen-lockfile
+      - name: Run repository semantic documentation gate
+        run: pnpm docs:protocol:check

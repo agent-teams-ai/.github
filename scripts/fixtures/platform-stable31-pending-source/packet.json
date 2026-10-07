@@ -1,0 +1,179 @@
+{
+  "retrievedAt": "2026-10-03T05:12:21.018799+00:00",
+  "repository": "agent-teams-ai/agent-teams-platform",
+  "source": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+  "run": 37015324661,
+  "attempt": 1,
+  "workflowId": 335216820,
+  "authorizeJob": 110864659636,
+  "controllerSnapshot": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+  "pinnedRunner": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+  "manifest": [
+    {
+      "path": "repository.json",
+      "bytes": 7744,
+      "sha256": "sha256:b3d796498e8bedfdbd12d07312ee41013e213624086c907044081cadf4b25efb"
+    },
+    {
+      "path": "main.json",
+      "bytes": 5813,
+      "sha256": "sha256:d39246e5fa2e5b136bc441daac4d42667a6e14fdc606e0144e9fd4a7c4bee151"
+    },
+    {
+      "path": "run.json",
+      "bytes": 14126,
+      "sha256": "sha256:207aec512382524d7330b5bdb8e364b87183111a0e30fc2728f3050965c1a26f"
+    },
+    {
+      "path": "jobs.json",
+      "bytes": 11577,
+      "sha256": "sha256:c07fd5ea3da046a40fd0d4648049ce9b9e2a4f49e755bc156f23c098ee3b52ea"
+    },
+    {
+      "path": "checks.json",
+      "bytes": 37619,
+      "sha256": "sha256:c47a793ed4aa64a76fefa0e0fe220d21203b37b9724679d82130d74c2c671b69"
+    },
+    {
+      "path": "authorize.log",
+      "bytes": 29495,
+      "sha256": "sha256:ffbf323edb2653cc630e2eb138b6d04ac722679ad7838f311c1e6f7202169bca"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-protocol.yaml",
+      "bytes": 401,
+      "sha256": "sha256:9901b6edd37098b50ba1a2ecd688bdc2b4c4ed0ff082ffb0ce60397b32d61e33",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-protocol.yaml",
+      "gitBlob": "81daa0ccde2d9075374f70ac7f8281f751e9e4c0"
+    },
+    {
+      "path": "platform/.github/workflows/docs-protocol.yml",
+      "bytes": 262,
+      "sha256": "sha256:d8d3b1281990179ee25ded67ba160f0e7573d2f70707b8c5b312d70b68d85125",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": ".github/workflows/docs-protocol.yml",
+      "gitBlob": "240d13c9528dc56a869bb13e9a7d3712d875484f"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-protocol-managed-state.json",
+      "bytes": 2427,
+      "sha256": "sha256:1f005f531c8e23e970c8a98533807f3e203c916fab339f5dfb4cd691481513b9",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-protocol-managed-state.json",
+      "gitBlob": "ed4e08d2be259269e308b2a38c1a6a3aaf3f0951"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-consumer-integration.json",
+      "bytes": 3083,
+      "sha256": "sha256:f576fc1e596c0502f1b0c5b3eb59a14f43a2a41bbe6bce40df02021e5edd556e",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-consumer-integration.json",
+      "gitBlob": "ddab8fd7ce4be30db0a796aa68be4ec1b0370fd7"
+    },
+    {
+      "path": "platform/architecture/foundation/docs-protocol-qualification.json",
+      "bytes": 2419,
+      "sha256": "sha256:9d4f61e7f03522aad368c086ff1e0eca3d79e5c3143a6badd8a98522f47c3ae0",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "architecture/foundation/docs-protocol-qualification.json",
+      "gitBlob": "694aceb3ba355a084f28217644fcc2f5cc44bed9"
+    },
+    {
+      "path": "platform/package.json",
+      "bytes": 5950,
+      "sha256": "sha256:167ea3a50dda737ddb9ea5a5891c9a4e611f9c052fb5bd4774df0a3a0115f828",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "package.json",
+      "gitBlob": "8ef6adc5bdc32b39d970a796ba571dd3dd14fc6c"
+    },
+    {
+      "path": "platform/pnpm-lock.yaml",
+      "bytes": 81038,
+      "sha256": "sha256:50eceacc3218f6fc5832272a203238a438beba6a85aafffd571f0a8f8506fe21",
+      "repository": "agent-teams-ai/agent-teams-platform",
+      "revision": "5d3551d02237281a2ae4a97e8e8d7a188c741559",
+      "repositoryPath": "pnpm-lock.yaml",
+      "gitBlob": "4cacd8997072b5195a777b57feb0ad5d7df36f9b"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-policy-v2.json",
+      "bytes": 33045,
+      "sha256": "sha256:63f3f41433359f4899a3b75257af4dc3e389e5fb6f5a9fcbc99fb4a933c4a20b",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-policy-v2.json",
+      "gitBlob": "17a2c987aed7d0fa10cf9e2c5788f45d3ab41aad"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-qualified-cohorts.json",
+      "bytes": 573075,
+      "sha256": "sha256:77a7c3c8d89bad8e0fa72b6f4d2ac5270f78fcbc5806c192e4b05397daa371a0",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-qualified-cohorts.json",
+      "gitBlob": "cfa50d0c90aba39db790f495595c17b55941b2c8"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-exceptions.json",
+      "bytes": 948,
+      "sha256": "sha256:10657f44d0a80adbdf725cf8cebf123086b4dd10790bb09562388f2172c53bae",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-exceptions.json",
+      "gitBlob": "ac336b865d697b62c938623f2960864e85f7698a"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-policy-v2.schema.json",
+      "bytes": 16818,
+      "sha256": "sha256:eb87fda58fc4f600a4a241a3d979a0692ee09fde8d028b2542baf767fd4725f2",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-policy-v2.schema.json",
+      "gitBlob": "d45b368c2967f6347236b978971c6c0545f60b10"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-qualified-cohorts.schema.json",
+      "bytes": 22510,
+      "sha256": "sha256:64fcd7a51966fa4302a9add4e3b4e6c00d30e88f6ba9a100ad450134d174df4d",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-qualified-cohorts.schema.json",
+      "gitBlob": "99ead31926964965e9061d5f3097f1beef1c31e8"
+    },
+    {
+      "path": "controller-snapshot/governance/docs-protocol-exceptions.schema.json",
+      "bytes": 2001,
+      "sha256": "sha256:c1d2c2dd8f5da97f744cbcf8b6001f423ac82ef6c5ef42cd6472b2b5e7d6650d",
+      "repository": "agent-teams-ai/.github",
+      "revision": "67492e3fff5959fc6bf9f3bb758a95561eb8da2f",
+      "repositoryPath": "governance/docs-protocol-exceptions.schema.json",
+      "gitBlob": "b38e37acaa5f238f0000dcab581a3f9f69b33873"
+    },
+    {
+      "path": "pinned-runner/.github/workflows/docs-protocol-check.yml",
+      "bytes": 16954,
+      "sha256": "sha256:ddee57a5e685407548ad8eebaa6f1e934600104af192dcd542160915c24fd1d6",
+      "repository": "agent-teams-ai/.github",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "repositoryPath": ".github/workflows/docs-protocol-check.yml",
+      "gitBlob": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1"
+    },
+    {
+      "path": "pinned-runner/scripts/verify-docs-consumer-gate.mjs",
+      "bytes": 79088,
+      "sha256": "sha256:45d0ceded09430450040804944bcdacfc67295a8dd868e1f94b557b79de17de8",
+      "repository": "agent-teams-ai/.github",
+      "revision": "757122cb08ed15aba6c9eef1b1f655b77d1ac54b",
+      "repositoryPath": "scripts/verify-docs-consumer-gate.mjs",
+      "gitBlob": "48f326515fb47ce0b41e49596bc2467020e9655b"
+    }
+  ],
+  "interpretation": "Authentic read-only GH packet; failed source25 authorization, not consumer semantic or target31 qualification success."
+}
