@@ -168,9 +168,47 @@ data mode: Cohort registry appends for the former, and admission policy/exceptio
 updates for the latter. Requiring only `trusted-validation` would leave admission
 updates checked only by its no-op path. Configure the ruleset to require branches to be
 up to date before merge so a later concurrent append invalidates the earlier
-result. Future validator/schema changes must
-use a separately staged successor check and ruleset cutover; the v1 trusted
-workflow intentionally rejects edits to its own authority files.
+result.
+
+The permanent `trusted-cohort-authority-evolution-v8` context protects the
+explicit current verifier inputs, including the required guard workflows,
+reusable Docs workflow, imported recovery modules, both receipt verifiers,
+schemas and the authority helper itself. Renames, modes, ancestor manifests,
+installer controls and resolution shadows such as `scripts/node_modules/`
+remain authority changes. Complete paginated metadata and Git trees, exact
+same-repository revisions and a live current default-branch base are required
+even for an ordinary no-op.
+
+Root registry development dependencies may evolve while all other manifest
+fields (including native CI commands and module resolution), lock globals,
+Ajv/YAML manifest/importer bindings and the six complete verifier package and
+snapshot records remain exact: `ajv@8.20.0`, `yaml@2.9.0`,
+`fast-deep-equal@3.1.3`, `fast-uri@3.1.5`, `json-schema-traverse@1.0.0` and
+`require-from-string@2.0.2`. Integrity and dependency edges are part of each
+record. The base-owned helper executes using base dependencies; head manifest
+and lock bytes are bounded, Git-identity-checked data in runner temporary
+storage and are never installed or executed. This feature-local helper is
+Central admission policy inside existing CI tooling, with no new module node,
+manager or shared-library merge authority. Both helper and tests receive strict
+compilation through `pnpm quality:typecheck` and the required `pnpm check`.
+
+`trusted-validation` rejects mixed dependency/executable changes in Cohort data
+mode. Its registry no-op runs before that allowlist; full append-only/live
+verification and the dependency-free emergency route retain their existing
+commands. Admission evidence verification retains its own data-mode allowlist.
+Verifier, dependency-closure and installation-policy evolution still requires
+owner-controlled delivery; unrelated dependencies can produce shared-resolution
+churn that conservatively rejects. Ordinary CI changes outside protected paths
+require technical review, including review of new credentials. The separate
+`trusted-authority-evolution` check retains its global 32-file cap.
+
+This S4 change requires one independently reviewed checkpoint and an
+owner-controlled delivery exception bound to the exact reviewed head, because
+the previous v8 and `trusted-validation` checks reject their own replacement.
+Restore every required context after delivery. Keep strict/current-base
+enforcement, separate owner identity rulesets, full native CI and independent
+exact-head technical review. Agents receive no protection-administration
+permissions; this patch alone makes no merge or deployment qualification claim.
 
 For the historical clock repair in PR #327, the separately staged
 `trusted-admission-clock-repair-v1` check accepts only its reviewed two-file
