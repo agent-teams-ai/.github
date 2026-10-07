@@ -10,9 +10,18 @@ const execFileAsync = promisify(execFile);
 const root = new URL("../", import.meta.url);
 const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"];
 const FOUNDATION_PRESET = "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json";
+const TYPED_FILES = [
+  "scripts/qualification-input-proof.mts",
+  "scripts/qualification-input-proof.test.mts",
+  "scripts/node-compatibility-package-ownership.test.mts",
+  "scripts/assert-node-runtime.mts",
+  "scripts/check-node-compatibility.mts",
+  "scripts/check-node-compatibility.test.mts",
+];
 const EXPECTED_SCRIPTS = {
   precheck: "node scripts/check-quality-scope.mjs",
-  check: "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-node-compatibility.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
+  check: "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && pnpm node:compatibility:install && node scripts/check-node-compatibility.mts && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
+  "node:compatibility:install": "pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true",
   "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
   "quality:lint": "node scripts/run-quality-lint.mjs",
   "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
@@ -22,116 +31,74 @@ const EXPECTED_SCRIPTS = {
   "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
   test: "node --test scripts/*.test.mjs scripts/*.test.mts tools/feature-module-standard/check.test.mjs",
 };
-
 const isTrackedSource = relativePath => SOURCE_SUFFIXES.some(suffix => relativePath.endsWith(suffix));
 
 export function classifySourcePath(relativePath) {
   const normalized = relativePath.replaceAll("\\", "/");
-  if (!isTrackedSource(normalized)) {return "non-source";}
-  if (/^scripts\/[^/]+\.test\.(?:mjs|mts)$/u.test(normalized) ||
-      normalized === "tools/feature-module-standard/check.test.mjs") {return "test";}
-  if (/^scripts\/[^/]+\.(?:mjs|mts)$/u.test(normalized) ||
-      normalized === "tools/feature-module-standard/check.mjs") {return "tooling";}
+  if (!isTrackedSource(normalized)) { return "non-source"; }
+  if (/^scripts\/[^/]+\.test\.(?:mjs|mts)$/u.test(normalized) || normalized === "tools/feature-module-standard/check.test.mjs") { return "test"; }
+  if (/^scripts\/[^/]+\.(?:mjs|mts)$/u.test(normalized) || normalized === "tools/feature-module-standard/check.mjs") { return "tooling"; }
   return null;
 }
-
 export function classifyTrackedPaths(trackedPaths) {
-  const classified = [];
-  const unclassified = [];
+  const classified = [], unclassified = [];
   for (const relativePath of [...new Set(trackedPaths)].toSorted()) {
     const role = classifySourcePath(relativePath);
-    if (role === null) {unclassified.push(relativePath);}
-    else if (role !== "non-source") {classified.push({ path: relativePath, role });}
+    if (role === null) { unclassified.push(relativePath); }
+    else if (role !== "non-source") { classified.push({ path: relativePath, role }); }
   }
   return { classified, unclassified };
 }
-
 export function deriveLintPaths(census, profile) {
-  return census.classified
-    .filter(entry => profile.lint.includedRoles.includes(entry.role) ||
-      profile.lint.includedExtensions.some(suffix => entry.path.endsWith(suffix)))
-    .map(entry => entry.path)
-    .toSorted();
+  return census.classified.filter(entry => profile.lint.includedRoles.includes(entry.role) ||
+    profile.lint.includedExtensions.some(suffix => entry.path.endsWith(suffix))).map(entry => entry.path).toSorted();
 }
-
 function assertLintPolicy(config) {
   assert.deepEqual(Object.keys(config).toSorted(), ["$schema", "extends", "options"].toSorted(),
     "Oxlint config must contain only schema, one public preset, and suppression options");
   assert.equal(config.$schema, "./node_modules/oxlint/configuration_schema.json");
   assert.deepEqual(config.extends, [FOUNDATION_PRESET], "Foundation public Node preset changed");
-  assert.deepEqual(config.options, {
-    reportUnusedDisableDirectives: "error",
-    respectEslintDisableDirectives: false,
-  });
+  assert.deepEqual(config.options, { reportUnusedDisableDirectives: "error", respectEslintDisableDirectives: false });
 }
-
 function assertWorkflow(workflowText) {
-  const workflow = parseYaml(workflowText);
-  const steps = workflow?.jobs?.check?.steps;
+  const steps = parseYaml(workflowText)?.jobs?.check?.steps;
   assert.ok(Array.isArray(steps), "CI check job steps are missing");
-  assert.equal(steps.filter(step => step?.with?.["node-version-file"] === ".node-version").length, 1, "CI must select the owning Node test tooling pin");
+  assert.equal(steps.filter(step => step?.with?.["node-version-file"] === ".node-version").length, 1,
+    "CI must select the owning Node test tooling pin");
   const requiredSteps = steps.filter(step => step?.run === "pnpm check");
   assert.equal(requiredSteps.length, 1, "CI check job must contain exactly one pnpm check step");
-  assert.deepEqual(requiredSteps[0], { run: "pnpm check" },
-    "pnpm check step cannot be conditional or continue on error");
+  assert.deepEqual(requiredSteps[0], { run: "pnpm check" }, "pnpm check step cannot be conditional or continue on error");
 }
-
 export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig }) {
-  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.7.2",
-    "Foundation dependency must use the exact released pin");
+  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.7.2", "Foundation dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint dependency must use the exact pin");
   assert.equal(manifest.devDependencies?.typescript, "7.0.2", "tooling compiler must use the exact public pin");
   assert.equal(manifest.devDependencies?.["@types/node"], "24.19.1", "tooling types must stay in the Node 24 family");
-  for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) {
-    assert.equal(manifest.scripts?.[name], command, `${name} route must stay canonical`);
-  }
+  for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) { assert.equal(manifest.scripts?.[name], command, `${name} route must stay canonical`); }
   assert.deepEqual(profile, {
-    schemaVersion: "consumer-quality-profile-v1",
-    status: "active-foundation",
-    languages: ["javascript", "typescript"],
+    schemaVersion: "consumer-quality-profile-v1", status: "active-foundation", languages: ["javascript", "typescript"],
     sourceRoots: {
       tooling: ["scripts/**/*.mjs", "scripts/**/*.mts", "tools/feature-module-standard/check.mjs"],
       tests: ["scripts/**/*.test.mjs", "scripts/**/*.test.mts", "tools/feature-module-standard/check.test.mjs"],
     },
-    typedCoverage: false,
-    requiredRoute: "pnpm check",
+    typedCoverage: false, requiredRoute: "pnpm check",
     foundation: { version: "1.7.2", publicPreset: FOUNDATION_PRESET },
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts"] },
-    typedTooling: {
-      configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
-      entryFiles: [
-        "scripts/qualification-input-proof.mts",
-        "scripts/qualification-input-proof.test.mts",
-        "scripts/node-compatibility-package-ownership.test.mts",
-      ],
-    },
+    typedTooling: { configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1", entryFiles: TYPED_FILES },
     toolchain: { node: "24.21.0", pnpm: "11.18.0", oxlint: "1.85.0" },
     passiveHelpers: [{
-      id: "node-compatibility-tooling",
-      owner: "governance-tooling",
-      classification: "passive-parser-metadata",
-      packageRoot: "tools/node-compatibility-tooling",
-      sourceBoundary: "node-compatibility-tooling",
-      compositionCapability: false,
-      files: [
-        "tools/node-compatibility-tooling/package.json",
-        "tools/node-compatibility-tooling/pnpm-workspace.yaml",
-        "tools/node-compatibility-tooling/pnpm-lock.yaml",
-      ],
+      id: "node-compatibility-tooling", owner: "governance-tooling", classification: "passive-parser-metadata",
+      packageRoot: "tools/node-compatibility-tooling", sourceBoundary: "node-compatibility-tooling", compositionCapability: false,
+      files: ["tools/node-compatibility-tooling/package.json", "tools/node-compatibility-tooling/pnpm-workspace.yaml", "tools/node-compatibility-tooling/pnpm-lock.yaml"],
     }],
   }, "quality profile changed");
   assert.deepEqual(toolingTsconfig, {
     compilerOptions: {
-      target: "ES2024", module: "NodeNext", moduleResolution: "NodeNext",
-      strict: true, noEmit: true, allowImportingTsExtensions: true,
-      verbatimModuleSyntax: true, erasableSyntaxOnly: true,
+      target: "ES2024", module: "NodeNext", moduleResolution: "NodeNext", strict: true, noEmit: true,
+      allowImportingTsExtensions: true, verbatimModuleSyntax: true, erasableSyntaxOnly: true,
       noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true, types: ["node"],
     },
-    include: [
-      "scripts/qualification-input-proof.mts",
-      "scripts/qualification-input-proof.test.mts",
-      "scripts/node-compatibility-package-ownership.test.mts",
-    ],
+    include: TYPED_FILES,
   }, "strict compiler scope and settings must stay exact");
   assert.deepEqual(requiredTests, {
     schemaVersion: 1,
@@ -145,98 +112,63 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
       { file: "scripts/check-quality-scope.test.mjs", names: ["installed source boundary rejects missing inputs and governed dist source"], kind: "test" },
       { file: "scripts/check-quality-scope.test.mjs", names: ["installed mandatory runner rejects omitted and skipped identities with exact OS exceptions"], kind: "test" },
       { file: "scripts/node-compatibility-package-ownership.test.mts", names: ["installed source boundary accepts the relocated passive parser and rejects ownership drift"], kind: "test" },
-    ],
-    exceptions: [],
+    ], exceptions: [],
   }, "mandatory test inventory must retain exact identities and files");
   assert.deepEqual(sourcePolicy, {
-    schemaVersion: 3,
-    workspace: { kind: "pnpm", manifest: "pnpm-workspace.yaml" },
-    rootPackage: true,
+    schemaVersion: 3, workspace: { kind: "pnpm", manifest: "pnpm-workspace.yaml" }, rootPackage: true,
     packageRoots: ["tools/node-compatibility-tooling"],
     governedRoots: ["scripts", "tools/feature-module-standard", "tools/node-compatibility-tooling"],
     boundaries: [
-      {
-        id: "governance-tooling", dependencyMode: "development", roots: ["scripts"], entrypoints: [],
-        allow: {
-          boundaries: ["feature-module-standard"], packages: ["ajv", "yaml"],
-          builtins: [
-            "node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises",
-            "node:module", "node:os", "node:path", "node:test", "node:url", "node:util", "node:vm", "node:zlib",
-          ],
-          runtimeReferences: ["commonjs", "dynamic"],
-        },
-      },
-      {
-        id: "feature-module-standard", dependencyMode: "development",
-        roots: ["tools/feature-module-standard"], entrypoints: ["tools/feature-module-standard/check.mjs"],
-        allow: {
-          boundaries: [], packages: [],
-          builtins: [
-            "node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises",
-            "node:os", "node:path", "node:test", "node:url", "node:util",
-          ],
-          runtimeReferences: [],
-        },
-      },
-      {
-        id: "node-compatibility-tooling", dependencyMode: "development",
-        roots: ["tools/node-compatibility-tooling"], entrypoints: [],
-        allow: { boundaries: [], packages: [], builtins: [], runtimeReferences: [] },
-      },
+      { id: "governance-tooling", dependencyMode: "development", roots: ["scripts"], entrypoints: [], allow: {
+        boundaries: ["feature-module-standard"], packages: ["ajv", "yaml"],
+        builtins: ["node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises", "node:module", "node:os", "node:path", "node:test", "node:url", "node:util", "node:vm", "node:zlib"],
+        runtimeReferences: ["commonjs", "dynamic"],
+      } },
+      { id: "feature-module-standard", dependencyMode: "development", roots: ["tools/feature-module-standard"], entrypoints: ["tools/feature-module-standard/check.mjs"], allow: {
+        boundaries: [], packages: [],
+        builtins: ["node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises", "node:os", "node:path", "node:test", "node:url", "node:util"],
+        runtimeReferences: [],
+      } },
+      { id: "node-compatibility-tooling", dependencyMode: "development", roots: ["tools/node-compatibility-tooling"], entrypoints: [], allow: { boundaries: [], packages: [], builtins: [], runtimeReferences: [] } },
     ],
   }, "source boundaries must retain every declared tooling root and exact package owner");
   assert.deepEqual(foundationConfig, {
-    schemaVersion: 2,
-    project: { id: "organization-governance" },
-    capabilities: {
-      "architecture.source-dependencies": { configPath: "docs/engineering-quality-source-policy.yaml" },
-    },
+    schemaVersion: 2, project: { id: "organization-governance" },
+    capabilities: { "architecture.source-dependencies": { configPath: "docs/engineering-quality-source-policy.yaml" } },
   }, "installed source gate configuration changed");
   assert.equal(nodeVersion.trim(), "24.21.0", "owning test tooling lane must use Node 24.21.0");
   assert.equal(manifest.engines?.node, ">=24.18.0 <25 || >=26.10.0 <27", "production Node 24 and bounded Node 26 compatibility must remain independent of critical execution tooling");
   assertLintPolicy(lintConfig);
   assertWorkflow(workflow);
   const normalizedTrackedPaths = [...new Set(trackedPaths.map(relativePath => relativePath.replaceAll("\\", "/")))].toSorted();
-  assert.deepEqual(
-    normalizedTrackedPaths.filter(relativePath => relativePath.startsWith("tools/node-compatibility-tooling/")),
-    profile.passiveHelpers[0].files.toSorted(),
-    "passive parser metadata inventory must remain closed",
-  );
-  assert.deepEqual(
-    normalizedTrackedPaths.filter(relativePath => relativePath.startsWith("scripts/node-compatibility-tooling/")),
-    [],
-    "passive parser metadata must not remain inside the scripts package scope",
-  );
+  assert.deepEqual(normalizedTrackedPaths.filter(relativePath => relativePath.startsWith("tools/node-compatibility-tooling/")), profile.passiveHelpers[0].files.toSorted(), "passive parser metadata inventory must remain closed");
+  assert.deepEqual(normalizedTrackedPaths.filter(relativePath => relativePath.startsWith("scripts/node-compatibility-tooling/")), [], "passive parser metadata must not remain inside the scripts package scope");
+  for (const file of TYPED_FILES) { assert.ok(normalizedTrackedPaths.includes(file), `required typed source is missing: ${file}`); }
+  for (const file of ["scripts/assert-node-runtime.mjs", "scripts/check-node-compatibility.mjs", "scripts/check-node-compatibility.test.mjs"]) {
+    assert.ok(!normalizedTrackedPaths.includes(file), `obsolete compatibility JavaScript or shim is forbidden: ${file}`);
+  }
   const census = classifyTrackedPaths(trackedPaths);
   assert.deepEqual(census.unclassified, [], `unclassified executable source: ${census.unclassified.join(", ")}`);
   assert.ok(census.classified.some(entry => entry.role === "tooling"), "tooling census is empty");
   assert.ok(census.classified.some(entry => entry.role === "test"), "test census is empty");
   return census;
 }
-
 export async function readQualityAdoption(base = root) {
   const readJson = async relativePath => JSON.parse(await readFile(new URL(relativePath, base), "utf8"));
   const cwd = path.dirname(fileURLToPath(new URL("package.json", base)));
   const { stdout } = await execFileAsync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd, encoding: "utf8" });
   return {
-    manifest: await readJson("package.json"),
-    profile: await readJson("docs/engineering-quality-profile.json"),
-    lintConfig: await readJson("oxlint.json"),
-    toolingTsconfig: await readJson("tsconfig.tooling.json"),
+    manifest: await readJson("package.json"), profile: await readJson("docs/engineering-quality-profile.json"),
+    lintConfig: await readJson("oxlint.json"), toolingTsconfig: await readJson("tsconfig.tooling.json"),
     requiredTests: await readJson("docs/engineering-quality-required-tests.json"),
     sourcePolicy: parseYaml(await readFile(new URL("docs/engineering-quality-source-policy.yaml", base), "utf8")),
     foundationConfig: parseYaml(await readFile(new URL("foundation.config.yaml", base), "utf8")),
-    trackedPaths: stdout.split("\0").filter(Boolean),
-    nodeVersion: await readFile(new URL(".node-version", base), "utf8"),
+    trackedPaths: stdout.split("\0").filter(Boolean), nodeVersion: await readFile(new URL(".node-version", base), "utf8"),
     workflow: await readFile(new URL(".github/workflows/ci.yml", base), "utf8"),
   };
 }
-
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const census = assertQualityAdoption(await readQualityAdoption());
-  const counts = Object.fromEntries(["tooling", "test"].map(role => [
-    role,
-    census.classified.filter(entry => entry.role === role).length,
-  ]));
+  const counts = Object.fromEntries(["tooling", "test"].map(role => [role, census.classified.filter(entry => entry.role === role).length]));
   process.stdout.write(`central quality scope verified: ${JSON.stringify(counts)}\n`);
 }

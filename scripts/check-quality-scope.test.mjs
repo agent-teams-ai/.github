@@ -4,49 +4,33 @@ import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import YAML from "yaml";
-import {
-  assertQualityAdoption,
-  classifySourcePath,
-  classifyTrackedPaths,
-  deriveLintPaths,
-  readQualityAdoption,
-} from "./check-quality-scope.mjs";
+import { assertQualityAdoption, classifySourcePath, classifyTrackedPaths, deriveLintPaths, readQualityAdoption } from "./check-quality-scope.mjs";
 import { selectOxlintFiles } from "./run-quality-lint.mjs";
 
 const accepted = await readQualityAdoption();
-
-test("actual repository adopts the Foundation preset through the canonical route", () => {
-  assertQualityAdoption(accepted);
-});
-
+test("actual repository adopts the Foundation preset through the canonical route", () => { assertQualityAdoption(accepted); });
 test("actual tracked source census distinguishes tooling, tests, and authority data", () => {
   assert.equal(classifySourcePath("scripts/validate-governance.mjs"), "tooling");
   assert.equal(classifySourcePath("scripts/governance-policy.test.mjs"), "test");
   assert.equal(classifySourcePath("scripts/qualification-input-proof.mts"), "tooling");
   assert.equal(classifySourcePath("scripts/qualification-input-proof.test.mts"), "test");
+  assert.equal(classifySourcePath("scripts/assert-node-runtime.mts"), "tooling");
+  assert.equal(classifySourcePath("scripts/check-node-compatibility.mts"), "tooling");
+  assert.equal(classifySourcePath("scripts/check-node-compatibility.test.mts"), "test");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.mjs"), "tooling");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.test.mjs"), "test");
   assert.equal(classifySourcePath("tools/node-compatibility-tooling/package.json"), "non-source");
   assert.equal(classifySourcePath("tools/node-compatibility-tooling/helper.mts"), null);
   assert.equal(classifySourcePath("scripts/node-compatibility-package-ownership.test.mts"), "test");
-  for (const authority of ["governance/policy.json", ".github/workflows/ci.yml", "GOVERNANCE.md"]) {
-    assert.equal(classifySourcePath(authority), "non-source");
-  }
+  for (const authority of ["governance/policy.json", ".github/workflows/ci.yml", "GOVERNANCE.md"]) { assert.equal(classifySourcePath(authority), "non-source"); }
   assert.equal(classifySourcePath("new-owner/check.mjs"), null);
 });
-
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
-  const census = assertQualityAdoption(accepted);
-  const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 27);
-  assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
-  assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
-  assert.ok(paths.includes("scripts/assert-node-runtime.mjs"));
-  assert.ok(paths.includes("scripts/check-node-compatibility.mjs"));
-  assert.ok(paths.includes("scripts/node-compatibility-package-ownership.test.mts"));
+  const census = assertQualityAdoption(accepted), paths = deriveLintPaths(census, accepted.profile);
+  assert.equal(paths.length, 28);
+  for (const file of ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/assert-node-runtime.mts", "scripts/check-node-compatibility.mts", "scripts/check-node-compatibility.test.mts", "scripts/node-compatibility-package-ownership.test.mts"]) { assert.ok(paths.includes(file)); }
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
-
 const mutations = {
   "a ranged tooling compiler": value => { value.manifest.devDependencies.typescript = "^7.0.2"; },
   "foreign Node type definitions": value => { value.manifest.devDependencies["@types/node"] = "26.6.4"; },
@@ -54,7 +38,7 @@ const mutations = {
   "blanket library typecheck suppression": value => { value.toolingTsconfig.compilerOptions.skipLibCheck = true; },
   "a dropped typed test entry": value => { value.toolingTsconfig.include = value.toolingTsconfig.include.filter(file => file !== "scripts/qualification-input-proof.test.mts"); },
   "a dropped ownership typecheck entry": value => { value.toolingTsconfig.include = value.toolingTsconfig.include.filter(file => file !== "scripts/node-compatibility-package-ownership.test.mts"); },
-  "a dropped ownership profile entry": value => { value.profile.typedTooling.entryFiles.pop(); },
+  "a dropped ownership profile entry": value => { value.profile.typedTooling.entryFiles = value.profile.typedTooling.entryFiles.filter(file => file !== "scripts/node-compatibility-package-ownership.test.mts"); },
   "a missing mts test glob": value => { value.manifest.scripts.test = value.manifest.scripts.test.replace(" scripts/*.test.mts", ""); },
   "excluded typed lint selection": value => { value.profile.lint.includedExtensions = []; },
   "an unsupported critical tooling patch": value => { value.nodeVersion = "24.18.0\n"; },
@@ -95,14 +79,23 @@ const mutations = {
   "a no-op required route": value => { value.manifest.scripts.check = "true"; },
   "a conditional required route": value => { value.manifest.scripts.check += " || true"; },
   "a removed existing governance gate": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && pnpm governance:validate", ""); },
-  "a removed Node compatibility gate": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && node scripts/check-node-compatibility.mjs", ""); },
+  "a removed Node compatibility gate": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && node scripts/check-node-compatibility.mts", ""); },
+  "a removed root strict typecheck": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && pnpm quality:typecheck", ""); },
+  "a removed root parser provisioning step": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace(" && pnpm node:compatibility:install", ""); },
+  "a weakened root parser provisioning command": value => { value.manifest.scripts["node:compatibility:install"] = "pnpm install"; },
+  "an obsolete JavaScript compatibility caller": value => { value.manifest.scripts.check = value.manifest.scripts.check.replace("check-node-compatibility.mts", "check-node-compatibility.mjs"); },
   "a missing FMS test route": value => { value.manifest.scripts.test = "node --test scripts/*.test.mjs"; },
   "authority JSON misclassified as source": value => { value.trackedPaths.push("governance/authority.ts"); },
   "a missing CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- run: pnpm test"); },
   "a conditional CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- if: always()\n        run: pnpm check"); },
   "a continue-on-error CI route": value => { value.workflow = value.workflow.replace("- run: pnpm check", "- run: pnpm check\n        continue-on-error: true"); },
 };
-
+for (const file of ["scripts/assert-node-runtime.mts", "scripts/check-node-compatibility.mts", "scripts/check-node-compatibility.test.mts"]) {
+  mutations[`a dropped compatibility typecheck entry ${file}`] = value => { value.toolingTsconfig.include = value.toolingTsconfig.include.filter(entry => entry !== file); };
+  mutations[`a dropped compatibility profile entry ${file}`] = value => { value.profile.typedTooling.entryFiles = value.profile.typedTooling.entryFiles.filter(entry => entry !== file); };
+  mutations[`a missing typed compatibility source ${file}`] = value => { value.trackedPaths = value.trackedPaths.filter(entry => entry !== file); };
+  mutations[`a retained compatibility JavaScript shim ${file}`] = value => { value.trackedPaths.push(file.replace(/\.mts$/u, ".mjs")); };
+}
 for (const [name, mutate] of Object.entries(mutations)) {
   test(`quality adoption rejects ${name}`, () => {
     const value = structuredClone(accepted);
@@ -110,17 +103,12 @@ for (const [name, mutate] of Object.entries(mutations)) {
     assert.throws(() => assertQualityAdoption(value), assert.AssertionError);
   });
 }
-
 test("a changed derived tooling set differs from the actual Oxlint selection", async () => {
-  const census = classifyTrackedPaths(accepted.trackedPaths);
-  const paths = deriveLintPaths(census, accepted.profile);
-  await assert.rejects(() => selectOxlintFiles([...paths, "README.md"]),
-    /selected files differ/u);
+  const census = classifyTrackedPaths(accepted.trackedPaths), paths = deriveLintPaths(census, accepted.profile);
+  await assert.rejects(() => selectOxlintFiles([...paths, "README.md"]), /selected files differ/u);
 });
-
 const foundationCli = resolve("node_modules/@agent-teams/engineering-foundation/dist/cli.js");
 const mandatoryCli = resolve("node_modules/@agent-teams/engineering-foundation/dist/node-test-cli.js");
-
 async function fixture(t) {
   const base = resolve(".quality-output/disposable");
   await mkdir(base, { recursive: true });
@@ -133,15 +121,11 @@ async function fixture(t) {
   };
   return { root, put };
 }
-
-const runInstalled = (cli, args, root) => spawnSync(process.execPath, [cli, ...args], {
-  cwd: root, encoding: "utf8", timeout: 30000, maxBuffer: 2 * 1024 * 1024,
-});
+const runInstalled = (cli, args, root) => spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: "utf8", timeout: 30000, maxBuffer: 2 * 1024 * 1024 });
 const outputOf = result => result.stdout + result.stderr;
 
 test("installed source boundary rejects missing inputs and governed dist source", async t => {
-  const { root, put } = await fixture(t);
-  const policy = structuredClone(accepted.sourcePolicy);
+  const { root, put } = await fixture(t), policy = structuredClone(accepted.sourcePolicy);
   await put("package.json", JSON.stringify({ name: "@agent-teams/fixture", private: true, type: "module" }));
   await put("pnpm-workspace.yaml", "packages: []\n");
   await put("foundation.config.yaml", YAML.stringify(accepted.foundationConfig));
@@ -158,10 +142,9 @@ test("installed source boundary rejects missing inputs and governed dist source"
   await put("scripts/isolated-parser.mts", moduleSource);
   await put("tools/feature-module-standard/forbidden.mts", moduleSource);
   const typedModule = runInstalled(resolve("node_modules/typescript/bin/tsc"), [
-    "--target", "ES2024", "--module", "NodeNext", "--moduleResolution", "NodeNext",
-    "--strict", "--noEmit", "--allowImportingTsExtensions", "--verbatimModuleSyntax",
-    "--erasableSyntaxOnly", "--noUncheckedIndexedAccess", "--exactOptionalPropertyTypes",
-    "--types", "node", "scripts/isolated-parser.mts", "tools/feature-module-standard/forbidden.mts",
+    "--target", "ES2024", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--strict", "--noEmit",
+    "--allowImportingTsExtensions", "--verbatimModuleSyntax", "--erasableSyntaxOnly", "--noUncheckedIndexedAccess",
+    "--exactOptionalPropertyTypes", "--types", "node", "scripts/isolated-parser.mts", "tools/feature-module-standard/forbidden.mts",
   ], root);
   assert.equal(typedModule.status, 0, outputOf(typedModule));
   await rm(join(root, "tools/feature-module-standard/forbidden.mts"));
@@ -195,8 +178,7 @@ test("installed source boundary rejects missing inputs and governed dist source"
   assert.equal(missingRoot.status, 2, outputOf(missingRoot));
   assert.match(outputOf(missingRoot), /root|unavailable|missing/iu);
   await put("scripts/sample.mjs", "export const value = 1;\n");
-  const config = join(root, "docs/engineering-quality-source-policy.yaml");
-  const policyBytes = YAML.stringify(policy);
+  const config = join(root, "docs/engineering-quality-source-policy.yaml"), policyBytes = YAML.stringify(policy);
   await put("docs/engineering-quality-source-policy.yaml", policyBytes);
   const regular = run();
   assert.equal(regular.status, 0, outputOf(regular));
@@ -218,8 +200,7 @@ test("installed source boundary rejects missing inputs and governed dist source"
 
 test("installed mandatory runner rejects omitted and skipped identities with exact OS exceptions", async t => {
   const { root, put } = await fixture(t);
-  const file = "critical.test.mjs";
-  const identity = { file, names: ["critical invariant"], kind: "test" };
+  const file = "critical.test.mjs", identity = { file, names: ["critical invariant"], kind: "test" };
   const contract = { schemaVersion: 1, required: [identity], exceptions: [] };
   const run = () => runInstalled(mandatoryCli, ["--contract", "required.json", "--", file], root);
   await put("required.json", JSON.stringify(contract));

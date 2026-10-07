@@ -35,8 +35,8 @@ jobs:
         run: pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
       - name: Check bounded Node compatibility contract
         run: |
-          node scripts/check-node-compatibility.mjs
-          node --test scripts/check-node-compatibility.test.mjs
+          node scripts/check-node-compatibility.mts
+          node --test scripts/check-node-compatibility.test.mts
 
   node26-compatibility:
     name: node26-compatibility (Node 26.10.0)
@@ -63,8 +63,8 @@ jobs:
         run: pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
       - name: Check bounded Node compatibility contract
         run: |
-          node scripts/check-node-compatibility.mjs
-          node --test scripts/check-node-compatibility.test.mjs
+          node scripts/check-node-compatibility.mts
+          node --test scripts/check-node-compatibility.test.mts
 
   interaction:
     name: interaction
