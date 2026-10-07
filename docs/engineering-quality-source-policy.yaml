@@ -19,6 +19,7 @@ boundaries:
       boundaries:
         - feature-module-standard
       packages:
+        - "@agent-teams/ci-input-proof"
         - ajv
         - yaml
       builtins:

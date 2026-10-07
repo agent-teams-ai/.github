@@ -120,7 +120,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     governedRoots: ["scripts", "tools/feature-module-standard", "tools/node-compatibility-tooling"],
     boundaries: [
       { id: "governance-tooling", dependencyMode: "development", roots: ["scripts"], entrypoints: [], allow: {
-        boundaries: ["feature-module-standard"], packages: ["ajv", "yaml"],
+        boundaries: ["feature-module-standard"], packages: ["@agent-teams/ci-input-proof", "ajv", "yaml"],
         builtins: ["node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises", "node:module", "node:os", "node:path", "node:test", "node:url", "node:util", "node:vm", "node:zlib"],
         runtimeReferences: ["commonjs", "dynamic"],
       } },

@@ -30,6 +30,7 @@
     "test:input-proof": "node --test scripts/qualification-input-proof.test.mts"
   },
   "devDependencies": {
+    "@agent-teams/ci-input-proof": "0.1.0-rc.0",
     "@agent-teams/engineering-foundation": "1.7.2",
     "@types/node": "24.19.1",
     "ajv": "8.20.0",
