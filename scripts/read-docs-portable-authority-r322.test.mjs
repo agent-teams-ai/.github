@@ -1,17 +1,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { existsSync, readFileSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
+import * as filesystem from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createRequire } from 'node:module';
 import { Script } from 'node:vm';
 import YAML from 'yaml';
 import { classifyPortableTransition, parsePortableJson, portableRecordDigest, validatePortableRecord, verifyPortableBlob, verifyPortableProtections } from './docs-portable-authority-r322.mjs';
 import { classifyPortableIntent, makePortableApi, portableReviewBody, validatePortableAcceptance, verifyPortableExecution } from './read-docs-portable-authority-r322.mjs';
 import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from './check-quality-scope.mjs';
+import { selectOxlintFiles } from './run-quality-lint.mjs';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
@@ -22,9 +21,11 @@ assert.deepEqual(Object.keys(additionBodies).sort(), addedRows.map((row) => row.
 const historical = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
 assert.deepEqual(historical.historical_sources, record.historical_sources);
 const oldOverrides = new Map(historical.old_overrides.map((entry) => [entry.path, entry]));
+const oldBodies = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json'));
 assert.equal(oldOverrides.size, historical.old_overrides.length);
 assert.deepEqual([...oldOverrides.keys()].sort(), record.manifest.filter((row) => row.old)
   .map((row) => row.path).sort());
+assert.deepEqual(Object.keys(oldBodies).sort(), [...oldOverrides.keys()].sort());
 const forward = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
 assert.deepEqual(forward.historical_sources, record.historical_sources);
 const newOverrides = new Map(forward.new_overrides.map((entry) => [entry.path, entry]));
@@ -42,31 +43,27 @@ function applyEdits(body, edits, path) {
   return lines.join('');
 }
 function historicalBody(row, side) {
-  const path = new URL(`../${row.path}`, import.meta.url);
-  let current = existsSync(path) ? readFileSync(path) : null;
-  const matches = (bytes, expected) => Boolean(bytes && expected &&
-    bytes.length === expected.bytes && sha(bytes) === expected.sha256);
-  if (matches(current, row.new)) {
-    if (side === 'new') {return current;}
-    const override = oldOverrides.get(row.path);
-    assert.ok(override, `missing old fixture for ${row.path}`);
-    const body = applyEdits(current.toString('utf8'), override.edits, row.path);
-    if (override.omit_final_newline) {
-      assert.ok(body.endsWith('\n'), `expected final newline in ${row.path}`);
-      return Buffer.from(body.slice(0, -1));
-    }
-    return Buffer.from(body);
+  assert.ok(side === 'old' || side === 'new');
+  if (row.old === null) {
+    assert.equal(side, 'new');
+    const added = Buffer.from(additionBodies[row.path], 'utf8');
+    verifyPortableBlob(added, row.new);
+    return added;
   }
-  if (matches(current, row.old)) {
-    if (side === 'old') {return current;}
-    const override = newOverrides.get(row.path);
-    assert.ok(override, `missing new fixture for ${row.path}`);
-    return Buffer.from(applyEdits(current.toString('utf8'), override.edits, row.path));
+  const original = Buffer.from(oldBodies[row.path], 'utf8');
+  verifyPortableBlob(original, row.old);
+  if (side === 'old') {return original;}
+  const candidate = Buffer.from(applyEdits(original.toString('utf8'),
+    newOverrides.get(row.path).edits, row.path));
+  verifyPortableBlob(candidate, row.new);
+  const override = oldOverrides.get(row.path);
+  let inverse = applyEdits(candidate.toString('utf8'), override.edits, row.path);
+  if (override.omit_final_newline) {
+    assert.ok(inverse.endsWith('\n'), `expected final newline in ${row.path}`);
+    inverse = inverse.slice(0, -1);
   }
-  if (current === null && row.old === null && side === 'new') {
-    return Buffer.from(additionBodies[row.path], 'utf8');
-  }
-  assert.fail(`live body is neither exact historical side for ${row.path}`);
+  assert.deepEqual(Buffer.from(inverse), original, `historical inverse differs: ${row.path}`);
+  return candidate;
 }
 const G = ['.github/workflows/docs-portable-authority-r322.yml', 'docs/node26-portable-authority-r322.md',
   'governance/docs-portable-authority-r322.json', 'scripts/docs-portable-authority-r322.mjs',
@@ -281,35 +278,25 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
   assert.throws(() => classifyPortableTransition(selfInstall, after, record), /incomplete or mixed/u);
 });
 
-test('authenticated live census and all-four forecast agree with actual Oxlint selection', async () => {
+test('current G census is independently pinned and agrees with actual Oxlint selection', async () => {
   const adoption = await readQualityAdoption();
   const pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
   const censusRow = record.manifest.find((r) => r.path === 'scripts/check-quality-scope.test.mjs');
   const live = Buffer.from(read(censusRow.path));
-  const installedSide = sha(live) === censusRow.old.sha256 ? 'old' : 'new';
-  verifyPortableBlob(live, censusRow[installedSide]);
-  assert.equal(pre.length, installedSide === 'old' ? 21 : 23);
-  const trackedPaths = [...new Set([...adoption.trackedPaths, ...record.manifest.map((row) => row.path)])];
-  const post = deriveLintPaths(assertQualityAdoption({ ...adoption, trackedPaths,
-    workflow: historicalBody(record.manifest[0], 'new').toString() }), adoption.profile);
-  assert.equal(post.length, 23);
+  // Reviewed 17b48d5 current source is distinct from either historical descriptor.
+  const current = { type: 'blob', mode: '100644', blob: '5088e9d03570bd092984a468be45b0e63bd82f5c',
+    bytes: 12923, sha256: 'sha256:503b90d00c67d5b9750708aabc777e5833c3a6bfcffdfa1ec8f708e0b0c71d74' };
+  verifyPortableBlob(live, current);
+  assert.equal(pre.length, 26);
   for (const p of ['scripts/docs-portable-authority-r322.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
-    'scripts/assert-node-runtime.mjs', 'scripts/check-node-compatibility.mjs']) {assert.ok(post.includes(p));}
-  const temp = mkdtempSync(path.join(tmpdir(), 'portable-r322-NEWTEST-'));
-  try {
-    for (const p of post) {
-      mkdirSync(path.dirname(path.join(temp, p)), { recursive: true });
-      const row = record.manifest.find((r) => r.path === p);
-      writeFileSync(path.join(temp, p), row ? historicalBody(row, 'new') : read(p));
-    }
-    writeFileSync(path.join(temp, 'oxlint.json'), read('oxlint.json'));
-    symlinkSync(fileURLToPath(new URL('../node_modules', import.meta.url)), path.join(temp, 'node_modules'), 'dir');
-    const selected = execFileSync(process.execPath, [fileURLToPath(new URL('../node_modules/oxlint/bin/oxlint', import.meta.url)),
-      '--debug=files', '--config', 'oxlint.json', '--no-ignore', '--disable-nested-config', ...post],
-    { cwd: temp, encoding: 'utf8' }).trim().split(/\r?\n/u).sort();
-    assert.deepEqual(selected, post);
-    for (const side of ['old', 'new']) {verifyPortableBlob(historicalBody(censusRow, side), censusRow[side]);}
-  } finally {rmSync(temp, { recursive: true, force: true });}
+    'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts']) {assert.ok(pre.includes(p));}
+  assert.deepEqual(await selectOxlintFiles(pre), pre);
+  for (const side of ['old', 'new']) {
+    const historical = historicalBody(censusRow, side);
+    verifyPortableBlob(historical, censusRow[side]);
+    assert.throws(() => verifyPortableBlob(historical, current), /length|digest/u);
+    assert.throws(() => verifyPortableBlob(live, censusRow[side]), /length|digest/u);
+  }
 });
 
 const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
@@ -327,6 +314,8 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
     'scripts/fixtures/docs-portable-authority-r322/new-additions.json',
     'scripts/fixtures/docs-portable-authority-r322/new-overrides.json',
     'scripts/fixtures/docs-portable-authority-r322/old-overrides.json',
+    'scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json',
+    'governance/docs-current-composition-source-r322-e4.json',
   ];
   async function probe(filenames) {
     const failures = [], outputs = [];
@@ -339,7 +328,11 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
       repo: { owner: 'agent-teams-ai', repo: '.github' } };
     const core = { setFailed: (message) => failures.push(message),
       setOutput: (name, value) => outputs.push([name, value]) };
-    await materialize.runInNewContext({ require: createRequire(import.meta.url),
+    await materialize.runInNewContext({ require: (specifier) => {
+      if (specifier === 'node:fs/promises') {return filesystem;}
+      if (specifier === 'node:path') {return path;}
+      throw Error(`unexpected predecessor import: ${specifier}`);
+    },
       context, github, core });
     return { failures, outputs };
   }
@@ -403,7 +396,13 @@ function auditWorkflow(candidate) {
   assert.equal(candidate.jobs.portable.if, "needs.route.outputs.mode == 'portable'");
   assert.equal(Object.hasOwn(candidate.jobs.route, 'needs'), false);
   assert.equal(candidate.jobs.route.outputs.mode, '${{ steps.classify.outputs.mode }}');
-  for (const job of Object.values(candidate.jobs)) {
+  assert.equal(candidate.jobs.route.steps.find((step) =>
+    step.name === 'Prove protected-base Node runtime').run,
+  `node -e "if (process.version !== 'v24.21.0') throw Error('Node runtime mismatch')"`);
+  assert.equal(candidate.jobs.portable.steps.find((step) =>
+    step.name === 'Verify exact portable authority with current admin decision').run,
+  `node -e "if (process.version !== 'v24.21.0') throw Error('Node runtime mismatch')"\nnode scripts/read-docs-portable-authority-r322.mjs\n`);
+  for (const [jobId, job] of Object.entries(candidate.jobs)) {
     assert.notEqual(job['continue-on-error'], true);
     for (const step of job.steps) {
       assert.notEqual(step['continue-on-error'], true);
@@ -413,7 +412,7 @@ function auditWorkflow(candidate) {
         assert.equal(step.with['persist-credentials'], false);
       }
       if (step.uses?.startsWith('actions/setup-node@')) {
-        assert.equal(step.with['node-version'], '24.18.0');
+        assert.equal(step.with['node-version'], ['route', 'portable'].includes(jobId) ? '24.21.0' : '24.18.0');
       }
     }
   }
@@ -433,6 +432,14 @@ test('workflow disablements, head checkout and changed legacy body fail audit', 
     (w) => {w.jobs.legacy_validation.steps.pop();},
     (w) => {w.jobs.route.steps[0].with.ref = '${{ github.event.pull_request.head.sha }}';},
     (w) => {w.jobs.portable.steps[1].with['node-version'] = '26.10.0';},
+    (w) => {w.jobs.route.steps.find((step) => step.name ===
+      'Prove protected-base Node runtime').run = 'true';},
+    (w) => {w.jobs.portable.steps.find((step) => step.name ===
+      'Verify exact portable authority with current admin decision').run =
+      w.jobs.portable.steps.find((step) => step.name ===
+        'Verify exact portable authority with current admin decision').run.replace('v24.21.0', 'v24.18.0');},
+    (w) => {w.jobs.legacy_validation.steps.find((step) =>
+      step.uses?.startsWith('actions/setup-node@')).with['node-version'] = '24.21.0';},
     (w) => {w.jobs.route.steps[0].uses = 'actions/checkout@main';},
     (w) => {w.permissions.contents = 'write';},
     (w) => {w.jobs.legacy_v8.steps[0].with.script += '\ncore.setFailed("changed");';},

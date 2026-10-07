@@ -21,9 +21,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.18.0
+          node-version: 24.21.0
       - name: Prove protected-base Node runtime
-        run: node -e "if (process.version !== 'v24.18.0') throw Error('Node runtime mismatch')"
+        run: node -e "if (process.version !== 'v24.21.0') throw Error('Node runtime mismatch')"
       - id: classify
         name: Classify complete PR file inventory using protected source
         env:
@@ -45,13 +45,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.18.0
+          node-version: 24.21.0
       - name: Verify exact portable authority with current admin decision
         env:
           GH_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN || github.token }}
           DOCS_PORTABLE_R322_ACCEPTED_COMMENT_ID: ${{ vars.DOCS_PORTABLE_R322_ACCEPTED_COMMENT_ID }}
         run: |
-          node -e "if (process.version !== 'v24.18.0') throw Error('Node runtime mismatch')"
+          node -e "if (process.version !== 'v24.21.0') throw Error('Node runtime mismatch')"
           node scripts/read-docs-portable-authority-r322.mjs
   legacy_v8:
     name: retained-cohort-authority-evolution-v8

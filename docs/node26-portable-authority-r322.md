@@ -105,7 +105,12 @@ actual predecessor associations. Stable30's retained record, event 180, closure
 and publication receipt stay immutable. **No PR325-to-PR326 publication inverse
 is authorized.** Withdrawal uses a new append-only lifecycle event.
 
-Node24 remains the default `24.18.0`; physical source compatibility uses
+The historical default and copied legacy execution tuples remain `24.18.0`.
+Current Central default and the future G-owned route/portable runtime proofs
+use `24.21.0`; copied legacy V8/validation job steps remain unchanged. The
+historical verifier-workflow blob pin still identifies only its retained
+historical inverse context, not qualification of this successor workflow.
+Physical source compatibility uses
 `26.10.0` and private YAML `2.9.1`. Stable30 remains Node24 managed authority.
 Managed Node26 requires a new immutable qualification contract and explicit
 consumer adoption. Physical source execution with the supplied root cache is
@@ -113,3 +118,12 @@ not a clean strict Node26 root installation. Full repository results must retain
 existing clock/admission failures diagnosed separately in r739; this correction
 owns no admission-test repair. Actual restacking, hosted full CI, genuine PR325
 live verification, G activation and managed Node26 qualification remain deferred.
+
+The current G-only census is a separately reviewed 26-path source image at
+`17b48d5f177fab86d7d531c99d771631699b1a5d`; it is not either frozen 21/23-path
+historical census side. Historical TEST preimages now come from exact old Git
+blobs in an added inert projection and retain the original descriptor checks
+and forward/inverse fixtures. The separately named current e4 source record
+remains inert and unchanged; future G composition coordinates and installed
+executable closure remain null/pending until exact composition review. Neither
+runtime proof nor source checksum grants authority or activates G.
