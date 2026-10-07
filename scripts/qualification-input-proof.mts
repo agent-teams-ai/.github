@@ -1,3 +1,5 @@
+import { compareLeafInventories, type LeafInventory, type RejectionReason as LeafRejectionReason } from "@agent-teams/ci-input-proof";
+
 /**
  * Shared v1 mechanism for the future Runtime selector and central owner merge
  * guard. Adapters supply independent expectations, complete Git-leaf inventories
@@ -86,6 +88,23 @@ function shape(value: unknown, keys: readonly string[]): value is Record<string,
   return record(value) && Reflect.ownKeys(value).length === keys.length
     && keys.every(key => Object.getOwnPropertyDescriptor(value, key)?.value !== undefined);
 }
+function denseDataArray(value: unknown, limit: number): value is unknown[] {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype
+      || value.length > limit || Reflect.ownKeys(value).length !== value.length + 1) {return false;}
+  for (let index = 0; index < value.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !Object.hasOwn(descriptor, "value")) {return false;}
+  }
+  return true;
+}
+const leafReasons: Readonly<Record<LeafRejectionReason, RejectionReason>> = {
+  "malformed-inventory": "malformed-proof", "unsupported-version": "unsupported-version",
+  "unsupported-scheme": "malformed-proof", "scheme-mismatch": "malformed-proof",
+  "duplicate-input": "duplicate-input", "incomplete-inputs": "incomplete-inputs",
+  "invalid-content-permission": "invalid-content-permission",
+  "input-structure-changed": "input-structure-changed", "closed-input-changed": "closed-input-changed",
+  "exceeded-limit": "incomplete-inputs",
+};
 function digest(value: unknown, git = false): value is string {
   return typeof value === "string" && (git ? /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/u : /^[a-f0-9]{64}$/u).test(value)
     && !/^0+$/u.test(value);
@@ -125,21 +144,24 @@ function expectation(value: unknown): value is ComparisonExpectationV1 {
     && identity(value) && origin(value.qualifiedOrigin) && origin(value.currentOrigin)
     && typeof value.inputCount === "number" && Number.isSafeInteger(value.inputCount)
     && value.inputCount > 0 && value.inputCount <= MAX_INPUT_ENTRIES
-    && Array.isArray(value.inputs) && value.inputs.length === value.inputCount
-    && Array.isArray(value.permittedContentChanges) && value.permittedContentChanges.length <= value.inputCount
-    && Array.from(value.permittedContentChanges).every(inputPath);
+    && denseDataArray(value.inputs, MAX_INPUT_ENTRIES) && value.inputs.length === value.inputCount
+    && value.inputs.every(entry)
+    && denseDataArray(value.permittedContentChanges, value.inputCount)
+    && value.permittedContentChanges.every(inputPath);
 }
 
 function parseProof(value: unknown): QualificationInputProofV1 | RejectionReason {
   if (value === null || value === undefined) {return "missing-proof";}
-  if (record(value) && typeof value.version === "number" && Number.isSafeInteger(value.version) && value.version !== 1) {
+  const version: unknown = record(value) ? Object.getOwnPropertyDescriptor(value, "version")?.value : undefined;
+  if (typeof version === "number" && Number.isSafeInteger(version) && version !== 1) {
     return "unsupported-version";
   }
   if (!shape(value, [...identityKeys, "origin", "inputs"]) || !identity(value) || !origin(value.origin)
       || !Array.isArray(value.inputs)) {return "malformed-proof";}
   if (value.inputs.length === 0 || value.inputs.length > MAX_INPUT_ENTRIES) {return "incomplete-inputs";}
-  // Copy before inspecting: holes must reject, not be skipped by Array.every.
-  const inputs: unknown[] = Array.from(value.inputs);
+  // Reject executable descriptors/iterators before normalization can erase them.
+  if (!denseDataArray(value.inputs, MAX_INPUT_ENTRIES)) {return "malformed-proof";}
+  const inputs: unknown[] = value.inputs.map(input => input);
   if (!inputs.every(entry)) {return "malformed-proof";}
   if (new Set(inputs.map(input => input.path)).size !== inputs.length) {return "duplicate-input";}
   if (!inputs.some(input => input.membership === "closed")) {return "incomplete-inputs";}
@@ -163,7 +185,7 @@ export function compareQualificationInputs(
     if (!expectation(expected)) {return reject("malformed-expectation");}
     const wanted = { ...expected, fingerprints: { ...expected.fingerprints },
       qualifiedOrigin: { ...expected.qualifiedOrigin }, currentOrigin: { ...expected.currentOrigin },
-      inputs: Array.from(expected.inputs, input => ({ ...input })),
+      inputs: expected.inputs.map(input => ({ ...input })),
       permittedContentChanges: [...expected.permittedContentChanges] };
     const before = parseProof(qualified);
     if (typeof before === "string") {return reject(before);}
@@ -191,18 +213,18 @@ export function compareQualificationInputs(
         || [...allowed].some(path => baseline.get(path)?.membership !== "structural")) {
       return reject("invalid-content-permission");
     }
-    let contentChanged = false;
-    for (const proof of [before, after]) {
-      for (const input of proof.inputs) {
-        const previous = baseline.get(input.path);
-        if (!previous || previous.type !== input.type || previous.mode !== input.mode || previous.membership !== input.membership) {
-          return reject("input-structure-changed");
-        }
-        contentChanged ||= previous.content !== input.content
-          && (proof === before || input.membership === "closed" || !allowed.has(input.path));
-      }
+    const inventory: LeafInventory = { version: 1, digestScheme: "sha256", inputs: independent.inputs };
+    const relations = [
+      compareLeafInventories(inventory, { ...inventory, inputs: before.inputs }, []),
+      compareLeafInventories(inventory, { ...inventory, inputs: after.inputs }, wanted.permittedContentChanges),
+    ];
+    // Both inventories' structure precedes any content rejection in the v1 wrapper.
+    if (relations.some(result => result.status === "rejected" && result.reason === "input-structure-changed")) {
+      return reject("input-structure-changed");
     }
-    if (contentChanged) {return reject("closed-input-changed");}
+    for (const result of relations) {
+      if (result.status === "rejected") {return reject(leafReasons[result.reason]);}
+    }
     return { status: "omitted-unchanged-inputs" };
   } catch {
     return reject("malformed-proof");

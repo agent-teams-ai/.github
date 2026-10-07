@@ -262,3 +262,49 @@ test("structural rejection takes precedence over content independently of manife
   rejected({ ...current, inputs }, "input-structure-changed");
   rejected({ ...current, inputs: inputs.toReversed() }, "input-structure-changed");
 });
+
+// Failure: returning F's first content rejection hides a structural change in H.
+test("current structure takes precedence over qualified content drift", () => {
+  const qualified = proof(F, true);
+  const alteredF = { ...qualified, inputs: qualified.inputs.map((input, index) =>
+    index === 1 ? { ...input, content: changed } : input) };
+  rejected(withEntry({ path: "src/renamed.ts" }), "input-structure-changed", alteredF);
+});
+
+// Failure: Array.from or spread executes caller code and normalizes it into inert evidence.
+test("input accessors reject before executing in proofs and independent expectations", () => {
+  let calls = 0;
+  const current = proof(H, false);
+  const leaf = current.inputs[0];
+  Object.defineProperty(current.inputs, "0", { get() { calls += 1; return leaf; } });
+  rejected(current, "malformed-proof");
+  const context = expected();
+  const expectedLeaf = context.inputs[0];
+  Object.defineProperty(context.inputs, "0", { get() { calls += 1; return expectedLeaf; } });
+  rejected(proof(H, false), "malformed-expectation", proof(F, true), context);
+  assert.equal(calls, 0);
+});
+
+// Failure: caller iteration hides extra properties or supplies a fabricated complete inventory.
+test("custom input and permission iterators cannot normalize evidence", () => {
+  let calls = 0;
+  const current = proof(H, false);
+  const inert = [...current.inputs];
+  Object.defineProperty(current.inputs, Symbol.iterator, { value: function* () { calls += 1; yield* inert; } });
+  rejected(current, "malformed-proof");
+  const context = expected();
+  Object.defineProperty(context.permittedContentChanges, Symbol.iterator, {
+    value: function* () { calls += 1; yield "src/eligible.ts"; },
+  });
+  rejected(proof(H, false), "malformed-expectation", proof(F, true), context);
+  assert.equal(calls, 0);
+});
+
+// Failure: the unsupported-version fast path reads an accessor before checking shape.
+test("version accessors reject without executing caller code", () => {
+  let calls = 0;
+  const current = proof(H, false);
+  Object.defineProperty(current, "version", { get() { calls += 1; return 1; } });
+  rejected(current, "malformed-proof");
+  assert.equal(calls, 0);
+});
