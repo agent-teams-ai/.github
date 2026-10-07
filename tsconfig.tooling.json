@@ -16,6 +16,8 @@
   },
   "include": [
     "scripts/qualification-input-proof.mts",
-    "scripts/qualification-input-proof.test.mts"
+    "scripts/qualification-input-proof.test.mts",
+    "scripts/check-docs-verifier-authority.mts",
+    "scripts/check-docs-verifier-authority.test.mts"
   ]
 }
