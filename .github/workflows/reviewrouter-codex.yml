@@ -11,8 +11,41 @@ on:
 permissions: {}
 
 jobs:
+  node-compatibility:
+    name: node-compatibility (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["24.21.0", "26.10.0"]
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Prove selected Node runtime
+        env:
+          EXPECTED_NODE_VERSION: ${{ matrix.node-version }}
+        run: node -e "if (process.version !== 'v' + process.env.EXPECTED_NODE_VERSION) throw Error('Node runtime mismatch')"
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+      - name: Install isolated compatibility parser
+        run: pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true
+      - name: Check bounded Node compatibility contract
+        run: |
+          node scripts/check-node-compatibility.mts
+          node --test scripts/check-node-compatibility.test.mts
+
   codex-review:
     name: codex-review
+    needs: node-compatibility
     if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.type != 'Bot' && (github.event.pull_request.draft == false || vars.REVIEW_ROUTER_REVIEW_DRAFTS == 'true') }}
     concurrency:
       group: reviewrouter-codex-oauth-${{ github.repository_id }}-codex-rotating-1316243981
@@ -37,6 +70,7 @@ jobs:
 
   codex-refresh:
     name: codex-refresh
+    needs: node-compatibility
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     concurrency:

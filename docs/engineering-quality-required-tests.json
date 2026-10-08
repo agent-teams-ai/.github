@@ -56,6 +56,13 @@
         "installed mandatory runner rejects omitted and skipped identities with exact OS exceptions"
       ],
       "kind": "test"
+    },
+    {
+      "file": "scripts/node-compatibility-package-ownership.test.mts",
+      "names": [
+        "installed source boundary accepts the relocated passive parser and rejects ownership drift"
+      ],
+      "kind": "test"
     }
   ],
   "exceptions": []

@@ -13,6 +13,7 @@ release procedures remain in the owning repository.
 ## Shared Files
 
 - [Engineering Quality Standard](docs/engineering-quality-standard.md) - common Clean Architecture, SOLID, DDD and DRY practices; repository agent files link here explicitly.
+- [Node Runtime Compatibility](docs/node-runtime-compatibility.md) - the Node 24 production default and bounded Node 26 compatibility migration.
 
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.

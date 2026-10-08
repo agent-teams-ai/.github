@@ -7,12 +7,13 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=24.18.0 <25",
+    "node": ">=24.18.0 <25 || >=26.10.0 <27",
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
     "precheck": "node scripts/check-quality-scope.mjs",
-    "check": "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
+    "check": "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && pnpm node:compatibility:install && node scripts/check-node-compatibility.mts && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
+    "node:compatibility:install": "pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true",
     "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
     "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
     "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
@@ -24,7 +25,7 @@
     "quality:lint": "node scripts/run-quality-lint.mjs",
     "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
     "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
-    "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
+    "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs scripts/node-compatibility-package-ownership.test.mts",
     "quality:typecheck": "tsc --project tsconfig.tooling.json",
     "test:input-proof": "node --test scripts/qualification-input-proof.test.mts"
   },
