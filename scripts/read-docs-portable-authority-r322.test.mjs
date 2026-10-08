@@ -329,9 +329,25 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
     'verify-docs-consumer-gate', 'verify-docs-qualification-receipt',
   ].map((name) => `scripts/${name}.test.mjs`),
   'tools/feature-module-standard/check.test.mjs'].sort();
-  const trackedSources = gitBytes('ls-tree', '-r', '--name-only', '-z', 'HEAD').toString('utf8')
-    .split('\0').filter((p) => /\.(?:[cm]?[jt]s|[jt]sx)$/u.test(p)).sort();
+  assert.equal(sources.length, 86);
+  const executableSources = (paths) => paths.filter((p) => /\.(?:[cm]?[jt]s|[jt]sx)$/u.test(p)).sort();
+  function assertCompleteSourceInventory(paths) {
+    assert.deepEqual(executableSources(paths), sources, 'complete fixture executable source inventory changed');
+  }
+  const parserMetadata = [
+    'tools/node-compatibility-tooling/package.json',
+    'tools/node-compatibility-tooling/pnpm-lock.yaml',
+    'tools/node-compatibility-tooling/pnpm-workspace.yaml',
+  ];
+  function assertClosedParserInventory(paths) {
+    assert.deepEqual(paths.filter((p) => p.startsWith('tools/node-compatibility-tooling/')).sort(),
+      parserMetadata, 'complete parser subtree inventory changed');
+  }
+  const headPaths = gitBytes('ls-tree', '-r', '--name-only', '-z', 'HEAD').toString('utf8')
+    .split('\0').filter(Boolean);
+  const trackedSources = executableSources(headPaths);
   assert.deepEqual(trackedSources, sources, 'complete owned source composition changed');
+  assertClosedParserInventory(headPaths);
   const root = fileURLToPath(new URL('../', import.meta.url));
   const scratch = path.relative(root, path.resolve(tmpdir()));
   assert.ok(scratch === '..' || scratch.startsWith(`..${path.sep}`) || path.isAbsolute(scratch),
@@ -344,19 +360,59 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
     for (const p of [...sources, 'package.json', 'docs/engineering-quality-profile.json',
       'oxlint.json', 'tsconfig.tooling.json', 'docs/engineering-quality-required-tests.json',
       'docs/engineering-quality-source-policy.yaml', 'foundation.config.yaml', '.node-version',
-      '.github/workflows/ci.yml', 'tools/node-compatibility-tooling/package.json',
-      'tools/node-compatibility-tooling/pnpm-workspace.yaml', 'tools/node-compatibility-tooling/pnpm-lock.yaml']) {
+      '.github/workflows/ci.yml', ...parserMetadata]) {
       const target = path.join(fixture, p);
       await filesystem.mkdir(path.dirname(target), { recursive: true });
       await filesystem.copyFile(path.join(root, p), target);
     }
     const base = pathToFileURL(`${fixture}${path.sep}`);
     const adoption = await readQualityAdoption(base);
+    assertCompleteSourceInventory(adoption.trackedPaths);
     pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
     assert.deepEqual(pre, tooling);
+
+    // A copied non-lint test can disappear at a real Git exclusion boundary while lint still agrees.
+    const ignoredTest = 'scripts/read-docs-portable-authority-r322.test.mjs';
+    assert.deepEqual(await filesystem.readFile(path.join(fixture, ignoredTest)),
+      await filesystem.readFile(path.join(root, ignoredTest)));
+    const exclude = path.join(fixture, '.git/info/exclude');
+    const originalExclude = await filesystem.readFile(exclude);
+    await filesystem.writeFile(exclude, Buffer.concat([originalExclude, Buffer.from(`\n/${ignoredTest}\n`)]));
+    const omittedAdoption = await readQualityAdoption(base);
+    assert.ok(!omittedAdoption.trackedPaths.includes(ignoredTest), 'Git exclusion must actually omit the copied test');
+    assert.deepEqual(executableSources(omittedAdoption.trackedPaths), sources.filter((p) => p !== ignoredTest));
+    assert.deepEqual(deriveLintPaths(assertQualityAdoption(omittedAdoption), omittedAdoption.profile), tooling);
+    assert.throws(() => assertCompleteSourceInventory(omittedAdoption.trackedPaths),
+      /complete fixture executable source inventory changed/u);
+    await filesystem.writeFile(exclude, originalExclude);
+    assertCompleteSourceInventory((await readQualityAdoption(base)).trackedPaths);
+
     await filesystem.writeFile(path.join(fixture, 'TEST-unknown.mts'), 'export const unknown = true;\n');
     const unknownAdoption = await readQualityAdoption(base);
+    assert.ok(unknownAdoption.trackedPaths.includes('TEST-unknown.mts'));
+    assert.throws(() => assertCompleteSourceInventory(unknownAdoption.trackedPaths),
+      /complete fixture executable source inventory changed/u);
     assert.throws(() => assertQualityAdoption(unknownAdoption), /unclassified executable source/u);
+    await filesystem.rm(path.join(fixture, 'TEST-unknown.mts'));
+
+    // Test-only index/tree writes prove non-executable parser drift escapes the former source-only check.
+    const fixtureGit = (...args) => execFileSync('git', args, { cwd: fixture });
+    const treePaths = (tree) => fixtureGit('ls-tree', '-r', '--name-only', '-z', tree)
+      .toString('utf8').split('\0').filter(Boolean);
+    fixtureGit('add', '--', ...sources, ...parserMetadata);
+    const cleanTree = fixtureGit('write-tree').toString('utf8').trim();
+    assertCompleteSourceInventory(treePaths(cleanTree));
+    assertClosedParserInventory(treePaths(cleanTree));
+    const extraPath = 'tools/node-compatibility-tooling/extra.json';
+    const extraBytes = Buffer.from('{"TEST":"unexpected parser metadata"}\n');
+    await filesystem.writeFile(path.join(fixture, extraPath), extraBytes);
+    fixtureGit('add', '--', extraPath);
+    const extraTree = fixtureGit('write-tree').toString('utf8').trim();
+    const extraPaths = treePaths(extraTree);
+    assert.ok(extraPaths.includes(extraPath), 'extra JSON must be tracked in the actual Git tree');
+    assert.deepEqual(fixtureGit('show', `${extraTree}:${extraPath}`), extraBytes);
+    assert.deepEqual(executableSources(extraPaths), sources, 'former executable-only HEAD check still passes');
+    assert.throws(() => assertClosedParserInventory(extraPaths), /complete parser subtree inventory changed/u);
   } finally {
     await filesystem.rm(fixture, { recursive: true, force: true });
   }
