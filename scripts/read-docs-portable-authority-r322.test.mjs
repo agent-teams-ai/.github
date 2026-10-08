@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import * as filesystem from 'node:fs/promises';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { Script } from 'node:vm';
@@ -280,8 +282,84 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
 });
 
 test('current G census is independently pinned and agrees with actual Oxlint selection', async () => {
-  const adoption = await readQualityAdoption();
-  const pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
+  // Independent complete composition, rather than a scan of sibling tests' disposable source.
+  const tooling = [
+    'scripts/assert-node-runtime.mts', 'scripts/audit-commit-author-identity.mjs',
+    'scripts/check-cohort-append-only.mjs', 'scripts/check-cohort-emergency-append.mjs',
+    'scripts/check-community-files.mjs', 'scripts/check-docs-verifier-authority.mts',
+    'scripts/check-docs-verifier-authority.test.mts', 'scripts/check-node-compatibility.mts',
+    'scripts/check-node-compatibility.test.mts', 'scripts/check-quality-scope.mjs',
+    'scripts/check-reviewrouter-workflow.mjs', 'scripts/docs-cohort-policy.mjs',
+    'scripts/docs-legacy-admission-recovery.mjs', 'scripts/docs-platform-admission-recovery.mjs',
+    'scripts/docs-portable-authority-r322.mjs', 'scripts/governance-policy.mjs',
+    'scripts/merge-owner-pr.mjs', 'scripts/node-compatibility-package-ownership.test.mts',
+    'scripts/observe-org-repository-inventory.mjs', 'scripts/onboard-commit-author-identity.mjs',
+    'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts',
+    'scripts/read-docs-portable-authority-r322.mjs', 'scripts/run-quality-lint.mjs',
+    'scripts/validate-governance.mjs', 'scripts/verify-docs-admission-change.mjs',
+    'scripts/verify-docs-cohort-evidence.mjs', 'scripts/verify-docs-cohort-v2-receipt.mjs',
+    'scripts/verify-docs-consumer-gate.mjs', 'scripts/verify-docs-platform-recovery-installation-r317.mjs',
+    'scripts/verify-docs-qualification-receipt.mjs', 'tools/feature-module-standard/check.mjs',
+  ].sort();
+  const sources = [...tooling, ...[
+    'check-community-files', 'check-quality-scope', 'commit-author-identity',
+    'docs-admission-authority-evolution-v1', 'docs-admission-change',
+    'docs-admission-clock-repair-v1', 'docs-admission-inventory-cutover-v1',
+    'docs-admission-recovery', 'docs-admission-workflow',
+    'docs-central-pr224-inverse-v1', 'docs-central-pr224-transition-v1',
+    'docs-central-recovery-transition', 'docs-cohort-authority-evolution-v2',
+    'docs-cohort-authority-evolution-v3', 'docs-cohort-authority-evolution-v4',
+    'docs-cohort-authority-evolution-v5', 'docs-cohort-authority-evolution-v6',
+    'docs-cohort-authority-evolution-v7', 'docs-cohort-authority-evolution-v8',
+    'docs-cohort-policy', 'docs-cohort-v2', 'docs-consumer-receipt-cutover-v1',
+    'docs-governance-authority-evolution-v11', 'docs-governance-authority-evolution-v12',
+    'docs-governance-authority-evolution-v13', 'docs-isolated-qualification-cutover-v1',
+    'docs-legacy-admission-recovery', 'docs-node24-launcher-v1',
+    'docs-platform-admission-recovery', 'docs-platform-exception-review-v1',
+    'docs-platform-recovery-installation-r317', 'docs-platform-stable31-pending-transition',
+    'docs-portable-authority-r322', 'docs-qualification-authority-evolution-v10',
+    'docs-qualification-authority-evolution-v11', 'docs-qualification-authority-evolution-v12',
+    'docs-qualification-authority-evolution-v2', 'docs-qualification-authority-evolution-v3',
+    'docs-qualification-authority-evolution-v4', 'docs-qualification-authority-evolution-v5',
+    'docs-qualification-authority-evolution-v6', 'docs-qualification-authority-evolution-v7',
+    'docs-qualification-authority-evolution-v8', 'docs-qualification-authority-evolution-v9',
+    'foundation-quality-1.7.2-transition-v1', 'governance-policy', 'merge-owner-pr',
+    'observe-org-repository-inventory', 'onboard-commit-author-identity',
+    'quality-authority-evolution-v1', 'read-docs-portable-authority-r322',
+    'verify-docs-consumer-gate', 'verify-docs-qualification-receipt',
+  ].map((name) => `scripts/${name}.test.mjs`),
+  'tools/feature-module-standard/check.test.mjs'].sort();
+  const trackedSources = gitBytes('ls-tree', '-r', '--name-only', '-z', 'HEAD').toString('utf8')
+    .split('\0').filter((p) => /\.(?:[cm]?[jt]s|[jt]sx)$/u.test(p)).sort();
+  assert.deepEqual(trackedSources, sources, 'complete owned source composition changed');
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const scratch = path.relative(root, path.resolve(tmpdir()));
+  assert.ok(scratch === '..' || scratch.startsWith(`..${path.sep}`) || path.isAbsolute(scratch),
+    'TEST census TMPDIR must be outside the checkout');
+  const fixture = await filesystem.mkdtemp(path.join(tmpdir(), 'TEST-portable-r322-census-'));
+  let pre;
+  try {
+    // No package execution or dependency resolution occurs in this separate Git root.
+    execFileSync('git', ['init', '--quiet'], { cwd: fixture });
+    for (const p of [...sources, 'package.json', 'docs/engineering-quality-profile.json',
+      'oxlint.json', 'tsconfig.tooling.json', 'docs/engineering-quality-required-tests.json',
+      'docs/engineering-quality-source-policy.yaml', 'foundation.config.yaml', '.node-version',
+      '.github/workflows/ci.yml', 'tools/node-compatibility-tooling/package.json',
+      'tools/node-compatibility-tooling/pnpm-workspace.yaml', 'tools/node-compatibility-tooling/pnpm-lock.yaml']) {
+      const target = path.join(fixture, p);
+      await filesystem.mkdir(path.dirname(target), { recursive: true });
+      await filesystem.copyFile(path.join(root, p), target);
+    }
+    const base = pathToFileURL(`${fixture}${path.sep}`);
+    const adoption = await readQualityAdoption(base);
+    pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
+    assert.deepEqual(pre, tooling);
+    await filesystem.writeFile(path.join(fixture, 'TEST-unknown.mts'), 'export const unknown = true;\n');
+    const unknownAdoption = await readQualityAdoption(base);
+    assert.throws(() => assertQualityAdoption(unknownAdoption), /unclassified executable source/u);
+  } finally {
+    await filesystem.rm(fixture, { recursive: true, force: true });
+  }
   const censusRow = record.manifest.find((r) => r.path === 'scripts/check-quality-scope.test.mjs');
   const live = Buffer.from(read(censusRow.path));
   // Reconciled current source composition is distinct from either historical descriptor.
@@ -358,8 +436,9 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
   }
   assert.deepEqual(await probe([...paths, "scripts/check-quality-scope.test.mjs"]), { failures: [], outputs: [['mode', 'noop']] });
 });
-// Fixed accepted base, actual composed Git head: no moving branch or synthesized positive leaves.
+// Fixed accepted base and independently pinned G-only head; neither positive tree is synthesized.
 const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
+const acceptedGHead = '66d6d3d2c2643edac414ded48c0ee0586774dd07';
 const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
 const gitBlob = (bytes) => createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 function completeGitTree(revision) {
@@ -369,8 +448,8 @@ function completeGitTree(revision) {
       return { path, mode, type, sha };
     }) };
 }
-function currentGAuthority() {
-  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree('HEAD');
+function currentGAuthority(head) {
+  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree(head);
   const before = new Map(baseTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
   const after = new Map(headTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
   const files = [...new Set([...before.keys(), ...after.keys()])].sort().flatMap((filename) => {
@@ -379,7 +458,7 @@ function currentGAuthority() {
       [{ filename, status: !old ? 'added' : !next ? 'removed' : 'modified', sha: (next ?? old).sha }];
   });
   const headData = Object.fromEntries(['package.json', 'pnpm-lock.yaml'].map((p) => [p, {
-    encoding: 'base64', content: gitBytes('show', `HEAD:${p}`).toString('base64'), sha: after.get(p).sha,
+    encoding: 'base64', content: gitBytes('show', `${head}:${p}`).toString('base64'), sha: after.get(p).sha,
   }]));
   return { changedFiles: files.length, files, baseTree, headTree, headData };
 }
@@ -406,8 +485,8 @@ function withLeaf(tree, path, bytes) {
   }
   assemble(''); tree.tree = [...leaves, ...directories]; return sha;
 }
-test('actual current G composition is noop under the accepted base verifier and rejects installation/authority drift', () => {
-  const positive = currentGAuthority();
+test('accepted G-only composition is noop while current HEAD and installation/authority drift reject', () => {
+  const positive = currentGAuthority(acceptedGHead);
   const check = (evidence) => assertVerifierAuthority(evidence,
     gitBytes('show', `${acceptedMain}:package.json`), gitBytes('show', `${acceptedMain}:pnpm-lock.yaml`));
   const expected = [...G.slice(0, 7), 'scripts/check-quality-scope.test.mjs',
@@ -417,6 +496,7 @@ test('actual current G composition is noop under the accepted base verifier and 
   assert.equal(positive.changedFiles, 15);
   assert.deepEqual(positive.files.map((f) => f.filename), expected);
   assert.equal(check(positive), 'noop');
+  assert.throws(() => check(currentGAuthority('HEAD')), /Protected authority path/u);
   for (const basename of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
     const denied = structuredClone(positive), filename = `scripts/fixtures/docs-portable-authority-r322/TEST-install/${basename}`;
     const sha = withLeaf(denied.headTree, filename, Buffer.from('untrusted installation authority\n'));
@@ -424,7 +504,7 @@ test('actual current G composition is noop under the accepted base verifier and 
     assert.throws(() => check(denied), /Protected authority path/u, basename);
   }
   const denied = structuredClone(positive), filename = 'scripts/check-docs-verifier-authority.mts';
-  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `HEAD:${filename}`), Buffer.from('\n// TEST drift\n')]));
+  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `${acceptedGHead}:${filename}`), Buffer.from('\n// TEST drift\n')]));
   denied.files.push({ filename, status: 'modified', sha }); denied.changedFiles = denied.files.length;
   assert.throws(() => check(denied), /Protected authority path/u);
   const omitted = structuredClone(positive); omitted.files.pop();
