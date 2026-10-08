@@ -420,6 +420,12 @@ test("production closure against real Git TEST trees", async t => {
     ["tools/node-compatibility-tooling/pnpm-workspace.yaml", "packages:\n  - .\n"],
     ["tools/node-compatibility-tooling/pnpm-lock.yaml", "lockfileVersion: '9.0'\nimporters: {}\n"],
   ]) fixed.push({ path, mode: "100644", type: "blob", sha: blob(bytes) });
+  // Historical qualification remains bound to immutable Git objects, independently
+  // of the synthetic closure payloads below and the moving current source.
+  for (const item of expectedTuple) {
+    const bytes = execFileSync("git", ["cat-file", "blob", item.new_blob], { maxBuffer: 1024 * 1024 });
+    assert.equal(blob(bytes), item.new_blob, "The historical fixture matches its exact approved blob");
+  }
   const sides = {};
   for (const side of ["old", "new"]) {
     sides[side] = [];

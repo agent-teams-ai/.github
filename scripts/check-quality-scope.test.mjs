@@ -27,8 +27,12 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 });
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted), paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 28);
+  assert.equal(paths.length, 32);
   for (const file of ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/assert-node-runtime.mts", "scripts/check-node-compatibility.mts", "scripts/check-node-compatibility.test.mts", "scripts/node-compatibility-package-ownership.test.mts"]) { assert.ok(paths.includes(file)); }
+  assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
+  assert.ok(paths.includes("scripts/read-docs-portable-authority-r322.mjs"));
+  assert.ok(paths.includes("scripts/check-docs-verifier-authority.mts"));
+  assert.ok(paths.includes("scripts/check-docs-verifier-authority.test.mts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 const mutations = {

@@ -450,13 +450,6 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
   assert.match(appendOnlyWorkflow,
     /outputs\.mode == 'full'[\s\S]*DOCS_COHORT_PNPM_V1_BIN[\s\S]*install/u);
   assert.doesNotMatch(appendOnlyWorkflow, /pull_request\.head\.repo/u);
-  const authorityClassifier = appendOnlyWorkflow.indexOf("const changedAuthority");
-  const unrelatedNoop = appendOnlyWorkflow.indexOf("if (!changesRegistry)");
-  assert.ok(authorityClassifier >= 0 && authorityClassifier < unrelatedNoop,
-    "authority-only changes must fail before unrelated PRs take the no-op path");
-  assert.match(appendOnlyWorkflow, /\[filename, prior\][\s\S]*authorityPaths\.has/u);
-  assert.match(appendOnlyWorkflow, /\.pnpmfile\.cjs/u);
-  assert.match(appendOnlyWorkflow, /authorityPaths\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
   assert.match(appendOnlyWorkflow,
     /"\$DOCS_COHORT_PNPM_V1_BIN" install --frozen-lockfile --ignore-scripts\s+--ignore-pnpmfile/u);
   assert.doesNotMatch(appendOnlyWorkflow,
@@ -489,10 +482,6 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
     /DOCS_COHORT_PNPM_V1_BIN: \$\{\{ steps\.pnpm-v1\.outputs\.bin_dest \}\}\/pnpm/u);
   assert.match(liveEvidenceStep,
     /DOCS_COHORT_PNPM_V2_BIN: \$\{\{ steps\.pnpm-v2\.outputs\.bin_dest \}\}\/pnpm/u);
-  assert.match(appendOnlyWorkflow, /"package\.json"/u);
-  assert.match(appendOnlyWorkflow, /"pnpm-lock\.yaml"/u);
-  assert.match(appendOnlyWorkflow, /"governance\/docs-qualified-cohorts\.schema\.json"/u);
-  assert.doesNotMatch(appendOnlyWorkflow, /authorityPaths[\s\S]{0,500}"README\.md"/u);
 });
 
 test("rejects v2 pnpm setup before trusted setup-node cache resolution", () => {
@@ -537,6 +526,8 @@ test("keeps admission credentials out of PR-head execution", () => {
   assert.match(admissionWorkflow, /"governance\/docs-protocol-policy-v2\.schema\.json"/u);
   assert.match(admissionWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(admissionWorkflow, /hardAuthority\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
+  assert.match(admissionWorkflow, /previous_filename/u);
+  assert.match(admissionWorkflow, /\[filename, prior\]|allPaths\(file\)/u);
   const admissionScope = admissionWorkflow.indexOf("const changesAdmission");
   const unrelatedNoop = admissionWorkflow.indexOf("if (!changesAdmission)");
   const authorityClassifier = admissionWorkflow.indexOf("const authority");
@@ -558,14 +549,60 @@ test("materializes a first PUBLISHED Cohort closure from the exact PR head", () 
     /Verify live evidence[\s\S]*DOCS_COHORT_EVIDENCE_REF: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/u);
 });
 
-test("rejects a renamed predecessor package-manager hook before either trusted install", () => {
-  for (const trustedWorkflow of [appendOnlyWorkflow, admissionWorkflow]) {
-    assert.match(trustedWorkflow, /previous_filename/u);
-    assert.match(trustedWorkflow, /\[filename, prior\]|allPaths\(file\)/u);
-    assert.match(trustedWorkflow, /isInstallAuthority\(entry\)/u);
-    assert.match(trustedWorkflow, /\.pnpmfile\.cjs/u);
+async function materializeCohort(files, base = registry(["PUBLISHED_UNQUALIFIED"]),
+  head = registry(["PUBLISHED_UNQUALIFIED", "VERIFIED"]), workflow = appendOnlyWorkflow) {
+  const source = YAML.parse(workflow).jobs["trusted-validation"].steps[0].with.script;
+  const execute = new (Object.getPrototypeOf(async function () {}).constructor)("context", "github", "core", "require", "process", source);
+  const outputs = new Map(), writes = new Map(), failures = []; let reads = 0;
+  const pull = { number: 1, changed_files: files.length, base: { ref: "main", sha: "a".repeat(40) }, head: { sha: "b".repeat(40) } };
+  const github = { paginate: async () => files, rest: { pulls: { listFiles: () => {} }, repos: {
+    get: async () => ({ data: { default_branch: "main" } }),
+    getBranch: async () => ({ data: { commit: { sha: pull.base.sha } } }),
+    getContent: async ({ path, ref }) => {
+      assert.equal(path, "governance/docs-qualified-cohorts.json"); reads++;
+      assert.ok([pull.base.sha, pull.head.sha].includes(ref));
+      return { data: { type: "file", encoding: "base64", content: Buffer.from(JSON.stringify(ref === pull.base.sha ? base : head)).toString("base64") } };
+    },
+  } } };
+  await execute({ repo: { owner: "agent-teams-ai", repo: ".github" }, payload: { pull_request: pull } }, github,
+    { setFailed: message => failures.push(message), setOutput: (key, value) => outputs.set(key, value) },
+    name => name === "node:path" ? { join } : { writeFile: async (path, bytes, options) => {
+      assert.equal(options.flag, "wx"); writes.set(path, bytes);
+    } }, { env: { RUNNER_TEMP: "/TEST-runner" } });
+  return { outputs, writes, failures, reads };
+}
+
+test("Cohort workflow no-ops ordinary dependency PRs and rejects mixed dependencies or renamed hooks only in data mode", async () => {
+  const registryFile = { filename: "governance/docs-qualified-cohorts.json", status: "modified" };
+  for (const file of [{ filename: "package.json", status: "modified" }, { filename: "pnpm-lock.yaml", status: "modified" },
+    { filename: "scripts/ordinary-TEST.mjs", status: "added" },
+    { filename: "governance/evidence/docs-cohorts/TEST.md", previous_filename: "scripts/.pnpmfile.cjs", status: "renamed" }]) {
+    const ordinary = await materializeCohort([file]); assert.deepEqual(ordinary.failures, []);
+    assert.equal(ordinary.outputs.get("mode"), "noop"); assert.equal(ordinary.reads, 0); assert.equal(ordinary.writes.size, 0);
+    const mixed = await materializeCohort([registryFile, file]); assert.equal(mixed.failures.length, 1);
+    assert.equal(mixed.writes.size, 0); assert.equal(mixed.reads, 0);
   }
 });
+
+test("Cohort data mode retains full validation and the dependency-free negative emergency route", async () => {
+  const files = [{ filename: "governance/docs-qualified-cohorts.json", status: "modified" }];
+  const full = await materializeCohort(files); assert.deepEqual(full.failures, []); assert.equal(full.outputs.get("mode"), "full");
+  const base = registry(["PUBLISHED_UNQUALIFIED", "VERIFIED", "COOLDOWN", "QUALIFIED", "CANARY", "RECOMMENDED"]);
+  const head = structuredClone(base);
+  head.events.push({ ...head.events.at(-1), state: "SUSPENDED" });
+  const emergency = await materializeCohort(files, base, head);
+  assert.deepEqual(emergency.failures, []); assert.equal(emergency.outputs.get("mode"), "emergency");
+  for (const result of [full, emergency]) { assert.equal(result.reads, 2); assert.equal(result.writes.size, 3); }
+});
+
+if (process.env.S4_OLD_COHORT) {
+  test("accepted dependency-only no-op fails against historical trusted-validation", async () => {
+    const old = await readFile(process.env.S4_OLD_COHORT, "utf8");
+    const result = await materializeCohort([{ filename: "package.json", status: "modified" }], undefined, undefined, old);
+    assert.ok(result.failures.some(message => message.includes("Authority files require")));
+  });
+}
+
 
 test("validates a negative emergency append without npm or third-party modules", () => {
   const previous = registry([

@@ -17,6 +17,8 @@ const TYPED_FILES = [
   "scripts/assert-node-runtime.mts",
   "scripts/check-node-compatibility.mts",
   "scripts/check-node-compatibility.test.mts",
+  "scripts/check-docs-verifier-authority.mts",
+  "scripts/check-docs-verifier-authority.test.mts",
 ];
 const EXPECTED_SCRIPTS = {
   precheck: "node scripts/check-quality-scope.mjs",

@@ -1,222 +1,189 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { execFile, execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
+import { parse, stringify } from "yaml";
+import { assertVerifierAuthority } from "./check-docs-verifier-authority.mts";
 
-const workflowPath = ".github/workflows/docs-cohort-authority-evolution-v8.yml";
-const testPath = "scripts/docs-cohort-authority-evolution-v8.test.mjs";
-const workflow = await readFile(workflowPath, "utf8");
-const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
-assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const workflow = parse(await readFile(new URL("../.github/workflows/docs-cohort-authority-evolution-v8.yml", import.meta.url), "utf8"));
+const steps = workflow.jobs["trusted-cohort-authority-evolution-v8"].steps;
+const source = steps.find(step => step.with?.script)?.with.script;
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-const execute = new AsyncFunction("context", "github", "core", source);
-const repository = "agent-teams-ai/.github";
-const baseSha = "a".repeat(40);
-const forward = [
-  ["scripts/docs-cohort-policy.test.mjs", "7543006ded770545dc1525e0aa199bdd52aaffe2"],
-  ["scripts/docs-admission-change.test.mjs", "fcf776fe84f2e36b47e14971a41d3906739f913b"],
-  ["scripts/verify-docs-cohort-evidence.mjs", "fba985a230c710aba355b15a0360f464ad961ff0"],
-].map(([filename, sha]) => ({ filename, status: "modified", sha }));
-const rollback = [
-  ["scripts/docs-cohort-policy.test.mjs", "46820a7a94cd59403e5b3ae29429e72ec7c64373"],
-  ["scripts/docs-admission-change.test.mjs", "2269c2fb4cf386d1af4d122fafc6e369c519137d"],
-  ["scripts/verify-docs-cohort-evidence.mjs", "3b58fde6e5ec79241d60439785f2f94764b0fd99"],
-].map(([filename, sha]) => ({ filename, status: "modified", sha }));
-const headSha = "c".repeat(40);
+const execute = new AsyncFunction("context", "github", "core", "require", "process", source);
+const baseSha = "a".repeat(40), headSha = "b".repeat(40), treeSha = "c".repeat(40), headTreeSha = "d".repeat(40);
+const manifest = await readFile("package.json"), lock = await readFile("pnpm-lock.yaml");
+const blob = bytes => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 
-async function classify(options = {}) {
-  const files = options.files ?? forward;
-  const failures = [];
-  const outputs = new Map();
-  const context = { repo: { owner: "agent-teams-ai", repo: ".github" }, payload: {
-    pull_request: {
-      number: 303,
-      changed_files: Object.hasOwn(options, "changedFiles") ? options.changedFiles : files.length,
-      head: { sha: options.headSha ?? headSha, repo: options.missingHeadRepo ? null : { full_name: options.headRepo ?? repository } },
-      base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
+async function classify(mutate = () => {}, script = execute) {
+  const tree = execFileSync("git", ["ls-tree", "-r", "-t", "HEAD"], { encoding: "utf8" }).trim().split("\n").map(line => {
+    const [header, filePath] = line.split("\t"), [mode, type, sha] = header.split(" ");
+    return { path: filePath, mode, type, sha };
+  });
+  for (const filePath of ["scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts"]) {
+    if (!tree.some(entry => entry.path === filePath)) tree.push({ path: filePath, sha: treeSha, mode: "100644", type: "blob" });
+  }
+  const state = { pull: { number: 303, changed_files: 1, state: "open", head: { sha: headSha, repo: { full_name: "agent-teams-ai/.github" } }, base: { ref: "main", sha: baseSha } },
+    branch: baseSha, defaultBranch: "main", files: [], baseTree: { sha: treeSha, truncated: false, tree },
+    headTree: { sha: headTreeSha, truncated: false, tree: structuredClone(tree) }, data: {}, contentCalls: 0, apiError: "" };
+  const nextManifest = JSON.parse(manifest), nextLock = parse(lock.toString());
+  nextManifest.devDependencies["s4-test-only"] = "1.2.3";
+  nextLock.importers["."].devDependencies["s4-test-only"] = { specifier: "1.2.3", version: "1.2.3" };
+  nextLock.packages["s4-test-only@1.2.3"] = { resolution: { integrity: `sha512-${Buffer.alloc(64, 7).toString("base64")}` } };
+  nextLock.snapshots["s4-test-only@1.2.3"] = {};
+  for (const [filePath, bytes] of [["package.json", Buffer.from(JSON.stringify(nextManifest))], ["pnpm-lock.yaml", Buffer.from(stringify(nextLock))]]) {
+    const entry = state.headTree.tree.find(item => item.path === filePath); entry.sha = blob(bytes); entry.size = bytes.length;
+    state.data[entry.sha] = { sha: entry.sha, size: bytes.length, encoding: "base64", content: bytes.toString("base64") };
+    state.files.push({ filename: filePath, status: "modified", sha: entry.sha });
+  }
+  state.pull.changed_files = state.files.length;
+  state.live = structuredClone(state.pull);
+  mutate(state);
+  const failures = [], outputs = new Map(), writes = new Map();
+  const github = { paginate: async () => { if (state.apiError === "paginate") throw new Error("API unavailable"); return state.files; }, rest: {
+    pulls: { listFiles: () => {}, get: async () => ({ data: state.live }) },
+    repos: { get: async () => ({ data: { default_branch: state.defaultBranch } }), getBranch: async () => ({ data: { commit: { sha: state.branch } } }) },
+    git: { getCommit: async ({ commit_sha }) => {
+      assert.ok([baseSha, headSha].includes(commit_sha));
+      return { data: { sha: commit_sha, tree: { sha: commit_sha === baseSha ? treeSha : headTreeSha } } };
     },
-  } };
-  const github = {
-    paginate: async (method, args) => {
-      assert.equal(method, github.rest.pulls.listFiles);
-      assert.deepEqual(args, { owner: "agent-teams-ai", repo: ".github", pull_number: 303, per_page: 100 });
-      if (options.apiError === "paginate") throw new Error("API unavailable");
-      return Object.hasOwn(options, "paginated") ? options.paginated : files;
-    },
-    rest: {
-      git: { getTree: async (args) => {
-        if (options.apiError === "getTree") throw new Error("API unavailable");
-        const side = args.tree_sha === baseSha ? "base" : "head";
-        assert.deepEqual(args, { owner: "agent-teams-ai", repo: ".github", tree_sha: side === "base" ? baseSha : headSha, recursive: "true" });
-        const tuple = side === "head" ? files : files === rollback ? forward : rollback;
-        const tree = tuple.map(({ filename: path, sha }) => ({ path, sha, type: "blob", mode: "100644" }));
-        return { data: Object.hasOwn(options, `${side}Tree`) ? options[`${side}Tree`] : { truncated: false, tree } };
-      } },
-      pulls: { listFiles: () => undefined },
-      repos: {
-        get: async () => {
-          if (options.apiError === "get") throw new Error("API unavailable");
-          return { data: { default_branch: Object.hasOwn(options, "defaultBranch") ? options.defaultBranch : "main" } };
-        },
-        getBranch: async (args) => {
-          assert.deepEqual(args, { owner: "agent-teams-ai", repo: ".github", branch: "main" });
-          if (options.apiError === "getBranch") throw new Error("API unavailable");
-          return { data: { commit: { sha: options.branchSha ?? baseSha } } };
-        },
+      getTree: async ({ tree_sha }) => {
+        if (state.apiError === "getTree") throw new Error("API unavailable");
+        assert.ok([treeSha, headTreeSha].includes(tree_sha));
+        return { data: tree_sha === treeSha ? state.baseTree : state.headTree };
       },
-    },
-  };
-  const core = {
-    setFailed: (message) => failures.push(message),
-    setOutput: (name, value) => outputs.set(name, value),
-  };
-  if (options.missingHead) delete context.payload.pull_request.head;
-  await execute(context, github, core);
-  return { failures, outputs };
+      getBlob: async ({ file_sha }) => { state.contentCalls++; return { data: state.data[file_sha] }; } },
+  } };
+  const requireFixture = name => name === "node:path" ? path : { writeFile: async (target, bytes, options) => {
+    assert.equal(options.flag, "wx"); assert.equal(writes.has(target), false); writes.set(target, bytes);
+  } };
+  try {
+    await script({ repo: { owner: "agent-teams-ai", repo: ".github" }, payload: { pull_request: state.pull } }, github,
+      { setFailed: message => failures.push(message), setOutput: (key, value) => outputs.set(key, value) }, requireFixture, { env: { RUNNER_TEMP: "/TEST-runner" } });
+    if (outputs.has("evidence-path")) state.mode = assertVerifierAuthority(JSON.parse(writes.get(outputs.get("evidence-path"))), manifest, lock);
+  } catch (error) { failures.push(error.message); }
+  return { ...state, failures, outputs, writes };
 }
 
-test("accepts exactly the complete forward and rollback Cohort evidence verifier tuples", async () => {
-  for (const files of [forward, rollback]) {
-    const accepted = await classify({ files });
-    assert.deepEqual(accepted.failures, []);
-    assert.equal(accepted.outputs.get("mode"), "authority");
-  }
+async function classifyCohort(mutate = () => {}) {
+  return classify(state => {
+    state.headTree.tree = structuredClone(state.baseTree.tree);
+    const entry = state.headTree.tree.find(item => item.path === "governance/docs-qualified-cohorts.json");
+    entry.sha = "e".repeat(40);
+    state.files = [{ filename: entry.path, status: "modified", sha: entry.sha }];
+    mutate(state);
+    state.pull.changed_files = state.files.length;
+    state.live = structuredClone(state.pull);
+  });
+}
+
+test("v8 Cohort noop rejects an omitted evidence blob replaced by a directory with a declared child", async () => {
+  const result = await classifyCohort(state => {
+    const parent = "governance/evidence/docs-cohorts/shortcut-test.md", child = `${parent}/receipt.md`;
+    state.baseTree.tree.push({ path: parent, mode: "100644", type: "blob", sha: "f".repeat(40) });
+    state.headTree.tree.push({ path: parent, mode: "040000", type: "tree", sha: "e".repeat(40) },
+      { path: child, mode: "100644", type: "blob", sha: "f".repeat(40) });
+    state.files.push({ filename: child, status: "added", sha: "f".repeat(40) });
+  });
+  assert.deepEqual(result.failures, ["Unlisted change outside Cohort data."]);
+  assert.equal(result.outputs.has("mode"), false);
+  assert.equal(result.contentCalls, 0); assert.equal(result.writes.size, 0);
 });
 
-test("pins each direction to one complete exact Git blob tuple", () => {
-  assert.deepEqual(forward.map(({ filename }) => filename), rollback.map(({ filename }) => filename));
-  for (const tuple of [forward, rollback]) {
-    assert.equal(new Set(tuple.map(({ filename }) => filename)).size, tuple.length);
-    assert.equal(new Set(tuple.map(({ sha }) => sha)).size, tuple.length);
-    for (const { filename, status, sha } of tuple) {
-      assert.match(sha, /^[0-9a-f]{40}$/u, filename);
-      assert.equal(status, "modified");
-      assert.notEqual(filename, workflowPath);
-      assert.notEqual(filename, testPath);
-    }
-  }
-});
-
-test("rejects partial, mixed, renamed, extra, wrong-identity, and incomplete tuples", async () => {
-  for (const candidate of [
-    { files: forward.slice(1) },
-    { files: rollback.slice(0, -1) },
-    { files: forward.map((file, index) => index === 0 ? rollback[0] : file) },
-    { files: rollback.map((file, index) => index === 1 ? forward[1] : file) },
-    { files: forward.map((file, index) => index === 0 ? { ...file, sha: "f".repeat(40) } : file) },
-    { files: forward.map((file, index) => index === 0 ? { ...file, status: "added" } : file) },
-    { files: forward.map((file, index) => index === 1 ? { ...file, previous_filename: "OLD.mjs" } : file) },
-    { files: [...forward, { filename: "scripts/extra.mjs", status: "added", sha: "f".repeat(40) }] },
-    { files: forward, changedFiles: 0 },
-    { files: forward, paginated: forward.slice(0, -1) },
-    { files: forward, paginated: [...forward, forward[0]] },
-  ]) {
-    assert.notEqual((await classify(candidate)).failures.length, 0, JSON.stringify(candidate));
-  }
-});
-
-test("rejects successor workflow and test self-modification", async () => {
-  for (const filename of [workflowPath, testPath]) {
-    const files = [...forward, { filename, status: "modified", sha: "f".repeat(40) }];
-    assert.notEqual((await classify({ files })).failures.length, 0, filename);
-  }
-});
-
-test("rejects forks, non-default bases, and stale heads", async () => {
-  for (const candidate of [
-    { headRepo: "attacker/fork" },
-    { missingHeadRepo: true },
-    { baseRef: "feature" },
-    { branchSha: "b".repeat(40) },
-  ]) {
-    assert.notEqual((await classify(candidate)).failures.length, 0, JSON.stringify(candidate));
-  }
-});
-
-test("treats non-authority data changes as noop", async () => {
-  const result = await classify({ files: [{
-    filename: "governance/docs-qualified-cohorts.json",
-    status: "modified",
-    sha: "e".repeat(40),
-  }] });
-  assert.deepEqual(result.failures, []);
-  assert.equal(result.outputs.get("mode"), "noop");
-});
-
-test("is base-owned, read-only, and never executes PR-head code", () => {
-  assert.match(workflow, /pull_request_target:/u);
-  assert.match(workflow, /actions\/github-script@[0-9a-f]{40}/u);
-  assert.match(workflow, /permissions:\n  contents: read\n  pull-requests: read\n\njobs:/u);
-  assert.equal((workflow.match(/uses:/gu) ?? []).length, 1);
-  assert.match(workflow, /actions\/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd/u);
-  assert.doesNotMatch(workflow, /: write|permissions: write-all/u);
-  assert.match(workflow, /name: trusted-cohort-authority-evolution-v8/u);
-  assert.match(workflow, /pull-requests: read/u);
-  assert.doesNotMatch(workflow, /actions\/checkout|\brun:|secrets\.|pull_request\.head\.sha|getContent/u);
-});
-
-test("rejects malformed counts and incomplete or malformed pagination before noop", async () => {
-  for (const changedFiles of [undefined, null, "3", -1, 0, 1.5, NaN, Infinity, 3001, Number.MAX_SAFE_INTEGER + 1]) {
-    assert.notEqual((await classify({ changedFiles })).failures.length, 0);
-  }
-  for (const paginated of [null, {}, [null], [{ filename: 1 }], [forward[0], forward[0]]]) {
-    assert.notEqual((await classify({ paginated })).failures.length, 0);
-  }
-  const files = Array.from({ length: 3000 }, (_, i) => ({ filename: `docs/data-${i}.md`, status: "modified", sha: baseSha }));
-  assert.equal((await classify({ files })).outputs.get("mode"), "noop");
-  assert.notEqual((await classify({ files, paginated: files.slice(0, 100) })).failures.length, 0);
-});
-
-test("rejects new authority and install files, including renames out of authority", async () => {
-  for (const filename of [workflowPath, testPath, ".github/actions/new/action.yml", "tools/new.mjs",
-    "scripts/new.mjs", "governance/new.schema.json", "nested/package.json", "nested/.npmrc",
-    ".pnpmfile.cjs", ".node-version", "pnpm-lock.yaml", "pnpm-workspace.yaml", "renovate.json"]) {
-    for (const file of [{ filename, status: "added", sha: baseSha },
-      { filename: "docs/data.md", previous_filename: filename, status: "renamed", sha: baseSha }]) {
-      const result = await classify({ files: [file] });
-      assert.notEqual(result.failures.length, 0, filename);
-      assert.equal(result.outputs.size, 0);
-    }
-  }
-});
-
-test("fails closed on missing identity, malformed live base, and API errors", async () => {
-  for (const candidate of [{ missingHead: true }, { defaultBranch: undefined }, { defaultBranch: "" },
-    { defaultBranch: null }, { baseSha: "invalid", branchSha: "invalid" }]) {
-    assert.notEqual((await classify(candidate)).failures.length, 0);
-  }
-  for (const apiError of ["paginate", "get", "getBranch", "getTree"]) {
-    await assert.rejects(classify({ apiError }), /API unavailable/u);
-  }
-});
-
-test("rejects each tuple member with a wrong status, blob, or rename", async () => {
-  for (const tuple of [forward, rollback]) {
-    for (let index = 0; index < tuple.length; index++) {
-      for (const mutation of [{ status: "removed" }, { status: "renamed" },
-        { sha: baseSha }, { previous_filename: "docs/old.md" }]) {
-        const files = tuple.map((file, i) => i === index ? { ...file, ...mutation } : file);
-        const result = await classify({ files });
-        assert.notEqual(result.failures.length, 0);
-        assert.equal(result.outputs.size, 0);
+test("v8 Cohort noop preserves declared leaves, new descendant trees and changed ancestor tree SHAs", async () => {
+  for (const addEvidence of [false, true]) {
+    const result = await classifyCohort(state => {
+      if (addEvidence) {
+        const parent = "governance/evidence/docs-cohorts/shortcut-test", child = `${parent}/receipt.md`;
+        state.headTree.tree.push({ path: parent, mode: "040000", type: "tree", sha: "e".repeat(40) },
+          { path: child, mode: "100644", type: "blob", sha: "f".repeat(40) });
+        state.files.push({ filename: child, status: "added", sha: "f".repeat(40) });
       }
-    }
+      const ancestors = addEvidence ? ["governance", "governance/evidence", "governance/evidence/docs-cohorts"] : ["governance"];
+      for (const name of ancestors) state.headTree.tree.find(entry => entry.path === name).sha = "e".repeat(40);
+    });
+    assert.deepEqual(result.failures, []); assert.equal(result.outputs.get("mode"), "noop");
+    assert.equal(result.contentCalls, 0); assert.equal(result.writes.size, 0);
   }
 });
 
-test("rejects altered source/destination blobs, modes, missing entries and truncated trees", async () => {
-  for (const side of ["base", "head"]) {
-    const tuple = side === "base" ? rollback : forward;
-    const tree = tuple.map(({ filename: path, sha }) => ({ path, sha, type: "blob", mode: "100644" }));
-    for (const data of [null, {}, { truncated: true, tree }, { truncated: false, tree: [] },
-      { truncated: false, tree: [...tree, tree[0]] },
-      ...[{ mode: "100755" }, { mode: "120000" }, { type: "tree" }, { sha: baseSha }]
-        .flatMap((mutation) => tree.map((_, index) => ({ truncated: false,
-          tree: tree.map((entry, i) => i === index ? { ...entry, ...mutation } : entry) })))]) {
-      const result = await classify({ [`${side}Tree`]: data });
-      assert.notEqual(result.failures.length, 0);
-      assert.equal(result.outputs.size, 0);
-    }
+test("v8 Cohort noop rejects omitted leaf existence, type, mode and SHA changes", async () => {
+  for (const mutate of [
+    state => { state.headTree.tree.find(entry => entry.path === "README.md").sha = "f".repeat(40); },
+    state => { state.headTree.tree.find(entry => entry.path === "README.md").mode = "100755"; },
+    state => { Object.assign(state.headTree.tree.find(entry => entry.path === "README.md"), { type: "commit", mode: "160000" }); },
+    state => { state.headTree.tree = state.headTree.tree.filter(entry => entry.path !== "README.md"); },
+    state => { state.headTree.tree.push({ path: "unlisted-test.md", type: "blob", mode: "100644", sha: "f".repeat(40) }); },
+  ]) {
+    const result = await classifyCohort(mutate);
+    assert.deepEqual(result.failures, ["Unlisted change outside Cohort data."]);
+    assert.equal(result.outputs.has("mode"), false);
+    assert.equal(result.contentCalls, 0); assert.equal(result.writes.size, 0);
   }
-  assert.notEqual((await classify({ headSha: "invalid" })).failures.length, 0);
 });
+
+test("actual v8 materializes Git-bound head data and base-owned comparator admits an ordinary devDependency", async () => {
+  const result = await classify(); assert.deepEqual(result.failures, []); assert.equal(result.mode, "dependencies");
+  assert.equal(result.contentCalls, 2); assert.equal(result.writes.size, 1);
+});
+
+test("v8 retains complete pagination, same-repository identity and live current-base enforcement before installation", async () => {
+  for (const mutate of [
+    s => { s.pull.changed_files = 0; }, s => { s.pull.changed_files = 3001; }, s => { s.files.pop(); },
+    s => { s.files[1] = s.files[0]; }, s => { s.pull.head = undefined; },
+    s => { s.pull.head.repo.full_name = "attacker/TEST-fork"; }, s => { s.defaultBranch = undefined; },
+    s => { s.branch = "f".repeat(40); }, s => { s.pull.base.ref = "feature"; },
+    s => { s.live.head.sha = "f".repeat(40); }, s => { s.headTree.truncated = true; },
+    s => { s.headTree.sha = "f".repeat(40); }, s => { s.apiError = "paginate"; }, s => { s.apiError = "getTree"; },
+  ]) {
+    const result = await classify(mutate); assert.ok(result.failures.length > 0); assert.equal(result.writes.size, 0);
+  }
+});
+
+test("v8 refuses missing metadata and oversized or Git-mismatched install data", async () => {
+  for (const mutate of [
+    s => { s.files[0].sha = "f".repeat(40); }, s => { s.files[0].status = undefined; },
+    s => { s.files[0].previous_filename = "scripts/docs-platform-admission-recovery.mjs"; s.files[0].status = "renamed"; },
+    s => { s.headTree.tree.find(e => e.path === "package.json").size = 65537; },
+    s => { s.headTree.tree.find(e => e.path === "package.json").mode = "120000"; },
+    s => { const data = Object.values(s.data)[0]; data.content = Buffer.from("{}").toString("base64"); },
+    s => { Object.values(s.data)[0].sha = "f".repeat(40); },
+  ]) assert.ok((await classify(mutate)).failures.length > 0);
+});
+
+test("v8 binds base checkout and native tools and its actual command propagates gate rejection", async () => {
+  assert.deepEqual(workflow.on.pull_request_target.types, ["opened", "synchronize", "reopened", "edited"]);
+  assert.deepEqual(workflow.permissions, { contents: "read", "pull-requests": "read" });
+  assert.equal(workflow.jobs["trusted-cohort-authority-evolution-v8"].name, "trusted-cohort-authority-evolution-v8");
+  const checkout = steps.find(step => step.uses?.startsWith("actions/checkout@"));
+  assert.deepEqual(checkout.with, { ref: "${{ github.event.pull_request.base.sha }}", "persist-credentials": false });
+  assert.equal(steps.find(step => step.uses?.startsWith("pnpm/action-setup@")).with.version, "11.18.0");
+  assert.equal(steps.find(step => step.uses?.startsWith("actions/setup-node@")).with["node-version"], "24.21.0");
+  for (const step of steps.filter(step => step.uses)) assert.match(step.uses, /@[0-9a-f]{40}$/u);
+  const result = await classify(); assert.deepEqual(result.failures, []);
+  const scratch = await mkdtemp(path.join(tmpdir(), "s4-v8-command-TEST-"));
+  try {
+    const evidencePath = path.join(scratch, "head-DATA.json");
+    await writeFile(evidencePath, result.writes.get(result.outputs.get("evidence-path")));
+    const command = () => promisify(execFile)("bash", ["-eu", "-c", steps.at(-1).run], {
+      env: { ...process.env, AUTHORITY_EVIDENCE: evidencePath },
+    });
+    await command();
+    await writeFile(evidencePath, "{}");
+    await assert.rejects(command());
+    assert.deepEqual(await readFile("package.json"), manifest);
+    assert.deepEqual(await readFile("pnpm-lock.yaml"), lock);
+  } finally { await rm(scratch, { recursive: true, force: true }); }
+});
+
+if (process.env.S4_OLD_V8) {
+  test("accepted ordinary dependency scenario fails against historical v8", async () => {
+    const old = parse(await readFile(process.env.S4_OLD_V8, "utf8"));
+    const script = new AsyncFunction("context", "github", "core", old.jobs["trusted-cohort-authority-evolution-v8"].steps[0].with.script);
+    const result = await classify(() => {}, script);
+    assert.ok(result.failures.some(message => message.includes("exact forward or rollback")));
+  });
+}
