@@ -25,7 +25,8 @@
       "items": {
         "oneOf": [
           { "$ref": "#/$defs/cohortV1" },
-          { "$ref": "#/$defs/cohortV2" }
+          { "$ref": "#/$defs/cohortV2" },
+          { "$ref": "#/$defs/cohortV3" }
         ]
       }
     },
@@ -247,6 +248,126 @@
         "eligible_after": { "$ref": "#/$defs/timestampSeconds" },
         "upgrade_from": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/cohortId" }, "uniqueItems": true },
         "rollback_to": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/cohortId" }, "uniqueItems": true },
+        "canary_repositories": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/canaryRepository" } },
+        "evidence_references": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/reference" }, "uniqueItems": true },
+        "record_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "cohortV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cohort_generation", "cohort_id", "channel", "candidate_digest", "policy_identity", "packages", "dependency_edges", "reusable_workflow", "schemas", "assets", "runtime", "runtime_closure", "eligible_after", "upgrade_from", "rollback_to", "canary_repositories", "evidence_references", "record_digest"],
+      "properties": {
+        "cohort_generation": { "const": 3 },
+        "cohort_id": { "$ref": "#/$defs/cohortId" },
+        "channel": { "enum": ["rc", "stable"] },
+        "candidate_digest": { "$ref": "#/$defs/sha256" },
+        "policy_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version", "digest"],
+          "properties": {
+            "id": { "const": "agent-teams.docs-protocol-current-policy" },
+            "version": { "const": "3.0.0" },
+            "digest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "packages": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            { "$ref": "#/$defs/repositoryMutationPackage" },
+            { "$ref": "#/$defs/documentAuthoringPackage" },
+            { "$ref": "#/$defs/docsProtocolPackage" },
+            { "$ref": "#/$defs/docsProtocolAgentTeamsPackage" },
+            { "$ref": "#/$defs/engineeringFoundationPackage" }
+          ],
+          "items": false
+        },
+        "dependency_edges": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "prefixItems": [
+            { "const": { "from": "@agent-teams/document-authoring", "to": "@agent-teams/repository-mutation" } },
+            { "const": { "from": "@agent-teams/docs-protocol", "to": "@agent-teams/document-authoring" } },
+            { "const": { "from": "@agent-teams/docs-protocol", "to": "@agent-teams/repository-mutation" } },
+            { "const": { "from": "@agent-teams/docs-protocol-agent-teams", "to": "@agent-teams/docs-protocol" } },
+            { "const": { "from": "@agent-teams/docs-protocol-agent-teams", "to": "@agent-teams/repository-mutation" } },
+            { "const": { "from": "@agent-teams/engineering-foundation", "to": "@agent-teams/document-authoring" } },
+            { "const": { "from": "@agent-teams/engineering-foundation", "to": "@agent-teams/repository-mutation" } }
+          ],
+          "items": false
+        },
+        "reusable_workflow": { "$ref": "#/$defs/reusableWorkflow" },
+        "schemas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["consumer_integration", "managed_state", "qualification_receipt", "docs_protocol", "foundation_plan", "foundation_journal", "foundation_receipt", "foundation_envelope"],
+          "properties": {
+            "consumer_integration": { "const": 4 },
+            "managed_state": { "const": 3 },
+            "qualification_receipt": { "const": 1 },
+            "docs_protocol": { "const": 1 },
+            "foundation_plan": { "const": 1 },
+            "foundation_journal": { "const": 1 },
+            "foundation_receipt": { "const": 1 },
+            "foundation_envelope": { "const": 5 }
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["skill", "caller_workflow", "asset_catalog", "transition_catalog"],
+          "properties": {
+            "skill": { "$ref": "#/$defs/publishedAgentTeamsAsset" },
+            "caller_workflow": { "$ref": "#/$defs/publishedAgentTeamsCallerWorkflow" },
+            "asset_catalog": { "$ref": "#/$defs/publishedAgentTeamsAsset" },
+            "transition_catalog": { "$ref": "#/$defs/publishedAgentTeamsAsset" }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["selected_lane", "node", "pnpm", "qualification_runtime"],
+          "properties": {
+            "selected_lane": {
+              "enum": ["node-24-production-default", "node-26-managed-qualified"],
+              "const": "node-26-managed-qualified"
+            },
+            "node": { "const": ">=26.0.0 <27" },
+            "pnpm": { "const": ">=11.17.0 <12" },
+            "qualification_runtime": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["node_version", "pnpm_version", "platform", "architecture"],
+              "properties": {
+                "node_version": { "const": "26.11.1" },
+                "pnpm_version": { "const": "11.20.0" },
+                "platform": { "const": "linux" },
+                "architecture": { "const": "x64" }
+              }
+            }
+          }
+        },
+        "runtime_closure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schema_version", "domain", "package_manager", "lockfile_version", "package_count", "projection_path", "digest"],
+          "properties": {
+            "schema_version": { "const": 2 },
+            "domain": { "const": "agent-teams.docs-runtime-closure/v2" },
+            "package_manager": { "const": "pnpm@11.20.0" },
+            "lockfile_version": { "const": "9.0" },
+            "package_count": { "type": "integer", "minimum": 5, "maximum": 2048 },
+            "projection_path": { "type": "string", "pattern": "^governance/docs-runtime-closures/sha256-[0-9a-f]{64}\\.json$" },
+            "digest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "eligible_after": { "$ref": "#/$defs/timestampSeconds" },
+        "upgrade_from": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/cohortId" }, "uniqueItems": true },
+        "rollback_to": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/cohortId" }, "uniqueItems": true },
         "canary_repositories": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/$defs/canaryRepository" } },
         "evidence_references": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/reference" }, "uniqueItems": true },
         "record_digest": { "$ref": "#/$defs/sha256" }

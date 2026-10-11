@@ -30,6 +30,17 @@ export const DOCS_COHORT_V2_DEPENDENCY_EDGES = Object.freeze([
   Object.freeze({ from: "@agent-teams/engineering-foundation", to: "@agent-teams/document-authoring" }),
   Object.freeze({ from: "@agent-teams/engineering-foundation", to: "@agent-teams/repository-mutation" }),
 ]);
+export const DOCS_COHORT_V3_CURRENT_RUNTIME = Object.freeze({
+  selectedLane: "node-26-managed-qualified",
+  node: ">=26.0.0 <27",
+  pnpm: ">=11.17.0 <12",
+  qualificationRuntime: Object.freeze({
+    nodeVersion: "26.11.1",
+    pnpmVersion: "11.20.0",
+    platform: "linux",
+    architecture: "x64",
+  }),
+});
 const NEXT_STATES = new Map([
   ["PUBLISHED_UNQUALIFIED", new Set(["VERIFIED", "WITHDRAWN"])],
   ["VERIFIED", new Set(["COOLDOWN", "QUALIFIED", "WITHDRAWN"])],
@@ -396,9 +407,16 @@ function timestampMilliseconds(value, label) {
 
 export function cohortRecordDigest(record) {
   const { record_digest: _ignored, ...body } = record;
-  return digest(record.cohort_generation === 2
+  const domain = record.cohort_generation === 2
     ? "agent-teams.docs-qualified-cohort/v2"
-    : "agent-teams.docs-qualified-cohort/v1", body);
+    : record.cohort_generation === 3
+      ? "agent-teams.docs-qualified-cohort/v3"
+      : record.cohort_generation === undefined
+        ? "agent-teams.docs-qualified-cohort/v1"
+        : undefined;
+  assert(domain !== undefined,
+    `Unknown Cohort generation ${JSON.stringify(record.cohort_generation)} has no closed digest domain.`);
+  return digest(domain, body);
 }
 
 export function cohortEventDigest(event) {
@@ -412,20 +430,46 @@ function validateCohortRecord(record) {
     `governance/docs-runtime-closures/${record.runtime_closure.digest.replace(":", "-")}.json`,
   `${record.cohort_id} runtime closure path is not content-addressed by its exact digest.`);
   const v2 = record.cohort_generation === 2;
-  if (v2) {
+  const v3 = record.cohort_generation === 3;
+  assert(record.cohort_generation === undefined || v2 || v3,
+    `${record.cohort_id} uses an unknown Cohort generation.`);
+  if (v2 || v3) {
     assert(canonicalJson(record.packages.map(({ name, role }) => ({ name, role }))) ===
       canonicalJson(DOCS_COHORT_V2_PACKAGES),
-    `${record.cohort_id} must use the exact explicit v2 package coordinates.`);
+    `${record.cohort_id} must use the exact explicit five-package coordinates.`);
     assert(canonicalJson(record.dependency_edges) === canonicalJson(DOCS_COHORT_V2_DEPENDENCY_EDGES),
-      `${record.cohort_id} v2 dependency edges are not closed.`);
+    `${record.cohort_id} dependency edges are not the exact seven-edge closure.`);
     assert(record.runtime_closure.domain === "agent-teams.docs-runtime-closure/v2" &&
       record.runtime_closure.schema_version === 2,
-    `${record.cohort_id} must bind runtime closure v2 explicitly.`);
+    `${record.cohort_id} must bind existing runtime closure v2 explicitly.`);
   } else {
     assert(record.cohort_generation === undefined &&
       record.packages[0].name === "@agent-teams/engineering-foundation" &&
       record.packages[1].name === "@agent-teams/docs-protocol",
     `${record.cohort_id} package order must preserve the v1 release dependency order.`);
+  }
+  if (v3) {
+    assert(/^sha256:(?!0{64}$)[0-9a-f]{64}$/u.test(record.candidate_digest),
+      `${record.cohort_id} candidateDigest must remain a retained nonzero digest field.`);
+    assert(record.policy_identity.id === "agent-teams.docs-protocol-current-policy" &&
+      record.policy_identity.version === "3.0.0" &&
+      /^sha256:(?!0{64}$)[0-9a-f]{64}$/u.test(record.policy_identity.digest),
+    `${record.cohort_id} must bind the exact policy identity with a nonzero source digest.`);
+    assert(record.runtime.selected_lane === DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane &&
+      record.runtime.node === DOCS_COHORT_V3_CURRENT_RUNTIME.node &&
+      record.runtime.pnpm === DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
+    `${record.cohort_id} must use the current managed Node 26 lane and exact ranges.`);
+    assert(canonicalJson(record.runtime.qualification_runtime) ===
+      canonicalJson({
+        node_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.nodeVersion,
+        pnpm_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.pnpmVersion,
+        platform: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.platform,
+        architecture: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.architecture,
+      }),
+    `${record.cohort_id} qualification tuple must be exact; a runtime range cannot substitute for it.`);
+    assert(record.runtime_closure.package_manager === RUNTIME_CLOSURE_V2_PACKAGE_MANAGER &&
+      record.runtime_closure.lockfile_version === RUNTIME_CLOSURE_LOCKFILE_VERSION,
+    `${record.cohort_id} must use pnpm 11.20.0 closure v2 semantics.`);
   }
   const publishedTimes = record.packages.map((entry) => timestampMilliseconds(
     entry.published_at,
@@ -682,7 +726,8 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
     `${cohortId} has no immutable QUALIFIED projection.`);
   const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
   const v2 = record.cohort_generation === 2;
-  const packageProjection = v2 ? {
+  const v3 = record.cohort_generation === 3;
+  const packageProjection = v2 || v3 ? {
     repositoryMutation: packageByName.get("@agent-teams/repository-mutation"),
     documentAuthoring: packageByName.get("@agent-teams/document-authoring"),
     docsProtocol: packageByName.get("@agent-teams/docs-protocol"),
@@ -692,8 +737,8 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
     docsProtocol: packageByName.get("@agent-teams/docs-protocol"),
     engineeringFoundation: packageByName.get("@agent-teams/engineering-foundation"),
   };
-  return {
-    schemaVersion: v2 ? 2 : 1,
+  const projection = {
+    schemaVersion: v3 ? 3 : v2 ? 2 : 1,
     cohortId: record.cohort_id,
     channel: record.channel,
     recordDigest: record.record_digest,
@@ -715,14 +760,52 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
       assetCatalogDigest: record.assets.asset_catalog.digest,
       transitionCatalogDigest: record.assets.transition_catalog.digest,
     },
-    schemas: v2
-      ? { consumerIntegration: 3, managedState: 2, docsProtocol: 1 }
+    schemas: v3
+      ? { consumerIntegration: 4, managedState: 3, qualificationReceipt: 1, docsProtocol: 1 }
+      : v2
+        ? { consumerIntegration: 3, managedState: 2, docsProtocol: 1 }
       : { consumerIntegration: 1, managedState: 1, docsProtocol: 1 },
-    runtime: {
-      node: record.runtime.node,
-      pnpm: record.runtime.pnpm,
-      runtimeClosureDigest: record.runtime_closure.digest,
-    },
+    runtime: v3
+      ? {
+        policy: { ...record.policy_identity },
+        selectedLane: record.runtime.selected_lane,
+        node: record.runtime.node,
+        pnpm: record.runtime.pnpm,
+        qualificationRuntime: {
+          nodeVersion: record.runtime.qualification_runtime.node_version,
+          pnpmVersion: record.runtime.qualification_runtime.pnpm_version,
+          platform: record.runtime.qualification_runtime.platform,
+          architecture: record.runtime.qualification_runtime.architecture,
+        },
+        runtimeClosure: {
+          domain: record.runtime_closure.domain,
+          digest: record.runtime_closure.digest,
+        },
+      }
+      : {
+        node: record.runtime.node,
+        pnpm: record.runtime.pnpm,
+        runtimeClosureDigest: record.runtime_closure.digest,
+      },
+  };
+  if (!v3) {return projection;}
+  return {
+    schemaVersion: projection.schemaVersion,
+    cohortId: projection.cohortId,
+    channel: projection.channel,
+    candidateDigest: record.candidate_digest,
+    recordDigest: projection.recordDigest,
+    qualificationEventDigest: projection.qualificationEventDigest,
+    lifecycleState: event.state,
+    canaryRepositoryIds: record.canary_repositories.map(({ repository_id: id }) => String(id)),
+    eligibleAfter: projection.eligibleAfter,
+    upgradeFrom: projection.upgradeFrom,
+    rollbackTo: projection.rollbackTo,
+    packages: projection.packages,
+    workflow: projection.workflow,
+    assets: projection.assets,
+    schemas: projection.schemas,
+    runtime: projection.runtime,
   };
 }
 
