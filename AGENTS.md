@@ -25,9 +25,9 @@ For feature-module architecture:
 For governance JavaScript quality, read
 [the consumer quality route](docs/engineering-quality.md) and
 [its profile](docs/engineering-quality-profile.json). Use the owning
-`.node-version` tooling pin for `pnpm quality:check` (focused/fast) and
-`pnpm check` (complete); the installed critical-test runner requires Node
-24.21.0 or later in the Node 24 family. Preserve its exact required identities
+`.node-version` tooling pin for the focused quality commands in that guide and
+`pnpm check` (complete); the repository default is Node 26.11.1 while package
+engines keep Node 24 compatibility. Preserve its exact required identities
 and selected entry files.
 
 <!-- agent-teams:quality-standard:start -->

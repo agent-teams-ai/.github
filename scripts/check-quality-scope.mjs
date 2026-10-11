@@ -101,7 +101,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
       entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts"],
     },
-    toolchain: { node: "24.21.0", pnpm: "11.18.0", oxlint: "1.85.0" },
+    toolchain: { node: "26.11.1", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
   assert.deepEqual(toolingTsconfig, {
   "compilerOptions": {
@@ -277,8 +277,8 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     }
   }
 }, "installed source gate configuration changed");
-  assert.equal(nodeVersion.trim(), "24.21.0", "owning test tooling lane must use Node 24.21.0");
-  assert.equal(manifest.engines?.node, ">=24.18.0 <25", "general Node 24 compatibility must remain independent of critical execution tooling");
+  assert.equal(nodeVersion.trim(), "26.11.1", "owning test tooling lane must use Node 26.11.1");
+  assert.equal(manifest.engines?.node, ">=24.18.0 <25 || >=26.10.0 <27", "package engines must keep Node 24 compatibility and admit the Node 26 default");
   assertLintPolicy(lintConfig);
   assertWorkflow(workflow);
   const census = classifyTrackedPaths(trackedPaths);

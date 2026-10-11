@@ -39,16 +39,22 @@ The complete `node --test` route retains existing files and explicitly includes
 tests directly. The installed boundary parser also receives a forbidden `.mts`
 import in the existing disposable rejection test.
 
-The owning test/tooling patch moves from Node 24.18.0 to 24.21.0 through
-`.node-version`, the consumer profile and the existing CI file-based selection.
-The mandatory runner requires Node 24.21.0 or later in the Node 24 family.
-The general package engine stays `>=24.18.0 <25`: trusted historical governance
-lanes can still install and run their separate compatible gates. Immutable Docs
-Cohort runtimes/workflows, accepted ADRs and published standards retain their
-original bytes. This upgrade activates no Node 26 lane.
+The repository default is official Node 26.11.1, selected through
+`.node-version`, the consumer profile (`toolchain.node`) and the existing CI
+file-based selection. The package engine is `>=24.18.0 <25 || >=26.10.0 <27`
+(the same Node 24+26 form as the r322 tooling package) and `engine-strict`
+stays on, so installs on both families are checked. Node 24 typings
+(`@types/node` 24.19.1) are retained. Trusted historical governance lanes
+(exact `24.21.0` allowlist in `scripts/check-community-files.mjs`), immutable
+Docs Cohort runtimes/workflows, accepted ADRs and published standards retain
+their original bytes and Node 24 runtimes; managed generation2 stays Node 24.
+This change is a protected-path edit and is expected to be rejected by the
+base-owned verifier authority check until its gate is satisfied by the
+existing process.
 
-Run `pnpm quality:check` for the focused source-adoption, installed boundary,
-lint, strict tooling typecheck, input-proof tests and critical execution gates. It is the local fast equivalent; there are
+Run `pnpm quality:scope && pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical`
+for the focused source-adoption, installed boundary, lint, strict tooling
+typecheck, input-proof tests and critical execution gates. There are
 no `check:changed` or `check:fast` scripts. Full qualification also requires
 `pnpm check` and a successful frozen install including native prerequisites.
 Historical SHA receipts are unchanged; current-input evidence is separate.
@@ -122,8 +128,8 @@ checks. Those adapter trials and merge/routing protections, full main/nightly/
 common-change behavior and measured eligible-small-PR timing remain unqualified.
 
 `pnpm quality:typecheck` runs `tsc --project tsconfig.tooling.json` from the exact
-pinned public compiler. Node 24.21.0 stripping executes `.mts` tests but does not
-replace compilation. The focused `pnpm quality:check` runs both gates; required
+pinned public compiler. Node 26.11.1 type stripping executes `.mts` tests but does not
+replace compilation. The focused `pnpm quality:typecheck` and `pnpm test:input-proof` run both gates; required
 `pnpm check` runs strict compilation and all tests including the explicit `.mts`
 glob. Public helper tests cover independent drift and malformed/replayed records;
 actual Git and tampered Actions trials remain for the two real adapters.
