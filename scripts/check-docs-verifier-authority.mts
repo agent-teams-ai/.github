@@ -126,11 +126,12 @@ export function assertVerifierDependencies(baseManifest: string, baseLock: strin
   assertVerifierDependencyPolicy(baseManifest, baseLock, headManifest, headLock, false);
 }
 
+const exactEntry = (entry: Record<string, unknown> | undefined, path: string, sha: string) =>
+  entry?.path === path && entry.mode === "100644" && entry.type === "blob" && entry.sha === sha;
+
 function matchesNode26DefaultTransition(base: Map<string, Record<string, unknown>>, head: Map<string, Record<string, unknown>>,
   files: Record<string, unknown>[], changedLeaves: Set<string>): boolean {
   const expectedPaths = node26DefaultTransition.changes.map(([path]) => path);
-  const exactEntry = (entry: Record<string, unknown> | undefined, path: string, sha: string) =>
-    entry?.path === path && entry.mode === "100644" && entry.type === "blob" && entry.sha === sha;
   if (files.length !== expectedPaths.length || changedLeaves.size !== expectedPaths.length ||
       expectedPaths.some(path => !changedLeaves.has(path))) {return false;}
   return node26DefaultTransition.changes.every(([path, before, after]) => {
