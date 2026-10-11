@@ -86,6 +86,89 @@ function authorityFixture() {
   return { changedFiles: 1, files, baseTree: { tree, truncated: false }, headTree: { tree: headTree, truncated: false }, headData };
 }
 const check = (evidence: unknown) => assertVerifierAuthority(evidence, manifestBytes, lockBytes);
+const node26DefaultBlobs = [
+  [".node-version", "df6ae3370f9f89272d88629c442cf554d6c1f9fb", "d8750199bbef3481a89eaf452088c384f4025508"],
+  ["AGENTS.md", "5103769cb5f5f26438b15c5ce11b1234f505a748", "d31e50aa17c1cb2008fd87191ffceec5d421ab0a"],
+  ["docs/engineering-quality-profile.json", "3a7f60d0af07bbbdf9b742bba39894f7deaf078e", "93a1b876c19153c51fad0a03d9fa331034cd8cea"],
+  ["docs/engineering-quality.md", "7edd8695a2e06d609336e73e1f861d46b2b65b46", "2368570df3db82c664ad59426a40b7f832191ab2"],
+  ["package.json", "75e4d98b44aa0f777cc03c57857e1e023ec6c1b0", "51f9bfb4bf250acd795f4bb2384f9b58132e24ae"],
+  ["scripts/check-quality-scope.mjs", "3dc6329177e56aea18c13fe8e59ad8e4c6a671e3", "18588dc80475e459ccd784c9af25312585ce4c40"],
+  ["scripts/check-quality-scope.test.mjs", "3a025636bcfd0e1796695b5b0ad0b5f398b2709b", "4e7a343ddddcda2326ad761c056a1ba61059f9ab"],
+  ["scripts/merge-owner-pr.test.mjs", "34adcaee7d8bc85698fecdeb59cb882bccdcdaaa", "e3afa253f69e77021bce4f77a7e5bee70064653c"],
+] as const;
+
+function node26DefaultFixture() {
+  const fixture = authorityFixture();
+  const manifest = JSON.parse(manifestBytes.toString()) as Manifest;
+  manifest.engines = { ...(manifest.engines as Record<string, string>), node: ">=24.18.0 <25 || >=26.10.0 <27" };
+  const packageBytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
+  fixture.files = node26DefaultBlobs.map(([filename, before, after]) => {
+    assert.equal(fixture.baseTree.tree.find(entry => entry.path === filename)?.sha, before, filename);
+    Object.assign(fixture.headTree.tree.find(entry => entry.path === filename)!,
+      { mode: "100644", type: "blob", sha: after });
+    return { filename, status: "modified", sha: after, previous_filename: undefined };
+  });
+  fixture.headTree.tree.find(entry => entry.path === "README.md")!.sha =
+    fixture.baseTree.tree.find(entry => entry.path === "README.md")!.sha;
+  fixture.headData["package.json"] = {
+    encoding: "base64", content: packageBytes.toString("base64"),
+    sha: node26DefaultBlobs.find(([path]) => path === "package.json")![2],
+  };
+  fixture.changedFiles = fixture.files.length;
+  return fixture;
+}
+
+test("admits only the exact reviewed PR359 Node26-default transition", () => {
+  assert.equal(check(node26DefaultFixture()), "node26-default");
+});
+
+test("rejects partial, extra, reversed, replacement and dependency-drift variants of the finite transition", () => {
+  const partial = node26DefaultFixture();
+  const omitted = partial.files.pop()!;
+  Object.assign(partial.headTree.tree.find(entry => entry.path === omitted.filename)!,
+    partial.baseTree.tree.find(entry => entry.path === omitted.filename)!);
+  partial.changedFiles = partial.files.length;
+  assert.throws(() => check(partial), /Protected authority path/u);
+
+  const extra = node26DefaultFixture(), extraSha = "b".repeat(40);
+  extra.headTree.tree.find(entry => entry.path === "README.md")!.sha = extraSha;
+  extra.files.unshift({ filename: "README.md", status: "modified", sha: extraSha, previous_filename: undefined });
+  extra.changedFiles = extra.files.length;
+  assert.throws(() => check(extra), /Protected authority path/u);
+
+  const reverse = node26DefaultFixture();
+  for (const [path, before, after] of node26DefaultBlobs) {
+    Object.assign(reverse.baseTree.tree.find(entry => entry.path === path)!, { mode: "100644", type: "blob", sha: after });
+    Object.assign(reverse.headTree.tree.find(entry => entry.path === path)!, { mode: "100644", type: "blob", sha: before });
+    reverse.files.find(file => file.filename === path)!.sha = before;
+  }
+  assert.throws(() => check(reverse), /Protected authority path/u);
+
+  for (const replacement of [{ mode: "120000", type: "blob" }, { mode: "160000", type: "commit" }]) {
+    const fixture = node26DefaultFixture();
+    Object.assign(fixture.headTree.tree.find(entry => entry.path === ".node-version")!, replacement);
+    assert.throws(() => check(fixture), /Protected authority path/u);
+  }
+
+  const dependency = node26DefaultFixture();
+  const manifest = JSON.parse(manifestBytes.toString()) as Manifest;
+  manifest.engines = { ...(manifest.engines as Record<string, string>), node: ">=24.18.0 <25 || >=26.10.0 <27" };
+  manifest.devDependencies.ajv = "8.21.0";
+  const bytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
+  const sha = execFileSync("git", ["hash-object", "--stdin"], { input: bytes, encoding: "utf8" }).trim();
+  dependency.headData["package.json"] = { encoding: "base64", content: bytes.toString("base64"), sha };
+  Object.assign(dependency.headTree.tree.find(entry => entry.path === "package.json")!, { sha });
+  dependency.files.find(file => file.filename === "package.json")!.sha = sha;
+  assert.throws(() => check(dependency));
+});
+
+test("rejects an installed-validator edit even alongside the exact transition", () => {
+  const fixture = node26DefaultFixture(), path = "scripts/check-docs-verifier-authority.mts", sha = "c".repeat(40);
+  fixture.headTree.tree.find(entry => entry.path === path)!.sha = sha;
+  fixture.files.unshift({ filename: path, status: "modified", sha, previous_filename: undefined });
+  fixture.changedFiles = fixture.files.length;
+  assert.throws(() => check(fixture), /Protected authority path/u);
+});
 
 test("rejects an unlisted directory-to-blob replacement with declared descendant removal", () => {
   const fixture = authorityFixture(), path = "ordinary-TEST", child = `${path}/leaf.md`;
