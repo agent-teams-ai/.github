@@ -797,7 +797,7 @@ export function qualifiedCohortProjection(registry, cohortId, options = {}) {
     recordDigest: projection.recordDigest,
     qualificationEventDigest: projection.qualificationEventDigest,
     lifecycleState: event.state,
-    canaryRepositoryIds: record.canary_repositories.map(({ repository_id: id }) => id),
+    canaryRepositoryIds: record.canary_repositories.map(({ repository_id: id }) => String(id)),
     eligibleAfter: projection.eligibleAfter,
     upgradeFrom: projection.upgradeFrom,
     rollbackTo: projection.rollbackTo,

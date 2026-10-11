@@ -31,6 +31,17 @@ const INTEGRITY = `sha512-${"A".repeat(86)}==`;
 const VERSION = "1.0.0-rc.1";
 const HISTORICAL_V1_COHORT_ID = "docs-2026-08-17-rc1";
 const FIXTURE_AS_OF = "2026-09-04T03:00:00Z";
+// Exact existing schemas/qualified-docs-cohort/v3.schema.json properties.canaryRepositoryIds fragment.
+const EXISTING_CANARY_REPOSITORY_IDS_SCHEMA_FRAGMENT = {
+  type: "array",
+  minItems: 1,
+  maxItems: 32,
+  uniqueItems: true,
+  items: {
+    type: "string",
+    pattern: "^[1-9][0-9]*$",
+  },
+};
 
 function historicalV1QualifiedPrefix(source) {
   const record = source.cohorts.find(({ cohort_id }) => cohort_id === HISTORICAL_V1_COHORT_ID);
@@ -275,7 +286,7 @@ test("projects an inert generation3 fixture into the exact unselected nominal sh
   assert.equal(projection.candidateDigest, record.candidate_digest);
   assert.equal(projection.recordDigest, record.record_digest);
   assert.equal(projection.lifecycleState, "QUALIFIED");
-  assert.deepEqual(projection.canaryRepositoryIds, [1336577313]);
+  assert.deepEqual(projection.canaryRepositoryIds, ["1336577313"]);
   assert.deepEqual(projection.schemas,
     { consumerIntegration: 4, managedState: 3, qualificationReceipt: 1, docsProtocol: 1 });
   assert.deepEqual(Object.keys(projection.packages), [
@@ -301,6 +312,19 @@ test("projects an inert generation3 fixture into the exact unselected nominal sh
   });
   assert.equal("selected" in projection, false);
   assert.equal("managedCandidateSelected" in projection, false);
+});
+
+test("gen3 canaryRepositoryIds satisfy the exact existing nominal string schema fragment", () => {
+  const { registry, record } = gen3Fixture();
+  const { canaryRepositoryIds } = qualifiedCohortProjection(registry, record.cohort_id, {
+    asOf: FIXTURE_AS_OF,
+  });
+  const validateCanaryRepositoryIds = new Ajv2020({ allErrors: true, strict: true })
+    .compile(EXISTING_CANARY_REPOSITORY_IDS_SCHEMA_FRAGMENT);
+  assert.equal(validateCanaryRepositoryIds(canaryRepositoryIds), true);
+  assert.equal(canaryRepositoryIds.every((id) => validateCanaryRepositoryIds([id])), true);
+  assert.equal(validateCanaryRepositoryIds([1336577313]), false);
+  assert.equal(validateCanaryRepositoryIds(["malformed"]), false);
 });
 
 test("rejects unknown and mixed generations instead of falling back to legacy", () => {
