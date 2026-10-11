@@ -356,8 +356,9 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
   }
   assert.deepEqual(await probe([...paths, "scripts/check-quality-scope.test.mjs"]), { failures: [], outputs: [['mode', 'noop']] });
 });
-// Fixed accepted base, actual composed Git head: no moving branch or synthesized positive leaves.
+// Fixed accepted base and reviewed G checkpoint: no moving branch or synthesized positive leaves.
 const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
+const acceptedG = '66d6d3d2c2643edac414ded48c0ee0586774dd07';
 const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
 const gitBlob = (bytes) => createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 function completeGitTree(revision) {
@@ -368,7 +369,7 @@ function completeGitTree(revision) {
     }) };
 }
 function currentGAuthority() {
-  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree('HEAD');
+  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree(acceptedG);
   const before = new Map(baseTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
   const after = new Map(headTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
   const files = [...new Set([...before.keys(), ...after.keys()])].sort().flatMap((filename) => {
@@ -377,7 +378,7 @@ function currentGAuthority() {
       [{ filename, status: !old ? 'added' : !next ? 'removed' : 'modified', sha: (next ?? old).sha }];
   });
   const headData = Object.fromEntries(['package.json', 'pnpm-lock.yaml'].map((p) => [p, {
-    encoding: 'base64', content: gitBytes('show', `HEAD:${p}`).toString('base64'), sha: after.get(p).sha,
+    encoding: 'base64', content: gitBytes('show', `${acceptedG}:${p}`).toString('base64'), sha: after.get(p).sha,
   }]));
   return { changedFiles: files.length, files, baseTree, headTree, headData };
 }
@@ -422,7 +423,7 @@ test('actual current G composition is noop under the accepted base verifier and 
     assert.throws(() => check(denied), /Protected authority path/u, basename);
   }
   const denied = structuredClone(positive), filename = 'scripts/check-docs-verifier-authority.mts';
-  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `HEAD:${filename}`), Buffer.from('\n// TEST drift\n')]));
+  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `${acceptedG}:${filename}`), Buffer.from('\n// TEST drift\n')]));
   denied.files.push({ filename, status: 'modified', sha }); denied.changedFiles = denied.files.length;
   assert.throws(() => check(denied), /Protected authority path/u);
   const omitted = structuredClone(positive); omitted.files.pop();
