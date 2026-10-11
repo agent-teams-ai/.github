@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import YAML from "yaml";
 import {
@@ -103,9 +104,9 @@ const foundationCli = resolve("node_modules/@agent-teams/engineering-foundation/
 const mandatoryCli = resolve("node_modules/@agent-teams/engineering-foundation/dist/node-test-cli.js");
 
 async function fixture(t) {
-  const base = resolve(".quality-output/disposable");
-  await mkdir(base, { recursive: true });
-  const root = await mkdtemp(join(base, "central-foundation-171-"));
+  // Disposable repositories live in the physical OS temp, never inside the governed source tree,
+  // so concurrent source censuses cannot observe their scripts/ and tools/ files.
+  const root = await mkdtemp(join(await realpath(tmpdir()), "central-foundation-171-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const put = async (file, text) => {
     const target = join(root, file);
