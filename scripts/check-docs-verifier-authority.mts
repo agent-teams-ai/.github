@@ -174,7 +174,7 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
     }
   }
   const node26Default = matchesNode26DefaultTransition(base, head, evidence.files.map(rawFile => object(rawFile)), changedLeaves);
-  const node26Paths = new Set(node26DefaultTransition.changes.map(([path]) => path));
+  const node26Paths = new Set<string>(node26DefaultTransition.changes.map(([path]) => path));
   const filenames = new Set<string>();
   const declared = new Set<string>();
   for (const rawFile of evidence.files) {
