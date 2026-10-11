@@ -6,6 +6,10 @@ import { parse, stringify } from "yaml";
 import { assertVerifierAuthority, assertVerifierDependencies } from "./check-docs-verifier-authority.mts";
 
 const manifestBytes = readFileSync("package.json"), lockBytes = readFileSync("pnpm-lock.yaml");
+const reviewedG = "66d6d3d2c2643edac414ded48c0ee0586774dd07";
+const gitBytes = (...args: string[]) => execFileSync("git", args, { cwd: new URL("../", import.meta.url) });
+const historicalManifestBytes = gitBytes("show", `${reviewedG}:package.json`);
+const historicalLockBytes = gitBytes("show", `${reviewedG}:pnpm-lock.yaml`);
 type Manifest = { devDependencies: Record<string, string>; [key: string]: unknown };
 type Lock = { packages: Record<string, { resolution: { integrity?: string; tarball?: string } }>;
   snapshots: Record<string, { dependencies?: Record<string, string> }>;
@@ -71,7 +75,7 @@ test("rejects unbound or non-registry dependency metadata rather than expanding 
 });
 
 function authorityFixture() {
-  const tree = execFileSync("git", ["ls-tree", "-r", "-t", "HEAD"], { encoding: "utf8" }).trim().split("\n").map(line => {
+  const tree = execFileSync("git", ["ls-tree", "-r", "-t", reviewedG], { encoding: "utf8" }).trim().split("\n").map(line => {
     const [header, path] = line.split("\t"); const [mode, type, sha] = header!.split(" ");
     return { path: path!, mode: mode!, type: type!, sha: sha! };
   });
@@ -81,11 +85,11 @@ function authorityFixture() {
   const files = [{ filename: "README.md", status: "modified", sha: "d".repeat(40), previous_filename: undefined as string | undefined }];
   const headTree = structuredClone(tree); headTree.find(entry => entry.path === "README.md")!.sha = files[0]!.sha;
   const headData = Object.fromEntries(["package.json", "pnpm-lock.yaml"].map(path => [path, {
-    encoding: "base64", content: readFileSync(path).toString("base64"), sha: tree.find(entry => entry.path === path)!.sha,
+    encoding: "base64", content: gitBytes("show", `${reviewedG}:${path}`).toString("base64"), sha: tree.find(entry => entry.path === path)!.sha,
   }]));
   return { changedFiles: 1, files, baseTree: { tree, truncated: false }, headTree: { tree: headTree, truncated: false }, headData };
 }
-const check = (evidence: unknown) => assertVerifierAuthority(evidence, manifestBytes, lockBytes);
+const check = (evidence: unknown) => assertVerifierAuthority(evidence, historicalManifestBytes, historicalLockBytes);
 const node26DefaultBlobs = [
   [".node-version", "df6ae3370f9f89272d88629c442cf554d6c1f9fb", "d8750199bbef3481a89eaf452088c384f4025508"],
   ["AGENTS.md", "5103769cb5f5f26438b15c5ce11b1234f505a748", "d31e50aa17c1cb2008fd87191ffceec5d421ab0a"],
@@ -99,7 +103,7 @@ const node26DefaultBlobs = [
 
 function node26DefaultFixture() {
   const fixture = authorityFixture();
-  const manifest = JSON.parse(manifestBytes.toString()) as Manifest;
+  const manifest = JSON.parse(historicalManifestBytes.toString()) as Manifest;
   manifest.engines = { ...(manifest.engines as Record<string, string>), node: ">=24.18.0 <25 || >=26.10.0 <27" };
   const packageBytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
   fixture.files = node26DefaultBlobs.map(([filename, before, after]) => {
@@ -151,7 +155,7 @@ test("rejects partial, extra, reversed, replacement and dependency-drift variant
   }
 
   const dependency = node26DefaultFixture();
-  const manifest = JSON.parse(manifestBytes.toString()) as Manifest;
+  const manifest = JSON.parse(historicalManifestBytes.toString()) as Manifest;
   manifest.engines = { ...(manifest.engines as Record<string, string>), node: ">=24.18.0 <25 || >=26.10.0 <27" };
   manifest.devDependencies.ajv = "8.21.0";
   const bytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
@@ -274,7 +278,7 @@ test("rejects mode drift, omitted authority, incomplete trees/pagination and dat
     f => { delete f.headData["pnpm-lock.yaml"]; },
   ];
   for (const mutate of mutations) { const fixture = authorityFixture(); mutate(fixture); assert.throws(() => check(fixture)); }
-  assert.throws(() => assertVerifierAuthority(authorityFixture(), Buffer.from("{}"), lockBytes), /Trusted checkout/u);
+  assert.throws(() => assertVerifierAuthority(authorityFixture(), Buffer.from("{}"), historicalLockBytes), /Trusted checkout/u);
 });
 
 test("copy origins do not declare an omitted source modification", () => {

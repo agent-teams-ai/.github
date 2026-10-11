@@ -13,21 +13,25 @@ import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from './c
 import { selectOxlintFiles } from './run-quality-lint.mjs';
 import { assertVerifierAuthority } from './check-docs-verifier-authority.mts';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
+const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
+const acceptedG = '66d6d3d2c2643edac414ded48c0ee0586774dd07';
+const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
+const readG = (path) => gitBytes('show', `${acceptedG}:${path}`).toString('utf8');
+const record = validatePortableRecord(Buffer.from(readG('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
-const additionBodies = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-additions.json'));
+const additionBodies = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/new-additions.json'));
 const addedRows = record.manifest.filter((row) => row.old === null);
 assert.equal(addedRows.length, 7);
 assert.deepEqual(Object.keys(additionBodies).sort(), addedRows.map((row) => row.path).sort());
-const historical = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
+const historical = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
 assert.deepEqual(historical.historical_sources, record.historical_sources);
 const oldOverrides = new Map(historical.old_overrides.map((entry) => [entry.path, entry]));
-const oldBodies = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json'));
+const oldBodies = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json'));
 assert.equal(oldOverrides.size, historical.old_overrides.length);
 assert.deepEqual([...oldOverrides.keys()].sort(), record.manifest.filter((row) => row.old)
   .map((row) => row.path).sort());
 assert.deepEqual(Object.keys(oldBodies).sort(), [...oldOverrides.keys()].sort());
-const forward = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
+const forward = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
 assert.deepEqual(forward.historical_sources, record.historical_sources);
 const newOverrides = new Map(forward.new_overrides.map((entry) => [entry.path, entry]));
 assert.equal(newOverrides.size, forward.new_overrides.length);
@@ -129,7 +133,7 @@ test('acceptance is closed, current, exact, and direction-specific', () => {
   assert.throws(() => validatePortableAcceptance(accepted(), record, now + 86400_000));
 });
 test('unbound reviewer identity refuses before API authority observations', async () => {
-  const api = { getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')),
+  const api = { getInstalledRecord: async () => Buffer.from(readG('governance/docs-portable-authority-r322.json')),
     getRepository: () => {throw Error('must not read repository');} };
   await assert.rejects(verifyPortableExecution({}, { ...accepted(), reviewer_id: 0 }, api,
     () => now), /accepted execution coordinates differ/u);
@@ -235,7 +239,7 @@ test('historical execution port binds one attempt and complete job inventory', a
 test('installed G content fails closed without qualifying either Actions head association', async () => {
   for (const direction of ['forward', 'inverse']) for (const headSha of ['1'.repeat(40), '2'.repeat(40)]) {
     let observations = 0;
-    const api = new Proxy({ getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')) }, {
+    const api = new Proxy({ getInstalledRecord: async () => Buffer.from(readG('governance/docs-portable-authority-r322.json')) }, {
       get(target, key) {
         if (key in target) {return target[key];}
         return async () => {observations++; return { head_sha: headSha, conclusion: 'success' };};
@@ -258,7 +262,7 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
   const before = reconstructed('old'), after = reconstructed('new');
   for (const p of G) {
     assert.ok(!record.manifest.some((row) => row.path === p), p);
-    const descriptor = identity(Buffer.from(read(p)));
+    const descriptor = identity(Buffer.from(readG(p)));
     before.set(p, descriptor); after.set(p, descriptor);
   }
   assert.equal(classifyPortableTransition(before, after, record), 'portable-forward');
@@ -266,7 +270,7 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
   for (const p of ['.github/workflows/docs-protocol-check.yml',
     'scripts/check-community-files.mjs', 'scripts/check-community-files.test.mjs']) {
     assert.ok(!record.manifest.some((row) => row.path === p));
-    const descriptor = identity(Buffer.from(read(p)));
+    const descriptor = identity(Buffer.from(readG(p)));
     before.set(p, descriptor); after.set(p, descriptor);
     const changed = new Map(after); changed.set(p, identity(Buffer.from('rewritten frozen authority')));
     assert.throws(() => classifyPortableTransition(before, changed, record), /incomplete or mixed/u);
@@ -283,7 +287,7 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
   const adoption = await readQualityAdoption();
   const pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
   const censusRow = record.manifest.find((r) => r.path === 'scripts/check-quality-scope.test.mjs');
-  const live = Buffer.from(read(censusRow.path));
+  const live = Buffer.from(readG(censusRow.path));
   // Reviewed accepted-main composition is distinct from either historical descriptor.
   const current = { type: 'blob', mode: '100644', blob: '3a025636bcfd0e1796695b5b0ad0b5f398b2709b',
     bytes: 13076, sha256: 'sha256:8bc75ef356c9a4c2e2eb1031e54b59e73d52c6b955232519ab844f1593ec4e4b' };
@@ -301,14 +305,14 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
   }
 });
 
-const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
+const workflow = YAML.parse(readG('.github/workflows/docs-portable-authority-r322.yml'));
 const legacyV8Descriptor = { type: 'blob', mode: '100644', blob: 'd6300f609345b190d9ce65758a1ff62f456c5fca',
   bytes: 6953, sha256: 'sha256:ccd6b9895b372d460b51399fe59044d0d408def33baaf971e8046443f462e756' };
 function authenticatedLegacyV8(bytes) {
   verifyPortableBlob(bytes, legacyV8Descriptor);
   return YAML.parse(bytes.toString('utf8'));
 }
-const legacyV8Bytes = Buffer.from(read('scripts/fixtures/docs-portable-authority-r322/historical-legacy-v8.yml'));
+const legacyV8Bytes = Buffer.from(readG('scripts/fixtures/docs-portable-authority-r322/historical-legacy-v8.yml'));
 const oldV8 = authenticatedLegacyV8(legacyV8Bytes);
 test('legacy V8 authenticates its frozen predecessor before parsing, never the live successor', () => {
   assert.deepEqual(authenticatedLegacyV8(legacyV8Bytes), oldV8);
@@ -357,9 +361,6 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
   assert.deepEqual(await probe([...paths, "scripts/check-quality-scope.test.mjs"]), { failures: [], outputs: [['mode', 'noop']] });
 });
 // Fixed accepted base and reviewed G checkpoint: no moving branch or synthesized positive leaves.
-const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
-const acceptedG = '66d6d3d2c2643edac414ded48c0ee0586774dd07';
-const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
 const gitBlob = (bytes) => createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 function completeGitTree(revision) {
   return { truncated: false, tree: gitBytes('ls-tree', '-r', '-t', '-z', revision).toString('utf8')
