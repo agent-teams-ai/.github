@@ -561,8 +561,6 @@ function cohortV3Fixture() {
       architecture: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.architecture,
     },
   };
-  record.upgrade_from = ["docs-2026-08-17-rc0"];
-  record.rollback_to = ["docs-2026-08-17-rc0"];
   record.record_digest = cohortRecordDigest(record);
 
   const qualification = input.registry.events.at(-1);
@@ -1335,27 +1333,30 @@ test("isolated install bypasses release age only for the exact authorized packag
   );
 });
 
-test("dispatches workflow -> three-root install -> exact v2 closure -> schema 3 receipt verifier", async () => {
+test("dispatches managed workflow profiles -> three-root install -> exact closure -> receipt verifier", async () => {
   const coordinates = cohortV2Coordinates();
   const lockValue = cohortV2Lock();
-  assert.doesNotThrow(() => validateExactPnpmLock(
-    cohortV2Manifest(), lockValue, coordinates, { qualificationProfile: "cohort-v2" },
-  ));
+  for (const qualificationProfile of ["cohort-v2", "cohort-v3"]) {
+    assert.doesNotThrow(() => validateExactPnpmLock(
+      cohortV2Manifest(), lockValue, coordinates, { qualificationProfile },
+    ));
+    const workspace = parseYamlStrict(
+      trustedInstallWorkspaceConfig(coordinates, qualificationProfile), `${qualificationProfile} install workspace`, 8192,
+    );
+    assert.equal(workspace.minimumReleaseAgeExclude.length, 5);
+  }
   assert.deepEqual(Object.keys(cohortV2Manifest().devDependencies).sort(), [
     "@agent-teams/docs-protocol",
     "@agent-teams/docs-protocol-agent-teams",
     "@agent-teams/engineering-foundation",
   ]);
-  const workspace = parseYamlStrict(
-    trustedInstallWorkspaceConfig(coordinates, "cohort-v2"), "v2 install workspace", 8192,
-  );
-  assert.equal(workspace.minimumReleaseAgeExclude.length, 5);
   const evidence = docsRuntimeClosureV2Evidence(lockValue, coordinates);
   assert.equal(evidence.evidence.coordinates.length, 5);
   assert.equal(evidence.evidence.managedEdges.length, 7);
   const workflowSource = await readFile(new URL("../.github/workflows/docs-protocol-check.yml", import.meta.url), "utf8");
   assert.match(workflowSource, /qualification-profile:.*authorization\.outputs\.qualification-profile/u);
-  assert.match(workflowSource, /qualification-profile == 'cohort-v2'[\s\S]*run-qualification-v3[\s\S]*verify-docs-cohort-v2-receipt\.mjs/u);
+  assert.match(workflowSource,
+    /qualification-profile == 'cohort-v2'[\s\S]*qualification-profile == 'cohort-v3'[\s\S]*run-qualification-v3[\s\S]*verify-docs-cohort-v2-receipt\.mjs/u);
   assert.throws(() => validateExactPnpmLock(cohortV2Manifest(), lockValue, coordinates),
     /Legacy qualification requires exactly two packages/u);
 });
@@ -1770,25 +1771,43 @@ test("isolates exact Cohort qualification from the untrusted semantic gate", asy
   assert.doesNotMatch(JSON.stringify(semantic.steps), /agent-teams-docs qualify|verify-docs-qualification-receipt/u);
   assert.match(JSON.stringify(semantic.steps), /pnpm docs:protocol:check/u);
   assert.equal(semantic.needs, "trusted-qualification");
+  const legacyPnpm = qualification.steps.find(step => step.name === "Set up pnpm for legacy trusted qualification tooling");
+  const managedPnpm = qualification.steps.find(step => step.name === "Set up pnpm for Cohort v2 or v3 trusted qualification tooling");
+  const managedDispatch =
+    "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' || needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'";
+  assert.equal(legacyPnpm.if.replace(/\s+/gu, " "),
+    "needs.trusted-authorize.outputs.qualification-profile != 'cohort-v2' && needs.trusted-authorize.outputs.qualification-profile != 'cohort-v3'");
+  assert.equal(managedPnpm.if.replace(/\s+/gu, " "), managedDispatch);
+  for (const command of ["run-qualification-v3", "verify-docs-cohort-v2-receipt.mjs"]) {
+    const step = qualification.steps.find(entry => entry.run?.includes(command));
+    assert.ok(step, `${command} must remain on the managed qualification route`);
+    assert.equal(step.if.replace(/\s+/gu, " "), managedDispatch);
+  }
 });
 
-test("declares the exact Node24 patch before every owned Docs installation", async () => {
+test("declares the exact Node runtime before every owned Docs installation", async () => {
   // Workflow configuration evidence; this does not execute actions/setup-node.
   const launchers = [
-    ["docs-protocol-check.yml", ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"]],
-    ["docs-cohort-append-only.yml", ["trusted-validation"]],
-    ["docs-admission-evidence.yml", ["trusted-admission-evidence"]],
-    ["docs-fleet-audit.yml", ["current-fleet"]],
+    ["docs-protocol-check.yml", {
+      "trusted-authorize": "24.21.0",
+      "trusted-structural": "24.21.0",
+      "trusted-qualification":
+        "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}",
+      "docs-protocol-check": "26.11.1",
+    }],
+    ["docs-cohort-append-only.yml", { "trusted-validation": "24.21.0" }],
+    ["docs-admission-evidence.yml", { "trusted-admission-evidence": "24.21.0" }],
+    ["docs-fleet-audit.yml", { "current-fleet": "24.21.0" }],
   ];
-  for (const [file, jobs] of launchers) {
+  for (const [file, expectedNodeVersions] of launchers) {
     const workflow = parseDocument(await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8"),
       { strict: true, uniqueKeys: true }).toJS();
-    for (const name of jobs) {
+    for (const [name, expectedNodeVersion] of Object.entries(expectedNodeVersions)) {
       const steps = workflow.jobs[name].steps;
       const nodes = steps.filter(step => step.uses?.startsWith("actions/setup-node@"));
       assert.equal(nodes.length, 1, `${file}:${name} must select exactly one Node launcher`);
       assert.equal(nodes[0].uses, "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020");
-      assert.equal(nodes[0].with["node-version"], "24.21.0", `${file}:${name} must support the new consumer floor`);
+      assert.equal(nodes[0].with["node-version"], expectedNodeVersion, `${file}:${name} must select its exact runtime`);
       assert.ok(steps.indexOf(nodes[0]) < steps.findIndex(step => /(?:\bpnpm|"\$DOCS_COHORT_PNPM_V1_BIN") install/u.test(step.run ?? "")),
         `${file}:${name} selects Node before installation`);
     }
