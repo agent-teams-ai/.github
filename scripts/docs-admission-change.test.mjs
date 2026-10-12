@@ -48,7 +48,7 @@ const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  p
 // Historical runners expose only the legacy CLI. Current v2 runners also
 // expose the skipped legacy alternative; schema 1 executes neither qualifier.
 const legacyQualification = "Run only the exact installed agent-teams-docs qualify CLI";
-const v2Qualification = "Run Cohort v2 qualification through the trusted base-owned runner";
+const v2Qualification = "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
 function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 : 2) {
   const step = (name, conclusion = "success") => ({ name, status: "completed", conclusion });
   if (role === "trusted-qualification") return [

@@ -104,14 +104,14 @@ test("dispatches schema 1/2/3 to none, legacy, and Cohort v2 qualification profi
     "${{ steps.authorization.outputs.qualification-profile }}");
   const byName = new Map(qualification.steps.map((step) => [step.name, step]));
   assert.equal(byName.get("Set up pnpm for legacy trusted qualification tooling").with.version, "11.18.0");
-  assert.equal(byName.get("Set up pnpm for Cohort v2 trusted qualification tooling").with.version, "11.20.0");
+  assert.equal(byName.get("Set up pnpm for Cohort v2 or v3 trusted qualification tooling").with.version, "11.20.0");
   assert.match(byName.get("Run only the exact installed agent-teams-docs qualify CLI").run,
     /trusted-install\.outputs\.cli/u);
-  assert.doesNotMatch(byName.get("Run Cohort v2 qualification through the trusted base-owned runner").run,
+  assert.doesNotMatch(byName.get("Run Cohort v2 or v3 qualification through the trusted base-owned runner").run,
     /trusted-install\.outputs\.cli/u);
-  assert.match(byName.get("Run Cohort v2 qualification through the trusted base-owned runner").run,
+  assert.match(byName.get("Run Cohort v2 or v3 qualification through the trusted base-owned runner").run,
     /run-qualification-v3/u);
-  assert.match(byName.get("Bind Cohort v2 authorized consumer receipt without asserting central CANARY").run,
+  assert.match(byName.get("Bind Cohort v2 or v3 authorized consumer receipt without asserting central CANARY").run,
     /verify-docs-cohort-v2-receipt\.mjs/u);
   assert.equal(qualification.steps.at(-1).if, undefined);
   assert.equal(workflow.jobs["docs-protocol-check"].needs, "trusted-qualification");
