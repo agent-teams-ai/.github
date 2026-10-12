@@ -15,6 +15,7 @@ import {
   cohortRecordDigest,
   DOCS_COHORT_V2_DEPENDENCY_EDGES,
   DOCS_COHORT_V2_PACKAGES,
+  DOCS_COHORT_V3_CURRENT_RUNTIME,
   docsRuntimeClosureAuthority,
   docsRuntimeClosureEvidence,
   docsRuntimeClosureV2Evidence,
@@ -44,6 +45,14 @@ const TRANSITIVE_INTEGRITY = `sha512-${"T".repeat(86)}==`;
 const REPOSITORY_ID = 1314129620;
 const REPOSITORY = "agent-teams-ai/agent-runtime";
 const COHORT_ID = "docs-2026-08-18-rc1";
+const GENERATION3_COORDINATES = Object.freeze({
+  profile_schema_version: 4,
+  cohort_schema_version: 3,
+  managed_state_schema_version: 3,
+  receipt_schema_version: 1,
+  execution_envelope_schema_version: 1,
+  evidence_class: "cohort-v3-supporting-canary",
+});
 const CALLER = `name: Documentation Protocol
 
 on:
@@ -521,6 +530,141 @@ function cohortV2Fixture() {
   return input;
 }
 
+function cohortV3Fixture() {
+  const input = cohortV2Fixture();
+  const record = input.registry.cohorts[0];
+  record.cohort_generation = 3;
+  record.candidate_digest = `sha256:${"a".repeat(64)}`;
+  record.policy_identity = {
+    id: "agent-teams.docs-protocol-current-policy",
+    version: "3.0.0",
+    digest: `sha256:${"b".repeat(64)}`,
+  };
+  record.schemas = {
+    consumer_integration: 4,
+    managed_state: 3,
+    qualification_receipt: 1,
+    docs_protocol: 1,
+    foundation_plan: 1,
+    foundation_journal: 1,
+    foundation_receipt: 1,
+    foundation_envelope: 5,
+  };
+  record.runtime = {
+    selected_lane: DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane,
+    node: DOCS_COHORT_V3_CURRENT_RUNTIME.node,
+    pnpm: DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
+    qualification_runtime: {
+      node_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.nodeVersion,
+      pnpm_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.pnpmVersion,
+      platform: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.platform,
+      architecture: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.architecture,
+    },
+  };
+  record.upgrade_from = ["docs-2026-08-17-rc0"];
+  record.rollback_to = ["docs-2026-08-17-rc0"];
+  record.record_digest = cohortRecordDigest(record);
+
+  const qualification = input.registry.events.at(-1);
+  const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
+  const packageProjection = Object.fromEntries([
+    ["repositoryMutation", "@agent-teams/repository-mutation"],
+    ["documentAuthoring", "@agent-teams/document-authoring"],
+    ["docsProtocol", "@agent-teams/docs-protocol"],
+    ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
+    ["engineeringFoundation", "@agent-teams/engineering-foundation"],
+  ].map(([key, name]) => [key, {
+    version: packageByName.get(name).version,
+    integrity: packageByName.get(name).integrity,
+  }]));
+  const cohort = {
+    schemaVersion: 3,
+    cohortId: record.cohort_id,
+    channel: record.channel,
+    candidateDigest: record.candidate_digest,
+    recordDigest: record.record_digest,
+    qualificationEventDigest: qualification.event_digest,
+    eligibleAfter: record.eligible_after,
+    upgradeFrom: record.upgrade_from,
+    rollbackTo: record.rollback_to,
+    packages: packageProjection,
+    workflow: {
+      repository: record.reusable_workflow.repository,
+      path: record.reusable_workflow.path,
+      revision: record.reusable_workflow.revision,
+      blobSha: record.reusable_workflow.blob_sha,
+    },
+    assets: {
+      skillDigest: record.assets.skill.digest,
+      callerWorkflowDigest: record.assets.caller_workflow.rendered_digest,
+      assetCatalogDigest: record.assets.asset_catalog.digest,
+      transitionCatalogDigest: record.assets.transition_catalog.digest,
+    },
+    schemas: {
+      consumerIntegration: 4,
+      managedState: 3,
+      qualificationReceipt: 1,
+      docsProtocol: 1,
+    },
+    runtime: {
+      policy: { ...record.policy_identity },
+      selectedLane: record.runtime.selected_lane,
+      node: record.runtime.node,
+      pnpm: record.runtime.pnpm,
+      qualificationRuntime: {
+        nodeVersion: record.runtime.qualification_runtime.node_version,
+        pnpmVersion: record.runtime.qualification_runtime.pnpm_version,
+        platform: record.runtime.qualification_runtime.platform,
+        architecture: record.runtime.qualification_runtime.architecture,
+      },
+      runtimeClosure: {
+        domain: record.runtime_closure.domain,
+        digest: record.runtime_closure.digest,
+      },
+    },
+  };
+  const consumerProfile = {
+    schemaVersion: 4,
+    repository: { provider: "github", id: String(REPOSITORY_ID), nameWithOwner: REPOSITORY },
+    integrationRoot: ".",
+    packageManager: "pnpm",
+    profilePath: "architecture/foundation/docs-protocol.yaml",
+    skillPath: ".agents/skills/docs-authoring/SKILL.md",
+    callerWorkflowPath: ".github/workflows/docs-protocol.yml",
+    managedStatePath: "architecture/foundation/docs-protocol-managed-state.json",
+    cohort,
+    qualification: {
+      contractPath: "architecture/foundation/docs-protocol-qualification.json",
+      gateCommand: "pnpm docs:protocol:check",
+    },
+  };
+  const qualificationContract = {
+    schemaVersion: 2,
+    scenarios: [{
+      id: "synthetic-generation3-qualification",
+      type: "synthetic-generation3",
+      intent: { purpose: "test-only qualification contract fixture" },
+      expected: { cohortAdmissible: true },
+    }],
+  };
+  input.files["architecture/foundation/docs-consumer-integration.json"] = `${JSON.stringify(consumerProfile)}\n`;
+  input.files["architecture/foundation/docs-protocol-qualification.json"] = `${JSON.stringify(qualificationContract)}\n`;
+  input.files["architecture/foundation/docs-protocol-managed-state.json"] = `${JSON.stringify(
+    canonicalManagedProjection(consumerProfile, cohort, consumerProfile.repository),
+  )}\n`;
+  input.tree.push({
+    path: "architecture/foundation/docs-protocol-qualification.json",
+    type: "blob",
+    mode: "100644",
+  });
+  Object.assign(input.policy.repositories[0], {
+    desired_cohort_generation: 3,
+    observed_cohort_generation: 3,
+    v3_qualification_coordinates: { ...GENERATION3_COORDINATES },
+  });
+  return input;
+}
+
 function clone(value) {
   return structuredClone(value);
 }
@@ -593,6 +737,113 @@ test("authorizes Cohort v2 only through its explicit selected generation authori
   wrongObserved.policy.repositories[0].desired_cohort_id = "other-cohort";
   wrongObserved.policy.repositories[0].observed_cohort_generation = null;
   assert.throws(() => authorizeConsumerGate(wrongObserved), /explicitly match the Cohort generation/u);
+});
+
+test("authorizes closed synthetic generation3 authority and the exact v3 managed state body", () => {
+  const input = cohortV3Fixture();
+  const authorization = authorizeConsumerGate(input);
+  assert.equal(authorization.schemaVersion, 3);
+  assert.equal(authorization.qualificationProfile, "cohort-v3");
+  assert.equal(authorization.qualificationPackageManager, "pnpm@11.20.0");
+  assert.equal(authorization.expectedPackages.length, 5);
+  assert.deepEqual(authorization.qualificationAuthority.qualificationReceipt, {
+    namespace: "docs-protocol-cohort-v3-qualification-receipt/v1",
+    schemaVersion: 1,
+    profileSchemaVersion: 4,
+    cohortSchemaVersion: 3,
+    managedStateSchemaVersion: 3,
+    checkCount: 11,
+  });
+  assert.deepEqual(input.policy.repositories[0].v3_qualification_coordinates, GENERATION3_COORDINATES);
+
+  const profile = JSON.parse(input.files["architecture/foundation/docs-consumer-integration.json"]);
+  const managed = JSON.parse(input.files["architecture/foundation/docs-protocol-managed-state.json"]);
+  const cohort = profile.cohort;
+  const body = {
+    schemaVersion: 3,
+    cohortId: cohort.cohortId,
+    cohortAuthority: {
+      channel: cohort.channel,
+      recordDigest: cohort.recordDigest,
+      qualificationEventDigest: cohort.qualificationEventDigest,
+      eligibleAfter: cohort.eligibleAfter,
+      upgradeFrom: cohort.upgradeFrom,
+      rollbackTo: cohort.rollbackTo,
+      candidateDigest: cohort.candidateDigest,
+    },
+    repository: profile.repository,
+    packages: cohort.packages,
+    schemas: cohort.schemas,
+    runtime: cohort.runtime,
+    profilePath: profile.profilePath,
+    skillPath: profile.skillPath,
+    callerWorkflowPath: profile.callerWorkflowPath,
+    managedStatePath: profile.managedStatePath,
+    assets: {
+      ...cohort.assets,
+      agentsRouteDigest: digest(`<!-- agent-teams-docs:route/v1 begin -->\nUse [${profile.skillPath}](${profile.skillPath}) for documentation.\n<!-- agent-teams-docs:route/v1 end -->`),
+      docsScriptsDigest: digest(canonical(Object.fromEntries(
+        ["check", "doctor", "find", "info", "new", "recover"].map((command) => [
+          `docs:${command}`,
+          `agent-teams-docs ${command} --consumer . --profile ${profile.profilePath}`,
+        ]),
+      ))),
+    },
+    workflow: cohort.workflow,
+  };
+  assert.deepEqual(managed, { ...body, stateDigest: managedStateDigest(body, 3) });
+});
+
+test("rejects generation3 profile, schema, generation, policy, and physical-canary mixes", () => {
+  const wrongProfile = cohortV3Fixture();
+  const profilePath = "architecture/foundation/docs-consumer-integration.json";
+  const wrongProfileValue = JSON.parse(wrongProfile.files[profilePath]);
+  wrongProfileValue.schemaVersion = 3;
+  delete wrongProfileValue.qualification;
+  wrongProfile.files[profilePath] = `${JSON.stringify(wrongProfileValue)}\n`;
+  assert.throws(() => authorizeConsumerGate(wrongProfile),
+    /profile generation does not explicitly match/u);
+
+  const wrongSchema = cohortV3Fixture();
+  const wrongProfileValue2 = JSON.parse(wrongSchema.files[profilePath]);
+  wrongProfileValue2.cohort.schemas.managedState = 2;
+  wrongSchema.files[profilePath] = `${JSON.stringify(wrongProfileValue2)}\n`;
+  wrongSchema.files["architecture/foundation/docs-protocol-managed-state.json"] = `${JSON.stringify(
+    canonicalManagedProjection(wrongProfileValue2, wrongProfileValue2.cohort, wrongProfileValue2.repository),
+  )}\n`;
+  assert.throws(() => authorizeConsumerGate(wrongSchema),
+    /differs from the exact central immutable Cohort projection/u);
+
+  const wrongGeneration = cohortV3Fixture();
+  wrongGeneration.policy.repositories[0].desired_cohort_generation = 2;
+  assert.throws(() => authorizeConsumerGate(wrongGeneration),
+    /explicitly match the Cohort generation/u);
+
+  const wrongPolicy = cohortV3Fixture();
+  wrongPolicy.policy.repositories[0].v3_qualification_coordinates.evidence_class = "cohort-v2-supporting-canary";
+  assert.throws(() => authorizeConsumerGate(wrongPolicy),
+    /exact generation3 qualification coordinates/u);
+
+  const rejectedMix = cohortV2Fixture();
+  rejectedMix.policy.repositories[0].v3_qualification_coordinates = { ...GENERATION3_COORDINATES };
+  assert.throws(() => authorizeConsumerGate(rejectedMix),
+    /exact Cohort v2 qualification coordinates/u);
+
+  const nonCanary = cohortV3Fixture();
+  const record = nonCanary.registry.cohorts[0];
+  record.canary_repositories = [{
+    repository_id: 1336577313,
+    repository: "agent-teams-ai/docs-protocol-canary-20260817",
+  }];
+  record.record_digest = cohortRecordDigest(record);
+  const nonCanaryProfile = JSON.parse(nonCanary.files[profilePath]);
+  nonCanaryProfile.cohort.recordDigest = record.record_digest;
+  nonCanary.files[profilePath] = `${JSON.stringify(nonCanaryProfile)}\n`;
+  nonCanary.files["architecture/foundation/docs-protocol-managed-state.json"] = `${JSON.stringify(
+    canonicalManagedProjection(nonCanaryProfile, nonCanaryProfile.cohort, nonCanaryProfile.repository),
+  )}\n`;
+  assert.throws(() => authorizeConsumerGate(nonCanary),
+    /restricted to its exact canary repository IDs/u);
 });
 
 test("Cohort v2 authorization keeps non-canaries out before RECOMMENDED", () => {
@@ -766,6 +1017,20 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
         realpath(join(adapterRoot, "dist", "qualification", "index.js"))));
       return { runDocsProtocolQualificationV3: ({ profile, evidence, lockfileBytes }) => {
         assert.deepEqual(lockfileBytes, trustedLockBytes);
+        assert.deepEqual(evidence, {
+          packages: Object.fromEntries([
+            ["repositoryMutation", "@agent-teams/repository-mutation"],
+            ["documentAuthoring", "@agent-teams/document-authoring"],
+            ["docsProtocol", "@agent-teams/docs-protocol"],
+            ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
+            ["engineeringFoundation", "@agent-teams/engineering-foundation"],
+          ].map(([key, name]) => {
+            const expected = authorization.expectedPackages.find((entry) => entry.name === name);
+            return [key, { version: expected.version, integrity: expected.integrity }];
+          })),
+          schemas: { consumerIntegration: 3, managedState: 2, docsProtocol: 1 },
+          runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
+        });
         assert.equal(docsRuntimeClosureV2Evidence(parseYamlStrict(lockfileBytes.toString(),
           "qualified lockfile", 8 * 1024 * 1024), authorization.expectedPackages).authority.digest,
         evidence.runtimeClosureDigest);
@@ -836,6 +1101,148 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
     await rm(join(consumer, "architecture/foundation/docs-consumer-integration.json"));
     await assert.rejects(() => runQualificationV3Command({ importModule }), /ENOENT/u);
     assert.equal(imports, 0);
+  } finally {
+    for (const key of envKeys) {
+      if (priorEnv[key] === undefined) {delete process.env[key];} else {process.env[key] = priorEnv[key];}
+    }
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("generation3 runner passes closed Foundation overload evidence and rejects a mixed authorization", async () => {
+  const root = await mkdtemp(join(tmpdir(), "docs-generation3-runner-"));
+  const envKeys = ["AUTHORIZATION_PATH", "CONSUMER_CHECKOUT", "TRUSTED_INSTALL_ROOT",
+    "INSTALL_EVIDENCE_PATH", "QUALIFICATION_RECEIPT"];
+  const priorEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+  try {
+    const consumer = join(root, "consumer");
+    const install = join(root, "install");
+    const evidencePath = join(root, "install-evidence.json");
+    const authorizationPath = join(root, "authorization.json");
+    const receiptPath = join(root, "receipt.json");
+    const input = cohortV3Fixture();
+    const authorization = authorizeConsumerGate(input);
+    await mkdir(join(consumer, "architecture", "foundation"), { recursive: true });
+    await Promise.all([
+      writeFile(join(consumer, "architecture/foundation/docs-consumer-integration.json"),
+        input.files["architecture/foundation/docs-consumer-integration.json"]),
+      writeFile(join(consumer, "pnpm-lock.yaml"), input.files["pnpm-lock.yaml"]),
+    ]);
+    const installedRoots = new Map();
+    for (const expected of authorization.expectedPackages) {
+      const packageRoot = join(install, "node_modules", ...expected.name.split("/"));
+      await mkdir(packageRoot, { recursive: true });
+      await writeFile(join(packageRoot, "package.json"), JSON.stringify({
+        name: expected.name,
+        version: expected.version,
+        ...(expected.name === "@agent-teams/docs-protocol-agent-teams"
+          ? { exports: { "./qualification": { import: "./dist/qualification/index.js" } } }
+          : {}),
+      }));
+      installedRoots.set(expected.name, packageRoot);
+    }
+    const adapterRoot = installedRoots.get("@agent-teams/docs-protocol-agent-teams");
+    await mkdir(join(adapterRoot, "dist", "qualification"), { recursive: true });
+    await writeFile(join(adapterRoot, "dist", "qualification", "index.js"), "export {};\n");
+    const trustedLockBytes = Buffer.from(stringifyYaml(authorization.expectedRuntimeClosureLock));
+    await writeFile(join(install, "pnpm-lock.yaml"), trustedLockBytes);
+    const installedPackages = [];
+    for (const expected of authorization.expectedPackages) {
+      installedPackages.push({ ...expected, treeDigest: await installedTreeDigest(installedRoots.get(expected.name)) });
+    }
+    const authorizationDigest = digest(canonical({
+      domain: "agent-teams.docs-consumer-gate-authorization/v1", body: authorization,
+    }));
+    const installEvidence = { schemaVersion: 1, authorizationDigest, packages: installedPackages };
+    const writeInstallEvidence = (value = installEvidence) =>
+      writeFile(evidencePath, `${canonical(value)}\n`);
+    await Promise.all([
+      writeFile(authorizationPath, `${canonical({ authorization, authorizationDigest })}\n`),
+      writeInstallEvidence(),
+    ]);
+    Object.assign(process.env, {
+      AUTHORIZATION_PATH: authorizationPath,
+      CONSUMER_CHECKOUT: consumer,
+      TRUSTED_INSTALL_ROOT: install,
+      INSTALL_EVIDENCE_PATH: evidencePath,
+      QUALIFICATION_RECEIPT: receiptPath,
+    });
+    let imports = 0;
+    let request;
+    const importModule = async () => {
+      imports += 1;
+      return {
+        runDocsProtocolQualificationV3: (value) => {
+          request = value;
+          return {
+            schemaVersion: 1,
+            cohortAdmissible: true,
+            receiptDigest: `sha256:${"c".repeat(64)}`,
+          };
+        },
+      };
+    };
+    await runQualificationV3Command({ importModule });
+    assert.equal(imports, 1);
+    const profile = JSON.parse(input.files["architecture/foundation/docs-consumer-integration.json"]);
+    assert.deepEqual(request, {
+      profile,
+      evidence: {
+        cohort: {
+          cohortId: profile.cohort.cohortId,
+          recordDigest: profile.cohort.recordDigest,
+          qualificationEventDigest: profile.cohort.qualificationEventDigest,
+          candidateDigest: profile.cohort.candidateDigest,
+        },
+        packages: Object.fromEntries([
+          ["repositoryMutation", "@agent-teams/repository-mutation"],
+          ["documentAuthoring", "@agent-teams/document-authoring"],
+          ["docsProtocol", "@agent-teams/docs-protocol"],
+          ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
+          ["engineeringFoundation", "@agent-teams/engineering-foundation"],
+        ].map(([key, name]) => {
+          const expected = authorization.expectedPackages.find((entry) => entry.name === name);
+          return [key, { version: expected.version, integrity: expected.integrity }];
+        })),
+        schemas: {
+          consumerIntegration: 4,
+          managedState: 3,
+          qualificationReceipt: 1,
+          docsProtocol: 1,
+        },
+        policy: {
+          id: "agent-teams.docs-protocol-current-policy",
+          version: "3.0.0",
+          sourceDigest: `sha256:${"b".repeat(64)}`,
+        },
+        runtime: {
+          selectedLane: "node-26-managed-qualified",
+          node: ">=26.0.0 <27",
+          pnpm: ">=11.17.0 <12",
+          qualificationRuntime: {
+            nodeVersion: "26.11.1",
+            pnpmVersion: "11.20.0",
+            platform: "linux",
+            architecture: "x64",
+          },
+          runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
+        },
+      },
+      lockfileBytes: trustedLockBytes,
+    });
+    assert.equal(await readFile(receiptPath, "utf8"),
+      `${canonical({ schemaVersion: 1, cohortAdmissible: true, receiptDigest: `sha256:${"c".repeat(64)}` })}\n`);
+
+    const mixedAuthorization = structuredClone(authorization);
+    mixedAuthorization.qualificationProfile = "cohort-v2";
+    const mixedDigest = digest(canonical({
+      domain: "agent-teams.docs-consumer-gate-authorization/v1", body: mixedAuthorization,
+    }));
+    await writeFile(authorizationPath,
+      `${canonical({ authorization: mixedAuthorization, authorizationDigest: mixedDigest })}\n`);
+    await assert.rejects(() => runQualificationV3Command({ importModule }),
+      /one explicit Cohort v2 or generation3 authorization/u);
+    assert.equal(imports, 1);
   } finally {
     for (const key of envKeys) {
       if (priorEnv[key] === undefined) {delete process.env[key];} else {process.env[key] = priorEnv[key];}

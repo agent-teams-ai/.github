@@ -1336,11 +1336,38 @@ export async function runQualificationV3Command(options = {}) {
   const entrypoint = await realpath(join(adapterRoot, "dist", "qualification", "index.js"));
   assert(entrypoint.startsWith(`${adapterRoot}${sep}`) && (await lstat(entrypoint)).isFile(),
     "Qualification v3 entrypoint escapes the exact installed adapter.");
-  const evidence = {
-    packages: Object.fromEntries(COORDINATE_PACKAGE_KEYS.map(([key, name]) => [key, {
-      version: expectedByName.get(name).version,
-      integrity: expectedByName.get(name).integrity,
-    }])),
+  const packages = Object.fromEntries(COORDINATE_PACKAGE_KEYS.map(([key, name]) => [key, {
+    version: expectedByName.get(name).version,
+    integrity: expectedByName.get(name).integrity,
+  }]));
+  const evidence = authorization.qualificationProfile === "cohort-v3" ? {
+    cohort: {
+      cohortId: profile.cohort.cohortId,
+      recordDigest: profile.cohort.recordDigest,
+      qualificationEventDigest: profile.cohort.qualificationEventDigest,
+      candidateDigest: profile.cohort.candidateDigest,
+    },
+    packages,
+    schemas: {
+      consumerIntegration: 4,
+      managedState: 3,
+      qualificationReceipt: 1,
+      docsProtocol: 1,
+    },
+    policy: {
+      id: profile.cohort.runtime.policy.id,
+      version: profile.cohort.runtime.policy.version,
+      sourceDigest: profile.cohort.runtime.policy.digest,
+    },
+    runtime: {
+      selectedLane: profile.cohort.runtime.selectedLane,
+      node: profile.cohort.runtime.node,
+      pnpm: profile.cohort.runtime.pnpm,
+      qualificationRuntime: { ...profile.cohort.runtime.qualificationRuntime },
+      runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
+    },
+  } : {
+    packages,
     schemas: { ...profile.cohort.schemas },
     runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
   };
