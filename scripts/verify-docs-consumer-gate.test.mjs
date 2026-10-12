@@ -840,8 +840,10 @@ test("rejects generation3 profile, schema, generation, policy, and physical-cana
   nonCanary.files["architecture/foundation/docs-protocol-managed-state.json"] = `${JSON.stringify(
     canonicalManagedProjection(nonCanaryProfile, nonCanaryProfile.cohort, nonCanaryProfile.repository),
   )}\n`;
-  assert.throws(() => authorizeConsumerGate(nonCanary),
-    /restricted to its exact canary repository IDs/u);
+  assert.throws(() => authorizeConsumerGate(nonCanary), {
+    name: "GatePolicyError",
+    message: "Requested Cohort state QUALIFIED is neither selectable nor supported for this repository.",
+  });
 });
 
 test("Cohort v2 authorization keeps non-canaries out before RECOMMENDED", () => {
