@@ -64,10 +64,13 @@ function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 
 test("admission execution fixtures follow canonical legacy and v2 workflow branches", async () => {
   const workflow = YAML.parse(await readFile(".github/workflows/docs-protocol-check.yml", "utf8"));
   const steps = workflow.jobs["trusted-qualification"].steps;
-  for (const [name, profile] of [[legacyQualification, "legacy"], [currentWorkflowQualification, "cohort-v2"]]) {
+  for (const [name, condition] of [
+    [legacyQualification, "needs.trusted-authorize.outputs.qualification-profile == 'legacy'"],
+    [currentWorkflowQualification, "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' || needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'"],
+  ]) {
     const matching = steps.filter((step) => step.name === name);
     assert.equal(matching.length, 1);
-    assert.equal(matching[0].if, `needs.trusted-authorize.outputs.qualification-profile == '${profile}'`);
+    assert.equal(matching[0].if, condition);
   }
 });
 
