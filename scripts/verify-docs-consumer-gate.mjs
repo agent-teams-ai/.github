@@ -930,17 +930,15 @@ export function authorizeConsumerGate(input) {
       assetCatalogDigest: record.assets.asset_catalog.digest,
       transitionCatalogDigest: record.assets.transition_catalog.digest,
     },
-    schemas: {
-      ...(v3 ? {
-        consumerIntegration: record.schemas.consumer_integration,
-        managedState: record.schemas.managed_state,
-        qualificationReceipt: record.schemas.qualification_receipt,
-        docsProtocol: record.schemas.docs_protocol,
-      } : {
-        consumerIntegration: record.schemas.consumer_integration,
-        managedState: record.schemas.managed_state,
-        docsProtocol: record.schemas.docs_protocol,
-      }),
+    schemas: v3 ? {
+      consumerIntegration: record.schemas.consumer_integration,
+      managedState: record.schemas.managed_state,
+      qualificationReceipt: record.schemas.qualification_receipt,
+      docsProtocol: record.schemas.docs_protocol,
+    } : {
+      consumerIntegration: record.schemas.consumer_integration,
+      managedState: record.schemas.managed_state,
+      docsProtocol: record.schemas.docs_protocol,
     },
     runtime: v3 ? {
       policy: { ...record.policy_identity },
