@@ -48,7 +48,8 @@ const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  p
 // Historical runners expose only the legacy CLI. Current v2 runners also
 // expose the skipped legacy alternative; schema 1 executes neither qualifier.
 const legacyQualification = "Run only the exact installed agent-teams-docs qualify CLI";
-const v2Qualification = "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
+const v2Qualification = "Run Cohort v2 qualification through the trusted base-owned runner";
+const currentWorkflowQualification = "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
 function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 : 2) {
   const step = (name, conclusion = "success") => ({ name, status: "completed", conclusion });
   if (role === "trusted-qualification") return [
@@ -63,7 +64,7 @@ function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 
 test("admission execution fixtures follow canonical legacy and v2 workflow branches", async () => {
   const workflow = YAML.parse(await readFile(".github/workflows/docs-protocol-check.yml", "utf8"));
   const steps = workflow.jobs["trusted-qualification"].steps;
-  for (const [name, profile] of [[legacyQualification, "legacy"], [v2Qualification, "cohort-v2"]]) {
+  for (const [name, profile] of [[legacyQualification, "legacy"], [currentWorkflowQualification, "cohort-v2"]]) {
     const matching = steps.filter((step) => step.name === name);
     assert.equal(matching.length, 1);
     assert.equal(matching[0].if, `needs.trusted-authorize.outputs.qualification-profile == '${profile}'`);
