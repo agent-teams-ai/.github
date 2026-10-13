@@ -368,7 +368,7 @@ async function packageRoot(installRoot, expected) {
   return matches[0];
 }
 
-async function packageTreeDigest(root, name) {
+export async function installedPackageTreeDigest(root, name) {
   const entries = [];
   async function visit(current) {
     const handle = await opendir(current);
@@ -377,7 +377,7 @@ async function packageTreeDigest(root, name) {
       const path = join(current, entry.name);
       const portable = relative(root, path).split(sep).join("/");
       if (entry.isSymbolicLink()) {fail(`${name} installed tree contains a symlink.`);}
-      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable }); await visit(path);}
+      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable, absolute: path }); await visit(path);}
       else if (entry.isFile()) {entries.push({ kind: "file", path: portable, absolute: path });}
       else {fail(`${name} installed tree contains a non-file entry.`);}
     }
@@ -388,10 +388,13 @@ async function packageTreeDigest(root, name) {
   ));
   const hash = createHash("sha256"); let total = 0;
   for (const entry of entries) {
-    hash.update(entry.kind).update("\0").update(entry.path).update("\0");
+    const metadata = await lstat(entry.absolute);
+    const expectedKind = entry.kind === "directory" ? metadata.isDirectory() : metadata.isFile();
+    if (!expectedKind) {fail(`${name} installed tree entry kind changed.`);}
+    const mode = (metadata.mode & 0o777).toString(8).padStart(3, "0");
+    hash.update(entry.kind).update("\0").update(entry.path).update("\0").update(mode).update("\0");
     if (entry.kind === "file") {
-      const metadata = await lstat(entry.absolute);
-      if (!metadata.isFile() || metadata.size > 16 * 1024 * 1024) {
+      if (metadata.size > 16 * 1024 * 1024) {
         fail(`${name} installed artifact exceeds its file bound.`);
       }
       const bytes = await readFile(entry.absolute); total += bytes.byteLength;
@@ -471,7 +474,7 @@ async function verifyCommand(argv) {
     if (installedNames.has(installed.name)) {fail("Cohort v2 install evidence contains duplicate coordinates.");}
     installedNames.add(installed.name);
     const root = await packageRoot(installRoot, expected);
-    if (installed.treeDigest !== await packageTreeDigest(root, installed.name)) {
+    if (installed.treeDigest !== await installedPackageTreeDigest(root, installed.name)) {
       fail("Cohort v2 installed package bytes changed after trusted verification.");
     }
   }

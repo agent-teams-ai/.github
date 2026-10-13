@@ -25,6 +25,7 @@ import {
   validateDocsProtocolExceptions,
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
+import { installedPackageTreeDigest } from "./verify-docs-cohort-v2-receipt.mjs";
 
 const CONTROLLER_REPOSITORY = "agent-teams-ai/.github";
 const REUSABLE_WORKFLOW_PATH = ".github/workflows/docs-protocol-check.yml";
@@ -1247,35 +1248,6 @@ async function readAuthorization() {
   return envelope.authorization;
 }
 
-async function qualificationPackageTreeDigest(root, name) {
-  const entries = [];
-  async function visitTree(current) {
-    const handle = await opendir(current);
-    for await (const entry of handle) {
-      assert(entries.length < 20_000, `${name} installed tree exceeds its entry bound.`);
-      const path = join(current, entry.name);
-      const portable = path.slice(root.length + 1).split(sep).join("/");
-      assert(!entry.isSymbolicLink(), `${name} installed tree contains a symlink.`);
-      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable }); await visitTree(path);}
-      else {assert(entry.isFile(), `${name} installed tree contains a non-file entry.`); entries.push({ kind: "file", path: portable, absolute: path });}
-    }
-  }
-  await visitTree(root);
-  entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
-  const hash = createHash("sha256"); let total = 0;
-  for (const entry of entries) {
-    hash.update(entry.kind).update("\0").update(entry.path).update("\0");
-    if (entry.kind === "file") {
-      const metadata = await lstat(entry.absolute);
-      assert(metadata.isFile() && metadata.size <= 16 * 1024 * 1024, `${name} installed artifact exceeds its file bound.`);
-      const bytes = await readFile(entry.absolute); total += bytes.byteLength;
-      assert(total <= 256 * 1024 * 1024, `${name} installed tree exceeds its byte bound.`);
-      hash.update(bytes).update("\0");
-    }
-  }
-  return `sha256:${hash.digest("hex")}`;
-}
-
 async function qualificationInstalledPackageRoot(installRoot, expected) {
   const direct = join(installRoot, "node_modules", expected.name);
   try {
@@ -1302,6 +1274,12 @@ async function qualificationInstalledPackageRoot(installRoot, expected) {
   }
   assert(new Set(matches).size === 1, `${expected.name} does not have one exact installed package root.`);
   return matches[0];
+}
+
+function assertQualifiedRuntimeLockExact(lock, authorization) {
+  if (!["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile)) {return;}
+  assert(canonicalJson(lock) === canonicalJson(authorization.expectedRuntimeClosureLock),
+    "Trusted install lock differs from the exact authorized runtime closure lock.");
 }
 
 export async function runQualificationV3Command(options = {}) {
@@ -1356,13 +1334,14 @@ export async function runQualificationV3Command(options = {}) {
   const trustedLockBytes = await readFile(trustedLockPath);
   const trustedLock = parseYamlStrict(trustedLockBytes.toString("utf8"),
     "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
+  assertQualifiedRuntimeLockExact(trustedLock, authorization);
   assert(canonicalJson(docsRuntimeClosureV2Authority(trustedLock, authorization.expectedPackages)) ===
     canonicalJson(authorization.expectedRuntimeClosure),
   "Trusted install runtime closure differs from the qualified Cohort authority.");
   const installedRoots = new Map();
   for (const expected of authorization.expectedPackages) {
     const root = await qualificationInstalledPackageRoot(process.env.TRUSTED_INSTALL_ROOT, expected);
-    assert(await qualificationPackageTreeDigest(root, expected.name) === installedByName.get(expected.name).treeDigest,
+    assert(await installedPackageTreeDigest(root, expected.name) === installedByName.get(expected.name).treeDigest,
       `${expected.name} installed bytes changed before qualification execution.`);
     installedRoots.set(expected.name, root);
   }
@@ -1607,33 +1586,8 @@ async function verifyInstallCommand() {
     "Trusted Docs CLI does not resolve to a regular file inside the exact package.");
   const installedPackages = [];
   for (const expected of authorization.expectedPackages) {
-    const root = installedRoots.get(expected.name);
-    const entries = [];
-    async function visitInstalledTree(current) {
-      const handle = await opendir(current);
-      for await (const entry of handle) {
-        const path = join(current, entry.name);
-        const repositoryPath = path.slice(root.length + 1).split(sep).join("/");
-        assert(entries.length < 20_000, `${expected.name} installed tree exceeds its entry bound.`);
-        assert(!entry.isSymbolicLink(), `${expected.name} installed tree contains a symlink.`);
-        if (entry.isDirectory()) { entries.push({ kind: "directory", path: repositoryPath }); await visitInstalledTree(path); }
-        else { assert(entry.isFile(), `${expected.name} installed tree contains a non-file entry.`); entries.push({ kind: "file", path: repositoryPath, absolute: path }); }
-      }
-    }
-    await visitInstalledTree(root);
-    entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
-    const hash = createHash("sha256"); let total = 0;
-    for (const entry of entries) {
-      hash.update(entry.kind).update("\0").update(entry.path).update("\0");
-      if (entry.kind === "file") {
-        const metadata = await lstat(entry.absolute);
-        assert(metadata.isFile() && metadata.size <= 16 * 1024 * 1024, `${expected.name} installed artifact exceeds its file bound.`);
-        const bytes = await readFile(entry.absolute); total += bytes.byteLength;
-        assert(total <= 256 * 1024 * 1024, `${expected.name} installed tree exceeds its byte bound.`);
-        hash.update(bytes).update("\0");
-      }
-    }
-    installedPackages.push({ ...expected, treeDigest: `sha256:${hash.digest("hex")}` });
+    installedPackages.push({ ...expected,
+      treeDigest: await installedPackageTreeDigest(installedRoots.get(expected.name), expected.name) });
   }
   assert(typeof process.env.INSTALL_EVIDENCE_PATH === "string", "Trusted install evidence path is required.");
   await writeFile(process.env.INSTALL_EVIDENCE_PATH, `${canonicalJson({ schemaVersion: 1,
@@ -1652,6 +1606,7 @@ async function verifyInstallLockCommand() {
     "trusted install package.json", JSON_LIMITS["package.json"]);
   const lock = parseYamlStrict(await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
     "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
+  assertQualifiedRuntimeLockExact(lock, authorization);
   validateExactPnpmLock(manifest, lock, authorization.expectedPackages,
     { qualificationProfile: authorization.qualificationProfile,
       qualifiedRuntimeClosureLock: authorization.expectedRuntimeClosureLock });

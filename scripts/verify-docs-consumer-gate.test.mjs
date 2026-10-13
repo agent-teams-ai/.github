@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, opendir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, mkdtemp, opendir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
 import test from "node:test";
@@ -96,7 +96,8 @@ async function installedTreeDigest(root) {
     for await (const entry of handle) {
       const path = join(current, entry.name);
       const portable = path.slice(root.length + 1).split(sep).join("/");
-      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable }); await visit(path);}
+      assert(!entry.isSymbolicLink(), `${portable} installed fixture tree contains a symlink.`);
+      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable, absolute: path }); await visit(path);}
       else {entries.push({ kind: "file", path: portable, absolute: path });}
     }
   }
@@ -104,7 +105,10 @@ async function installedTreeDigest(root) {
   entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
   const hash = createHash("sha256");
   for (const entry of entries) {
-    hash.update(entry.kind).update("\0").update(entry.path).update("\0");
+    const metadata = await lstat(entry.absolute);
+    assert(entry.kind === "directory" ? metadata.isDirectory() : metadata.isFile());
+    const mode = (metadata.mode & 0o777).toString(8).padStart(3, "0");
+    hash.update(entry.kind).update("\0").update(entry.path).update("\0").update(mode).update("\0");
     if (entry.kind === "file") {hash.update(await readFile(entry.absolute)).update("\0");}
   }
   return `sha256:${hash.digest("hex")}`;
@@ -878,10 +882,16 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
   }
   const install = join(root, "install");
   const installedPackages = [];
+  let modeDriftPath;
   for (const expected of authorization.expectedPackages) {
     const packageRoot = join(install, "node_modules", ...expected.name.split("/"));
     await mkdir(packageRoot, { recursive: true });
     await writeFile(join(packageRoot, "package.json"), JSON.stringify({ name: expected.name, version: expected.version }));
+    if (expected.name === "@agent-teams/repository-mutation") {
+      modeDriftPath = join(packageRoot, "executable.js");
+      await writeFile(modeDriftPath, "export {};\n");
+      await chmod(modeDriftPath, 0o644);
+    }
     installedPackages.push({ ...expected, treeDigest: await installedTreeDigest(packageRoot) });
   }
   const authorizationPath = join(root, "authorization.json");
@@ -922,6 +932,11 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
   assert.match(passed.stdout, /authorized consumer qualification receipt is bound/u);
   assert.match(passed.stdout, /central CANARY remains unsatisfied/u);
   assert.doesNotMatch(passed.stdout, /supporting canary|supporting qualification/u);
+  await chmod(modeDriftPath, 0o755);
+  await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
+  await chmod(modeDriftPath, 0o644);
+  const restored = await run();
+  assert.equal(restored.stderr, "");
   await assert.rejects(() => run("f".repeat(40)), /central authorization is not exact/u);
   await writeFile(authorizationPath, "{}");
   await assert.rejects(() => run(), /central authorization is not exact/u);
@@ -1174,6 +1189,7 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
       installedRoots.set(expected.name, packageRoot);
     }
     const trustedLockBytes = Buffer.from(stringifyYaml(authorization.expectedRuntimeClosureLock));
+    await writeFile(join(install, "package.json"), JSON.stringify(cohortV2Manifest()));
     await writeFile(join(install, "pnpm-lock.yaml"), trustedLockBytes);
     assert.notEqual(trustedLockBytes.toString(), input.files["pnpm-lock.yaml"]);
     const adapterRoot = join(install, "node_modules", "@agent-teams", "docs-protocol-agent-teams");
@@ -1208,6 +1224,10 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
       INSTALL_EVIDENCE_PATH: evidencePath,
       QUALIFICATION_RECEIPT: receiptPath,
     });
+    const execute = promisify(execFile);
+    const runVerifyInstallLock = () => execute(process.execPath, [
+      new URL("./verify-docs-consumer-gate.mjs", import.meta.url).pathname, "verify-install-lock",
+    ], { env: process.env });
     let imports = 0;
     const importModule = async (entrypoint) => {
       imports += 1;
@@ -1240,12 +1260,36 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
     };
     await runQualificationV3Command({ importModule });
     assert.equal(imports, 1);
+    await runVerifyInstallLock();
     assert.equal(await readFile(receiptPath, "utf8"),
       `${canonical({ schemaVersion: 3, cohortAdmissible: true, receiptDigest: `sha256:${"b".repeat(64)}` })}\n`);
+
+    const unusedLocks = [
+      structuredClone(authorization.expectedRuntimeClosureLock),
+      structuredClone(authorization.expectedRuntimeClosureLock),
+      structuredClone(authorization.expectedRuntimeClosureLock),
+    ];
+    unusedLocks[0].importers["."].dependencies = { "unused-importer-dependency": "1.0.0" };
+    unusedLocks[1].packages["unused-package@1.0.0"] =
+      { resolution: { integrity: TRANSITIVE_INTEGRITY } };
+    unusedLocks[2].snapshots["unused-snapshot@1.0.0"] = {};
+    for (const unusedLock of unusedLocks) {
+      assert.deepEqual(
+        docsRuntimeClosureV2Evidence(unusedLock, authorization.expectedPackages).authority,
+        authorization.expectedRuntimeClosure,
+      );
+      await writeFile(join(install, "pnpm-lock.yaml"), stringifyYaml(unusedLock));
+      await assert.rejects(() => runQualificationV3Command({ importModule }),
+        /exact authorized runtime closure lock/u);
+      assert.equal(imports, 1);
+      await assert.rejects(() => runVerifyInstallLock(), /exact authorized runtime closure lock/u);
+    }
+    await writeFile(join(install, "pnpm-lock.yaml"), trustedLockBytes);
+
     imports = 0;
     await writeFile(join(install, "pnpm-lock.yaml"), input.files["pnpm-lock.yaml"]);
     await assert.rejects(() => runQualificationV3Command({ importModule }),
-      /Trusted install runtime closure differs/u);
+      { message: "Trusted install lock differs from the exact authorized runtime closure lock." });
     assert.equal(imports, 0);
     await rm(join(install, "pnpm-lock.yaml"));
     await assert.rejects(() => runQualificationV3Command({ importModule }), /ENOENT/u);
@@ -1256,6 +1300,11 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
       /installed bytes changed before qualification execution/u);
     assert.equal(imports, 0);
     await writeFile(join(adapterRoot, "dist", "qualification", "index.js"), "export {};\n");
+    await chmod(join(adapterRoot, "dist", "qualification", "index.js"), 0o755);
+    await assert.rejects(() => runQualificationV3Command({ importModule }),
+      /installed bytes changed before qualification execution/u);
+    assert.equal(imports, 0);
+    await chmod(join(adapterRoot, "dist", "qualification", "index.js"), 0o644);
 
     await writeInstallEvidence({ ...installEvidence, authorizationDigest: `sha256:${"c".repeat(64)}` });
     await assert.rejects(() => runQualificationV3Command({ importModule }),
