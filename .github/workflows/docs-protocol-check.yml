@@ -299,6 +299,8 @@ jobs:
           needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' ||
           needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" run-qualification-v3
+        env:
+          DOCS_COHORT_PNPM_EXECUTABLE: pnpm
       - name: Bind released-cohort receipt to exact checkout and installed Cohort
         if: needs.trusted-authorize.outputs.qualification-profile == 'legacy'
         run: >-
@@ -317,6 +319,8 @@ jobs:
           --authorization "$AUTHORIZATION_PATH" --install-evidence "$INSTALL_EVIDENCE_PATH"
           --receipt "$QUALIFICATION_RECEIPT"
           --caller-sha "${{ github.sha }}"
+        env:
+          DOCS_COHORT_PNPM_EXECUTABLE: pnpm
       - name: Confirm current controller authority stayed stable through qualification
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-controller-snapshot
         env:

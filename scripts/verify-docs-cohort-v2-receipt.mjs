@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { lstat, opendir, readFile, realpath } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 
+import { cohortRecordDigest } from "./docs-cohort-policy.mjs";
+
 const SHA = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const DIGEST = /^sha256:(?!0{64}$)[0-9a-f]{64}$/u;
 const SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
@@ -69,9 +71,8 @@ function receiptCanonicalJson(value) {
   return JSON.stringify(value);
 }
 function bodyDigest(body) {return sha256(receiptCanonicalJson(body));}
-function qualificationRecordDigest(record) {
-  const { record_digest: _ignored, ...body } = record;
-  return sha256(receiptCanonicalJson({ domain: "agent-teams.docs-qualified-cohort/v3", body }));
+function exactRecordDigest(record) {
+  return record?.record_digest === cohortRecordDigest(record);
 }
 function envelopeDigest(body) {
   return sha256(canonicalJson({ domain: "agent-teams.docs-cohort-v2-execution-envelope/v1", body }));
@@ -229,7 +230,7 @@ function verifyDocsCohortV3Receipt({ receipt, executionEnvelope, record, qualifi
     receipt.cohort.cohortId !== record.cohort_id ||
     !DIGEST.test(record.record_digest ?? "") ||
     receipt.cohort.recordDigest !== record.record_digest ||
-    receipt.cohort.recordDigest !== qualificationRecordDigest(record) ||
+    !exactRecordDigest(record) ||
     receipt.cohort.qualificationEventDigest !== qualificationEvent.event_digest ||
     !DIGEST.test(record.candidate_digest ?? "") ||
     receipt.cohort.candidateDigest !== record.candidate_digest) {
@@ -430,9 +431,17 @@ async function verifyCommand(argv) {
   const authorization = authorizationEnvelope?.authorization;
   if (!exactKeys(authorizationEnvelope, ["authorization", "authorizationDigest"]) ||
     authorizationEnvelope.authorizationDigest !== authorizationDigest(authorization) ||
-    authorization?.qualificationProfile !== "cohort-v2" || authorization?.schemaVersion !== 2 ||
     authorization?.callerSha !== args["caller-sha"] || !SHA.test(args["caller-sha"])) {
-    fail("Cohort v2 central authorization is not exact.");
+    fail("Cohort central authorization is not exact.");
+  }
+  const authority = authorization.qualificationAuthority;
+  const record = authority?.registryRecord;
+  const generation = record?.cohort_generation;
+  const expectedAuthorizationSchema = generation === 3 ? 3 : generation === 2 ? 2 : undefined;
+  if (expectedAuthorizationSchema === undefined || authorization.schemaVersion !== expectedAuthorizationSchema ||
+    authorization.qualificationProfile !== (generation === 3 ? "cohort-v3" : "cohort-v2") ||
+    authority.recordDigest !== record.record_digest || !exactRecordDigest(record)) {
+    fail("Cohort central authorization generation or full record digest is not exact.");
   }
   const consumerRoot = await realpath(resolve(args.consumer));
   for (const [path, expectedDigest] of Object.entries(authorization.fileDigests ?? {})) {
@@ -469,16 +478,6 @@ async function verifyCommand(argv) {
   if (installedNames.size !== authorizedPackages.size) {
     fail("Cohort v2 install evidence omits an authorized coordinate.");
   }
-  const authority = authorization.qualificationAuthority;
-  const record = {
-    cohort_generation: authority?.cohortGeneration,
-    cohort_id: authority?.cohortId,
-    record_digest: authority?.recordDigest,
-    packages: authorization.expectedPackages,
-    reusable_workflow: authority?.reusableWorkflow,
-    runtime_closure: authorization.expectedRuntimeClosure,
-    canary_repositories: authority?.canaryRepositories,
-  };
   const envelopeBody = {
     schemaVersion: 1,
     domain: "agent-teams.docs-cohort-v2-execution-envelope/v1",
@@ -500,16 +499,19 @@ async function verifyCommand(argv) {
     installEvidenceDigest: sha256(installEvidenceSource),
     receiptDigest: receipt?.receiptDigest,
   };
-  const verified = verifyDocsCohortV2Receipt({
+  const verificationInput = {
     receipt,
     executionEnvelope: { ...envelopeBody, envelopeDigest: envelopeDigest(envelopeBody) },
     record,
     qualificationEvent: authority.qualificationEvent,
-  });
+  };
+  const verified = generation === 3
+    ? verifyDocsCohortV3Receipt(verificationInput)
+    : verifyDocsCohortV2Receipt(verificationInput);
   if (verified.centralCanaryEvidenceSatisfied !== false) {
     fail("Consumer receipt must never satisfy central CANARY evidence.");
   }
-  console.log("Cohort v2 authorized consumer qualification receipt is bound; central CANARY remains unsatisfied.");
+  console.log(`Cohort generation ${record.cohort_generation} authorized consumer qualification receipt is bound; central CANARY remains unsatisfied.`);
 }
 
 const isEntrypoint = process.argv[1] !== undefined &&

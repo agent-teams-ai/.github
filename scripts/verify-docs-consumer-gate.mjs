@@ -1,15 +1,18 @@
 #!/usr/bin/env node
 
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, mkdir, opendir, readFile, realpath, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 
 import Ajv2020 from "ajv/dist/2020.js";
 import { isAlias, isNode, parseDocument, visit } from "yaml";
 
 import {
   canonicalDocsManagedAssetDigests,
+  cohortRecordDigest,
   docsRuntimeClosureAuthority,
   docsRuntimeClosureEvidence,
   docsRuntimeClosureV2Authority,
@@ -92,6 +95,8 @@ const ALWAYS_FORBIDDEN_LOCK_KEYS = new Set([
 const ROOT_LOCK_POLICY_KEYS = new Set(["overrides", "packageExtensionsChecksum"]);
 const PACKAGE_NAME = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
 const PACKAGE_EXTENSION_CHECKSUM = /^sha256-[A-Za-z0-9+/]{43}=$/u;
+const execFileAsync = promisify(execFile);
+const QUALIFICATION_RUNTIME_KEYS = ["architecture", "nodeVersion", "platform", "pnpmVersion"];
 
 export class GatePolicyError extends Error {
   constructor(message) {
@@ -120,6 +125,38 @@ export function gateErrorCode(error) {
 export function shouldRunDocsGate(eventName, refName, defaultBranch) {
   return eventName !== "push" || refName === defaultBranch;
 }
+
+function qualificationRuntimeTuple(value, label) {
+  assert(exactKeys(value, QUALIFICATION_RUNTIME_KEYS) &&
+    typeof value.nodeVersion === "string" && value.nodeVersion.length > 0 &&
+    typeof value.pnpmVersion === "string" && value.pnpmVersion.length > 0 &&
+    typeof value.platform === "string" && value.platform.length > 0 &&
+    typeof value.architecture === "string" && value.architecture.length > 0,
+  `${label} is not the closed Node/pnpm/linux-x64 tuple.`);
+  return Object.freeze({ ...value });
+}
+
+const productPolicyHost = Object.freeze({
+  async readQualificationRuntime() {
+    const executable = process.env.DOCS_COHORT_PNPM_EXECUTABLE ?? "pnpm";
+    assert(typeof executable === "string" && executable.length > 0 && executable.length <= 4096,
+      "Qualification pnpm executable policy is invalid.");
+    let stdout;
+    try {
+      ({ stdout } = await execFileAsync(executable, ["--version"], {
+        encoding: "utf8", timeout: 10_000, maxBuffer: 64 * 1024, windowsHide: true,
+      }));
+    } catch (error) {
+      throw new GateInfrastructureError("Unable to observe the trusted qualification pnpm runtime.", { cause: error });
+    }
+    return qualificationRuntimeTuple({
+      nodeVersion: process.versions.node,
+      pnpmVersion: stdout.trim(),
+      platform: process.platform,
+      architecture: process.arch,
+    }, "Observed host qualification runtime");
+  },
+});
 
 function sha256(source) {
   return `sha256:${createHash("sha256").update(source).digest("hex")}`;
@@ -828,6 +865,9 @@ export function authorizeConsumerGate(input) {
   const caller = parseYamlStrict(callerSource, CALLER_WORKFLOW_PATH, CALLER_LIMIT);
   const record = lifecycle.cohortById.get(managed.cohortId);
   assert(record !== undefined, "Managed projection selects an unknown central Cohort.");
+  const originalRecordDigest = cohortRecordDigest(record);
+  assert(record.record_digest === originalRecordDigest,
+    "Selected Cohort record differs from its exact original canonical digest.");
   const selectedGeneration = policyEntry.desired_cohort_id === record.cohort_id
     ? policyEntry.desired_cohort_generation
     : policyEntry.observed_cohort_id === record.cohort_id
@@ -1012,7 +1052,8 @@ export function authorizeConsumerGate(input) {
       cohortGeneration: record.cohort_generation,
       cohortId: record.cohort_id,
       ...(v3 ? { candidateDigest: record.candidate_digest } : {}),
-      recordDigest: record.record_digest,
+      registryRecord: record,
+      recordDigest: originalRecordDigest,
       qualificationEvent: qualification,
       canaryRepositories: record.canary_repositories,
       reusableWorkflow: record.reusable_workflow,
@@ -1369,11 +1410,27 @@ export async function runQualificationV3Command(options = {}) {
     schemas: { ...profile.cohort.schemas },
     runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
   };
+  const host = options.host ?? productPolicyHost;
+  const observedHostRuntime = authorization.qualificationProfile === "cohort-v3"
+    ? qualificationRuntimeTuple(await host.readQualificationRuntime(), "Host qualification runtime")
+    : undefined;
+  if (observedHostRuntime !== undefined) {
+    assert(exactKeys(evidence.runtime, ["selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosureDigest"]) &&
+      canonicalJson(qualificationRuntimeTuple(evidence.runtime.qualificationRuntime,
+        "evidence.runtime.qualificationRuntime")) === canonicalJson(observedHostRuntime),
+    "Observed host differs from evidence.runtime.qualificationRuntime.");
+  }
   const importModule = options.importModule ?? ((path) => import(pathToFileURL(path).href));
   const module = await importModule(entrypoint);
   assert(typeof module.runDocsProtocolQualificationV3 === "function",
     "Installed adapter qualification entrypoint lacks runDocsProtocolQualificationV3.");
   const receipt = await module.runDocsProtocolQualificationV3({ profile, evidence, lockfileBytes: trustedLockBytes });
+  if (observedHostRuntime !== undefined) {
+    assert(exactKeys(receipt?.runtime, ["selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosure"]) &&
+      canonicalJson(qualificationRuntimeTuple(receipt.runtime.qualificationRuntime,
+        "receipt.runtime.qualificationRuntime")) === canonicalJson(observedHostRuntime),
+    "Package receipt differs from the observed runtime qualification tuple.");
+  }
   assert(typeof process.env.QUALIFICATION_RECEIPT === "string", "Qualification receipt path is required.");
   await writeFile(process.env.QUALIFICATION_RECEIPT, `${canonicalJson(receipt)}\n`, { mode: 0o600 });
   console.log(`Trusted base-owned runner wrote the ${authorization.qualificationProfile} qualification receipt.`);

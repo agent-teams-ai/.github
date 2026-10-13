@@ -61,7 +61,7 @@ function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 
   return [];
 }
 
-test("admission execution fixtures follow canonical legacy and v2 workflow branches", async () => {
+test("admission execution fixtures retain legacy, old v2, and current generation dispatch", async () => {
   const workflow = YAML.parse(await readFile(".github/workflows/docs-protocol-check.yml", "utf8"));
   const steps = workflow.jobs["trusted-qualification"].steps;
   for (const [name, condition] of [
@@ -72,6 +72,18 @@ test("admission execution fixtures follow canonical legacy and v2 workflow branc
     assert.equal(matching.length, 1);
     assert.equal(matching[0].if, condition);
   }
+  assert.match(
+    steps.find((step) => step.name === "Set up Node for trusted qualification tooling").with["node-version"],
+    /cohort-v3.*26\.11\.1.*24\.21\.0/u,
+  );
+  const registry = JSON.parse(await readFile(REGISTRY_PATH));
+  const pinnedV2 = registry.cohorts.find((row) => row.cohort_id === "docs-2026-09-08-stable15");
+  const pinnedSteps = YAML.parse((await readAdmissionBaseFile(
+    pinnedV2.reusable_workflow.path, pinnedV2.reusable_workflow.revision,
+  )).toString()).jobs["trusted-qualification"].steps;
+  assert.equal(pinnedSteps.filter((step) => step.name === v2Qualification).length, 1);
+  assert.equal(pinnedSteps.find((step) => step.name === v2Qualification).if,
+    "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'");
 });
 
 async function fixture(t) {

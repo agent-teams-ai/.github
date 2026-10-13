@@ -98,7 +98,7 @@ test("rejects run/comment bypasses despite preserved step names", () => {
   }
 });
 
-test("dispatches schema 1/2/3 to none, legacy, and Cohort v2 qualification profiles", () => {
+test("dispatches none, legacy, Cohort v2, and generation3 while preserving v2 Node24", () => {
   const qualification = workflow.jobs["trusted-qualification"];
   assert.equal(workflow.jobs["trusted-authorize"].outputs["qualification-profile"],
     "${{ steps.authorization.outputs.qualification-profile }}");
@@ -109,8 +109,17 @@ test("dispatches schema 1/2/3 to none, legacy, and Cohort v2 qualification profi
     /trusted-install\.outputs\.cli/u);
   assert.doesNotMatch(byName.get("Run Cohort v2 or v3 qualification through the trusted base-owned runner").run,
     /trusted-install\.outputs\.cli/u);
-  assert.match(byName.get("Run Cohort v2 or v3 qualification through the trusted base-owned runner").run,
-    /run-qualification-v3/u);
+  const managedRunner = byName.get("Run Cohort v2 or v3 qualification through the trusted base-owned runner");
+  assert.match(managedRunner.run, /run-qualification-v3/u);
+  assert.deepEqual(managedRunner.env, { DOCS_COHORT_PNPM_EXECUTABLE: "pnpm" });
+  assert.deepEqual(
+    byName.get("Bind Cohort v2 or v3 authorized consumer receipt without asserting central CANARY").env,
+    { DOCS_COHORT_PNPM_EXECUTABLE: "pnpm" },
+  );
+  assert.match(
+    byName.get("Set up Node for trusted qualification tooling").with["node-version"],
+    /cohort-v3.*26\.11\.1.*24\.21\.0/u,
+  );
   assert.match(byName.get("Bind Cohort v2 or v3 authorized consumer receipt without asserting central CANARY").run,
     /verify-docs-cohort-v2-receipt\.mjs/u);
   assert.equal(qualification.steps.at(-1).if, undefined);
