@@ -81,8 +81,9 @@ function specialFixture(pr = 363): Fixture {
   }
   sync(f); return f;
 }
-function controllerFixture(): Fixture {
+function controllerWeakeningFixture(): Fixture {
   const f = fixture();
+  // Arbitrary replacements model unreviewed weakening of the gate and test bodies.
   controller.forEach((path, index) => {
     const sha = (index + 1).toString(16).padStart(40, "0");
     Object.assign(f.headTree.tree.find(entry => entry.path === path)!, { sha });
@@ -147,15 +148,12 @@ test("partial, malformed, edited and deleted protected five-file states are reje
   assert.throws(() => check(deletion), /Successor head inputs must be added together or remain together/u);
 });
 
-test("exact controller three paths are ordinary; four paths and special wrong PR are rejected", () => {
-  assert.equal(check(controllerFixture()), sourceSuccessorResult.ordinary);
+test("unqualified controller gate/test-body weakening is rejected; ordinary and special negatives remain", () => {
+  assert.throws(() => check(controllerWeakeningFixture()),
+    /Protected input changed: scripts\/verify-docs-consumer-gate\.mjs/u);
   const ordinaryIdentity = ordinary();
   ordinaryIdentity.base = oid(160); ordinaryIdentity.reviewTarget = oid(161);
   assert.equal(check(ordinaryIdentity), sourceSuccessorResult.noop);
-  const four = controllerFixture();
-  Object.assign(four.headTree.tree.find(entry => entry.path === "README.md")!, { sha: oid(120) });
-  four.files.push({ filename: "README.md", status: "modified", sha: oid(120), previous_filename: undefined }); sync(four);
-  assert.throws(() => check(four), /exactly three/u);
   assert.throws(() => check(specialFixture(404)), /Special source pull request drift/u);
 });
 

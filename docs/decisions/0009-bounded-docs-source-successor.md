@@ -15,16 +15,25 @@ them by adding a workflow: the old ordinary input guard and accepted historical
 cohort routes must remain executable during review, and a source transition must
 not create an unprotected interval.
 
+`c6db8ef6761261581c7564e2c9bea4a5faef135a` is a pinned SOURCE TARGET for
+PR363, not proof of historical acceptance. PR363 remains draft and unmerged,
+the two required authority checks still fail, and the current seven-file
+before/after blob tuple remains pinned.
+
 ## Decision
 
 Stage one base-owned successor guard beside the existing contexts. It records
 live PR identity, default-branch/base/head coordinates, complete paginated file
 metadata, complete untruncated Git trees, and bound install blobs. The exact
-PR363 seven-file source transition is a finite special route. Ordinary PRs,
-including the bounded bootstrap addition and the three-file controller route,
-retain the existing verifier authority route; the controller route additionally
-binds regular `100644` before/after leaves and unchanged install/dependency
-data. Any incomplete or unlisted change is rejected.
+PR363 seven-file source transition is a finite special route and retains its
+current seven-file before/after blob tuple. Ordinary PRs, including the bounded
+bootstrap addition, retain the existing verifier authority route. There is no
+qualified three-file controller route and no accepted controller body tuple:
+names, modes and arbitrary hashes alone never admit gate or test weakening.
+Unqualified controller edits must be rejected by protected legacy inputs or the
+existing verifier authority. The live envelope and `sourceSHA == headSHA`, two
+complete tree reads, hidden leaves, modes and install bytes remain bound. Any
+incomplete or unlisted change is rejected.
 
 The worker writes only its ephemeral evidence file and performs no policy,
 governance, fixture, package or lock writes. The old workflows, guards and
@@ -44,6 +53,9 @@ logic for ordinary acceptance and rejection, but they do not substitute for the
 old trusted cohort workflow acceptance fixtures. Historical cohort qualification
 therefore remains pending, no context replacement is claimed, and neither context
 may be removed, bypassed or treated as passing.
+
+All seven existing required contexts remain active. No context replacement is
+claimed or allowed yet.
 
 ## Rollback
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { assertVerifierAuthority, assertVerifierDependencies } from "./check-docs-verifier-authority.mts";
+import { assertVerifierAuthority } from "./check-docs-verifier-authority.mts";
 
 export const sourceSuccessorResult = Object.freeze({
   noop: "noop",
@@ -32,11 +32,6 @@ const successorInputs = Object.freeze([
   ".github/workflows/docs-source-successor-v1.yml",
   "docs/decisions/0009-bounded-docs-source-successor.md",
   "tsconfig.docs-source-successor.json",
-]);
-const controllerPaths = Object.freeze([
-  "scripts/verify-docs-consumer-gate.mjs",
-  "scripts/verify-docs-consumer-gate.test.mjs",
-  "docs/decisions/0001-qualified-docs-cohorts.md",
 ]);
 const legacyProtectedPaths = Object.freeze([
   ...["ci", "commit-author-identity", "commit-author-identity-check", "docs-authority-evolution",
@@ -230,18 +225,6 @@ function assertSpecial(files: ChangedFile[], base: Map<string, Entry>, head: Map
     assert.ok(sameEntry(entry(head, path), { path, mode: "100644", type: "blob", sha: after }), `Source after blob mismatch: ${path}`);
   }
 }
-function assertController(files: ChangedFile[], base: Map<string, Entry>, head: Map<string, Entry>): void {
-  assert.equal(files.length, controllerPaths.length, "Controller authority evolution must contain exactly three files");
-  assert.equal(changedLeaves(base, head).size, controllerPaths.length, "Controller authority has hidden or missing leaves");
-  for (const path of controllerPaths) {
-    const file = files.find(candidate => candidate.filename === path);
-    const before = entry(base, path), after = entry(head, path);
-    assert.ok(file && file.status === "modified" && file.previous_filename === undefined &&
-      before && after && before.type === "blob" && after.type === "blob" &&
-      before.mode === "100644" && after.mode === "100644" && file.sha === after.sha,
-      `Invalid controller authority file: ${path}`);
-  }
-}
 function assertInstallBinding(base: Map<string, Entry>, head: Map<string, Entry>, headData: unknown,
   baseManifest: Buffer, baseLock: Buffer): void {
   const data = record(headData);
@@ -271,12 +254,10 @@ export function checkDocsSourceSuccessor(raw: unknown, baseManifest: Buffer, bas
   const baseInputs = parseInputEvidence(evidence.baseInputs, base, "base");
   const headInputs = parseInputEvidence(evidence.headInputs, head, "head");
   assertNoHiddenChanges(files, base, head);
-  const leaves = changedLeaves(base, head);
   const special = specialShape(files, base, head);
-  const controllerCandidate = controllerPaths.some(path => leaves.has(path));
   const allowedLegacyChanges = special
     ? new Set<string>(binding.changes.map(([path]) => path))
-    : controllerCandidate ? new Set<string>(controllerPaths) : new Set<string>();
+    : new Set<string>();
   assertLegacyProtected(base, head, allowedLegacyChanges);
   assertSuccessorInputs(base, head, baseInputs, headInputs);
   assertLiveEnvelope(evidence, special);
@@ -284,15 +265,6 @@ export function checkDocsSourceSuccessor(raw: unknown, baseManifest: Buffer, bas
     assertSpecial(files, base, head);
     assertInstallBinding(base, head, evidence.headData, baseManifest, baseLock);
     return sourceSuccessorResult.special;
-  }
-  if (controllerCandidate) {
-    assertController(files, base, head);
-    assertInstallBinding(base, head, evidence.headData, baseManifest, baseLock);
-    const headData = record(evidence.headData);
-    assertVerifierDependencies(baseManifest.toString("utf8"), baseLock.toString("utf8"),
-      Buffer.from(string(record(headData["package.json"]).content, "head package content"), "base64").toString("utf8"),
-      Buffer.from(string(record(headData["pnpm-lock.yaml"]).content, "head lock content"), "base64").toString("utf8"));
-    return sourceSuccessorResult.ordinary;
   }
   const authority = assertVerifierAuthority({
     changedFiles: evidence.changedFiles,
