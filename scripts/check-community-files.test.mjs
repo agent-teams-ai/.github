@@ -123,7 +123,12 @@ test("dispatches none, legacy, Cohort v2, and generation3 while preserving v2 No
   assert.match(byName.get("Bind Cohort v2 or v3 authorized consumer receipt without asserting central CANARY").run,
     /verify-docs-cohort-v2-receipt\.mjs/u);
   assert.equal(qualification.steps.at(-1).if, undefined);
-  assert.equal(workflow.jobs["docs-protocol-check"].needs, "trusted-qualification");
+  const semantic = workflow.jobs["docs-protocol-check"];
+  assert.deepEqual(semantic.needs, ["trusted-authorize", "trusted-qualification"]);
+  assert.equal(
+    semantic.steps.find((step) => step.name === "Set up Node for repository semantic gate").with["node-version"],
+    "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}",
+  );
 });
 
 test("initializes qualification temp paths at runtime instead of job expression evaluation", () => {

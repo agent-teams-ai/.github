@@ -280,12 +280,12 @@ export function validateDocsProtocolWorkflow(workflow) {
         ],
       },
       "docs-protocol-check": {
-        name: "docs-protocol-check", needs: "trusted-qualification", if: guarded, permissions: { contents: "read" }, "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
+        name: "docs-protocol-check", needs: ["trusted-authorize", "trusted-qualification"], if: guarded, permissions: { contents: "read" }, "runs-on": "ubuntu-24.04", "timeout-minutes": 15,
         steps: [
           { name: "Require successful trusted qualification", if: "needs.trusted-qualification.result != 'success'", run: "exit 1" },
           { name: "Check out consumer revision", uses: checkout, with: { ref: "${{ github.sha }}", "persist-credentials": false } },
           { name: "Set up pnpm for repository semantic gate", uses: pnpm, with: { run_install: false } },
-          { name: "Set up Node for repository semantic gate", uses: node, with: { "node-version": "26.11.1", cache: "pnpm" } },
+          { name: "Set up Node for repository semantic gate", uses: node, with: { "node-version": "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}", cache: "pnpm" } },
           { name: "Install consumer dependencies in the untrusted context", run: "pnpm install --frozen-lockfile" },
           { name: "Run repository semantic documentation gate", run: "pnpm docs:protocol:check" },
         ],

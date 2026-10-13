@@ -368,8 +368,22 @@ async function packageRoot(installRoot, expected) {
   return matches[0];
 }
 
+const INSTALLED_PACKAGE_TREE_DIGEST_DOMAIN =
+  "agent-teams.docs-installed-package-tree/v2";
+
+function updateTreeDigestField(hash, value) {
+  const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value, "utf8");
+  const length = Buffer.alloc(8);
+  length.writeBigUInt64BE(BigInt(bytes.byteLength));
+  hash.update(length).update(bytes);
+}
+
 export async function installedPackageTreeDigest(root, name) {
-  const entries = [];
+  const rootMetadata = await lstat(root);
+  if (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink()) {
+    fail(`${name} installed tree root is not a directory.`);
+  }
+  const entries = [{ kind: "directory", path: "", absolute: root }];
   async function visit(current) {
     const handle = await opendir(current);
     for await (const entry of handle) {
@@ -386,20 +400,27 @@ export async function installedPackageTreeDigest(root, name) {
   entries.sort((left, right) => Buffer.compare(
     Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`),
   ));
-  const hash = createHash("sha256"); let total = 0;
+  const hash = createHash("sha256");
+  updateTreeDigestField(hash, INSTALLED_PACKAGE_TREE_DIGEST_DOMAIN);
+  updateTreeDigestField(hash, String(entries.length));
+  let total = 0;
   for (const entry of entries) {
     const metadata = await lstat(entry.absolute);
     const expectedKind = entry.kind === "directory" ? metadata.isDirectory() : metadata.isFile();
     if (!expectedKind) {fail(`${name} installed tree entry kind changed.`);}
     const mode = (metadata.mode & 0o777).toString(8).padStart(3, "0");
-    hash.update(entry.kind).update("\0").update(entry.path).update("\0").update(mode).update("\0");
+    updateTreeDigestField(hash, entry.kind);
+    updateTreeDigestField(hash, entry.path);
+    updateTreeDigestField(hash, mode);
     if (entry.kind === "file") {
       if (metadata.size > 16 * 1024 * 1024) {
         fail(`${name} installed artifact exceeds its file bound.`);
       }
       const bytes = await readFile(entry.absolute); total += bytes.byteLength;
       if (total > 256 * 1024 * 1024) {fail(`${name} installed tree exceeds its byte bound.`);}
-      hash.update(bytes).update("\0");
+      updateTreeDigestField(hash, bytes);
+    } else {
+      updateTreeDigestField(hash, Buffer.alloc(0));
     }
   }
   return `sha256:${hash.digest("hex")}`;

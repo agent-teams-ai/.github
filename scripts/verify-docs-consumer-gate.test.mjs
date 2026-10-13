@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, lstat, mkdir, mkdtemp, opendir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import { Script, createContext } from "node:vm";
@@ -89,30 +89,86 @@ function receiptCanonical(value) {
       .map(([key, entry]) => `${JSON.stringify(key)}:${receiptCanonical(entry)}`).join(",")}}` : JSON.stringify(value);
 }
 
-async function installedTreeDigest(root) {
-  const entries = [];
+const INSTALLED_TREE_DIGEST_DOMAIN = "agent-teams.docs-installed-package-tree/v2";
+
+function updateTreeDigestField(hash, value) {
+  const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value, "utf8");
+  const length = Buffer.alloc(8);
+  length.writeBigUInt64BE(BigInt(bytes.byteLength));
+  hash.update(length).update(bytes);
+}
+
+async function installedTreeEntries(root) {
+  const rootMetadata = await lstat(root);
+  assert(rootMetadata.isDirectory() && !rootMetadata.isSymbolicLink(),
+    "installed fixture tree root is not a directory.");
+  const entries = [{ kind: "directory", path: "", absolute: root }];
   async function visit(current) {
     const handle = await opendir(current);
     for await (const entry of handle) {
       const path = join(current, entry.name);
-      const portable = path.slice(root.length + 1).split(sep).join("/");
+      const portable = relative(root, path).split(sep).join("/");
       assert(!entry.isSymbolicLink(), `${portable} installed fixture tree contains a symlink.`);
       if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable, absolute: path }); await visit(path);}
-      else {entries.push({ kind: "file", path: portable, absolute: path });}
+      else {
+        assert(entry.isFile(), `${portable} installed fixture tree contains a non-file entry.`);
+        entries.push({ kind: "file", path: portable, absolute: path });
+      }
     }
   }
   await visit(root);
-  entries.sort((left, right) => Buffer.compare(Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`)));
+  entries.sort((left, right) => Buffer.compare(
+    Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`),
+  ));
+  return entries;
+}
+
+async function installedTreeDigest(root) {
+  const entries = await installedTreeEntries(root);
   const hash = createHash("sha256");
+  updateTreeDigestField(hash, INSTALLED_TREE_DIGEST_DOMAIN);
+  updateTreeDigestField(hash, String(entries.length));
   for (const entry of entries) {
     const metadata = await lstat(entry.absolute);
     assert(entry.kind === "directory" ? metadata.isDirectory() : metadata.isFile());
+    const mode = (metadata.mode & 0o777).toString(8).padStart(3, "0");
+    updateTreeDigestField(hash, entry.kind);
+    updateTreeDigestField(hash, entry.path);
+    updateTreeDigestField(hash, mode);
+    updateTreeDigestField(hash, entry.kind === "file" ? await readFile(entry.absolute) : Buffer.alloc(0));
+  }
+  return `sha256:${hash.digest("hex")}`;
+}
+
+async function legacyUnframedInstalledTreeDigest(root) {
+  const entries = (await installedTreeEntries(root)).filter((entry) => entry.path !== "");
+  const hash = createHash("sha256");
+  for (const entry of entries) {
+    const metadata = await lstat(entry.absolute);
     const mode = (metadata.mode & 0o777).toString(8).padStart(3, "0");
     hash.update(entry.kind).update("\0").update(entry.path).update("\0").update(mode).update("\0");
     if (entry.kind === "file") {hash.update(await readFile(entry.absolute)).update("\0");}
   }
   return `sha256:${hash.digest("hex")}`;
 }
+
+test("rejects the exact unframed NUL tree-membership collision", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "docs-tree-digest-collision-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const oneFile = join(root, "one-file");
+  const twoFiles = join(root, "two-files");
+  await Promise.all([mkdir(oneFile), mkdir(twoFiles)]);
+  await Promise.all([
+    writeFile(join(oneFile, "a.bin"), Buffer.from("X\u0000file\u0000b.bin\u0000644\u0000Y")),
+    writeFile(join(twoFiles, "a.bin"), Buffer.from("X")),
+    writeFile(join(twoFiles, "b.bin"), Buffer.from("Y")),
+  ]);
+  assert.equal(
+    await legacyUnframedInstalledTreeDigest(oneFile),
+    await legacyUnframedInstalledTreeDigest(twoFiles),
+  );
+  assert.notEqual(await installedTreeDigest(oneFile), await installedTreeDigest(twoFiles));
+});
 
 function registry() {
   const record = {
@@ -883,6 +939,9 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
   const install = join(root, "install");
   const installedPackages = [];
   let modeDriftPath;
+  let rootDriftPath;
+  let rootDriftOriginalMode;
+  let rootDriftChangedMode;
   for (const expected of authorization.expectedPackages) {
     const packageRoot = join(install, "node_modules", ...expected.name.split("/"));
     await mkdir(packageRoot, { recursive: true });
@@ -891,6 +950,9 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
       modeDriftPath = join(packageRoot, "executable.js");
       await writeFile(modeDriftPath, "export {};\n");
       await chmod(modeDriftPath, 0o644);
+      rootDriftPath = packageRoot;
+      rootDriftOriginalMode = (await lstat(packageRoot)).mode & 0o777;
+      rootDriftChangedMode = rootDriftOriginalMode === 0o700 ? 0o755 : 0o700;
     }
     installedPackages.push({ ...expected, treeDigest: await installedTreeDigest(packageRoot) });
   }
@@ -935,8 +997,39 @@ test("receipt CLI accepts an authorized RECOMMENDED non-canary without weakening
   await chmod(modeDriftPath, 0o755);
   await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
   await chmod(modeDriftPath, 0o644);
+  await chmod(rootDriftPath, rootDriftChangedMode);
+  await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
+  await chmod(rootDriftPath, rootDriftOriginalMode);
   const restored = await run();
   assert.equal(restored.stderr, "");
+
+  const collisionDouble = join(root, "collision-double");
+  await mkdir(collisionDouble);
+  const collisionManifest = JSON.stringify({
+    name: "@agent-teams/repository-mutation",
+    version: packageByName.get("@agent-teams/repository-mutation").version,
+  });
+  await writeFile(join(rootDriftPath, "package.json"), collisionManifest);
+  await rm(modeDriftPath, { force: true });
+  await writeFile(join(rootDriftPath, "a.bin"), Buffer.from("X\u0000file\u0000b.bin\u0000644\u0000Y"));
+  await writeFile(join(collisionDouble, "package.json"), collisionManifest);
+  await writeFile(join(collisionDouble, "a.bin"), Buffer.from("X"));
+  await writeFile(join(collisionDouble, "b.bin"), Buffer.from("Y"));
+  assert.equal(
+    await legacyUnframedInstalledTreeDigest(rootDriftPath),
+    await legacyUnframedInstalledTreeDigest(collisionDouble),
+  );
+  const collisionEntry = evidence.packages.find(({ name }) => name === "@agent-teams/repository-mutation");
+  collisionEntry.treeDigest = await installedTreeDigest(rootDriftPath);
+  await writeFile(evidencePath, canonical(evidence));
+  assert.equal((await run()).stderr, "");
+  await rm(join(rootDriftPath, "a.bin"));
+  await writeFile(join(rootDriftPath, "a.bin"), Buffer.from("X"));
+  await writeFile(join(rootDriftPath, "b.bin"), Buffer.from("Y"));
+  await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
+  await rm(join(rootDriftPath, "b.bin"));
+  await writeFile(join(rootDriftPath, "a.bin"), Buffer.from("X\u0000file\u0000b.bin\u0000644\u0000Y"));
+  assert.equal((await run()).stderr, "");
   await assert.rejects(() => run("f".repeat(40)), /central authorization is not exact/u);
   await writeFile(authorizationPath, "{}");
   await assert.rejects(() => run(), /central authorization is not exact/u);
@@ -1258,6 +1351,13 @@ test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes
         receiptDigest: `sha256:${"b".repeat(64)}`,
       }); } };
     };
+    const adapterRootOriginalMode = (await lstat(adapterRoot)).mode & 0o777;
+    const adapterRootChangedMode = adapterRootOriginalMode === 0o700 ? 0o755 : 0o700;
+    await chmod(adapterRoot, adapterRootChangedMode);
+    await assert.rejects(() => runQualificationV3Command({ importModule }),
+      /installed bytes changed before qualification execution/u);
+    assert.equal(imports, 0);
+    await chmod(adapterRoot, adapterRootOriginalMode);
     await runQualificationV3Command({ importModule });
     assert.equal(imports, 1);
     await runVerifyInstallLock();
@@ -2064,7 +2164,7 @@ test("isolates exact Cohort qualification from the untrusted semantic gate", asy
   assert.match(JSON.stringify(qualification.steps), /agent-teams-docs qualify[\s\S]*verify-docs-qualification-receipt/u);
   assert.doesNotMatch(JSON.stringify(semantic.steps), /agent-teams-docs qualify|verify-docs-qualification-receipt/u);
   assert.match(JSON.stringify(semantic.steps), /pnpm docs:protocol:check/u);
-  assert.equal(semantic.needs, "trusted-qualification");
+  assert.deepEqual(semantic.needs, ["trusted-authorize", "trusted-qualification"]);
   const legacyPnpm = qualification.steps.find(step => step.name === "Set up pnpm for legacy trusted qualification tooling");
   const managedPnpm = qualification.steps.find(step => step.name === "Set up pnpm for Cohort v2 or v3 trusted qualification tooling");
   const managedDispatch =
@@ -2087,7 +2187,8 @@ test("declares the exact Node runtime before every owned Docs installation", asy
       "trusted-structural": "24.21.0",
       "trusted-qualification":
         "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}",
-      "docs-protocol-check": "26.11.1",
+      "docs-protocol-check":
+        "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}",
     }],
     ["docs-cohort-append-only.yml", { "trusted-validation": "24.21.0" }],
     ["docs-admission-evidence.yml", { "trusted-admission-evidence": "24.21.0" }],
