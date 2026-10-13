@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "include": [
+    "scripts/check-docs-source-successor-v1.mts",
+    "scripts/check-docs-source-successor-v1.test.mts",
+    "scripts/check-docs-verifier-authority.mts",
+    "scripts/check-docs-verifier-authority.test.mts"
+  ]
+}
