@@ -15,7 +15,7 @@ them by adding a workflow: the old ordinary input guard and accepted historical
 cohort routes must remain executable during review, and a source transition must
 not create an unprotected interval.
 
-`c6db8ef6761261581c7564e2c9bea4a5faef135a` is a pinned SOURCE TARGET for
+`96cb95a89ca4a133fbb626133eb3ac6289938ff7` is a pinned SOURCE TARGET for
 PR363, not proof of historical acceptance. PR363 remains draft and unmerged,
 the two required authority checks still fail, and the current seven-file
 before/after blob tuple remains pinned.
@@ -45,14 +45,20 @@ to be a replacement.
 Replacement of the two required contexts is a separately reviewed serialized
 operation after the successor has run from a protected base, all negative and
 historical-cohort routes are independently demonstrated, and the existing
-ordinary input guard is proven lossless. There is no unprotected interval and no
-worker-side policy write. Until that qualification exists, the concrete blocker
-is the absent full historical-cohort qualification under both required contexts.
-The focused successor tests execute the existing `check-docs-verifier-authority`
-logic for ordinary acceptance and rejection, but they do not substitute for the
-old trusted cohort workflow acceptance fixtures. Historical cohort qualification
-therefore remains pending, no context replacement is claimed, and neither context
-may be removed, bypassed or treated as passing.
+ordinary input guard is proven lossless. The old v8 Cohort-data predicate is
+preserved only for its narrow data route: `governance/docs-qualified-cohorts.json`
+may be modified, and matching evidence or runtime-closure files may be added,
+with complete pagination, full untruncated trees, hidden-leaf checks, regular
+blobs, protected inputs and unchanged install data. That route retains the old
+1..3000 collection bound; every ordinary, source, installer and dependency route
+remains 1..32. This is not a broad source allowance and does not redefine
+losslessness around synthetic tests. The focused tests execute the real retained
+historical v8 materializer, the current v8 materializer, the old authority guard
+and the successor on identical finite tuple, Cohort-data and valid dependency
+scenarios. No retained genuine accepted Cohort-data PR outside 32 is claimed; if
+one is later required, preserve only cohort-only old finite path checks. Until
+the full qualification is independently demonstrated, no context replacement is
+claimed and neither context may be removed, bypassed or treated as passing.
 
 All seven existing required contexts remain active. No context replacement is
 claimed or allowed yet.

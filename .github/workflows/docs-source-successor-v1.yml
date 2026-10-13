@@ -25,8 +25,8 @@ jobs:
             const oid = /^(?!0{40}$)[0-9a-f]{40}$/u;
             const need = (condition, message) => { if (!condition) throw new Error(message); };
             need(Number.isSafeInteger(pull?.number) && pull.number > 0 &&
-              Number.isSafeInteger(pull?.changed_files) && pull.changed_files >= 1 && pull.changed_files <= 32,
-              "Invalid PR identity or changed_files; expected a positive PR and 1..32 files.");
+              Number.isSafeInteger(pull?.changed_files) && pull.changed_files >= 1 && pull.changed_files <= 3000,
+              "Invalid PR identity or changed_files; expected a positive PR and 1..3000 files.");
             need(oid.test(pull.base?.sha) && oid.test(pull.head?.sha) &&
               pull.head?.repo?.full_name === `${repo.owner}/${repo.repo}`, "Missing revisions or foreign source repository.");
             async function readLive() {
@@ -92,8 +92,8 @@ jobs:
             await fs.writeFile(output, JSON.stringify({
               repository: `${repo.owner}/${repo.repo}`, pullRequest: pull.number,
               base: "5abed741aff64506d0e9f87f76541a4e93af7e4a",
-              reviewTarget: "c6db8ef6761261581c7564e2c9bea4a5faef135a",
-              baseSHA: pull.base.sha, headSHA: pull.head.sha, sourceSHA: live.head.sha,
+              reviewTarget: "96cb95a89ca4a133fbb626133eb3ac6289938ff7",
+              baseSHA: pull.base.sha, headSHA: pull.head.sha, sourceSHA: live.sourceSHA,
               baseRef: pull.base.ref, defaultBranch: live.defaultBranch, headRepository: live.headRepository,
               changedFiles: pull.changed_files, files, paginationComplete: true,
               baseTree, headTree, baseInputs, headInputs, headData, live
