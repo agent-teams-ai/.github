@@ -63,6 +63,38 @@ claimed and neither context may be removed, bypassed or treated as passing.
 All seven existing required contexts remain active. No context replacement is
 claimed or allowed yet.
 
+### Pre-adoption correction boundary
+
+This ADR remains Proposed and staged. All old required checks and mandatory
+guards remain active, `docs-source-successor-v1` is not required, no context
+cutover has occurred, and the old contexts are not relabeled as passing. The
+five successor inputs become byte-immutable after qualified adoption. The
+currently installed additive successor base is not adopted or qualified, and
+review found its ordinary routing deficient before adoption.
+
+For proposed staging only, the smallest legitimate correction is one normal PR
+from the protected current main changing only the successor implementation,
+its existing focused test, and this clarification. It preserves every active
+mandatory protection and leaves all five corrected inputs immutable after
+qualified adoption. Those corrected bytes are not covered by old qualification:
+the unchanged old mandatory guards remain authoritative during review, and the
+correction requires fresh independent review, full CI, and a real successor run
+from a protected base before adoption. Before any context replacement, the
+separately reviewed serialized operation must read a durable actual
+qualification manifest bound to raw source logs, live CI records, and the
+complete before/after rulesets for each step. This job creates no attestation
+service and claims no rollback or serialized-operation result.
+
+The existing successor self-check may reject this proposed input change because
+it enforces the final immutability rule. That expected refusal must not be
+spoofed, bypassed, or used to force a policy change. No controller or broad
+source exemption is created. Existing authority does not forbid this bounded
+pre-adoption repair because no required context is removed and no final
+immutable input changes after adoption. If repository policy nevertheless
+rejects the repair, the smallest allowed path is to roll back the unadopted
+additive five-file installation in one reviewed change and reinstall a newly
+versioned successor after fresh qualification, rather than weaken a guard.
+
 ## Rollback
 
 Remove this additive guard and its ADR in one reviewed change. The unchanged
