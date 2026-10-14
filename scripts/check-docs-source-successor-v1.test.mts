@@ -277,6 +277,19 @@ function transitionFixture(baseCommit: string, headCommit: string,
     baseInputs, headInputs,
   };
 }
+const node26Base = "265dca86ddb48c14e7d94e0b5ca698776e3dd743";
+const node26Head = "3094afecfe4ed810a9106ca2e7c1ee6908442748";
+function node26DefaultFixture(reverse = false): Fixture {
+  // Derive the reviewed PR359 tuple from raw history; the retained verifier remains the blob authority.
+  const [base, head] = reverse ? [node26Head, node26Base] : [node26Base, node26Head];
+  const changes = git("diff", "--raw", "--no-abbrev", base, head).trim().split("\n").map(line => {
+    const [metadata, path] = line.split("\t");
+    const [beforeMode, afterMode, before, after, status] = metadata!.split(" ");
+    assert.equal(beforeMode, ":100644"); assert.equal(afterMode, "100644"); assert.equal(status, "M");
+    return [path!, "modified", before!, after!] as const;
+  });
+  return transitionFixture(base, head, changes);
+}
 function cohortBoundaryFixture(count = 33): Fixture {
   const f = fixture();
   for (let index = 0; index < count; index += 1) {
@@ -376,13 +389,48 @@ async function runWorkflow(source: string, state: WorkflowState): Promise<Workfl
   } catch (error) { failures.push(String(error)); }
   return { failures, outputs, writes };
 }
-test("actual historical and current materializers agree on finite, Cohort and dependency routes", async () => {
+test("actual historical and current materializers agree on finite, installer, Cohort and dependency routes", async () => {
   const historicalSource = workflowScript("fff9d72e5b6f7022348d3a51ff54b1237ae68e1c",
     ".github/workflows/docs-cohort-authority-evolution-v8.yml");
   const oldGuardSource = workflowScript("fff9d72e5b6f7022348d3a51ff54b1237ae68e1c",
     ".github/workflows/docs-authority-evolution.yml");
   const currentCohortSource = workflowScriptFile(".github/workflows/docs-cohort-authority-evolution-v8.yml");
   const currentSuccessorSource = workflowScriptFile(".github/workflows/docs-source-successor-v1.yml");
+  const node26 = node26DefaultFixture(), node26Manifest = gitBuffer("show", `${node26.base}:package.json`),
+    node26Lock = gitBuffer("show", `${node26.base}:pnpm-lock.yaml`);
+  assert.equal(checkDocsSourceSuccessor(node26, node26Manifest, node26Lock), sourceSuccessorResult.ordinary);
+  const node26MaterializerRun = await runWorkflow(currentCohortSource, workflowState(node26, node26.base, node26.headSHA));
+  assert.deepEqual(node26MaterializerRun.failures, []);
+  const node26Evidence = JSON.parse(node26MaterializerRun.writes.values().next().value!.toString()) as Record<string, unknown>;
+  assert.equal(assertVerifierAuthority(node26Evidence, node26Manifest, node26Lock), "node26-default");
+  assert.throws(() => checkDocsSourceSuccessor(node26Evidence, node26Manifest, node26Lock),
+    /Changed-file pagination is incomplete/u);
+  const node26SuccessorRun = await runWorkflow(currentSuccessorSource, workflowState(node26, node26.base, node26.headSHA));
+  assert.deepEqual(node26SuccessorRun.failures, []);
+  assert.equal(checkDocsSourceSuccessor(JSON.parse(node26SuccessorRun.writes.values().next().value!.toString()),
+    node26Manifest, node26Lock), sourceSuccessorResult.ordinary);
+  const partial = node26DefaultFixture(), omitted = partial.files.pop()!;
+  Object.assign(partial.headTree.tree.find(entry => entry.path === omitted.filename)!,
+    partial.baseTree.tree.find(entry => entry.path === omitted.filename)!); sync(partial);
+  const extra = node26DefaultFixture(), extraSha = oid(600);
+  Object.assign(extra.headTree.tree.find(entry => entry.path === "README.md")!, { sha: extraSha });
+  extra.files.unshift({ filename: "README.md", status: "modified", sha: extraSha, previous_filename: undefined }); sync(extra);
+  const reverseFixture = node26DefaultFixture(true),
+    reverseManifest = gitBuffer("show", `${reverseFixture.base}:package.json`),
+    reverseLock = gitBuffer("show", `${reverseFixture.base}:pnpm-lock.yaml`);
+  const dependencyDrift = node26DefaultFixture();
+  const driftedManifest = JSON.parse(Buffer.from(dependencyDrift.headData["package.json"]!.content, "base64").toString()) as ManifestFixture;
+  driftedManifest.devDependencies.ajv = "8.21.0";
+  const driftedBytes = Buffer.from(`${JSON.stringify(driftedManifest, null, 2)}\n`), driftedSha = gitBlobBytes(driftedBytes);
+  dependencyDrift.headData["package.json"] = {
+    encoding: "base64", content: driftedBytes.toString("base64"), sha: driftedSha, size: driftedBytes.length,
+  };
+  Object.assign(dependencyDrift.headTree.tree.find(entry => entry.path === "package.json")!, { sha: driftedSha });
+  dependencyDrift.files.find(file => file.filename === "package.json")!.sha = driftedSha; sync(dependencyDrift);
+  for (const rejected of [partial, extra, dependencyDrift]) {
+    assert.throws(() => checkDocsSourceSuccessor(rejected, node26Manifest, node26Lock));
+  }
+  assert.throws(() => checkDocsSourceSuccessor(reverseFixture, reverseManifest, reverseLock), /Protected (?:authority path|input changed)/u);
   for (const reverse of [false, true]) {
     const changes = reverse ? historicalChanges.map(([path, status, before, after]) => [path, status, after, before] as const) : historicalChanges;
     const f = transitionFixture(reverse ? "9cc720c30a3cb1501426c9a27f2f837692c7f2d0" : "fff9d72e5b6f7022348d3a51ff54b1237ae68e1c",
