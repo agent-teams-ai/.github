@@ -436,11 +436,29 @@ export function checkDocsSourceSuccessor(raw: unknown, baseManifest: Buffer, bas
     ? historicalCohortShape(files, base, head)
     : undefined;
   const special = specialShape(files, base, head);
+  const ordinaryRoute = !historicalDataPair && !historical && !special && !cohort;
+  let verifier: ReturnType<typeof assertVerifierAuthority> | undefined;
+  let verifierError: unknown;
+  if (ordinaryRoute) {
+    try {
+      verifier = assertVerifierAuthority({
+        changedFiles: evidence.changedFiles,
+        files: evidence.files,
+        baseTree: evidence.baseTree,
+        headTree: evidence.headTree,
+        headData: evidence.headData,
+      }, baseManifest, baseLock);
+    } catch (error) {
+      verifierError = error;
+    }
+  }
   const allowedLegacyChanges = special
     ? new Set<string>(binding.changes.map(([path]) => path))
     : historical
       ? new Set<string>(historicalCohort.changes.map(([path]) => path))
-      : new Set<string>();
+      : verifier === "node26-default"
+        ? new Set(files.map(file => String(file.filename)))
+        : new Set<string>();
   assertLegacyProtected(base, head, allowedLegacyChanges, historicalDataPair
     ? historicalCohortData.absentPaths
     : historical ? laterProtectedPaths : undefined);
@@ -468,16 +486,11 @@ export function checkDocsSourceSuccessor(raw: unknown, baseManifest: Buffer, bas
     assertInstallBinding(base, head, evidence.headData, baseManifest, baseLock);
     return sourceSuccessorResult.special;
   }
-  assert.ok(cohort || Number(evidence.changedFiles) <= 32,
+  assert.ok(Number(evidence.changedFiles) <= 32,
     "Invalid changed_files; expected 1..32 outside Cohort data");
-  const authority = assertVerifierAuthority({
-    changedFiles: evidence.changedFiles,
-    files: evidence.files,
-    baseTree: evidence.baseTree,
-    headTree: evidence.headTree,
-    headData: evidence.headData,
-  }, baseManifest, baseLock);
-  return authority === "noop" ? sourceSuccessorResult.noop : sourceSuccessorResult.ordinary;
+  if (verifierError !== undefined) { throw verifierError; }
+  assert.ok(verifier !== undefined, "Missing retained ordinary verifier result");
+  return verifier === "noop" ? sourceSuccessorResult.noop : sourceSuccessorResult.ordinary;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
