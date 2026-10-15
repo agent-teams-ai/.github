@@ -5,3 +5,4 @@
 - [ADR-0003: Reconciled Package Publication](0003-reconciled-package-publication.md)
 - [ADR-0004: Versioned Feature Module Standard](0004-versioned-feature-module-standard.md)
 - [ADR-0005: Explicit five-coordinate Qualified Docs Cohort v2](0005-qualified-docs-cohort-v2.md)
+- [ADR-0010: Feature Module Standard v1.1 adds sub-features](0010-feature-module-standard-v1-1-sub-features.md)
