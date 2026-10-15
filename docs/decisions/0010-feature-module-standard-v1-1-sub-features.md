@@ -15,9 +15,9 @@ related parts across the module and exposes each of them to every other
 feature. On 2026-10-11 the owner decided that features may nest to any depth:
 a package is a unit of reuse and distribution, a feature is a unit of meaning
 and ownership, and a feature with its sub-features moves as one folder.
-Composition also lacks a surface for the identifiers and descriptors that connect a
-provider feature with its consumers, so such a dependency is a deep import
-under v1. Version v1 is byte-immutable under ADR-0004.
+Composition also lacks a surface for the identifiers and descriptors that
+connect a provider feature with its consumers, so such a dependency is a deep
+import under v1. Version v1 is byte-immutable under ADR-0004.
 
 ## Decision
 
@@ -30,15 +30,17 @@ under v1. Version v1 is byte-immutable under ADR-0004.
    where the standard allows it, and, from composition, composition
    contracts, with an acyclic graph of downward and lateral use edges.
 2. Version policy, decided by the owner as the documented approval
-   authority: a minor successor `vN.M` keeps every requirement of its
-   predecessor, `vN.(M-1)` or `vN`, except as follows. It MAY add
-   requirements that apply only to a construct that a profile must declare
-   before using it, and it MAY correct a published requirement when the
+   authority: a minor successor `vN.M` of its predecessor, `vN.(M-1)` or
+   `vN`, may add constructs that a profile must declare before using them,
+   with requirements, including adaptations of predecessor requirements,
+   that apply only to a module that declares them. It may also correct a
+   published requirement, for example by clarifying or relaxing it, when the
    correction makes no repository that conforms to the predecessor
-   non-conforming, that is, when it clarifies or relaxes that requirement.
-   A repository that conforms to the predecessor and declares none of the
-   added constructs conforms to `vN.M` once its profile pins `vN.M`. Every
-   other change publishes `vN+1`. Version v1.1 is the first minor successor.
+   non-conforming. Every other requirement of the predecessor stays
+   unchanged, so a repository that conforms to the predecessor and declares
+   none of the added constructs conforms to `vN.M` once its profile pins
+   `vN.M`. Every other change publishes `vN+1`. Version v1.1 is the first
+   minor successor.
 3. Version v1 stays published. No repository moves to v1.1 implicitly. Each
    adopts it through its own profile, decision and deterministic gate.
 4. The informative examples of section Sub-features are the shared cases that
@@ -71,7 +73,7 @@ under v1. Version v1 is byte-immutable under ADR-0004.
   decision, before its features nest.
 - A repository without a profile may follow the v1.1 rules without claiming
   conformance.
-- A later change that tightens or otherwise alters a v1.1 requirement for
-  existing constructs publishes v2; a change that only adds a construct a
-  profile must declare, or a correction that clarifies or relaxes a
-  requirement, may publish v1.2.
+- A later change that could make a repository that conforms to v1.1
+  non-conforming, other than through a construct its profile must newly
+  declare, publishes v2. Any other change, such as an added construct or a
+  correction that clarifies or relaxes a requirement, may publish v1.2.
