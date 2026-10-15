@@ -1,8 +1,8 @@
 # ADR-0010: Feature Module Standard v1.1 adds sub-features
 
-Status: Proposed
+Status: Accepted
 
-Date: pending acceptance
+Date: 2026-10-15
 
 Decision owner: Organization maintainers
 
