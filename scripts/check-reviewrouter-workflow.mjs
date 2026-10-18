@@ -1,13 +1,15 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 
 import { parse } from "yaml";
 
 const reviewPath = ".github/workflows/reviewrouter-codex.yml";
 const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
-const reviewCommit = "8a0a31ae1d92c89466c8a939272a1e333e88c5a0";
-const interactionCommit = "6b35091c824b1d4d5ee6bf8316121ed08d3e4861";
+const reviewCommit = "75cbecab131d74021677fcd1fb21962994d306b8";
 const reviewSecret =
-  "REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E3_805e1404efa0ee03613cabc31b18f2a3";
+  "REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E4_c00bdf94aa1684657780cad55cd4159a";
+const interactionSourceSha256 =
+  "10bbf435f6b604ab5a959995ab717b8dde186591586f6af8970cd3067a9c74ee";
 const reviewSecretMatch =
   /_E([1-9][0-9]*)_([a-f0-9]{32})$/.exec(reviewSecret);
 if (!reviewSecretMatch) {
@@ -16,8 +18,6 @@ if (!reviewSecretMatch) {
 const [, reviewEpoch, reviewNamespace] = reviewSecretMatch;
 const expectedReviewUses =
   `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${reviewCommit}`;
-const expectedInteractionUses =
-  `777genius/review-router/.github/workflows/reviewrouter-interaction-reusable.yml@${interactionCommit}`;
 
 function assert(condition, message) {
   if (!condition) {
@@ -134,65 +134,14 @@ assert(
   "interaction must preserve the PR-only and non-bot event filter.",
 );
 assert(
-  interactionJob?.uses === expectedInteractionUses,
-  `${interactionPath} must call the immutable upstream interaction workflow.`,
-);
-assert(
-  samePermissions(interactionJob?.permissions, {
-    actions: "write",
-    contents: "read",
-    issues: "read",
-    "pull-requests": "read",
-    "id-token": "write",
-  }),
-  "interaction must grant only the permissions required for App publication, OIDC, and exact-run reruns.",
-);
-assert(
-  interactionJob?.with?.runtime_ref === interactionCommit,
-  "interaction must pin the reusable workflow and runtime to the same commit.",
-);
-assert(
-  interactionJob?.with?.api_url === "https://api.reviewrouter.site" &&
-    interactionJob?.with?.runtime_config_mode === "oidc" &&
-    interactionJob?.with?.review_workflow_file === "reviewrouter-codex.yml",
-  "interaction must preserve its API, OIDC, and review-workflow contract.",
-);
-assert(
-  interactionJob?.with?.discussion_mode ===
-    "${{ vars.REVIEW_ROUTER_DISCUSSION_MODE || 'off' }}" &&
-    interactionJob?.with?.discussion_model ===
-      "${{ vars.REVIEW_CODEX_MODEL || 'gpt-5.5' }}" &&
-    interactionJob?.with?.discussion_reasoning_effort ===
-      "${{ vars.REVIEW_CODEX_EFFORT || 'xhigh' }}" &&
-    interactionJob?.with?.discussion_max_per_pr ===
-      "${{ vars.REVIEW_ROUTER_DISCUSSION_MAX_PER_PR || '20' }}" &&
-    interactionJob?.with?.discussion_max_per_thread ===
-      "${{ vars.REVIEW_ROUTER_DISCUSSION_MAX_PER_THREAD || '5' }}" &&
-    interactionJob?.with?.discussion_timeout_seconds ===
-      "${{ vars.REVIEW_ROUTER_DISCUSSION_TIMEOUT_SECONDS || '60' }}",
-  "interaction must preserve all discussion variable mappings.",
-);
-assert(
-  samePermissions(interactionJob?.secrets, {
-    REVIEW_ROUTER_LEDGER_KEY: "${{ secrets.REVIEW_ROUTER_LEDGER_KEY }}",
-    CODEX_AUTH_JSON: "${{ secrets.REVIEWROUTER_CODEX_AUTH_JSON }}",
-  }),
-  "interaction must preserve only the required secret mappings.",
-);
-assert(
-  interactionJob?.steps === undefined &&
-    interactionJob?.["runs-on"] === undefined &&
-    interactionJob?.env === undefined,
-  "interaction must remain a thin reusable-workflow caller.",
+  createHash("sha256").update(interaction.source).digest("hex") ===
+    interactionSourceSha256,
+  `${interactionPath} must match the exact canonical explicit interaction V2 source.`,
 );
 
 for (const legacyMarker of [
   "mode: codex-oauth-rotating",
   "REVIEWROUTER_COMMENT_TOKEN_MODE: github-token",
-  "actions/checkout@",
-  "actions/setup-node@",
-  ".reviewrouter-runtime",
-  "npm install -g",
 ]) {
   assert(
     !review.source.includes(legacyMarker) && !interaction.source.includes(legacyMarker),
@@ -200,4 +149,4 @@ for (const legacyMarker of [
   );
 }
 
-console.log("ReviewRouter workflows verified: pinned thin callers with least-privilege tokens.");
+console.log("ReviewRouter workflows verified: pinned canonical sources with least-privilege tokens.");
