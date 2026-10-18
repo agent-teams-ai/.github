@@ -147,8 +147,10 @@ to new repositories. Follow [repository admission](docs/repository-admission.md)
 for the reviewed consumer change and governance update.
 
 The external Craig fork remains explicitly exempt with review triggers. The
-Platform GitHub Free required-check exception remains separately authoritative;
-it does not waive the local or CI documentation gate. Continuous live inventory
+obsolete Platform private/GitHub Free Docs exception is retired as recorded in
+[the dated retirement evidence](governance/evidence/docs-admission/platform-required-check-exception-retirement-20261019.md).
+Platform's local and CI documentation gate remains mandatory; its remote Docs
+required-check enforcement gap remains explicit. Continuous live inventory
 drift audit runs every six hours with a dedicated read-only organization credential
 and fails unless visible private repositories match the organization total. ReviewRouter,
 Codex authentication, and interactive user credentials must not be repurposed for it.
@@ -176,18 +178,19 @@ updates only; Renovate owns routine version updates.
 
 Do not assume that a transferred repository received an organization default.
 Audit and explicitly apply the visibility-appropriate configuration after a
-transfer. The current private `agent-teams-platform` repository has a documented
-GitHub Free exception, `platform-private-required-checks-github-free`, defined
-once in the code-security snapshot and referenced by the other policy records.
-Policy must not describe those CI gates as remotely enforced.
+transfer. Platform was observed public on 2026-10-19. The older private-repository
+exception `platform-private-required-checks-github-free` and its references in the
+dated security, Actions and executable-specification snapshots remain historical
+evidence. The current Docs policy no longer references that exception. The live
+observation found only the identity ruleset, so it does not establish remote Docs
+required-check enforcement.
 
 The dated Actions posture is recorded separately in
 [`governance/actions-policy.json`](governance/actions-policy.json). Default
 workflow permissions are read-only and workflow approval is disabled. Immutable
-action-reference enforcement is enabled organization-wide. Platform retains the
-separate required-check exception
-`platform-private-required-checks-github-free`; that GitHub Free limitation does
-not weaken immutable action-reference enforcement.
+action-reference enforcement is enabled organization-wide. Its historical
+Platform GitHub Free exception reference does not reactivate the retired Docs
+waiver and does not weaken immutable action-reference enforcement.
 
 ## Commit and pull request authorship
 

@@ -328,7 +328,7 @@
         ]
       },
       "exemption": null,
-      "required_check_exception_id": "platform-private-required-checks-github-free"
+      "required_check_exception_id": null
     },
     {
       "repository": "agent-teams-ai/craig-meeting-gateway",

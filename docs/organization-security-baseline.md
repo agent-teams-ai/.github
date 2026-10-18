@@ -49,11 +49,13 @@ transferred repository must not be assumed to have received the current default:
 audit it after transfer and explicitly apply configuration `266049` or `266048`
 as appropriate.
 
-The canonical plan-tier exception is
+The dated snapshot's plan-tier exception is
 `platform-private-required-checks-github-free` in the code-security snapshot.
 The executable-specification and Actions snapshots reference that ID instead of
-copying its definition. It does not make local or CI checks optional; reassess
-the exception after a visibility or plan change.
+copying its definition. Those snapshot bytes remain historical evidence. The
+active Docs exception and its v2 reference are retired following the 2026-10-19
+public-visibility observation; see [the retirement evidence](../governance/evidence/docs-admission/platform-required-check-exception-retirement-20261019.md).
+Local and CI checks remain mandatory, and remote Docs enforcement is still unproven.
 
 ## Dated required-check observation
 
@@ -62,8 +64,12 @@ rulesets observed through the GitHub API on 2026-08-14, including each ruleset
 ID, check context, and integration ID. GitHub Actions checks are app-bound to
 integration `15368`; ReviewRouter checks are app-bound to integration `3599233`.
 The new `extension-foundation` repository has its own active ruleset observation.
-The private Platform rulesets endpoint still returns the documented GitHub Free
-`403` exception.
+The historical private Platform observation recorded the GitHub Free `403`
+exception. On 2026-10-19 Platform was public and the rulesets query succeeded,
+returning only identity ruleset `24363204`; no Docs required-check rule was
+observed. The old snapshot is not evidence of current private visibility or
+unavailable capability, and retiring its active Docs waiver does not close the
+remote enforcement gap.
 This checked-in evidence is not continuous monitoring and must be refreshed
 before relying on live enforcement.
 
@@ -79,10 +85,9 @@ enforcement. The last authoritative Actions API observation records read-only
 default workflow permissions, disabled workflow approval, all-repository
 coverage, and required immutable commit SHAs for external actions. A 2026-08-14
 refresh attempt returned `403` without the required read-only organization
-scope, so it did not replace that observation or become authoritative. Platform
-retains exception
-`platform-private-required-checks-github-free` only for protected required
-checks; it does not weaken the organization-wide action-reference policy.
+scope, so it did not replace that observation or become authoritative. Its
+Platform exception reference is historical and does not renew the retired Docs
+waiver or weaken the organization-wide action-reference policy.
 
 The Bot-author owner-bootstrap fields in the dated Actions snapshot are
 historical. Follow the [maintained commit and PR author policy](../GOVERNANCE.md#commit-and-pull-request-authorship)

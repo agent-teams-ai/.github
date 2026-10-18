@@ -1213,6 +1213,31 @@ test("accepts cross-policy required-check exception references", () => {
   assert.doesNotThrow(() => validateGovernanceReferences(clone(ledger), clone(security), clone(actions), clone(inventory), clone(docsProtocol)));
 });
 
+test("permits retiring Platform's Docs exception while preserving its historical reference", () => {
+  const policy = clone(docsProtocol);
+  const platform = policy.repositories.find(({ repository_id: id }) => id === 1319378484);
+  platform.required_check_exception_id = null;
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(policy, docsProtocolSchema));
+  platform.required_check_exception_id = "platform-private-required-checks-github-free";
+  assert.doesNotThrow(() => validateDocsProtocolPolicy(policy, docsProtocolSchema));
+  assert.doesNotThrow(() => validateGovernanceReferences(
+    clone(ledger), clone(security), clone(actions), clone(inventory), policy,
+  ));
+});
+
+test("retirement does not admit unknown or wrong-repository Docs exception references", () => {
+  for (const [repositoryId, exceptionId] of [
+    [1319378484, "unknown-required-check-exception"],
+    [1316243981, "platform-private-required-checks-github-free"],
+  ]) {
+    const policy = clone(docsProtocol);
+    policy.repositories.find(({ repository_id: id }) => id === repositoryId)
+      .required_check_exception_id = exceptionId;
+    assert.throws(() => validateDocsProtocolPolicy(policy, docsProtocolSchema),
+      /required-check exception reference is invalid/u);
+  }
+});
+
 test("requires a deleted policy tombstone for historical ledger identities absent from inventory", () => {
   const changedInventory = clone(inventory);
   changedInventory.repositories = changedInventory.repositories.filter(
