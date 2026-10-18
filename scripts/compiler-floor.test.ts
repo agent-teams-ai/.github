@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test, { type TestContext } from "node:test";
-import { assertCompilerFloor, CompilerFloorError } from "./compiler-floor.mts";
+import { assertCompilerFloor, CompilerFloorError } from "./compiler-floor.ts";
 
 const foundationPath = "node_modules/@agent-teams/engineering-foundation";
 const extractorPath = `${foundationPath}/node_modules/@microsoft/api-extractor`;
@@ -114,6 +114,6 @@ test("compiler preflight precedes every existing public Foundation command route
   for (const name of ["precheck", "quality:boundaries", "test:critical"]) {
     assert.ok(name in scripts);
     const command: unknown = Reflect.get(scripts, name);
-    assert.ok(typeof command === "string" && command.startsWith("node scripts/compiler-floor.mts && "));
+    assert.ok(typeof command === "string" && command.startsWith("node scripts/compiler-floor.ts && "));
   }
 });

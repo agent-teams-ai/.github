@@ -115,12 +115,16 @@ tooling, command-line programs and small helpers. A short script or an existing
 JavaScript directory is not a reason to start another handwritten `.js` or
 `.mjs` implementation.
 
-Use `.ts` by default, `.mts` when a Node entry needs explicit ESM semantics,
-`.tsx` when the selected JSX toolchain requires it, and `.cts` only for a real
-CommonJS integration requirement. Choose execution and emission settings for
-the owning runtime; changing an extension must not change its module contract
-accidentally. Existing Python, Rust, shell and other appropriate language
-choices do not become TypeScript migrations under this rule.
+Use ordinary `.ts` files for maintained source, tests, command-line programs
+and tooling. For Node ESM, declare `"type": "module"` in the owning
+`package.json` and use the owning compiler's module settings; ESM alone is not
+a reason to use `.mts`. Use `.tsx` for source that actually contains JSX.
+Preserve a concrete host-required, generated, frozen or syntax-fixture format
+only under the scoped cases below, with the affected files and reason named.
+Choose execution and emission settings for the owning runtime; changing an
+extension must not change its module contract accidentally. Existing Python,
+Rust, shell and other appropriate language choices do not become TypeScript
+migrations under this rule.
 
 TypeScript source must receive an effective strict typecheck. Include every
 new or migrated maintained source file, including tests and tooling, in the
@@ -152,14 +156,14 @@ older compiler, bypass the gate, relabel old evidence or alter immutable inputs
 to obtain a green result. Resolve that dependency through its owning upgrade
 and qualification route.
 
-### Scoped JavaScript uses
+### Scoped boundary formats
 
-The following cases may retain the JavaScript form that their boundary needs:
+The following cases may retain the exact format that their boundary needs:
 
 | Case | Required reason and treatment |
 | --- | --- |
-| Host or configuration entry that requires JavaScript | Identify the host constraint and affected file; use TypeScript for maintained logic behind that entry when the host permits a compiled adapter. |
-| JavaScript consumer or runtime-semantic fixture, including an intentional type-negative case | State the behavior or rejection the exact syntax proves; retain its independent expected result. Ordinary test infrastructure stays TypeScript. |
+| Host or configuration entry that requires a specific format | Identify the host constraint and affected file; use `.ts` for maintained logic behind that entry when the host permits a compiled adapter. Ordinary Node ESM does not require `.mts`. |
+| Consumer, module-syntax or runtime-semantic fixture, including an intentional type-negative case | State the behavior or rejection the exact syntax proves; retain its independent expected result. Ordinary test infrastructure uses `.ts`. |
 | Generated or distributable JavaScript | Generate it from its authoritative source; do not start a second handwritten implementation. |
 | Frozen fixtures, versioned archives or retained external evidence | Preserve their exact bytes, names and provenance. Do not rename or recompile them merely to change their extension. |
 

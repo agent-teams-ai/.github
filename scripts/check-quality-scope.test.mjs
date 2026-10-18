@@ -13,7 +13,7 @@ import {
   readQualityAdoption,
 } from "./check-quality-scope.mjs";
 import { selectOxlintFiles } from "./run-quality-lint.mjs";
-import { assertCompilerFloor } from "./compiler-floor.mts";
+import { assertCompilerFloor } from "./compiler-floor.ts";
 
 const accepted = await readQualityAdoption();
 
@@ -26,6 +26,8 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
   assert.equal(classifySourcePath("scripts/governance-policy.test.mjs"), "test");
   assert.equal(classifySourcePath("scripts/qualification-input-proof.mts"), "tooling");
   assert.equal(classifySourcePath("scripts/qualification-input-proof.test.mts"), "test");
+  assert.equal(classifySourcePath("scripts/compiler-floor.ts"), "tooling");
+  assert.equal(classifySourcePath("scripts/compiler-floor.test.ts"), "test");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.mjs"), "tooling");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.test.mjs"), "test");
   for (const authority of ["governance/policy.json", ".github/workflows/ci.yml", "GOVERNANCE.md"]) {
@@ -46,18 +48,20 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/check-docs-verifier-authority.test.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
-  assert.ok(paths.includes("scripts/compiler-floor.mts"));
-  assert.ok(paths.includes("scripts/compiler-floor.test.mts"));
+  assert.ok(paths.includes("scripts/compiler-floor.ts"));
+  assert.ok(paths.includes("scripts/compiler-floor.test.ts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
 const mutations = {
+  "a changed TypeScript ESM package contract": value => { value.manifest.type = "commonjs"; },
   "a ranged tooling compiler": value => { value.manifest.devDependencies.typescript = "^7.0.2"; },
   "foreign Node type definitions": value => { value.manifest.devDependencies["@types/node"] = "26.6.4"; },
   "disabled strict typechecking": value => { value.toolingTsconfig.compilerOptions.strict = false; },
   "blanket library typecheck suppression": value => { value.toolingTsconfig.compilerOptions.skipLibCheck = true; },
   "a dropped typed test entry": value => { value.toolingTsconfig.include.pop(); },
   "a missing mts test glob": value => { value.manifest.scripts.test = value.manifest.scripts.test.replace(" scripts/*.test.mts", ""); },
+  "a missing ts test glob": value => { value.manifest.scripts.test = value.manifest.scripts.test.replace(" scripts/*.test.ts", ""); },
   "excluded typed lint selection": value => { value.profile.lint.includedExtensions = []; },
   "an unsupported critical tooling patch": value => { value.nodeVersion = "24.18.0\n"; },
   "the previous Node 24 default": value => { value.nodeVersion = "24.21.0\n"; },
