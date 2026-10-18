@@ -287,6 +287,12 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
   assertWorkflow(workflow);
   const census = classifyTrackedPaths(trackedPaths);
   assert.deepEqual(census.unclassified, [], `unclassified executable source: ${census.unclassified.join(", ")}`);
+  for (const { path: sourcePath } of census.classified) {
+    if (sourcePath.endsWith(".ts")) {
+      assert.ok(profile.typedTooling.entryFiles.includes(sourcePath),
+        `TypeScript source is outside the owning strict compiler project: ${sourcePath}`);
+    }
+  }
   assert.ok(census.classified.some(entry => entry.role === "tooling"), "tooling census is empty");
   assert.ok(census.classified.some(entry => entry.role === "test"), "test census is empty");
   return census;

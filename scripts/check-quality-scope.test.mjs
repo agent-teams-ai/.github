@@ -75,6 +75,8 @@ const mutations = {
   "a dropped governed tooling root": value => { value.sourcePolicy.governedRoots.pop(); },
   "a disabled installed source gate": value => { delete value.foundationConfig.capabilities["architecture.source-dependencies"]; },
   "a new unclassified executable source": value => { value.trackedPaths.push("other/new-source.ts"); },
+  "an ordinary TypeScript helper outside the strict project": value => { value.trackedPaths.push("scripts/unlisted-helper.ts"); },
+  "an ordinary TypeScript test outside the strict project": value => { value.trackedPaths.push("scripts/unlisted.test.ts"); },
   "a missing Foundation pin": value => { delete value.manifest.devDependencies["@agent-teams/engineering-foundation"]; },
   "a ranged Foundation pin": value => { value.manifest.devDependencies["@agent-teams/engineering-foundation"] = "^1.7.2"; },
   "a local lint rule": value => { value.lintConfig.rules = { "no-eval": "off" }; },
