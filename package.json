@@ -11,7 +11,7 @@
     "pnpm": ">=11.17.0 <12"
   },
   "scripts": {
-    "precheck": "node scripts/check-quality-scope.mjs",
+    "precheck": "node scripts/compiler-floor.mts && node scripts/check-quality-scope.mjs",
     "check": "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
     "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
     "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
@@ -23,8 +23,8 @@
     "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
     "quality:lint": "node scripts/run-quality-lint.mjs",
     "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
-    "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
-    "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
+    "quality:boundaries": "node scripts/compiler-floor.mts && agent-teams-foundation check architecture.source-dependencies",
+    "test:critical": "node scripts/compiler-floor.mts && agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
     "quality:typecheck": "tsc --project tsconfig.tooling.json",
     "test:input-proof": "node --test scripts/qualification-input-proof.test.mts"
   },

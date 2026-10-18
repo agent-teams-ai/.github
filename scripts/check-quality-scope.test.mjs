@@ -13,6 +13,7 @@ import {
   readQualityAdoption,
 } from "./check-quality-scope.mjs";
 import { selectOxlintFiles } from "./run-quality-lint.mjs";
+import { assertCompilerFloor } from "./compiler-floor.mts";
 
 const accepted = await readQualityAdoption();
 
@@ -36,7 +37,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 30);
+  assert.equal(paths.length, 32);
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
@@ -45,6 +46,8 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/check-docs-verifier-authority.test.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
+  assert.ok(paths.includes("scripts/compiler-floor.mts"));
+  assert.ok(paths.includes("scripts/compiler-floor.test.mts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
@@ -118,9 +121,12 @@ async function fixture(t) {
   return { root, put };
 }
 
-const runInstalled = (cli, args, root) => spawnSync(process.execPath, [cli, ...args], {
-  cwd: root, encoding: "utf8", timeout: 30000, maxBuffer: 2 * 1024 * 1024,
-});
+const runInstalled = (cli, args, root) => {
+  assertCompilerFloor();
+  return spawnSync(process.execPath, [cli, ...args], {
+    cwd: root, encoding: "utf8", timeout: 30000, maxBuffer: 2 * 1024 * 1024,
+  });
+};
 const outputOf = result => result.stdout + result.stderr;
 
 test("installed source boundary rejects missing inputs and governed dist source", async t => {

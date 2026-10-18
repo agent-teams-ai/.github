@@ -8,6 +8,10 @@ Read the [Engineering Quality Standard](docs/engineering-quality-standard.md)
 for shared practices, then apply the target repository's specific contracts
 and verification requirements.
 
+For JavaScript runtimes, follow its
+[TypeScript implementation rule](docs/engineering-quality-standard.md#typescript-for-javascript-runtimes)
+and identify the owning strict typecheck that covers the changed source.
+
 1. Read the target repository's `README.md`, `AGENTS.md`, and architecture
    documentation.
 2. Before coding, identify applicable accepted decisions for changes to public

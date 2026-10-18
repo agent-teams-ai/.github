@@ -20,8 +20,10 @@ This maintained baseline owns common engineering practices and navigation. It
 does not replace the immutable [Feature Module Standard v1](architecture/feature-module-standard/v1.md),
 its [version registry and adoption rules](architecture/feature-module-standard/README.md),
 or a repository's accepted ADRs, published contracts, security policy and scoped
-adoption profiles. It neither selects technologies nor adopts Get Modular for
-every repository. [Governance](../GOVERNANCE.md) owns authority boundaries.
+adoption profiles. It does not choose a product's runtime or framework, or adopt
+Get Modular for every repository. [Governance](../GOVERNANCE.md) owns authority
+boundaries. The implementation-language rule below applies within JavaScript
+runtimes; it does not replace legitimate code in other languages.
 
 Read the central version selected by the repository's accepted adoption profile
 when applying a pinned architecture standard. A link to `main` is navigation to
@@ -103,6 +105,86 @@ a safe migration. Accepted decisions and pinned standards still change through
 their successor process.
 
 Repository agent instructions link here; they do not duplicate this direction.
+
+## TypeScript for JavaScript runtimes
+
+Owner direction recorded on 2026-10-18: new maintained code for JavaScript
+runtimes MUST be authored in TypeScript, with TypeScript **7.0.2 or newer**.
+This includes applications, libraries, tests, test runners, build and release
+tooling, command-line programs and small helpers. A short script or an existing
+JavaScript directory is not a reason to start another handwritten `.js` or
+`.mjs` implementation.
+
+Use `.ts` by default, `.mts` when a Node entry needs explicit ESM semantics,
+`.tsx` when the selected JSX toolchain requires it, and `.cts` only for a real
+CommonJS integration requirement. Choose execution and emission settings for
+the owning runtime; changing an extension must not change its module contract
+accidentally. Existing Python, Rust, shell and other appropriate language
+choices do not become TypeScript migrations under this rule.
+
+TypeScript source must receive an effective strict typecheck. Include every
+new or migrated maintained source file, including tests and tooling, in the
+owning compiler project with [`strict: true`](https://www.typescriptlang.org/tsconfig/strict.html)
+and the repository's stricter options. Run that compiler project through the
+existing required gate, extending its real source coverage when necessary.
+Renaming a file while leaving it outside that gate does not satisfy the rule.
+Unchecked `any`, blanket assertions, `@ts-nocheck`, suppression of real errors
+or weaker compiler options must not substitute for modeling and checking the
+boundary. Use precise types and inference, and validate unknown external data.
+
+Node's [type stripping](https://nodejs.org/api/typescript.html#type-stripping)
+executes supported TypeScript syntax without checking types and ignores
+`tsconfig.json`; successful execution is not typecheck evidence. Reuse the
+repository's compiler and test commands instead of adding a parallel checking
+framework. Published Node packages must still provide compatible compiled
+JavaScript and declarations for their public TypeScript contracts. Do not make
+ordinary consumers execute package `.ts` source from `node_modules`; Node
+[does not strip types there](https://nodejs.org/api/typescript.html#type-stripping-in-dependencies).
+Preserve the package's accepted exports, module formats and runtime support.
+
+Pin TypeScript itself, including its compiler and parser APIs used for current
+work, to 7.0.2 or newer. This includes copies initialized by embedded tooling,
+not just the workspace compiler named in `package.json`. Inspect their resolved
+dependency paths and versions before running them. If a required tool still
+initializes an older implementation, report the exact tool, resolved version,
+owning dependency and blocked gate; continue unaffected work. Do not execute the
+older compiler, bypass the gate, relabel old evidence or alter immutable inputs
+to obtain a green result. Resolve that dependency through its owning upgrade
+and qualification route.
+
+### Scoped JavaScript uses
+
+The following cases may retain the JavaScript form that their boundary needs:
+
+| Case | Required reason and treatment |
+| --- | --- |
+| Host or configuration entry that requires JavaScript | Identify the host constraint and affected file; use TypeScript for maintained logic behind that entry when the host permits a compiled adapter. |
+| JavaScript consumer or runtime-semantic fixture, including an intentional type-negative case | State the behavior or rejection the exact syntax proves; retain its independent expected result. Ordinary test infrastructure stays TypeScript. |
+| Generated or distributable JavaScript | Generate it from its authoritative source; do not start a second handwritten implementation. |
+| Frozen fixtures, versioned archives or retained external evidence | Preserve their exact bytes, names and provenance. Do not rename or recompile them merely to change their extension. |
+
+Document the affected file or bounded group and its concrete reason in the
+owning documentation or change description. Convenience, habit, shorter setup
+and an untyped surrounding codebase are not exceptions. These cases do not
+waive their relevant runtime, compatibility or rejecting checks, and untyped
+evidence must not be described as strictly typechecked.
+
+### Existing maintained JavaScript
+
+Migrate a substantially rewritten or extended maintained JavaScript file and
+its affected tests and callers in the same coherent change when compatible
+with the runtime and owning contract. New responsibilities and helpers use
+TypeScript; placing them in an old JavaScript file does not exempt them.
+
+A small, localized correction may stay in a legacy JavaScript file when
+migrating that file would materially expand the change beyond the corrected
+behavior. Record that specific scope reason and the remaining type-coverage
+gap, and keep the correction local; this is not permission to grow the file's
+responsibilities. A mechanical extension change with unchecked code is not a
+migration. Unrelated repositories, frozen evidence and whole legacy trees do
+not need a mass rewrite before a bounded fix can ship. Keep actual coverage
+and pending compiler-tool migrations explicit rather than claiming fleet-wide
+conformance from this policy.
 
 ## Clean Architecture and ownership
 

@@ -11,13 +11,13 @@ const root = new URL("../", import.meta.url);
 const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"];
 const FOUNDATION_PRESET = "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json";
 const EXPECTED_SCRIPTS = {
-  precheck: "node scripts/check-quality-scope.mjs",
+  precheck: "node scripts/compiler-floor.mts && node scripts/check-quality-scope.mjs",
   check: "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
   "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
   "quality:lint": "node scripts/run-quality-lint.mjs",
   "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
-  "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
-  "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
+  "quality:boundaries": "node scripts/compiler-floor.mts && agent-teams-foundation check architecture.source-dependencies",
+  "test:critical": "node scripts/compiler-floor.mts && agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
   "quality:typecheck": "tsc --project tsconfig.tooling.json",
   "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
   test: "node --test scripts/*.test.mjs scripts/*.test.mts tools/feature-module-standard/check.test.mjs",
@@ -99,7 +99,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts"] },
     typedTooling: {
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
-      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts"],
+      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/compiler-floor.mts", "scripts/compiler-floor.test.mts"],
     },
     toolchain: { node: "26.11.1", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
@@ -123,7 +123,9 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     "scripts/qualification-input-proof.mts",
     "scripts/qualification-input-proof.test.mts",
     "scripts/check-docs-verifier-authority.mts",
-    "scripts/check-docs-verifier-authority.test.mts"
+    "scripts/check-docs-verifier-authority.test.mts",
+    "scripts/compiler-floor.mts",
+    "scripts/compiler-floor.test.mts"
   ]
 }, "strict compiler scope and settings must stay exact");
   assert.deepEqual(requiredTests, {
@@ -223,6 +225,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
           "node:crypto",
           "node:fs",
           "node:fs/promises",
+          "node:module",
           "node:os",
           "node:path",
           "node:test",

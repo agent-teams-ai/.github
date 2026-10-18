@@ -4,17 +4,53 @@ Central adopts the exact registry Engineering Foundation 1.7.2 development
 package and its public Node lint preset. Governance semantics remain in the
 existing validators. The consumer profile admits JavaScript and TypeScript tooling and tests;
 JSON, YAML and Markdown authority remain non-source. There are no production
-roots, Core/Assembly adoption or SDK grants. The small strict compiler project
-covers only the input-proof helper and its typed tests. Legacy JavaScript remains
+roots, Core/Assembly adoption or SDK grants. The strict compiler project covers
+its explicitly listed typed tooling entries and tests. Legacy JavaScript remains
 untyped; `typedCoverage: false` still describes the repository honestly.
+
+New maintained code for JavaScript runtimes follows
+[the organization TypeScript rule](engineering-quality-standard.md#typescript-for-javascript-runtimes).
+The compiler preflight and its inert tests are included in the existing strict
+tooling project. The bounded changes to the legacy adoption checker retain its
+current JavaScript scope; migrating that full checker would expand this policy
+change. Its untyped coverage remains explicit rather than being renamed away.
+
+## Current compiler dependency block
+
+`scripts/compiler-floor.mts` reads only JSON manifests through each dependency
+owner's resolution path before any Foundation implementation loads. It runs
+first in `precheck` and before the existing direct `quality:boundaries` and
+`test:critical` commands; their complete obligations remain after the guard.
+Installed-CLI test fixtures also check it before spawning either CLI. A blocked
+preflight is a failure to run those gates, never a successful negative fixture.
+
+Static inspection of the integrity-verified
+[Foundation 1.7.2 registry archive](https://registry.npmjs.org/@agent-teams/engineering-foundation/-/engineering-foundation-1.7.2.tgz)
+and [committed lock](../pnpm-lock.yaml) found an eager command-host import of
+its public-API audit adapter. That adapter imports
+[API Extractor 7.58.12](https://registry.npmjs.org/@microsoft/api-extractor/-/api-extractor-7.58.12.tgz) and its pinned loader uses
+the extractor-owned TypeScript 5.9.3 implementation. The Node test CLI also
+imports that command host. The workspace compiler's 7.0.2 pin does not replace
+this embedded copy. The preflight reports `TYPESCRIPT_COMPILER_FLOOR_BLOCKED`
+before either tool initializes; the complete gate remains blocked until the
+owning upstream compiler migration and qualification exist. No old compiler
+execution, dependency override, frozen-evidence rewrite or passing aggregate
+is authorized by the policy update.
+
+The metadata guard's inert fixture tests and the owning strict typecheck may
+run independently. Node type stripping executes the guard; it does not prove
+its types. No new aggregate, enforcement framework or required identity is
+introduced, and existing immutable evidence remains unchanged.
+
+## Existing quality route
 
 `pnpm check` is the complete required route. Its prehook binds the dependency,
 profile, installed source policy, critical identities and selected test files.
 The census includes tracked and untracked source, so new unclassified source
 cannot disappear before staging. Oxlint 1.85.0 still checks every tooling file
 with exact debug-selection agreement and the same strict suppression options.
-The selection retains all 22 existing tooling files and includes both new `.mts`
-files, including the typed test; no exclusions or ignore rules are added.
+The derived selection contains 32 files: all 28 tooling files and four `.mts`
+test files. No exclusions or ignore rules are added.
 
 `pnpm quality:boundaries` invokes the installed public source-dependency CLI.
 The v3 root-package profile retains the two existing owners: `scripts` and
@@ -33,7 +69,9 @@ Node parent test (Foundation #363/#365). The installed nested positive control
 and all eight mandatory identities pass on the exact adoption candidate; Central
 retains the regression and adds no environment scrubber or wrapper. Disposable
 controls verify completion, omission/skip rejection and exact OS exceptions.
-Central's critical inventory has no exceptions.
+Central's critical inventory has no exceptions. These retained adoption results
+describe their recorded candidate; current execution is blocked by the compiler
+dependency described above.
 The complete `node --test` route retains existing files and explicitly includes
 `scripts/*.test.mts`; `pnpm test:input-proof` selects the new public comparator
 tests directly. The installed boundary parser also receives a forbidden `.mts`
@@ -61,12 +99,12 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 
 | Installed mechanism | Applicability and enforcement |
 | --- | --- |
-| Public Node preset and source boundaries | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries` |
-| Source census and exact selection | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser |
+| Public Node preset and source boundaries | `pnpm quality:lint` covers all selected tooling; `pnpm quality:boundaries` retains its declared roots and is currently blocked by the compiler preflight |
+| Source census and exact selection | `node scripts/check-quality-scope.mjs` remains usable independently. `pnpm quality:scope` retains the installed boundary/runner fixtures; those two installed-tool tests are currently blocked |
 | Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets |
-| Strict typed tooling | Active only for the two `.mts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
-| Mandatory Node execution | Active and fail closed on published Foundation 1.7.2: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck |
-| Registry and development-only admission | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only` |
+| Strict typed tooling | Active for the explicit entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
+| Mandatory Node execution | `pnpm test:critical` retains the eight exact identities and original contract. Their prior adoption result, including the nested positive control, is historical; current execution is blocked before Foundation initializes |
+| Registry and development-only admission | Both manual routes require the same preflight and are currently blocked: `node scripts/compiler-floor.mts && pnpm exec agent-teams-foundation assert-registry`; `node scripts/compiler-floor.mts && pnpm exec agent-teams-foundation assert-dev-only` |
 | SDK growth authority | N/A: no SDK owner or inventory; no grant activation or release eligibility claim |
 | Scaffolding, plugins and native production quality | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary |
 | Executable specifications, contracts, governance and documentation | Existing consumer-owned validators and complete tests remain required by `pnpm check`; the versioned pure input-proof contract has its own behavioral tests; no new documentation admission |
