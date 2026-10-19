@@ -8,9 +8,10 @@ import { parse, stringify } from "yaml";
 import { assertVerifierAuthority } from "./check-docs-verifier-authority.mts";
 import { checkDocsSourceSuccessor, sourceSuccessorResult } from "./check-docs-source-successor-v1.mts";
 
-const manifest = readFileSync("package.json"), lock = readFileSync("pnpm-lock.yaml");
 const baseRevision = "5abed741aff64506d0e9f87f76541a4e93af7e4a";
 const git = (...args: string[]) => execFileSync("git", args, { cwd: new URL("../", import.meta.url), encoding: "utf8" });
+const gitBuffer = (...args: string[]) => execFileSync("git", args, { cwd: new URL("../", import.meta.url) });
+const manifest = gitBuffer("show", `${baseRevision}:package.json`), lock = gitBuffer("show", `${baseRevision}:pnpm-lock.yaml`);
 const oid = (index: number): string => (index + 1).toString(16).padStart(40, "0");
 type Entry = { path: string; mode: string; type: string; sha: string };
 type ChangedFile = { filename: string; status: string; sha: string; previous_filename: string | undefined };
@@ -41,9 +42,9 @@ function fixture(): Fixture {
     return { path: path!, mode: mode!, type: type!, sha: sha! };
   });
   const headTree = structuredClone(tree);
-  const headData = Object.fromEntries(["package.json", "pnpm-lock.yaml"].map(path => [path, {
-    encoding: "base64", content: readFileSync(path).toString("base64"), sha: tree.find(entry => entry.path === path)!.sha,
-    size: readFileSync(path).length,
+  const headData = Object.fromEntries(([["package.json", manifest], ["pnpm-lock.yaml", lock]] as const).map(([path, bytes]) => [path, {
+    encoding: "base64", content: bytes.toString("base64"), sha: tree.find(entry => entry.path === path)!.sha,
+    size: bytes.length,
   }]));
   const baseSHA = "1".repeat(40), headSHA = "2".repeat(40);
   const inputPaths = ["scripts/check-docs-source-successor-v1.mts", "scripts/check-docs-source-successor-v1.test.mts",
@@ -222,7 +223,6 @@ const cohortChanges = [
   ["governance/evidence/docs-cohorts/docs-2026-10-03-stable31/publication.json", "added", undefined, "b1004a245150df492f9c827c9120e6873afb7ff7"],
   ["governance/evidence/docs-cohorts/docs-2026-10-03-stable31/record-review.md", "added", undefined, "564971dccbaaf2499c4122ff99cd68fe7737ded1"],
 ] as const;
-const gitBuffer = (...args: string[]) => execFileSync("git", args, { cwd: new URL("../", import.meta.url) });
 const gitBlobBytes = (bytes: Buffer): string => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 type ManifestFixture = { devDependencies: Record<string, string>; [key: string]: unknown };
 type LockFixture = {
