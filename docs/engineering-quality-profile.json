@@ -22,7 +22,7 @@
   "typedCoverage": false,
   "requiredRoute": "pnpm check",
   "foundation": {
-    "version": "1.7.2",
+    "version": "1.10.0",
     "publicPreset": "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
   },
   "lint": {

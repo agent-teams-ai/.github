@@ -78,7 +78,7 @@ function assertWorkflow(workflowText) {
 
 export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig }) {
   assert.equal(manifest.type, "module", "ordinary TypeScript tooling must retain its package-owned ESM contract");
-  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.7.2",
+  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.10.0",
     "Foundation dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint dependency must use the exact pin");
   assert.equal(manifest.devDependencies?.typescript, "7.0.2", "tooling compiler must use the exact public pin");
@@ -96,7 +96,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     },
     typedCoverage: false,
     requiredRoute: "pnpm check",
-    foundation: { version: "1.7.2", publicPreset: FOUNDATION_PRESET },
+    foundation: { version: "1.10.0", publicPreset: FOUNDATION_PRESET },
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts", ".ts"] },
     typedTooling: {
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",

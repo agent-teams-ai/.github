@@ -1,6 +1,6 @@
 # Governance JavaScript quality
 
-Central adopts the exact registry Engineering Foundation 1.7.2 development
+Central adopts the exact registry Engineering Foundation 1.10.0 development
 package and its public Node lint preset. Governance semantics remain in the
 existing validators. The consumer profile admits JavaScript and TypeScript tooling and tests;
 JSON, YAML and Markdown authority remain non-source. There are no production
@@ -21,7 +21,7 @@ The bounded changes to the legacy adoption checker retain its
 current JavaScript scope; migrating that full checker would expand this policy
 change. Its untyped coverage remains explicit rather than being renamed away.
 
-## Current compiler dependency block
+## Current compiler dependency preflight
 
 `scripts/compiler-floor.ts` reads only JSON manifests through each dependency
 owner's resolution path before any Foundation implementation loads. It runs
@@ -30,18 +30,21 @@ first in `precheck` and before the existing direct `quality:boundaries` and
 Installed-CLI test fixtures also check it before spawning either CLI. A blocked
 preflight is a failure to run those gates, never a successful negative fixture.
 
-Static inspection of the integrity-verified
+The previous integrity-verified
 [Foundation 1.7.2 registry archive](https://registry.npmjs.org/@agent-teams/engineering-foundation/-/engineering-foundation-1.7.2.tgz)
-and [committed lock](../pnpm-lock.yaml) found an eager command-host import of
-its public-API audit adapter. That adapter imports
+has an eager command-host import of its public-API audit adapter. That adapter imports
 [API Extractor 7.58.12](https://registry.npmjs.org/@microsoft/api-extractor/-/api-extractor-7.58.12.tgz) and its pinned loader uses
 the extractor-owned TypeScript 5.9.3 implementation. The Node test CLI also
 imports that command host. The workspace compiler's 7.0.2 pin does not replace
-this embedded copy. The preflight reports `TYPESCRIPT_COMPILER_FLOOR_BLOCKED`
-before either tool initializes; the complete gate remains blocked until the
-owning upstream compiler migration and qualification exist. No old compiler
-execution, dependency override, frozen-evidence rewrite or passing aggregate
-is authorized by the policy update.
+that embedded copy; the preflight rejects it before either tool initializes.
+
+The current [Foundation 1.10.0 registry archive](https://registry.npmjs.org/@agent-teams/engineering-foundation/-/engineering-foundation-1.10.0.tgz)
+and [committed lock](../pnpm-lock.yaml) instead pin the native TypeScript 7.0.2
+compiler directly, without the legacy API Extractor engine. The preflight binds
+Foundation's exact compiler and platform package, resolves its async and AST
+entrypoints, and rejects compiler-bearing API-model dependencies. Legacy refusal
+fixtures remain unchanged. No old compiler execution, dependency override or
+frozen-evidence rewrite is authorized by this current dependency update.
 
 The metadata guard's inert fixture tests and the owning strict typecheck may
 run independently. Node type stripping executes the guard; it does not prove
@@ -75,9 +78,9 @@ Node parent test (Foundation #363/#365). The installed nested positive control
 and all eight mandatory identities pass on the exact adoption candidate; Central
 retains the regression and adds no environment scrubber or wrapper. Disposable
 controls verify completion, omission/skip rejection and exact OS exceptions.
-Central's critical inventory has no exceptions. These retained adoption results
-describe their recorded candidate; current execution is blocked by the compiler
-dependency described above.
+Central's critical inventory has no exceptions. The retained 1.7.2 adoption results
+describe their recorded candidate; current-input qualification runs the same
+installed controls against the exact native dependency.
 The complete `node --test` route retains existing files and explicitly includes
 both `scripts/*.test.mts` and `scripts/*.test.ts`; `pnpm test:input-proof` selects
 the new public comparator tests directly. The installed boundary parser also
@@ -105,12 +108,12 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 
 | Installed mechanism | Applicability and enforcement |
 | --- | --- |
-| Public Node preset and source boundaries | `pnpm quality:lint` covers all selected tooling; `pnpm quality:boundaries` retains its declared roots and is currently blocked by the compiler preflight |
-| Source census and exact selection | `node scripts/check-quality-scope.mjs` remains usable independently. `pnpm quality:scope` retains the installed boundary/runner fixtures; those two installed-tool tests are currently blocked |
+| Public Node preset and source boundaries | `pnpm quality:lint` covers all selected tooling; `pnpm quality:boundaries` retains its declared roots and runs after the compiler preflight |
+| Source census and exact selection | `node scripts/check-quality-scope.mjs` remains usable independently. `pnpm quality:scope` retains the installed boundary/runner fixtures against the exact current dependency |
 | Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets |
 | Strict typed tooling | Active for the explicit entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
-| Mandatory Node execution | `pnpm test:critical` retains the eight exact identities and original contract. Their prior adoption result, including the nested positive control, is historical; current execution is blocked before Foundation initializes |
-| Registry and development-only admission | Both manual routes require the same preflight and are currently blocked: `node scripts/compiler-floor.ts && pnpm exec agent-teams-foundation assert-registry`; `node scripts/compiler-floor.ts && pnpm exec agent-teams-foundation assert-dev-only` |
+| Mandatory Node execution | `pnpm test:critical` retains the eight exact identities and original contract. Their prior adoption result, including the nested positive control, is historical; current qualification binds the exact native dependency |
+| Registry and development-only admission | Both manual routes retain the same preflight: `node scripts/compiler-floor.ts && pnpm exec agent-teams-foundation assert-registry`; `node scripts/compiler-floor.ts && pnpm exec agent-teams-foundation assert-dev-only` |
 | SDK growth authority | N/A: no SDK owner or inventory; no grant activation or release eligibility claim |
 | Scaffolding, plugins and native production quality | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary |
 | Executable specifications, contracts, governance and documentation | Existing consumer-owned validators and complete tests remain required by `pnpm check`; the versioned pure input-proof contract has its own behavioral tests; no new documentation admission |
