@@ -69,7 +69,7 @@ elif [[ "$url" = *'/actions/artifacts/'* ]]; then
   artifact_id="\${url##*/}"
   if [[ "$method" = DELETE ]]; then printf '%s\\n' "$artifact_id" >> state/deletes; printf 204
   else
-    intent_run=99; [[ "$artifact_id" != 777 ]] || intent_run=123
+    intent_run="\${FAKE_PRIOR_RUN:-99}"; [[ "$artifact_id" != 777 ]] || intent_run=123
     printf '{"id":%s,"name":"%s","expired":false,"workflow_run":{"id":%s,"head_sha":"%s"}}' "$artifact_id" "\${FAKE_RETIRE_NAME:-npm-upload-intent}" "$intent_run" "$RELEASE_SOURCE" > "$output"
   fi
 elif [[ "$url" = *'/actions/runs/'* ]]; then
@@ -364,4 +364,22 @@ test("promotion refuses newer or unexpected latest and waits for a lagging alias
       } else { assert.match(result.stderr, /unexpected or newer latest/); }
     } finally { f.close(); }
   }
+});
+
+
+test("a same-run retry retires its prior-attempt intent only after exact registry reconciliation", () => {
+  const f = fixture();
+  try {
+    f.seed();
+    mkdirSync(path.join(f.root, "old-intent"));
+    const intent = { ...f.manifest, runId: "123", runAttempt: "1", absent: [{ name: f.entry.name, version: f.entry.version }] };
+    writeFileSync(path.join(f.root, "old-intent/intent.json"), JSON.stringify(intent));
+    execFileSync("zip", ["-q", path.join(f.root, "state/prior-intent.zip"), "intent.json"], { cwd: path.join(f.root, "old-intent") });
+    writeFileSync(path.join(f.root, "state/intents.json"), JSON.stringify({ total_count: 1, artifacts: [{ id: 999, expired: false, workflow_run: { id: 123, head_sha: source } }] }));
+    const result = f.run("publish", { RELEASE_RUN_ATTEMPT: "2", FAKE_PRIOR_RUN: "123" });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(f.writes(), []);
+    assert.equal(readFileSync(path.join(f.root, "state/deletes"), "utf8").trim(), "999");
+    assert.deepEqual(JSON.parse(readFileSync(path.join(f.root, "evidence/intents/999.json"), "utf8")), intent);
+  } finally { f.close(); }
 });

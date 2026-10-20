@@ -195,7 +195,8 @@ jobs:
             api "https://api.github.com/repos/$RELEASE_REPOSITORY/actions/artifacts?name=npm-upload-intent&per_page=100" -o evidence/prior-intents.json
             jq -e '.total_count | type == "number" and . <= 100' evidence/prior-intents.json >/dev/null || fail 'intent history exceeds bounded audit; operator reconciliation required'
             jq -e '(.total_count == (.artifacts | length)) and (.artifacts | type == "array" and all((.id | type == "number") and (.expired | type == "boolean") and (.workflow_run.id | type == "number") and (.workflow_run.head_sha | type == "string" and test("^[0-9a-f]{40}$"))))' evidence/prior-intents.json >/dev/null || fail 'malformed intent history'
-            jq -r --arg run "$RELEASE_RUN_ID" '.artifacts[] | select((.workflow_run.id | tostring) != $run) | [.id,.expired,.workflow_run.id,.workflow_run.head_sha] | @tsv' evidence/prior-intents.json > evidence/prior-intents.tsv
+            # This attempt has not uploaded its intent yet; include earlier attempts of this run.
+            jq -r '.artifacts[] | [.id,.expired,.workflow_run.id,.workflow_run.head_sha] | @tsv' evidence/prior-intents.json > evidence/prior-intents.tsv
             while IFS=$'\t' read -r artifact_id expired prior_run prior_source; do
               api "https://api.github.com/repos/$RELEASE_REPOSITORY/actions/runs/$prior_run" -o evidence/prior-run.json
               if ! jq -e --argjson workflow "$workflow_id" --arg repo "$RELEASE_REPOSITORY" --arg source "$prior_source" '.workflow_id == $workflow and .head_branch == "main" and .head_sha == $source and .head_repository.full_name == $repo and (.event == "push" or .event == "workflow_run" or .event == "workflow_dispatch")' evidence/prior-run.json >/dev/null; then
