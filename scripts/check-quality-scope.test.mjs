@@ -36,7 +36,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 31);
+  assert.equal(paths.length, 33);
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
@@ -44,6 +44,8 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/check-docs-verifier-authority.mts"));
   assert.ok(paths.includes("scripts/check-docs-verifier-authority.test.mts"));
   assert.ok(paths.includes("scripts/npm-publish.test.mts"));
+  assert.ok(paths.includes("scripts/quality-process.mts"));
+  assert.ok(paths.includes("scripts/quality-process.test.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
@@ -71,6 +73,8 @@ const mutations = {
   "a new unclassified executable source": value => { value.trackedPaths.push("other/new-source.ts"); },
   "a missing Foundation pin": value => { delete value.manifest.devDependencies["@agent-teams/engineering-foundation"]; },
   "a ranged Foundation pin": value => { value.manifest.devDependencies["@agent-teams/engineering-foundation"] = "^1.7.2"; },
+  "a missing process runtime pin": value => { delete value.manifest.devDependencies["node-or-bun"]; },
+  "a ranged process runtime pin": value => { value.manifest.devDependencies["node-or-bun"] = "^0.2.1"; },
   "a local lint rule": value => { value.lintConfig.rules = { "no-eval": "off" }; },
   "a local lint override": value => { value.lintConfig.overrides = []; },
   "a local lint ignore": value => { value.lintConfig.ignorePatterns = ["scripts/**"]; },

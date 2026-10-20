@@ -19,6 +19,8 @@
     "scripts/qualification-input-proof.test.mts",
     "scripts/check-docs-verifier-authority.mts",
     "scripts/check-docs-verifier-authority.test.mts",
-    "scripts/npm-publish.test.mts"
+    "scripts/npm-publish.test.mts",
+    "scripts/quality-process.mts",
+    "scripts/quality-process.test.mts"
   ]
 }

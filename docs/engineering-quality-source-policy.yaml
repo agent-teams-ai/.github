@@ -19,6 +19,7 @@ boundaries:
       packages:
         - "@agent-teams/ci-input-proof"
         - ajv
+        - node-or-bun
         - yaml
       builtins:
         - node:assert/strict
