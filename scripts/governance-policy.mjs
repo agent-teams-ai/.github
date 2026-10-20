@@ -722,8 +722,9 @@ export function validateDocsProtocolPolicy(policy, schema) {
       `${record.repository} fork exemption shape is invalid.`,
     );
     assert(
-      (record.repository_id === 1319378484) ===
-        (record.required_check_exception_id === "platform-private-required-checks-github-free"),
+      record.required_check_exception_id === null ||
+        (record.repository_id === 1319378484 &&
+          record.required_check_exception_id === "platform-private-required-checks-github-free"),
       `${record.repository} required-check exception reference is invalid.`,
     );
   }
