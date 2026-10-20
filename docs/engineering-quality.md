@@ -133,3 +133,22 @@ replace compilation. The focused `pnpm quality:typecheck` and `pnpm test:input-p
 `pnpm check` runs strict compilation and all tests including the explicit `.mts`
 glob. Public helper tests cover independent drift and malformed/replayed records;
 actual Git and tampered Actions trials remain for the two real adapters.
+
+## npm publication contract tests
+
+`scripts/npm-publish.test.mts` joins the exact strict compiler entries and the
+existing full `.mts` test selection. It executes the production reusable workflow
+shell against disposable archives and fake registry IO. It rejects origin drift,
+manifest and archive identity/hash drift, traversal, duplicates, a missing second
+archive and mismatched same-run promotion receipts before effects. It verifies
+read-only reconciliation, one upload invocation after absence, delayed tarball
+visibility, preservation after an uncertain upload and idempotent promotion.
+It also verifies exact completed-workflow admission, current-main rejection,
+rerun refusal, prior/expired/over-limit intent replay guards, successful intent
+retirement, rejection of unrelated artifact cleanup, newer/unexpected latest
+refusal, delayed alias readback without repeating the tag write, mandatory
+per-package OIDC exchange (including anonymous-read false positives), second-package
+exchange failure before any upload, embedded success-marker rejection, a real
+whole-process timeout with a TERM-resistant child and removal of private auth
+diagnostics. These local
+contract tests do not claim GitHub OIDC or npm E2E qualification.
