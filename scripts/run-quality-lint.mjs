@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from "./check-quality-scope.mjs";
-import { getQualityCommandOutput, runQualityCommand } from "./quality-process.mts";
+import { getQualityCommandOutput, runQualityCommand } from "./quality-process.ts";
 
 const root = new URL("../", import.meta.url);
 const oxlintEntrypoint = fileURLToPath(new URL("node_modules/oxlint/bin/oxlint", root));

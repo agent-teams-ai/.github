@@ -20,7 +20,9 @@
     "scripts/check-docs-verifier-authority.mts",
     "scripts/check-docs-verifier-authority.test.mts",
     "scripts/npm-publish.test.mts",
-    "scripts/quality-process.mts",
-    "scripts/quality-process.test.mts"
+    "scripts/quality-process.ts",
+    "scripts/quality-process.test.ts",
+    "scripts/run-governance-tests.ts",
+    "scripts/run-governance-tests.test.ts"
   ]
 }

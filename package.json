@@ -18,7 +18,7 @@
     "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
     "governance:inventory:audit": "node scripts/observe-org-repository-inventory.mjs --audit",
     "governance:validate": "node scripts/validate-governance.mjs",
-    "test": "node --test scripts/*.test.mjs scripts/*.test.mts tools/feature-module-standard/check.test.mjs",
+    "test": "node scripts/run-governance-tests.ts",
     "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json",
     "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
     "quality:lint": "node scripts/run-quality-lint.mjs",

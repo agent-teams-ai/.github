@@ -30,6 +30,7 @@ boundaries:
         - node:os
         - node:path
         - node:test
+        - node:test/reporters
         - node:url
         - node:util
         - node:vm

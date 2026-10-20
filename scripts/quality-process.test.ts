@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isProcessRuntimeError, PROCESS_CAPTURE_LIMIT_BYTES } from "node-or-bun";
-import { getQualityCommandOutput, QUALITY_COMMAND_TIMEOUT_MS, QualityCommandExitError, runQualityCommand } from "./quality-process.mts";
+import { getQualityCommandOutput, QUALITY_COMMAND_TIMEOUT_MS, QualityCommandExitError, runQualityCommand } from "./quality-process.ts";
 
 const repository = fileURLToPath(new URL("../", import.meta.url));
 const testOptions = { timeout: 15_000 };
