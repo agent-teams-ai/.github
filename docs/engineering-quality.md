@@ -146,5 +146,9 @@ visibility, preservation after an uncertain upload and idempotent promotion.
 It also verifies exact completed-workflow admission, current-main rejection,
 rerun refusal, prior/expired/over-limit intent replay guards, successful intent
 retirement, rejection of unrelated artifact cleanup, newer/unexpected latest
-refusal and delayed alias readback without repeating the tag write. These local
+refusal, delayed alias readback without repeating the tag write, mandatory
+per-package OIDC exchange (including anonymous-read false positives), second-package
+exchange failure before any upload, embedded success-marker rejection, a real
+whole-process timeout with a TERM-resistant child and removal of private auth
+diagnostics. These local
 contract tests do not claim GitHub OIDC or npm E2E qualification.

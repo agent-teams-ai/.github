@@ -53,6 +53,7 @@ jobs:
       npm_config_registry: https://registry.npmjs.org
       npm_config_ignore_scripts: 'true'
       npm_config_fetch_retries: '0'
+      npm_config_logs_max: '0'
       npm_config_audit: 'false'
       npm_config_fund: 'false'
     steps:
@@ -93,7 +94,7 @@ jobs:
           [[ "$RELEASE_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || fail 'invalid run attempt' 
           [[ "$PHASE" = publish || "$PHASE" = promote ]] || fail 'invalid phase'
           [[ "$RELEASE_RUN_ID" =~ ^[1-9][0-9]*$ && "$RELEASE_SOURCE" =~ ^[0-9a-f]{40}$ ]] || fail 'invalid source identity'
-          unset NODE_AUTH_TOKEN NPM_TOKEN
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_ID_TOKEN
           candidate="candidate-run-$RELEASE_RUN_ID"
           mkdir -p evidence
           test -f release/release.json && test ! -L release/release.json || fail 'missing manifest'
@@ -165,6 +166,27 @@ jobs:
               cmp "release/$file" "registry/$file" || fail 'consumer archive differs'
             done < evidence/packages.tsv
           fi
+          # Public reads can succeed anonymously: require actual per-package OIDC exchange.
+          [[ "${GITHUB_ACTIONS:-}" = true && -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]] || fail 'GitHub OIDC request authority is unavailable'
+          umask 077
+          authority_dir=$(mktemp -d "$RUNNER_TEMP/npm-authority.XXXXXX")
+          trap 'rm -rf -- "$authority_dir"' EXIT
+          : > "$authority_dir/user.npmrc"
+          : > "$authority_dir/global.npmrc"
+          : > evidence/authority.tsv
+          while IFS=$'\t' read -r name version file hash integrity; do
+            if ! npm_config_cache="$authority_dir/cache" timeout --signal=TERM --kill-after=5s 90s npm dist-tag ls "$name" --json --ignore-scripts --registry=https://registry.npmjs.org --loglevel=verbose --logs-max=0 --color=false --progress=false --userconfig="$authority_dir/user.npmrc" --globalconfig="$authority_dir/global.npmrc" >/dev/null 2>"$authority_dir/stderr"; then
+              fail "OIDC exchange preflight failed for $name@$version"
+            fi
+            if grep -Eq '^npm (verbose|silly) oidc (Failed|Failure|Skipped)' "$authority_dir/stderr"; then
+              fail "OIDC exchange reported failure for $name@$version"
+            fi
+            test "$(grep -Fxc 'npm verbose oidc Successfully retrieved and set token' "$authority_dir/stderr")" = 1 || fail "OIDC exchange was not established for $name@$version"
+            printf 'oidc-exchange-verified\t%s\t%s\n' "$name" "$version" >> evidence/authority.tsv
+            rm -f -- "$authority_dir/stderr"
+          done < evidence/packages.tsv
+          rm -rf -- "$authority_dir"
+          trap - EXIT
           # Reconcile the entire registry set before any mutation, including promotion.
           : > evidence/absent.tsv
           while IFS=$'\t' read -r name version file hash integrity; do
@@ -248,7 +270,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unset NODE_AUTH_TOKEN NPM_TOKEN
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_ID_TOKEN
           source registry-functions.sh
           candidate="candidate-run-$RELEASE_RUN_ID"
           allow_latest() {

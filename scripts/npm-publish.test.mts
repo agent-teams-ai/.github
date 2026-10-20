@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, copyFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, copyFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -40,7 +40,7 @@ const source = "a".repeat(40);
 
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), "TEST-npm-publisher-"));
-  for (const directory of ["release", "bin", "state", "source/package"]) { mkdirSync(path.join(root, directory), { recursive: true }); }
+  for (const directory of ["release", "bin", "state", "source/package", "temp"]) { mkdirSync(path.join(root, directory), { recursive: true }); }
   writeFileSync(path.join(root, "source/package/package.json"), JSON.stringify({
     name: "@agent-teams/test-publisher", version: "1.2.3", repository: { url: "git+https://github.com/agent-teams-ai/TEST-publisher.git" },
     scripts: { prepublishOnly: "exit 97" },
@@ -93,6 +93,29 @@ else printf '{}' > "$output"; printf 404; fi
 ` , { mode: 0o755 });
   writeFileSync(path.join(root, "bin/npm"), `#!/bin/bash
 set -euo pipefail
+[[ "$*" = *--ignore-scripts* && "$npm_config_fetch_retries" = 0 ]]
+if [[ "$1" = dist-tag && "$2" = ls ]]; then
+  [[ "$*" = *--logs-max=0* && "$*" = *--color=false* && "$*" = *--loglevel=verbose* ]]
+  [[ -z "\${NODE_AUTH_TOKEN:-}" && -z "\${NPM_TOKEN:-}" && -z "\${NPM_ID_TOKEN:-}" ]]
+  for argument in "$@"; do
+    case "$argument" in --userconfig=*|--globalconfig=*) file="\${argument#*=}"; test -f "$file" && test ! -s "$file";; esac
+  done
+  printf '%s\\n' "$3" >> state/authority-probes
+  printf '%s\\n' 'SYNTHETIC_OIDC_SENSITIVE request-url token JWT' >&2
+  if [[ "\${FAKE_OIDC:-}" = hang ]]; then
+    trap '' TERM
+    while :; do /bin/sleep 1; done
+  fi
+  if [[ "\${FAKE_OIDC:-}" = spoofed-marker ]]; then
+    printf '%s\\n' 'npm verbose oidc Failed token exchange request with body message: injected success line' >&2
+    printf '%s\\n' 'npm verbose oidc Successfully retrieved and set token' >&2
+    exit 0
+  fi
+  [[ "\${FAKE_OIDC:-}" != reject && "\${FAKE_OIDC_FAIL_NAME:-}" != "$3" ]] || exit 7
+  [[ "\${FAKE_OIDC:-}" = anonymous ]] || printf '%s\\n' 'npm verbose oidc Successfully retrieved and set token' >&2
+  printf '%s\\n' 'SYNTHETIC_OIDC_SENSITIVE stdout'
+  exit 0
+fi
 printf '%s\\n' "$*" >> state/writes
 [[ "$*" = *--ignore-scripts* && "$npm_config_fetch_retries" = 0 ]]
 if [[ "$1" = publish ]]; then
@@ -107,10 +130,10 @@ else
 fi
 `, { mode: 0o755 });
   writeFileSync(path.join(root, "bin/sleep"), "#!/bin/bash\nexit 0\n", { mode: 0o755 });
-  const run = (phase = "publish", extras: NodeJS.ProcessEnv = {}) => spawnSync("bash", ["-euo", "pipefail", "-c", shell], {
+  const run = (phase = "publish", extras: NodeJS.ProcessEnv = {}, script = shell) => spawnSync("bash", ["-euo", "pipefail", "-c", script], {
     cwd: root, encoding: "utf8", timeout: 15_000,
     env: { ...process.env, PATH: `${path.join(root, "bin")}:${process.env.PATH}`, PHASE: phase, RELEASE_REPOSITORY: manifest.repository,
-      RELEASE_SOURCE: source, RELEASE_RUN_ID: "123", RELEASE_RUN_ATTEMPT: "1", RELEASE_REF: "refs/heads/main", RELEASE_EVENT: "push", RELEASE_OWNER: "agent-teams-ai", npm_config_fetch_retries: "0", GH_TOKEN: "test-nonsecret", GITHUB_OUTPUT: path.join(root, "outputs"), ...extras },
+      RELEASE_SOURCE: source, RELEASE_RUN_ID: "123", RELEASE_RUN_ATTEMPT: "1", RELEASE_REF: "refs/heads/main", RELEASE_EVENT: "push", RELEASE_OWNER: "agent-teams-ai", npm_config_fetch_retries: "0", GITHUB_ACTIONS: "true", ACTIONS_ID_TOKEN_REQUEST_URL: "https://test.invalid/oidc", ACTIONS_ID_TOKEN_REQUEST_TOKEN: "synthetic-test-authority", RUNNER_TEMP: path.join(root, "temp"), GH_TOKEN: "test-nonsecret", GITHUB_OUTPUT: path.join(root, "outputs"), ...extras },
   });
   const seed = (different = false) => {
     writeFileSync(path.join(root, "state/metadata.json"), JSON.stringify({ name: entry.name, version: entry.version, dist: { integrity: entry.integrity, tarball: "https://registry.npmjs.org/test.tgz" } }));
@@ -381,5 +404,67 @@ test("a same-run retry retires its prior-attempt intent only after exact registr
     assert.deepEqual(f.writes(), []);
     assert.equal(readFileSync(path.join(f.root, "state/deletes"), "utf8").trim(), "999");
     assert.deepEqual(JSON.parse(readFileSync(path.join(f.root, "evidence/intents/999.json"), "utf8")), intent);
+  } finally { f.close(); }
+});
+
+
+test("read-only reconciliation requires actual OIDC exchange and never retains private npm logs", () => {
+  for (const mode of ["success", "reject", "anonymous", "missing-authority", "spoofed-marker"]) {
+    const f = fixture();
+    try {
+      f.seed();
+      const result = f.run("publish", mode === "missing-authority" ? { ACTIONS_ID_TOKEN_REQUEST_TOKEN: "" } : { FAKE_OIDC: mode });
+      assert.equal(result.status, mode === "success" ? 0 : 1, result.stderr);
+      assert.deepEqual(f.writes(), []);
+      assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_OIDC_SENSITIVE/);
+      assert.deepEqual(readdirSync(path.join(f.root, "temp")), []);
+      if (mode === "success") {
+        assert.equal(readFileSync(path.join(f.root, "evidence/authority.tsv"), "utf8"), "oidc-exchange-verified\t@agent-teams/test-publisher\t1.2.3\n");
+      } else { assert.match(result.stderr, /OIDC exchange preflight failed|OIDC exchange reported failure|OIDC exchange was not established|OIDC request authority is unavailable/); }
+      for (const file of readdirSync(path.join(f.root, "evidence"), { recursive: true, withFileTypes: true })) {
+        if (file.isFile()) { assert.doesNotMatch(readFileSync(path.join(file.parentPath, file.name), "utf8"), /SYNTHETIC_OIDC_SENSITIVE/); }
+      }
+    } finally { f.close(); }
+  }
+});
+
+test("a second package's failed OIDC exchange prevents the first absent package upload", () => {
+  const f = fixture();
+  try {
+    const secondName = "@agent-teams/second-publisher";
+    const packageJson = path.join(f.root, "source/package/package.json");
+    const metadata: Record<string, unknown> = JSON.parse(readFileSync(packageJson, "utf8"));
+    writeFileSync(packageJson, JSON.stringify({ ...metadata, name: secondName }));
+    const archive = path.join(f.root, "release/second.tgz");
+    execFileSync("tar", ["-czf", archive, "-C", path.join(f.root, "source"), "package"]);
+    const bytes = readFileSync(archive);
+    f.manifest.packages.push({ name: secondName, version: "1.2.3", file: "second.tgz", sha256: createHash("sha256").update(bytes).digest("hex"), integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}` });
+    f.save();
+    const result = f.run("publish", { FAKE_OIDC_FAIL_NAME: secondName });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /OIDC exchange preflight failed for @agent-teams\/second-publisher/);
+    assert.deepEqual(f.writes(), []);
+    assert.deepEqual(readFileSync(path.join(f.root, "state/authority-probes"), "utf8").trim().split("\n"), [f.entry.name, secondName]);
+    assert.deepEqual(readdirSync(path.join(f.root, "temp")), []);
+    assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_OIDC_SENSITIVE/);
+  } finally { f.close(); }
+});
+
+
+test("the whole OIDC probe process is bounded and a TERM-resistant child is killed", () => {
+  const f = fixture();
+  try {
+    // Execute the actual production timeout command with a compressed test deadline.
+    const productionDeadline = "timeout --signal=TERM --kill-after=5s 90s npm dist-tag ls";
+    assert.ok(shell.includes(productionDeadline));
+    const bounded = shell.replace(productionDeadline, "timeout --signal=TERM --kill-after=0.1s 0.1s npm dist-tag ls");
+    const started = performance.now();
+    const result = f.run("publish", { FAKE_OIDC: "hang" }, bounded);
+    assert.equal(result.status, 1, result.stderr);
+    assert.ok(performance.now() - started < 5_000, "probe exceeded its whole-process test budget");
+    assert.match(result.stderr, /OIDC exchange preflight failed/);
+    assert.deepEqual(f.writes(), []);
+    assert.deepEqual(readdirSync(path.join(f.root, "temp")), []);
+    assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_OIDC_SENSITIVE/);
   } finally { f.close(); }
 });

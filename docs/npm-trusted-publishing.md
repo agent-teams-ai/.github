@@ -25,7 +25,8 @@ identity semantics; qualification must establish the actual OIDC identity, not
 infer it from the YAML. Protect the caller's main branch, release workflow and
 environment according to that repository's policy. No automation token, stored
 npm credential or per-release interactive approval is part of this mechanism.
-An npm account must perform initial package/trusted-publisher admission where npm
+Every package namespace must already exist and expose public dist-tags. An npm
+account must perform initial package/trusted-publisher admission where npm
 requires it; this is distinct from a repeatable trusted publication.
 
 The reusable workflow admits only `agent-teams-ai`, `refs/heads/main` and original
@@ -84,6 +85,31 @@ exact `https://github.com/owner/repo` string or `repository.url`, allowing `git+
 and `.git`. Archive byte hashes, identities and the whole local set validate
 before network IO. Existing registry versions must match the exact same bytes;
 the whole existing set reconciles before the first write.
+
+Both phases first perform `npm dist-tag ls` for every admitted package under
+GitHub OIDC with empty private user/global config and scripts disabled. A public
+read can succeed anonymously, so successful exit alone is insufficient: exact
+npm 12.2.0 must emit its `oidc Successfully retrieved and set token` diagnostic
+after installing the package-specific exchanged token. Missing GitHub OIDC
+request authority, failed exchange, any OIDC failure diagnostic or missing success
+diagnostic stops the whole set before any upload or tag mutation, including
+reconciliation-only runs. Existing
+npm token variables and `NPM_ID_TOKEN` are cleared, forcing the GitHub request
+route. This does not publish or alter a dist-tag.
+
+Verbose npm diagnostics can contain the private OIDC request URL. They are
+captured only in a private runner temporary directory, with a private cache,
+empty npmrc files, color disabled and npm log-file creation disabled. No raw
+stdout/stderr is printed or uploaded; the directory is removed on success and
+failure. The entire npm process is limited to 90 seconds with a five-second KILL
+fallback if it ignores TERM; this also bounds the GitHub token GET.
+`authority.tsv` retains only package/version and `oidc-exchange-verified`. The marker is an explicit pinned-CLI implementation contract,
+reviewed with `lib/utils/oidc.js` and `lib/commands/dist-tag.js`; changing npm
+requires requalifying it. This proves a package-specific OIDC token exchange, not
+`publish` or `manageDistTags` permission. Those permissions are established only
+by their actual operations. Exchange observation also does not prevent external
+authority revocation between the check and a later mutation, which performs its
+own fresh exchange.
 
 Before any upload, preflight audits up to 100 retained `npm-upload-intent`
 artifacts from this repository. It authenticates their publisher workflow ID,
