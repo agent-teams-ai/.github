@@ -45,3 +45,5 @@ export async function runQualityCommand(request: Omit<Request, "strictUtf8">): P
 export function getQualityCommandOutput(error: unknown): ProcessCapturedOutput | null {
   return error instanceof QualityCommandExitError || isProcessRuntimeError(error) ? error.output : null;
 }
+
+// Disposable negative canary: a protected quality input must reject any byte change.
