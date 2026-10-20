@@ -1,0 +1,17 @@
+name: Trusted Quality Source Successor V2
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+permissions: &a1
+  actions: read
+  contents: read
+  pull-requests: read
+  statuses: write
+jobs:
+  source:
+    uses: agent-teams-ai/.github/.github/workflows/docs-quality-source-successor-v2.yml@d2904ef5181b1a3f42da2b6fad7e5f7fccad1ecd
+    permissions: *a1
