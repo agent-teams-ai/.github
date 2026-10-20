@@ -50,6 +50,8 @@ release procedures remain in the owning repository.
 - `renovate-config.json` - organization Renovate preset.
 - `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter review and
   interaction workflows.
+- [npm trusted publication](docs/npm-trusted-publishing.md) - shared archive admission,
+  candidate readback and promotion through the pinned reusable workflow.
 - `.github/workflows/docs-protocol-check.yml` - fixed reusable documentation
   protocol gate with required exact Cohort assertions and no secrets.
 
