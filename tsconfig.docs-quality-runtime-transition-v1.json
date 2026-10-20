@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "scripts/docs-quality-runtime-transition-v1.ts",
+    "scripts/docs-quality-runtime-transition-v1.test.ts",
+    "scripts/docs-platform-retirement-admission-v1.ts",
+    "scripts/docs-platform-retirement-admission-v1.test.ts"
+  ]
+}
