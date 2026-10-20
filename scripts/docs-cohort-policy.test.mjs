@@ -49,6 +49,23 @@ const authoritativeRegistry = await loadJson("governance/docs-qualified-cohorts.
 const emptyRegistry = { ...structuredClone(authoritativeRegistry), cohorts: [], events: [] };
 const exceptionsSchema = await loadJson("governance/docs-protocol-exceptions.schema.json");
 const exceptions = await loadJson("governance/docs-protocol-exceptions.json");
+// Synthetic active authority keeps expiry/reference tests independent of the
+// current fleet's legitimately empty active-exception set.
+const activeException = () => ({
+  id: "platform-private-required-checks-github-free",
+  repository_id: 1319378484,
+  owner: "synthetic-test-owner",
+  reason: "Synthetic fixture for active exception validation, not live authority.",
+  scope: "required_docs_check",
+  authority_source: "governance/code-security-defaults.json",
+  authority_exception_id: "platform-private-required-checks-github-free",
+  tracking_reference: "governance/docs-protocol-policy-v2.json",
+  status: "active",
+  last_reviewed_at: "2026-08-16",
+  review_after: "2026-09-16",
+  expires_at: "2026-11-16",
+  review_triggers: ["repository_visibility_changed"],
+});
 const docsPolicy = await loadJson("governance/docs-protocol-policy-v2.json");
 const securityPolicy = await loadJson("governance/code-security-defaults.json");
 const appendOnlyWorkflow = await readFile(
@@ -815,10 +832,7 @@ test("treats eligible_after as informational and rejects future-dated lifecycle 
 });
 
 test("validates expiring enumerable exceptions at a declared date", () => {
-  const boundary = structuredClone(exceptions);
-  boundary.exceptions[0].last_reviewed_at = "2026-08-16";
-  boundary.exceptions[0].review_after = "2026-09-16";
-  boundary.exceptions[0].expires_at = "2026-11-16";
+  const boundary = { ...structuredClone(exceptions), exceptions: [activeException()] };
   assert.doesNotThrow(() => validateDocsProtocolExceptions(
     structuredClone(boundary),
     exceptionsSchema,
@@ -834,6 +848,40 @@ test("validates expiring enumerable exceptions at a declared date", () => {
     exceptionsSchema,
     { asOf: "2026-09-17" },
   ), /review is due/u);
+});
+
+test("retired Docs exceptions require coherent references and retain active authority checks", () => {
+  const policy = structuredClone(docsPolicy);
+  const platform = policy.repositories.find(({ repository_id: id }) => id === 1319378484);
+  platform.required_check_exception_id = null;
+  const retired = { ...structuredClone(exceptions), exceptions: [] };
+  const validateReferences = (candidate, security = securityPolicy) =>
+    validateDocsGovernanceReferences(authoritativeRegistry, candidate, policy, security,
+      { asOf: "2026-10-19T00:00:00Z" });
+  assert.doesNotThrow(() => validateDocsProtocolExceptions(retired, exceptionsSchema,
+    { asOf: "2026-10-19" }));
+  assert.doesNotThrow(() => validateReferences(retired));
+
+  const active = { ...retired, exceptions: [activeException()] };
+  assert.throws(() => validateReferences(active), /Every Docs Protocol exception must be referenced/u);
+  platform.required_check_exception_id = active.exceptions[0].id;
+  assert.throws(() => validateReferences(retired), /references an unknown Docs Protocol exception/u);
+  assert.doesNotThrow(() => validateReferences(active));
+
+  const wrongOwner = structuredClone(active);
+  wrongOwner.exceptions[0].repository_id += 1;
+  assert.throws(() => validateReferences(wrongOwner), /exception repository ID does not match/u);
+  const missingSecurity = structuredClone(securityPolicy);
+  missingSecurity.required_check_exceptions = [];
+  assert.throws(() => validateReferences(active, missingSecurity), /does not bind central security authority/u);
+  const duplicate = structuredClone(active);
+  duplicate.exceptions.push(structuredClone(duplicate.exceptions[0]));
+  assert.throws(() => validateDocsProtocolExceptions(duplicate, exceptionsSchema,
+    { asOf: "2026-09-16" }), /exception IDs must be unique/u);
+  const malformed = structuredClone(active);
+  malformed.exceptions[0].status = "retired";
+  assert.throws(() => validateDocsProtocolExceptions(malformed, exceptionsSchema,
+    { asOf: "2026-09-16" }), /JSON Schema/u);
 });
 
 test("collects 101+ repositories without truncating at the first API page", async () => {
