@@ -5,7 +5,8 @@ package and its public Node lint preset. Governance semantics remain in the
 existing validators. The consumer profile admits JavaScript and TypeScript tooling and tests;
 JSON, YAML and Markdown authority remain non-source. There are no production
 roots, Core/Assembly adoption or SDK grants. The small strict compiler project
-covers only the input-proof helper and its typed tests. Legacy JavaScript remains
+covers the input-proof and verifier-authority helpers, bounded quality-process
+execution, the canonical test runner, and their typed tests. Legacy JavaScript remains
 untyped; `typedCoverage: false` still describes the repository honestly.
 
 `pnpm check` is the complete required route. Its prehook binds the dependency,
@@ -13,8 +14,9 @@ profile, installed source policy, critical identities and selected test files.
 The census includes tracked and untracked source, so new unclassified source
 cannot disappear before staging. Oxlint 1.85.0 still checks every tooling file
 with exact debug-selection agreement and the same strict suppression options.
-The selection retains all 22 existing tooling files and includes both new `.mts`
-files, including the typed test; no exclusions or ignore rules are added.
+The selection retains every existing tooling file and typed test, and includes
+the quality-process helper and its real-process tests. No exclusions or ignore
+rules are added.
 
 `pnpm quality:boundaries` invokes the installed public source-dependency CLI.
 The v3 root-package profile retains the two existing owners: `scripts` and
@@ -34,9 +36,11 @@ and all eight mandatory identities pass on the exact adoption candidate; Central
 retains the regression and adds no environment scrubber or wrapper. Disposable
 controls verify completion, omission/skip rejection and exact OS exceptions.
 Central's critical inventory has no exceptions.
-The complete `node --test` route retains existing files and explicitly includes
-`scripts/*.test.mts`; `pnpm test:input-proof` selects the new public comparator
-tests directly. The installed boundary parser also receives a forbidden `.mts`
+The complete `pnpm test` route invokes `node scripts/run-governance-tests.ts`.
+Its filesystem census includes all `.test.mjs`, `.test.mts` and `.test.ts` files
+under `scripts/`, plus the Feature Module Standard test. Every file belongs to
+exactly one current or frozen partition; `pnpm test:input-proof` still selects
+the public comparator tests directly. The installed boundary parser also receives a forbidden `.mts`
 import in the existing disposable rejection test.
 
 The repository default is official Node 26.11.1, selected through
@@ -64,7 +68,7 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 | Public Node preset and source boundaries | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries` |
 | Source census and exact selection | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser |
 | Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets |
-| Strict typed tooling | Active only for the two `.mts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
+| Strict typed tooling | Active only for the eight explicit `.mts`/`.ts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
 | Mandatory Node execution | Active and fail closed on published Foundation 1.7.2: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck |
 | Registry and development-only admission | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only` |
 | SDK growth authority | N/A: no SDK owner or inventory; no grant activation or release eligibility claim |
@@ -74,6 +78,85 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 The retained Consumer Module Standard has no accepting Central ADR or local
 content pin to migrate. The reviewed source-packet delta is evidence only;
 Foundation installation does not adopt Get Modular or change architecture.
+
+## Bounded lint execution
+
+`scripts/run-quality-lint.mjs` uses the public Node adapter from
+[`agent-teams-ai/process-runtime`](https://github.com/agent-teams-ai/process-runtime),
+published as the exact development dependency `node-or-bun@0.2.1`. The small
+typed `scripts/quality-process.ts` helper owns Central's quality-command policy;
+the library owns process execution, output capture and cleanup. This is an
+adoption within the existing governance-tooling boundary, with no production
+dependency or new package owner.
+
+Both actual Oxlint invocations retain argument arrays, the repository working
+directory, inherited environment, strict suppression options and exact source
+selection. They now have a 120-second deadline instead of an unbounded wait.
+Capture is bounded at the library's 4 MiB per stream, replacing the previous
+2 MiB `execFile` limit. UTF-8 decoding is strict: invalid output rejects rather
+than producing replacement characters. Nonzero exit or signal termination also
+rejects; the public executor deliberately reports those as results, so the
+consumer must not mistake completion for a passed quality gate.
+
+Captured diagnostics are non-enumerable on failures and are printed explicitly
+by the lint CLI before it exits unsuccessfully. The CLI awaits stream write
+completion before rethrowing, so piped CI diagnostics drain before Node exits.
+Timeout, cancellation, output
+overflow and decoding failure remain failures even if the child subsequently
+exits. The shared executor owns bounded TERM/KILL cleanup and reports unresolved
+custody; the consumer never converts cleanup uncertainty into success.
+
+This guarantee covers the directly owned child. The pinned Oxlint 1.85.0 Node
+entrypoint loads its native binding in that process. It does not establish a
+process-tree supervision contract for arbitrary plugins or descendants.
+
+`node --test scripts/quality-process.test.ts` exercises real child processes:
+argument and working-directory fidelity, inherited and exact environments,
+nonzero/signal failures, launch failure, deadline and cancellation, concurrent
+bounded capture, and malformed UTF-8. It independently checks that owned child
+PIDs disappear before fallback fixture cleanup. A disposable repository runs
+the actual lint CLI with installed Oxlint for both a passing input and a real
+rejecting lint diagnostic, including a large batch whose complete output must
+survive the failing CLI exit. Synthetic sentinels are used in environment tests.
+
+The strict compiler gate includes the helper, real-process tests and canonical
+test runner with its focused tests. New source uses `.ts`; existing frozen `.mts`
+files keep their original paths and bytes.
+
+## Complete tests and frozen successor preservation
+
+`pnpm test` uses the native `node:test.run` API and official TAP reporter. Output
+streams directly with backpressure rather than waiting inside the lint helper's
+120-second/4 MiB capture policy. The two partitions share a ten-minute deadline;
+failures, cancellation, omitted files and duplicate file completion reject. The
+runner does not scrub environment variables. Native recursive test-worker calls
+reject explicitly rather than silently running no files.
+
+The frozen `scripts/check-docs-source-successor-v1.test.mts` is restored verbatim
+to Git blob `281032ebb0afecd5bb425f7f4018c99b20ee6635`. Its one execution uses
+the original absolute file path and a disposable working directory containing
+`package.json` and `pnpm-lock.yaml` from exact revision
+`5abed741aff64506d0e9f87f76541a4e93af7e4a`, plus the two unchanged current
+workflow YAML files that the test reads relative to cwd. Its imports and Git
+queries still resolve against the real repository and history. No test source,
+workflow, historical hash or verifier implementation is patched or skipped.
+All remaining current tests run once with the real repository cwd.
+
+`node --test scripts/run-governance-tests.test.ts` verifies the full-extension
+census, exact partition coverage, duplicate/omission rejection, real native
+execution across distinct cwd values, failure propagation and historical input
+bytes. To run the original frozen test alone, create its cwd through the exported
+`createHistoricalTestCwd` helper and pass its absolute repository path to
+`runGovernanceTestBatch` from an ordinary Node process; always await cleanup.
+
+PostgreSQL and pg-boss are N/A: this consumer runs finite local/CI commands and
+has no durable job queue, database state or persistent worker owner. Adding them
+would not improve this execution contract.
+
+Functional validation is separate from protected-source admission. The current
+base-owned source guard protects the lint launcher and adoption profile; this
+change requires its reviewed successor/transition route before merge. Passing
+the process tests does not waive that guard or renew governance exceptions.
 
 
 ## Shared qualification input proof checkpoint

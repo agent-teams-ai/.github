@@ -27,6 +27,9 @@ importers:
       ajv:
         specifier: 8.20.0
         version: 8.20.0
+      node-or-bun:
+        specifier: 0.2.1
+        version: 0.2.1
       oxlint:
         specifier: 1.85.0
         version: 1.85.0
@@ -2194,6 +2197,10 @@ packages:
 
   node-html-parser@7.1.0:
     resolution: {integrity: sha512-iJo8b2uYGT40Y8BTyy5ufL6IVbN8rbm/1QK2xffXU/1a/v3AAa0d1YAoqBNYqaS4R/HajkWIpIfdE6KcyFh1AQ==}
+
+  node-or-bun@0.2.1:
+    resolution: {integrity: sha512-wPvDjVN7lMP929tOAQCxT/mF3G5/J+FCJw1pCh3uLN7qRTt1QWEqiZnoM2f2l3VKUdlo73fwwttZhpPor40W4w==}
+    engines: {bun: '>=1.4.3', node: ^24.18.0 || ^26.0.0}
 
   nopt@10.0.1:
     resolution: {integrity: sha512-df3sBr/6ax9hSGuC3CspvLlbnX8cP5L5nZwXF8cGN8l0zSWR6BvzmQ6jPUKjvo6+/xdpkNvEcucBNUdBeeV13g==}
@@ -5293,6 +5300,8 @@ snapshots:
     dependencies:
       css-select: 5.2.2
       he: 1.2.0
+
+  node-or-bun@0.2.1: {}
 
   nopt@10.0.1:
     dependencies:

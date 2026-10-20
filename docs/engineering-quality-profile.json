@@ -9,11 +9,13 @@
     "tooling": [
       "scripts/**/*.mjs",
       "scripts/**/*.mts",
+      "scripts/**/*.ts",
       "tools/feature-module-standard/check.mjs"
     ],
     "tests": [
       "scripts/**/*.test.mjs",
       "scripts/**/*.test.mts",
+      "scripts/**/*.test.ts",
       "tools/feature-module-standard/check.test.mjs"
     ]
   },
@@ -29,7 +31,8 @@
       "tooling"
     ],
     "includedExtensions": [
-      ".mts"
+      ".mts",
+      ".ts"
     ]
   },
   "toolchain": {
@@ -47,7 +50,11 @@
       "scripts/qualification-input-proof.test.mts",
       "scripts/check-docs-verifier-authority.mts",
       "scripts/check-docs-verifier-authority.test.mts",
-      "scripts/npm-publish.test.mts"
+      "scripts/npm-publish.test.mts",
+      "scripts/quality-process.ts",
+      "scripts/quality-process.test.ts",
+      "scripts/run-governance-tests.ts",
+      "scripts/run-governance-tests.test.ts"
     ]
   }
 }
