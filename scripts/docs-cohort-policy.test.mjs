@@ -855,14 +855,22 @@ test("retired Docs exceptions require coherent references and retain active auth
   const platform = policy.repositories.find(({ repository_id: id }) => id === 1319378484);
   platform.required_check_exception_id = null;
   const retired = { ...structuredClone(exceptions), exceptions: [] };
+  const anchor = Math.ceil(Math.max(...authoritativeRegistry.events.map(
+    ({ effective_at: at }) => Date.parse(at),
+  )) / 1000) * 1000;
+  const asOf = new Date(anchor).toISOString().replace(".000Z", "Z");
+  const day = (offset) => new Date(anchor + offset * 86_400_000).toISOString().slice(0, 10);
   const validateReferences = (candidate, security = securityPolicy) =>
-    validateDocsGovernanceReferences(authoritativeRegistry, candidate, policy, security,
-      { asOf: "2026-10-19T00:00:00Z" });
+    validateDocsGovernanceReferences(authoritativeRegistry, candidate, policy, security, { asOf });
   assert.doesNotThrow(() => validateDocsProtocolExceptions(retired, exceptionsSchema,
-    { asOf: "2026-10-19" }));
+    { asOf: day(0) }));
   assert.doesNotThrow(() => validateReferences(retired));
 
-  const active = { ...retired, exceptions: [activeException()] };
+  const active = { ...retired, exceptions: [{ ...activeException(),
+    last_reviewed_at: day(0), review_after: day(1), expires_at: day(2),
+  }] };
+  assert.doesNotThrow(() => validateDocsProtocolExceptions(active, exceptionsSchema,
+    { asOf: day(0) }));
   assert.throws(() => validateReferences(active), /Every Docs Protocol exception must be referenced/u);
   platform.required_check_exception_id = active.exceptions[0].id;
   assert.throws(() => validateReferences(retired), /references an unknown Docs Protocol exception/u);
@@ -877,11 +885,11 @@ test("retired Docs exceptions require coherent references and retain active auth
   const duplicate = structuredClone(active);
   duplicate.exceptions.push(structuredClone(duplicate.exceptions[0]));
   assert.throws(() => validateDocsProtocolExceptions(duplicate, exceptionsSchema,
-    { asOf: "2026-09-16" }), /exception IDs must be unique/u);
+    { asOf: day(0) }), /exception IDs must be unique/u);
   const malformed = structuredClone(active);
   malformed.exceptions[0].status = "retired";
   assert.throws(() => validateDocsProtocolExceptions(malformed, exceptionsSchema,
-    { asOf: "2026-09-16" }), /JSON Schema/u);
+    { asOf: day(0) }), /JSON Schema/u);
 });
 
 test("collects 101+ repositories without truncating at the first API page", async () => {
