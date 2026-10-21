@@ -7,6 +7,10 @@ Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).
 
+Before choosing or duplicating reusable development tooling, read the
+[development tools catalog](docs/development-tools.md) and follow its link to
+the owning guide. Check availability and repository adoption before using a tool.
+
 For feature-module architecture:
 
 1. Start at the [Feature Module Standard index](docs/architecture/feature-module-standard/README.md).
