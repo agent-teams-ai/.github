@@ -44,7 +44,8 @@ release procedures remain in the owning repository.
 - `docs/organization-security-baseline.md` - live-default snapshot, transfer
   handling, and plan-tier exceptions.
 - [Repository admission](docs/repository-admission.md) - reviewed onboarding for new owned
-  repositories, including the [central commit identity route](docs/repository-admission.md#commit-identity-onboarding).
+  repositories, starting with [new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap)
+  and the [central commit identity route](docs/repository-admission.md#commit-identity-onboarding).
 - `SUPPORT.md` - support routing.
 - `CODE_OF_CONDUCT.md` - community conduct policy.
 - `.github/ISSUE_TEMPLATE/` - default issue forms.

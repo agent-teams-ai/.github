@@ -1,10 +1,148 @@
-# Repository documentation protocol admission
+# Repository admission
 
 Every new organization-owned repository starts as `pending_classification`.
 Its owner explicitly chooses consumer, producer/controller, or N/A before any
 admission. GitHub community defaults can supply this guidance, but GitHub does
 not automatically install packages, profiles, scripts, workflows, or required
 checks in a new repository.
+
+## New repository bootstrap
+
+New organization-owned production repositories created on or after
+**2026-10-22 UTC** must explicitly adopt the full immutable
+[Feature Module Standard v1.1](architecture/feature-module-standard/v1.1.md),
+Engineering Foundation quality coverage and deterministic native gates in their
+first reviewed bootstrap. SDKs, integrations and libraries need feature
+ownership for their real capabilities just as services do. Choose the appropriate
+module role; do not substitute an SDK exemption, empty scaffolding or a package
+installation for adoption. Existing repositories enter this route by explicit
+owner opt-in; this requirement does not initiate a fleet migration or rewrite
+accepted decisions or immutable standards.
+
+The organization owns this bootstrap policy and its
+[standalone configuration checker](../scripts/check-repository-admission.ts).
+Foundation owns portable validation mechanisms; the repository owns its domain,
+topology, adoption decision and exact gates. This is organization onboarding
+policy, not a second general-purpose quality engine or an installable package.
+
+### Supported configuration contract
+
+The first checker supports JavaScript/TypeScript projects with an exact
+`pnpm@x.y.z` or `bun@x.y.z` package manager declaration, a committed native
+lockfile and a default branch named `main`. Other stacks and branch layouts
+remain **unsupported_stack_pending** until an owned, reviewed adapter is added.
+The inventory audit conservatively includes new active owned repositories until
+their classification is resolved; it cannot infer that a repository is
+non-production from a missing package manifest. Archived repositories and
+external forks remain outside this bootstrap route. They keep their existing
+classification obligations.
+
+1. Read the [engineering baseline](engineering-quality-standard.md),
+   [tool catalog](development-tools.md) and immutable FMS before choosing tooling.
+   Record owner-approved adoption in a repository-local architecture document
+   and decision. Expose its one FMS profile from README and route AGENTS.md to
+   this exact bootstrap anchor. CLAUDE.md routes through AGENTS.md or this guide.
+   An older repository opting in also records `"repositoryAdmission": 1` in its
+   root package.json. Retain that explicit intent so the independent audit still
+   detects removal of its whole caller.
+
+2. Declare consumer-owned `architecture.source-dependencies`,
+   `quality.source-coverage` and `quality.suppression-governance` config paths in
+   root `foundation.config.yaml`. Source coverage binds the same source and
+   suppression policies, the type-aware lint configuration, the one
+   `featureProfilePath`, real production `compilerProjects`, and the scope,
+   typed and full native script names. Use the existing Foundation configuration
+   contracts and the consumer's exact released development-only Foundation/FMS
+   package pins. Source coverage includes the actual modules, SDKs and features.
+   Production compiler projects inherit strict, noUncheckedIndexedAccess and
+   exactOptionalPropertyTypes, through local configs or Foundation's named
+   base/node/bun strict presets. Weakening overrides remain failures. Other
+   external preset inheritance needs an explicitly supported adapter.
+
+3. The profile identifies the immutable standard's ID, version, canonical path,
+   content digest and nonzero source commit. Declare production, application and
+   excluded roots; every real module's role and feature/layer mapping; extensions
+   and deviations, including explicit empty arrays; architecture documentation;
+   decision records; and exact deterministic enforcement commands. Follow the
+   complete FMS conformance contract, including positive and negative topology
+   fixtures. This configuration check does not inspect or certify the semantics
+   of those fixtures or the feature implementation.
+
+4. Keep `check` as the full native script route. It executes the real FMS gate,
+   coverage scope and typed gates, strict compilation, native tests, complete
+   Foundation check, assert-dev-only and assert-registry. Every declared FMS
+   enforcement command must be reached by that route. Required pull-request CI
+   executes the complete route, in one job or split across unconditional jobs
+   with unconditional, acyclic and complete `needs` closures. Do not rely on
+   path filters, conditions, continue-on-error, comments, command text inside
+   echo, or exit-zero scripts. The static recognizer supports direct native
+   commands joined by `&&` or newlines; wrappers, arbitrary shell, changed
+   working directories and reusable native gate jobs need a reviewed adapter.
+   Repository-owned commands still require their native test and semantic review;
+   recognizing a command does not establish what its implementation does.
+
+5. From a reviewed central checkout, render the inputless canonical caller:
+
+   ```sh
+   node scripts/check-repository-admission.ts render REVIEWED_IMMUTABLE_CENTRAL_SHA
+   ```
+
+   Review its bytes and install them as
+   `.github/workflows/repository-admission.yml`. The retained central revision
+   must contain the reusable workflow and its literal immutable implementation
+   checkout. Never use `main`, supply a command, pass secrets or add a condition.
+   The checker renders to stdout only; it does not write, commit, install or
+   administer GitHub. Use a reviewed new destination if redirecting stdout.
+   Also install the exact central identity caller through
+   [commit identity onboarding](#commit-identity-onboarding), retaining its
+   qualified `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` pin until that owning
+   route publishes an explicitly reviewed successor.
+
+6. Check the inert consumer configuration from the central checkout:
+
+   ```sh
+   node scripts/check-repository-admission.ts --root /path/to/consumer
+   ```
+
+   Missing foundation configuration or an entirely absent caller exits nonzero
+   and links this guide. The checker reads bounded regular UTF-8 files only:
+   at most 256 files, 256 KiB per file and 4 MiB in total, with bounded compiler
+   inheritance and workflow/script graphs. Symlinks, malformed/aliased YAML,
+   invalid UTF-8 and unsafe paths fail closed. It never installs dependencies,
+   executes consumer commands, reads credentials or needs a secret.
+
+7. Run the consumer's complete native gates and appropriate disposable positive
+   and negative fixtures, then observe the exact hosted workflow and separately
+   configure and verify required-check enforcement. Bootstrap installation does
+   not protect its own first PR. GitHub community files do not automatically
+   install callers, packages, FMS profiles, rulesets or required checks.
+
+Success is deliberately **configured_not_qualified**. It proves the supported
+configuration is present and wired at the inspected bytes. It does not prove
+full FMS semantic conformance, installed package integrity, real source coverage,
+Docs Protocol admission, executable-specification registration, hosted workflow
+availability/success or remote required-check enforcement. Follow the existing
+Docs admission contract below and the owning qualification ledgers for those
+separate claims; do not fabricate a qualified repository record.
+
+### Independent inventory backstop
+
+The existing six-hour, read-only organization inventory audit also reads
+immutable default-branch Git trees and bounded blobs for new repositories and
+explicit older opt-ins. It finds a wholly missing caller without requiring that
+caller to have run. It reports configuration failures alongside inventory drift,
+including unsupported stacks pending an adapter. It never executes consumer
+files or modifies consumer policy, inventory or qualification records. A
+successful snapshot remains configuration observation, not continuous
+enforcement or hosted qualification.
+
+The audit retains its dedicated `ORG_INVENTORY_READ_TOKEN`, stable two-pass
+pagination, complete-private-visibility assertion and fail-closed transport
+behavior. Its existing workflow supplies only that dedicated credential; never
+substitute interactive user, ReviewRouter or Codex credentials. Inaccessible
+repositories, truncated trees, unsafe blob modes, content identity mismatches or
+movement during a configuration observation fail the audit. A local fixture
+cannot establish that a real credential sees the complete private inventory.
 
 ## Admission contract
 

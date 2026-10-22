@@ -100,7 +100,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts", ".ts"] },
     typedTooling: {
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
-      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts"],
+      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts", "scripts/check-repository-admission.ts", "scripts/check-repository-admission.test.ts"],
     },
     toolchain: { node: "26.11.1", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
@@ -129,7 +129,9 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     "scripts/quality-process.ts",
     "scripts/quality-process.test.ts",
     "scripts/run-governance-tests.ts",
-    "scripts/run-governance-tests.test.ts"
+    "scripts/run-governance-tests.test.ts",
+    "scripts/check-repository-admission.ts",
+    "scripts/check-repository-admission.test.ts"
   ]
 }, "strict compiler scope and settings must stay exact");
   assert.deepEqual(requiredTests, {

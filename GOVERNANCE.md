@@ -34,6 +34,13 @@ and consumer-adoption processes. Linking a policy never certifies existing code.
 
 ## Feature Module Standard Ownership
 
+The [new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap)
+requires explicit full FMS adoption for new owned production repositories
+created from 2026-10-22 UTC and older owner opt-ins, including SDKs. This is a
+reviewed onboarding obligation, with a failing configuration gate and independent
+inventory backstop; it does not cause automatic GitHub inheritance, a fleet
+migration or semantic qualification.
+
 The organization owns the immutable language-neutral Feature Module Standard
 baseline and its append-only version registry. Adoption is never automatic.
 Each adopting product repository owns one local adoption profile that declares
