@@ -14,6 +14,7 @@ release procedures remain in the owning repository.
 
 - [Engineering Quality Standard](docs/engineering-quality-standard.md) - common Clean Architecture, SOLID, DDD and DRY practices; repository agent files link here explicitly.
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
+- [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
 
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.

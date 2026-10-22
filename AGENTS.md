@@ -11,6 +11,11 @@ Before choosing or duplicating reusable development tooling, read the
 [development tools catalog](docs/development-tools.md) and follow its link to
 the owning guide. Check availability and repository adoption before using a tool.
 
+Before choosing backend technologies, read the
+[backend stack reference](docs/backend-stack.md). Apply the target repository's
+explicit adoption and existing decisions; do not install the entire stack or
+change pins merely because a reference exists.
+
 For feature-module architecture:
 
 1. Start at the [Feature Module Standard index](docs/architecture/feature-module-standard/README.md).
