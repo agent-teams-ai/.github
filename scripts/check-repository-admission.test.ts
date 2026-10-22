@@ -4,11 +4,32 @@ import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { parseDocument } from "yaml";
 import { ADMISSION_CALLER, BOOTSTRAP_GUIDE, checkRepositoryAdmission, directCommands, expandAdmissionScript, IDENTITY_REVISION, localAdmissionSource, MAX_FILE_BYTES, renderRepositoryAdmissionCaller } from "./check-repository-admission.ts";
 import type { AdmissionSource } from "./check-repository-admission.ts";
 
 const revision = "1".repeat(40);
 const json = (value: unknown): string => `${JSON.stringify(value)}\n`;
+
+test("reusable workflow executes the exact published central implementation on inert consumer files", async () => {
+  const workflow = parseDocument(await readFile(new URL("../.github/workflows/repository-admission-check.yml", import.meta.url), "utf8")).toJS({ maxAliasCount: 0 }) as {
+    on: unknown;
+    permissions: unknown;
+    jobs: { admission: { steps: { uses?: string; run?: string; with?: Record<string, unknown> }[] } };
+  };
+  assert.deepEqual(workflow.on, { workflow_call: null });
+  assert.deepEqual(workflow.permissions, { contents: "read" });
+  const steps = workflow.jobs.admission.steps;
+  assert.deepEqual(steps.filter(step => step.run !== undefined).map(step => step.run), [
+    "pnpm --dir central install --frozen-lockfile --ignore-scripts --ignore-pnpmfile",
+    "node central/scripts/check-repository-admission.ts --root consumer",
+  ]);
+  assert.deepEqual(steps.filter(step => step.uses?.startsWith("actions/checkout@")).map(step => step.with), [
+    { path: "consumer", "persist-credentials": false },
+    { repository: "agent-teams-ai/.github", ref: "40cb631a65c901cd2a761cc9694f3c35be18f54b", path: "central", "persist-credentials": false },
+  ]);
+  for (const actionStep of steps.filter(step => step.uses !== undefined)) { assert.match(actionStep.uses ?? "", /@(?!0{40}$)[a-f0-9]{40}$/u); }
+});
 
 async function fixture(): Promise<{ files: Map<string, string>; source: AdmissionSource }> {
   const files = new Map<string, string>([
