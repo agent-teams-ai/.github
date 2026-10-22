@@ -7,66 +7,69 @@ agents to the tool owner; it does not activate a package or certify a consumer.
 
 ## Choose a tool
 
-| Need | Owner and guide | Availability |
-| --- | --- | --- |
+| Need                                                                                                         | Owner and guide                                                                                  | Availability                                                                                       |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | Reusable repository validation, source boundaries, quality coverage, governance and quality-gate composition | [Engineering Foundation README](https://github.com/agent-teams-ai/engineering-foundation#readme) | Existing tooling; use the exact released version and capabilities adopted by the target repository |
-| Node/Bun process execution as an explicit mechanism | [node-or-bun README](https://github.com/agent-teams-ai/node-or-bun#readme) | Published mechanism; verify its current support matrix and the consumer's exact pin |
-| Central versions, stack presets and stable commands for JS/TS type checking, linting, formatting and compilation | [Planned Stack Toolchain](#planned-stack-toolchain) | Planned; no installation or adoption is available from this entry |
+| Node/Bun process execution as an explicit mechanism                                                          | [node-or-bun README](https://github.com/agent-teams-ai/node-or-bun#readme)                       | Published mechanism; verify its current support matrix and the consumer's exact pin                |
+| Versioned tools, technical presets and commands for JS/TS checking, linting, formatting and compilation      | [Stack Toolchain](#stack-toolchain)                                                              | Implemented source; bootstrap versions only; supported release and adoption pending                |
 
 Start with the target repository's AGENTS.md, README, scripts and accepted
 profiles. Follow the owning tool guide, verify its released version, and apply
 the repository's adoption procedure. Prefer an appropriate existing shared tool
-over a consumer-local copy. A planned tool does not replace working commands:
-continue using the target repository's current supported tooling until its
-replacement is released and explicitly adopted.
+over a consumer-local copy. Continue using the repository's supported tooling
+until a replacement has a qualified supported release and is explicitly adopted.
 
-## Planned Stack Toolchain
+## Stack Toolchain
 
-Status: design work, not implemented or published by this delivery.
-Stack Toolchain is a working descriptive name. `stack-toolchain` is a package
-and CLI candidate, not a reserved or verified publication identity. Do not
-install that name based on this catalog. Implementation is owned by the
-[Engineering Foundation repository](https://github.com/agent-teams-ai/engineering-foundation).
+Status observed on 2026-10-22: the core `stack-toolchain` package and CLI are
+implemented on Engineering Foundation main at
+[`67ccfb359fa2112e7a3554576391d4369477f937`](https://github.com/agent-teams-ai/engineering-foundation/commit/67ccfb359fa2112e7a3554576391d4369477f937),
+with package tree `828fc03cc56bd30b2800ea101effba9da7facaef`.
+The [owning package README](https://github.com/agent-teams-ai/engineering-foundation/blob/main/packages/stack-toolchain/README.md)
+is the canonical guide to its commands, presets, configuration and limits.
 
-The tool is intended for ordinary JS/TS projects that repeat tool versions,
-presets and check scripts, and need one versioned dependency with stable
-commands. It is intended to work independently of Foundation, its quality-gate
-runner and organization-specific governance. Repository ownership does not
-limit it to this organization.
+The observed registry contains only `0.0.0-stage` and `0.0.0`, with `latest`
+and `bootstrap` targeting `0.0.0`. These are bootstrap artifacts, not supported
+releases. Canonical bootstrap recovery, a qualified supported `0.1.0` release
+and consumer adoption remain pending. Do not install the bootstrap artifacts or
+use the README's future-release examples as availability proof. This catalog
+recommends installation only after qualified supported publication and the
+consumer's explicit adoption procedure.
 
-The initial scope is Node/Bun profiles, type checking, linting, format checking
-and TypeScript compilation. The tool owns versions, technical defaults, engine
-adapters and fallback classification. Consumers own tsconfig, source paths,
-environment types, build outputs, test suites and product policy. Other stack
-profiles require a concrete consumer; unrelated toolchains must not become
-mandatory downloads for every project.
+The implemented Node/Bun profiles provide read-only type checking, linting,
+format checking, explicit TypeScript compilation and diagnostic commands.
+Technical TypeScript and Oxlint presets are included. Type checking tries tsrs,
+then Bun only after classified engine failure or unavailability, then the pinned
+official TypeScript checker only if both earlier engines have classified engine
+failures or are unavailable.
+Success stops the chain. Source diagnostics, invalid configuration, cancellation,
+incomplete capture and uncertain cleanup remain failures. Read-only checking
+and reference-graph builds remain separate; consumers retain existing build and
+test gates. See the owning README for exact supported source behavior, rather
+than a second version table or command recipe here.
 
-The proposed normal typecheck route is sequential:
+The package is for ordinary independent projects and does not require Foundation,
+organization credentials, governance admission or a product-specific runtime.
+Consumers own source paths, tsconfig, ambient types, outputs, tests and product
+policy. Additional profiles require a concrete consumer.
 
-1. Run tsrs. On success, stop; do not run Bun or TypeScript afterward.
-2. Only after a classified engine failure or unavailability, try Bun check.
-   On success, stop; do not run TypeScript afterward.
-3. Only if both earlier engines are unavailable or have classified engine
-   failures, try the pinned official TypeScript 7.0.2 checker.
+## Responsibilities
 
-Source diagnostics, invalid configuration, cancellation and uncertain cleanup
-fail the command; they are not reasons to search for a passing checker.
-The actual engine and any fallback reason remain visible. Compiler versions
-can have different language behavior; qualification of selected scenarios is
-not a claim of complete semantic equivalence. Forced-engine comparisons belong
-to release qualification, not every consumer invocation.
+- Stack Toolchain owns its versioned tool set, technical presets, commands,
+  executable resolution, diagnostics and classified checker fallback.
+- pnpm catalogs and workspace declarations own a repository's declared dependency
+  coordinates and workspace relationships; they do not execute its quality gates.
+- Where adopted, Foundation's existing `workspace.dependency-declarations`
+  capability checks the consumer's declaration policy. The repository's CI and
+  frozen-lock installation checks enforce its reviewed dependency graph and gates.
+- Where adopted, the [shared Renovate preset](../renovate-config.json) supplies
+  dependency update proposals under the consumer's review and CI. Managed Docs
+  Cohort packages continue through qualified Cohort proposals under that preset's
+  existing policy.
 
-Read-only typecheck and output-producing compile are separate commands.
-The first source-only typecheck profile excludes project references; existing
-reference-graph build gates remain required. The tool will not add a mandatory
-full build before every fast typecheck or replace product test orchestration.
-
-Before implementation, add the package README with purpose, use cases,
-supported tasks, consumer configuration, limits and availability. Before
-publication, finish package/native qualification and real consumer checks.
-Only after verified publication should this entry link the exact package and
-its canonical installation/adoption guide. Keep detailed released usage in
-that owning README rather than maintaining a second copy here.
+These responsibilities leave application libraries and repository-specific
+technology choices with their owners. A catalog entry does not adopt a tool,
+change a consumer pin or replace its working checks.
 
 ## Agent navigation
 
