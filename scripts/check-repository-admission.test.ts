@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,6 +67,30 @@ test("missing root foundation and wholly absent admission caller fail with the c
   assert.ok(result.issues.some(issue => issue.path === ADMISSION_CALLER && issue.message.includes("missing")));
 });
 
+test("Bun native tests are leaves while explicit bun run references expand package scripts", async () => {
+  assert.deepEqual([...expandAdmissionScript("check", { check: "bun run test", test: "bun test" }, "bun")], ["bun test"]);
+  const { files, source } = await fixture();
+  const manifest = JSON.parse(files.get("package.json") ?? "{}") as { packageManager: string; scripts: Record<string, string> };
+  manifest.packageManager = "bun@1.0.0";
+  for (const [name, command] of Object.entries(manifest.scripts)) { manifest.scripts[name] = command.replaceAll("pnpm ", "bun run "); }
+  manifest.scripts.test = "bun test";
+  files.set("package.json", json(manifest));
+  const profile = JSON.parse(files.get("architecture/profile.json") ?? "{}") as { enforcementCommands: string[] };
+  profile.enforcementCommands = profile.enforcementCommands.map(command => command.replaceAll("pnpm ", "bun run "));
+  files.set("architecture/profile.json", json(profile));
+  files.set(".github/workflows/checks.yaml", json({ on: { pull_request: null }, jobs: { check: { "runs-on": "ubuntu-24.04", steps: [{ run: "bun run check" }] } } }));
+  files.set("bun.lock", "{}\n");
+  files.delete("pnpm-lock.yaml");
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+});
+
+test("known non-main default branches remain explicitly unsupported", async () => {
+  const { source } = await fixture();
+  const result = await checkRepositoryAdmission({ ...source, defaultBranch: "master" });
+  assert.equal(result.status, "unsupported_stack_pending");
+  assert.ok(result.issues.some(issue => issue.message.includes("branch layout")));
+});
+
 test("native no-op, comments and quoted command text cannot establish a gate", async () => {
   for (const command of ["# pnpm check\nexit 0", "echo pnpm check", "true && pnpm check", "pnpm check || true", "echo 'pnpm check'", "if true; then pnpm check; fi"]) {
     assert.deepEqual(directCommands(command), []);
@@ -92,6 +117,68 @@ test("conditional PRs, conditional dependencies, absent needs and cycles cannot 
   }
 });
 
+test("custom shells and non-failing package-script newlines never count as native gates", async () => {
+  const shellFixture = await fixture();
+  shellFixture.files.set(".github/workflows/checks.yaml", json({ on: { pull_request: null }, jobs: { check: { "runs-on": "ubuntu-24.04", steps: [{ shell: "echo {0}", run: "pnpm check" }] } } }));
+  assert.equal((await checkRepositoryAdmission(shellFixture.source)).status, "incomplete");
+  const newlineFixture = await fixture();
+  const manifest = JSON.parse(newlineFixture.files.get("package.json") ?? "{}") as { scripts: Record<string, string> };
+  manifest.scripts.check = manifest.scripts.check?.replaceAll(" && ", "\n") ?? "";
+  newlineFixture.files.set("package.json", json(manifest));
+  assert.equal((await checkRepositoryAdmission(newlineFixture.source)).status, "incomplete");
+  for (const [path, text] of [[".npmrc", "script-shell=/bin/echo\n"], ["pnpm-workspace.yaml", "scriptShell: /bin/echo\n"], ["pnpm-workspace.yaml", "shellEmulator: true\n"]]) {
+    assert.ok(path !== undefined && text !== undefined);
+    const managerFixture = await fixture();
+    managerFixture.files.set(path, text);
+    assert.ok((await checkRepositoryAdmission(managerFixture.source)).issues.some(issue => issue.path === path));
+  }
+});
+
+test("compiler probes and disabled checking cannot substitute for production compilation", async () => {
+  for (const command of ["tsc --version", "tsc --help", "tsc --showConfig", "tsc --listFilesOnly", "tsc --build --dry", "tsc --build --clean", "tsc --noCheck", "tsc --project packages/sdk/tsconfig.json --strict false"]) {
+    const { files, source } = await fixture();
+    const manifest = JSON.parse(files.get("package.json") ?? "{}") as { scripts: Record<string, string> };
+    manifest.scripts.typecheck = command;
+    files.set("package.json", json(manifest));
+    assert.ok((await checkRepositoryAdmission(source)).issues.some(issue => issue.message.includes("compiler/build")), command);
+  }
+});
+
+test("native test and feature help probes cannot replace their actual gates", async () => {
+  const { files, source } = await fixture();
+  const manifest = JSON.parse(files.get("package.json") ?? "{}") as { scripts: Record<string, string> };
+  manifest.scripts.test = "node --test --help";
+  manifest.scripts["architecture:features:check"] = "feature-module-standard check --help";
+  files.set("package.json", json(manifest));
+  const result = await checkRepositoryAdmission(source);
+  assert.ok(result.issues.some(issue => issue.message.includes("actual native tests")));
+  assert.ok(result.issues.some(issue => issue.message.includes("actual deterministic FMS")));
+});
+
+test("duplicate script and needs DAGs have bounded memoized traversal", async () => {
+  const moduleUrl = new URL("./check-repository-admission.ts", import.meta.url).href;
+  execFileSync(process.execPath, ["--input-type=module", "-e", `import { expandAdmissionScript } from ${JSON.stringify(moduleUrl)};
+    const scripts = {};
+    for (let i = 0; i < 28; i++) scripts['s' + i] = i === 27 ? 'tsc --project tsconfig.json' : 'pnpm s' + (i + 1) + ' && pnpm s' + (i + 1);
+    if (expandAdmissionScript('s0', scripts, 'pnpm').size !== 1) process.exit(1);`], { timeout: 2000, stdio: "pipe" });
+  const { files, source } = await fixture();
+  const jobs: Record<string, unknown> = {};
+  for (let i = 0; i < 28; i++) {
+    jobs[`job${i}`] = { "runs-on": "ubuntu-24.04", ...(i === 0 ? {} : { needs: [`job${i - 1}`, `job${i - 1}`] }), steps: i === 27 ? [{ run: "pnpm check" }] : [] };
+  }
+  files.set(".github/workflows/checks.yaml", json({ on: { pull_request: null }, jobs }));
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+});
+
+test("a legitimate single-package root module maps to its root compiler project", async () => {
+  const { files, source } = await fixture();
+  const profile = JSON.parse(files.get("architecture/profile.json") ?? "{}") as { modules: { root: string }[] };
+  assert.ok(profile.modules[0]);
+  profile.modules[0].root = ".";
+  files.set("architecture/profile.json", json(profile));
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+});
+
 test("canonical callers reject secrets, moving pins and identity template drift", async () => {
   for (const replacement of [renderRepositoryAdmissionCaller(revision).replace(revision, "main"), `${renderRepositoryAdmissionCaller(revision)}    secrets: inherit\n`, renderRepositoryAdmissionCaller(revision).replace("  admission:", "  admission:\n    if: false")]) {
     const { files, source } = await fixture();
@@ -108,6 +195,10 @@ test("compiler weakening and an empty SDK profile remain incomplete", async () =
   files.set("tsconfig.base.json", json({ compilerOptions: { strict: false } }));
   const result = await checkRepositoryAdmission(source);
   assert.ok(result.issues.some(issue => issue.path === "packages/sdk/tsconfig.json" && issue.message.includes("strict")));
+  for (const overrides of [{ noCheck: true }, { strictNullChecks: false }]) {
+    files.set("tsconfig.base.json", json({ compilerOptions: { strict: true, noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true, ...overrides } }));
+    assert.ok((await checkRepositoryAdmission(source)).issues.some(issue => issue.path === "packages/sdk/tsconfig.json" && issue.message.includes("weakening")));
+  }
   files.set("architecture/profile.json", json({ modules: [] }));
   assert.ok((await checkRepositoryAdmission(source)).issues.some(issue => issue.message.includes("every production module")));
   assert.throws(() => expandAdmissionScript("check", { check: "pnpm alias", alias: "pnpm check" }, "pnpm"), /cyclic/u);
@@ -120,8 +211,12 @@ test("local reader rejects symlinks, oversized files, invalid UTF-8 and traversa
     await symlink(join(root, "target"), join(root, "link"));
     await writeFile(join(root, "large"), Buffer.alloc(MAX_FILE_BYTES + 1));
     await writeFile(join(root, "invalid"), Buffer.from([0xc3, 0x28]));
+    execFileSync("mkfifo", [join(root, "fifo")]);
     const source = await localAdmissionSource(root);
     assert.equal(await source.read("target"), "inert");
     for (const path of ["link", "large", "invalid", "../target"]) { await assert.rejects(source.read(path)); }
+    execFileSync(process.execPath, ["--input-type=module", "-e", `import { localAdmissionSource } from ${JSON.stringify(new URL("./check-repository-admission.ts", import.meta.url).href)};
+      const source = await localAdmissionSource(${JSON.stringify(root)});
+      try { await source.read('fifo'); process.exit(1); } catch {}`], { timeout: 2000, stdio: "pipe" });
   } finally { await rm(root, { recursive: true, force: true }); }
 });

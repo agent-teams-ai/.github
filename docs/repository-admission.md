@@ -76,8 +76,13 @@ classification obligations.
    with unconditional, acyclic and complete `needs` closures. Do not rely on
    path filters, conditions, continue-on-error, comments, command text inside
    echo, or exit-zero scripts. The static recognizer supports direct native
-   commands joined by `&&` or newlines; wrappers, arbitrary shell, changed
+   commands joined by `&&` in package scripts. Workflow steps also permit
+   newlines under an Ubuntu runner and GitHub's built-in bash/sh fail-fast
+   shells. Custom shells, other runners, wrappers, arbitrary shell, changed
    working directories and reusable native gate jobs need a reviewed adapter.
+   Package-manager shell overrides and execution-control environment overrides
+   are rejected. Compiler help/version, dry-run/configuration probes and
+   disabled checking never count as compilation.
    Repository-owned commands still require their native test and semantic review;
    recognizing a command does not establish what its implementation does.
 

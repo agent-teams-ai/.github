@@ -18,6 +18,7 @@ export interface AdmissionIssue { path: string; message: string }
 export interface AdmissionSource {
   read: (path: string) => Promise<string | undefined>;
   workflows: () => Promise<string[]>;
+  defaultBranch?: string;
 }
 export interface AdmissionResult {
   status: "configured_not_qualified" | "incomplete" | "unsupported_stack_pending";
@@ -55,7 +56,7 @@ export async function localAdmissionSource(root: string): Promise<AdmissionSourc
       if (!stat.isDirectory() || stat.isSymbolicLink()) { throw new Error("File ancestors must be regular directories."); }
     }
     let handle;
-    try { handle = await open(join(base, path), constants.O_RDONLY | constants.O_NOFOLLOW); }
+    try { handle = await open(join(base, path), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK); }
     catch (error) { if (data(error).code === "ENOENT") { return undefined; } throw error; }
     try {
       const stat = await handle.stat();
@@ -96,32 +97,48 @@ function parseStructured(text: string, path: string): unknown {
 // Deliberately bounded shell subset. Only direct commands joined by && or
 // newlines count. Comments, echo/exit/true, pipelines, substitutions, conditions,
 // wrappers and expressions cannot masquerade as a native gate.
-export function directCommands(command: string): string[] {
+export function directCommands(command: string, allowFailFastLines = false): string[] {
   if (command.length > 32_768) { return []; }
   const lines = command.split(/\r?\n/u).map(line => line.trim()).filter(line => line && !line.startsWith("#"));
+  // A package manager's ordinary script shell does not fail on earlier lines.
+  if (!allowFailFastLines && lines.length > 1) { return []; }
   const atoms = lines.flatMap(line => line.split(/\s*&&\s*/u));
-  if (atoms.length === 0 || atoms.some(atom => !/^[A-Za-z0-9_./:@*=-]+(?:\s+[A-Za-z0-9_./:@*=-]+)*$/u.test(atom))) { return []; }
+  if (atoms.length === 0 || atoms.length > 256 || atoms.some(atom => !/^[A-Za-z0-9_./:@*=-]+(?:\s+[A-Za-z0-9_./:@*=-]+)*$/u.test(atom))) { return []; }
   if (atoms.some(atom => /^(?:exit|true|false|echo|printf|eval|exec|sh|bash|if|test|:)(?:\s|$)/u.test(atom))) { return []; }
   return atoms.map(atom => atom.replace(/\s+/gu, " "));
 }
 
 function scriptName(command: string, manager: string): string | undefined {
+  // Bun built-ins take precedence over package scripts. Only `bun run NAME`
+  // denotes an unambiguous script reference; `bun test` is a native test leaf.
+  if (manager === "bun") { return /^bun run ([A-Za-z0-9_:@-]+)$/u.exec(command)?.[1]; }
   return new RegExp(`^${manager} (?:run )?([A-Za-z0-9_:@-]+)$`, "u").exec(command)?.[1];
 }
 
-export function expandAdmissionScript(name: string, scripts: Data, manager: string, ancestors: string[] = []): Set<string> {
-  if (ancestors.includes(name) || ancestors.length > 32 || typeof scripts[name] !== "string") { throw new Error(`Missing or cyclic native script: ${name}`); }
-  const command = scripts[name];
-  const atoms = directCommands(command);
-  if (atoms.length === 0) { throw new Error(`Native script ${name} is not a supported direct command route.`); }
-  const result = new Set<string>();
-  for (const atom of atoms) {
-    const child = scriptName(atom, manager);
-    if (child !== undefined) {
-      for (const leaf of expandAdmissionScript(child, scripts, manager, [...ancestors, name])) { result.add(leaf); }
-    } else { result.add(atom); }
-  }
-  return result;
+export function expandAdmissionScript(name: string, scripts: Data, manager: string): Set<string> {
+  const memo = new Map<string, Set<string>>();
+  let nodes = 0;
+  let edges = 0;
+  const visit = (current: string, ancestors: string[]): Set<string> => {
+    if (ancestors.includes(current) || ancestors.length > 32 || typeof scripts[current] !== "string") { throw new Error(`Missing or cyclic native script: ${current}`); }
+    const completed = memo.get(current);
+    if (completed) { return completed; }
+    if (++nodes > 256) { throw new Error("Native script graph exceeds the bounded node budget."); }
+    const atoms = directCommands(scripts[current]);
+    edges += atoms.length;
+    if (edges > 4096 || atoms.length === 0) { throw new Error(`Native script ${current} is not a supported bounded direct command route.`); }
+    const result = new Set<string>();
+    for (const atom of atoms) {
+      const child = scriptName(atom, manager);
+      if (child !== undefined) {
+        for (const leaf of visit(child, [...ancestors, current])) { result.add(leaf); }
+      } else { result.add(atom); }
+      if (result.size > 4096) { throw new Error("Native gate leaf budget exceeded."); }
+    }
+    memo.set(current, result);
+    return result;
+  };
+  return visit(name, []);
 }
 
 function unconditionalPrWorkflow(workflow: Data): boolean {
@@ -133,26 +150,37 @@ function unconditionalPrWorkflow(workflow: Data): boolean {
     typeof mapping.pull_request === "object" && !Array.isArray(mapping.pull_request) && Object.keys(data(mapping.pull_request)).length === 0);
 }
 
-function safeJob(id: string, jobs: Data, ancestors: string[] = []): boolean {
+function safeJob(id: string, jobs: Data, ancestors: string[] = [], memo = new Map<string, boolean>()): boolean {
   if (ancestors.includes(id) || ancestors.length > 64 || !Object.hasOwn(jobs, id)) { return false; }
   const job = data(jobs[id]);
+  const completed = memo.get(id);
+  if (completed !== undefined) { return completed; }
   if (job.if !== undefined || job["continue-on-error"] !== undefined || job.uses !== undefined) { return false; }
   const needs = typeof job.needs === "string" ? [job.needs] : strings(job.needs);
   if (job.needs !== undefined && typeof job.needs !== "string" && (!Array.isArray(job.needs) || job.needs.some(value => typeof value !== "string"))) { return false; }
-  return needs.every(parent => safeJob(parent, jobs, [...ancestors, id]));
+  if (needs.length > 256) { return false; }
+  const valid = needs.every(parent => safeJob(parent, jobs, [...ancestors, id], memo));
+  memo.set(id, valid);
+  return valid;
 }
 
 function workflowCommands(workflow: Data, scripts: Data, manager: string): Set<string> {
   const commands = new Set<string>();
   if (!unconditionalPrWorkflow(workflow)) { return commands; }
   const jobs = data(workflow.jobs);
+  if (Object.keys(jobs).length > 256) { return commands; }
+  const jobMemo = new Map<string, boolean>();
   for (const [id, rawJob] of Object.entries(jobs)) {
-    if (!safeJob(id, jobs)) { continue; }
+    if (!safeJob(id, jobs, [], jobMemo)) { continue; }
     const job = data(rawJob);
+    if (typeof job["runs-on"] !== "string" || !/^ubuntu-(?:latest|\d+\.\d+)$/u.test(job["runs-on"])) { continue; }
     if (data(job.defaults).run !== undefined || data(workflow.defaults).run !== undefined) { continue; }
     for (const step of records(job.steps)) {
-      if (step.if !== undefined || step["continue-on-error"] !== undefined || step["working-directory"] !== undefined || typeof step.run !== "string") { continue; }
-      for (const atom of directCommands(step.run)) {
+      if (step.if !== undefined || step["continue-on-error"] !== undefined || step["working-directory"] !== undefined || typeof step.run !== "string" ||
+          step.shell !== undefined && step.shell !== "bash" && step.shell !== "sh") { continue; }
+      const controls = /^(?:BASH_ENV|ENV|SHELLOPTS|NODE_OPTIONS|PATH|SHELL|PNPM_HOME|BUN_OPTIONS|NPM_CONFIG_SCRIPT_SHELL|PNPM_SCRIPT_SHELL)$/u;
+      if ([workflow.env, job.env, step.env].some(env => Object.keys(data(env)).some(key => controls.test(key.toUpperCase())))) { continue; }
+      for (const atom of directCommands(step.run, true)) {
         const script = scriptName(atom, manager);
         try {
           if (script !== undefined && Object.hasOwn(scripts, script)) {
@@ -186,11 +214,25 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     catch { issue(path, "Expected valid JSON or unique-key YAML without aliases."); return {}; }
   };
   const manifest = await document("package.json");
+  const npmrc = await read(".npmrc", false);
+  if (npmrc !== undefined && /^\s*(?:script[-_]shell|shell[-_]emulator)\s*=/imu.test(npmrc)) {
+    issue(".npmrc", "Custom package-script shells are outside the supported fail-fast native gate contract.");
+  }
+  const workspaceText = await read("pnpm-workspace.yaml", false);
+  if (workspaceText !== undefined) {
+    try {
+      const workspace = data(parseStructured(workspaceText, "pnpm-workspace.yaml"));
+      if (workspace.scriptShell !== undefined || workspace.shellEmulator !== undefined) { issue("pnpm-workspace.yaml", "Custom package-script shell controls need a reviewed adapter."); }
+    } catch { issue("pnpm-workspace.yaml", "Expected valid unique-key YAML without aliases."); }
+  }
+  if (data(manifest.pnpm).scriptShell !== undefined || data(manifest.pnpm).shellEmulator !== undefined) { issue("package.json", "Custom package-script shell controls need a reviewed adapter."); }
   const manager = typeof manifest.packageManager === "string" ? /^(pnpm|bun)@\d+\.\d+\.\d+(?:\+[A-Za-z0-9.]+)?$/u.exec(manifest.packageManager)?.[1] : undefined;
   const result = (status: AdmissionResult["status"]): AdmissionResult => ({ status, guide: BOOTSTRAP_GUIDE, issues, inspected_paths: [...cache.keys()].toSorted() });
   if (manager === undefined) {
     issue("package.json", "Unsupported stack pending: v1 supports explicitly pinned JavaScript/TypeScript pnpm or Bun projects only; request an owned adapter before admission.");
   }
+  const unsupportedBranch = source.defaultBranch !== undefined && source.defaultBranch !== "main";
+  if (unsupportedBranch) { issue(ADMISSION_CALLER, "Unsupported branch layout pending: v1's canonical caller requires a main default branch."); }
 
   const caller = await read(ADMISSION_CALLER);
   const callerRevision = caller?.match(/repository-admission-check\.yml@([a-f0-9]{40})\n$/u)?.[1];
@@ -264,7 +306,7 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     const features = records(module.features);
     if (!nonempty(module.id) || !nonempty(module.role) || !nonempty(module.root) || !nonempty(module.sourceRoot) ||
         features.length === 0 || features.some(feature => !nonempty(feature.id) || !nonempty(feature.root) || records(feature.layers).length === 0) ||
-        !governed.includes(String(module.sourceRoot)) || !compilerProjects.some(path => path.startsWith(`${String(module.root)}/`))) {
+        !governed.includes(String(module.sourceRoot)) || !compilerProjects.some(path => module.root === "." || path.startsWith(`${String(module.root)}/`))) {
       issue(String(profilePath), "Each real production module needs an explicit role, source root, feature/layer ownership, governed coverage and a compiler project.");
     }
   }
@@ -274,20 +316,24 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     const config = await document(path);
     let parent: Data = {};
     if (typeof config.extends === "string") {
-      const target = resolve("/", dirname(path), config.extends).slice(1);
+      const absolute = resolve("/consumer", dirname(path), config.extends);
+      const target = absolute.slice("/consumer/".length);
       if (/^@agent-teams\/engineering-foundation\/presets\/typescript\/(?:base|node|bun)\.json$/u.test(config.extends)) {
         // Recognize the published Foundation strict preset contract. This is a
         // configuration binding, never installed-package integrity evidence.
         parent = { strict: true, noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true };
       } else if (!config.extends.startsWith(".")) { issue(path, "v1 supports only local inheritance and the named Foundation strict presets."); }
+      else if (!absolute.startsWith("/consumer/")) { issue(path, "Compiler inheritance must stay inside the repository."); }
       else { parent = await compilerOptions(target.endsWith(".json") ? target : `${target}.json`, [...chain, path]); }
     }
     return { ...parent, ...data(config.compilerOptions) };
   };
   for (const path of compilerProjects) {
     const options = await compilerOptions(path);
-    if (options.strict !== true || options.noUncheckedIndexedAccess !== true || options.exactOptionalPropertyTypes !== true || options.noEmitOnError === false) {
-      issue(path, "Production compiler projects require strict, noUncheckedIndexedAccess and exactOptionalPropertyTypes without noEmitOnError=false.");
+    const strictFlags = ["alwaysStrict", "strictBindCallApply", "strictBuiltinIteratorReturn", "strictFunctionTypes", "strictNullChecks", "strictPropertyInitialization", "useUnknownInCatchVariables", "noImplicitAny", "noImplicitThis"];
+    if (options.strict !== true || options.noUncheckedIndexedAccess !== true || options.exactOptionalPropertyTypes !== true || options.noEmitOnError === false ||
+        options.noCheck === true || strictFlags.some(flag => options[flag] === false)) {
+      issue(path, "Production compiler projects require strict, noUncheckedIndexedAccess and exactOptionalPropertyTypes without disabled semantic checking or weakening overrides.");
     }
   }
   if (manager !== undefined) {
@@ -310,10 +356,13 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     for (const command of ["agent-teams-foundation check", "agent-teams-foundation assert-dev-only", "agent-teams-foundation assert-registry"]) {
       if (!full.has(command)) { issue("package.json", `The complete native check route must execute ${command}.`); }
     }
-    if (![...full].some(command => /^(?:tsc(?: |$)|tsrs(?: |$)|node (?:tools|scripts)\/[^ ]*build[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(command))) {
+    if (![...full].some(command => /^(?:tsc(?: |$)|tsrs(?: |$)|node (?:tools|scripts)\/[^ ]*build[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(command) &&
+        !/(?:^| )(?:--version|-v|--help|-h|--showConfig|--listFilesOnly|--noCheck|--dry|--clean)(?: |$)/u.test(command) &&
+        !/(?:^| )--(?:strict\w*|noUncheckedIndexedAccess|exactOptionalPropertyTypes|noImplicit\w*) false(?: |$)/u.test(command))) {
       issue("package.json", "The full native gate must reach an actual strict compiler/build command; declaring compiler projects alone does not run them.");
     }
-    if (![...full].some(command => /^(?:node --test |agent-teams-node-test |vitest(?: |$)|bun test(?: |$)|node (?:tools|scripts)\/[^ ]*tests?[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(command))) {
+    if (![...full].some(command => /^(?:node --test |agent-teams-node-test |vitest(?: |$)|bun test(?: |$)|node (?:tools|scripts)\/[^ ]*tests?[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(command) &&
+        !/(?:^| )(?:--version|-v|--help|-h|--dry-run|--listTests)(?: |$)/u.test(command))) {
       issue("package.json", "The full native gate must reach actual native tests.");
     }
     const enforcement = strings(profile.enforcementCommands);
@@ -324,7 +373,8 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
         if (!name || [...expandAdmissionScript(name, scripts, manager)].some(leaf => !full.has(leaf))) { throw new Error("Unreached enforcement command."); }
       } catch { issue(String(profilePath), `FMS enforcement must be a real native script reached by check: ${command}`); }
     }
-    if (![...full].some(command => /^(?:feature-module-standard check(?: |$)|node (?:tools|scripts)\/[^ ]*feature[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(command))) {
+    if (![...full].some(command => /^(?:feature-module-standard check(?: |$)|node (?:tools|scripts)\/[^ ]*feature[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(command) &&
+        !/(?:^| )(?:--version|-v|--help|-h|--dry-run)(?: |$)/u.test(command))) {
       issue("package.json", "Run the actual deterministic FMS feature gate from the complete native route.");
     }
     const native = new Set<string>();
@@ -338,7 +388,7 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
       if (!native.has(command)) { issue(".github/workflows", "Unconditional pull_request jobs with unconditional needs closures must execute every command in the full native gate route."); }
     }
   }
-  return result(manager === undefined ? "unsupported_stack_pending" : issues.length > 0 ? "incomplete" : "configured_not_qualified");
+  return result(manager === undefined || unsupportedBranch ? "unsupported_stack_pending" : issues.length > 0 ? "incomplete" : "configured_not_qualified");
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

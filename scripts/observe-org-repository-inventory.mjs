@@ -108,7 +108,7 @@ export async function auditRepositoryBootstrapConfigurations(repositories, loadS
     }
     const required = Date.parse(repository.created_at) >= Date.parse(BOOTSTRAP_START) || caller !== undefined || explicitOptIn;
     if (!required) {continue;}
-    const result = await checkRepositoryAdmission(source);
+    const result = await checkRepositoryAdmission({ ...source, defaultBranch: repository.default_branch });
     await source.recheck?.();
     results.push({ repository: repository.full_name, repository_id: repository.id, revision: source.revision ?? null, ...result });
   }
@@ -137,6 +137,7 @@ export async function loadRemoteBootstrapSource(repository, request = githubJson
   let totalBytes = 0;
   return {
     revision: commit.sha,
+    defaultBranch: repository.default_branch,
     workflows: async () => {
       const paths = [...entries.keys()].filter(path => /^\.github\/workflows\/[^/]+\.ya?ml$/u.test(path)).toSorted();
       if (paths.length > MAX_FILES) {throw new Error("Bootstrap workflow census exceeds the read budget.");}
