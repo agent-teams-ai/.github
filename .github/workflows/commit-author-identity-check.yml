@@ -76,7 +76,8 @@ jobs:
               const identity = policy.owner;
               need(policy.schema_version === 1 && human({ type: "User", login: identity?.login }) &&
                 typeof identity.name === "string" && identity.name.length > 0 &&
-                typeof identity.email === "string" && identity.email.includes("@"), "Invalid owner identity policy");
+                typeof identity.email === "string" && identity.email.includes("@") &&
+                identity.source_identity === "github-user-association", "Invalid owner identity policy");
               const template = await content(central, templatePath, centralBranch.commit.sha);
               const baseCaller = await content({ owner, repo }, callerPath, observed.base.sha);
               const headCaller = await content({ owner, repo }, callerPath, observed.head.sha);
@@ -118,11 +119,24 @@ jobs:
                 need(!/^(?:codex|openai(?: codex)?)$/iu.test(author.name.trim()) &&
                   !/^(?:codex|openai)@(?:openai\.com|users\.noreply\.github\.com)$/iu.test(author.email.trim()),
                   "Codex/OpenAI source commit AUTHOR is forbidden");
-                const ownerAuthor = commit.author?.login.toLowerCase() === identity.login.toLowerCase() ||
-                  (commit.author === null && author.name.toLowerCase() === identity.name.toLowerCase()) || author.email === identity.email;
-                need(!ownerAuthor || [author, commit.commit?.committer].every(person =>
-                  person?.name === identity.name && person.email === identity.email),
-                  "Owner source commits require exact raw author AND committer name/email");
+                const ownerClaim = role => {
+                  const account = commit[role], person = commit.commit?.[role];
+                  const name = person?.name?.trim().toLowerCase();
+                  return account?.login?.toLowerCase() === identity.login.toLowerCase() ||
+                    name === identity.login.toLowerCase() || person?.email?.trim().toLowerCase() === identity.email.toLowerCase() ||
+                    (account === null && name === identity.name.toLowerCase());
+                };
+                if (["author", "committer"].some(ownerClaim)) for (const role of ["author", "committer"]) {
+                  const account = commit[role], person = commit.commit?.[role];
+                  need(account?.type === "User" && account.login === identity.login,
+                    "Owner source commits require actual User/777genius author AND committer associations");
+                  need(person && typeof person.name === "string" && person.name.trim() &&
+                    !/[\p{Cc}\p{Zl}\p{Zp}]/u.test(person.name) && typeof person.email === "string" &&
+                    /^[^\s@]+@[^\s@]+$/u.test(person.email) &&
+                    !/\[bot\]|^(github|web-flow|codex|openai(?: codex)?)$/iu.test(person.name.trim()) &&
+                    !/\[bot\]|^noreply@github\.com$|^(?:codex|openai)@(?:openai\.com|users\.noreply\.github\.com)$/iu.test(person.email),
+                    "Owner source commits require valid non-Bot/non-Codex raw author AND committer metadata");
+                }
               }
               const latest = (await github.rest.repos.getBranch({ ...central, branch: "main" })).data;
               need(sha(latest.commit?.sha), "Missing trusted central revision");

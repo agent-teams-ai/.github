@@ -68,10 +68,10 @@ async function rejected(mutate) {
   if (states(f).includes("pending")) assert.equal(states(f).at(-1), "failure");
   return f;
 }
-test("exact owner source identity and external original metadata pass on the independent head", async () => {
+test("associated owner profiles and external original metadata pass on the independent head", async () => {
   for (const [user, commits] of [
     [human, [commit()]],
-    [human, [commit(null)]],
+    [human, [commit(human, "Илья Зеленко", "777genius@users.noreply.github.com")]],
     [{ login: "alice", type: "User" }, [commit({ login: "alice", type: "User" }, "Alice", "alice@example.org")]],
     [{ login: "alice", type: "User" }, [commit(null, "Alice", "alice@example.org")]],
     [{ login: "alice", type: "User" }, [commit({ login: "alice", type: "User" }, "iliya", "alice@example.org")]],
@@ -90,14 +90,38 @@ test("exact owner source identity and external original metadata pass on the ind
   f.commits[0].committer = null;
   await run(f); assert.deepEqual(states(f), ["pending", "success"]);
 });
-test("owner source committers must be exact, including unassociated owner authors", async () => {
-  for (const author of [human, null]) for (const committer of [undefined, null, {}, { name: "iliya" }, { email: "iliyazelenkog@gmail.com" },
-    { name: "wrong", email: "iliyazelenkog@gmail.com" }, { name: "iliya", email: "wrong@example.org" },
-    { name: "GitHub", email: "noreply@github.com" }, { name: "web-flow", email: "noreply@github.com" },
-    { name: "technical", email: "technical@example.org" }, { name: "Iliya", email: "iliyazelenkog@gmail.com" },
-    { name: "iliya", email: "iliyazelenkog@gmail.com " }]) {
-    const f = await rejected(value => { value.commits = [commit(author)]; value.commits[0].commit.committer = committer; });
-    assert.match(f.failures[0], /exact raw author AND committer/u);
+test("both owner roles accept profile names and alternate emails only with actual owner associations", async () => {
+  const f = fixture();
+  f.commits = [commit(human, "Илья Зеленко", "777genius@users.noreply.github.com")];
+  f.commits[0].commit.committer = { name: "777genius", email: "owner-alternate@example.org" };
+  await run(f);
+  assert.deepEqual(f.failures, []); assert.deepEqual(states(f), ["pending", "success"]);
+  for (const role of ["author", "committer"]) for (const account of [undefined, null, {},
+    { type: "User", login: "alice" }, { type: "Bot", login: "777genius" },
+    { type: "User", login: "web-flow" }]) {
+    await rejected(value => { value.commits[0][role] = account; });
+  }
+});
+test("raw owner impersonation and mixed foreign roles cannot establish owner identity", async () => {
+  for (const role of ["author", "committer"]) for (const account of [null, { type: "User", login: "alice" }]) {
+    await rejected(value => {
+      value.commits = [commit(null, "777genius", "unassociated@example.org")];
+      value.commits[0].committer = null;
+      value.commits[0].commit.committer = { name: "777genius", email: "unassociated@example.org" };
+      value.commits[0][role] = account;
+    });
+  }
+  await rejected(value => { value.commits = [commit(null)]; });
+});
+test("associated owner roles still reject missing, Bot, Codex and malformed raw metadata", async () => {
+  for (const role of ["author", "committer"]) for (const person of [undefined, null, {},
+    { name: "iliya" }, { email: "iliyazelenkog@gmail.com" }, { name: "", email: "owner@example.org" },
+    { name: "Илья\nInjected", email: "owner@example.org" }, { name: "iliya", email: "wrong" },
+    { name: "iliya", email: "owner@example.org " }, { name: "GitHub", email: "noreply@github.com" },
+    { name: "web-flow", email: "owner@example.org" }, { name: "github-actions[bot]", email: "owner@example.org" },
+    { name: "Codex", email: "owner@example.org" }, { name: "OpenAI Codex", email: "owner@example.org" },
+    { name: "iliya", email: "codex@openai.com" }, { name: "iliya", email: "openai@users.noreply.github.com" }]) {
+    await rejected(value => { value.commits[0].commit[role] = person; });
   }
 });
 test("known unassociated Codex/OpenAI source authors cannot masquerade as humans", async () => {
@@ -165,8 +189,7 @@ test("rejects Bot PR authors with owner commits, and bot/GitHub commit authors",
     [null, "dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com"],
     [null, "GitHub", "noreply@github.com"], [null, " GitHub ", "noreply@github.com "], [null, "Alice", "NOREPLY@GITHUB.COM"],
     [{ login: "web-flow", type: "User" }, "Alice", "alice@example.org"],
-    [human, "iliya", "wrong@example.org"], [null, "iliya", "wrong@example.org"],
-    [human, "wrong", "iliyazelenkog@gmail.com"],
+    [null, "iliya", "wrong@example.org"],
   ]) await rejected(f => { f.commits = [commit(author, name, email)]; });
 });
 test("complete pagination checks every commit including earlier bots", async () => {
@@ -197,6 +220,7 @@ test("head/base/user/count movement and API/status transport failure cannot pass
     f => { f.latePull = clone(f.pull); f.latePull.commits = 2; },
     f => { f.pull.base.ref = "topic"; }, f => { f.pull.state = "closed"; },
     f => { f.event = "pull_request"; }, f => { f.policy.owner = {}; },
+    f => { delete f.policy.owner.source_identity; }, f => { f.policy.owner.source_identity = "raw-name-email"; },
   ]) await rejected(mutate);
   for (const stage of ["pull", "refresh", "repository", "central", "git", "commits", "open", "success", "pending",
     "governance/commit-author-identity.json", "scripts/fixtures/commit-author-identity-caller.yml", ".github/workflows/commit-author-identity.yml"]) {

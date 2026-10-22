@@ -261,6 +261,12 @@ PRs. External human contributions keep their existing PR and original
 authorship through their contributor-preserving flow, outside owner squash.
 The owner-only guard also inspects the complete head-bound source commit list;
 an owner-opened PR containing another contributor's commit cannot use this flow.
+The maintained identity policy requires GitHub's actual `User/777genius`
+association for both source author and committer; valid human display names and
+profile emails may differ from the preferred local Git identity. Raw owner names
+or email strings alone cannot prove ownership. Only the final generated squash
+may use the exact `User/web-flow`, `GitHub <noreply@github.com>` technical committer.
+Immutable consumer pins retain their original rule until a reviewed cutover.
 
 Keep the canonical Actions PR creation/approval permission explicitly false at
 the organization default and current repositories. Disabling creation may leave

@@ -196,24 +196,34 @@ waiver and does not weaken immutable action-reference enforcement.
 
 The maintained owner requirement is defined once in
 [`governance/commit-author-identity.json`](governance/commit-author-identity.json).
-Organization automation generates proposed changes with the exact local owner
-Git name/email. The human owner opens owner release PRs after inspecting the
-exact generated diff, head SHA and base SHA. An author-email merge flag cannot
-transfer PR authorship. Bot PRs must be replaced by a human-opened PR; rewriting
-an external human contribution as the owner is forbidden. Known Bot/GitHub
-and known Codex/OpenAI source commit authors are rejected. Owner source commits
-require both raw author and committer to be exactly `iliya <iliyazelenkog@gmail.com>`;
+Organization automation prefers the local owner Git identity
+`iliya <iliyazelenkog@gmail.com>` for generated changes. Owner source admission
+uses `owner.source_identity: github-user-association`: GitHub's REST commit
+response must associate **both author and committer** with the actual
+`User/777genius` account. Display names, including Cyrillic names, and alternate
+emails are allowed when both associations hold and both raw metadata records
+are valid human identities. Raw Bot/GitHub and known Codex/OpenAI names or emails
+remain forbidden. A raw `777genius` name or canonical owner email cannot prove
+ownership; unassociated canonical owner names also require both associations.
 GitHub/web-flow is not an owner source committer exception. External human
 contributions retain their original author and committer, including GitHub's
-technical committer. The generated final squash after merge has the owner's
-GitHub committer/display-name exception and is verified separately with `gh`.
+technical committer, through the contributor-preserving flow.
+
+The human owner opens owner release PRs after inspecting the exact generated
+diff, head SHA and base SHA. An author-email merge flag cannot transfer PR
+authorship. Bot PRs must be replaced by a human-opened PR; rewriting an external
+human contribution as the owner is forbidden. The generated final squash is
+verified separately with `gh`: its author must be associated with the owner and
+have valid human raw metadata; its committer must meet the same owner condition
+or the exact GitHub technical final-committer exception.
 
 The trusted reusable identity workflow reads GitHub metadata and inert caller
 bytes, never PR code. It checks every commit (paginated, at most 250; split larger
-PRs), preserves external human author metadata, and checks the exact owner
-name/email on owner-associated commits. Unassociated commits bearing the owner
-name also require that identity. This checks metadata, not cryptographic owner
-identity. It rejects Bot PR authors even when every source commit is owner-authored.
+PRs), preserves external human author metadata, and requires both owner account
+associations when either role claims owner identity. Mixed owner/foreign source
+roles fail closed. This verifies GitHub account association, not a cryptographic
+signature or proof that a human personally created the commit. It rejects Bot
+PR authors even when every source commit is owner-authored.
 During a checker run, a same-head Bot PR also blocks success on a human PR.
 GitHub commit statuses belong to a SHA, not a PR number: a Bot PR can reuse a
 previously green owner head, and GITHUB_TOKEN-created PR events are suppressed.
@@ -264,11 +274,32 @@ External human PRs retain their existing PR and attribution through the
 contributor-preserving flow; this owner guard refuses them.
 
 After merge the guard independently reads the actual PR and final commit,
-verifying merged state, owner author account, exact email and full supplied
-message/refs. GitHub's technical final committer and owner display name are
-allowed. A mismatch or transport failure is reported for inspection, never a
+verifying merged state, owner author account, valid human raw metadata and full
+supplied message/refs. The explicit merge email remains the preferred canonical
+email, while final admission accepts an associated owner profile email. A final
+owner committer needs the same account association and valid human raw metadata.
+The only technical final-committer exception is `User/web-flow` with raw
+`GitHub <noreply@github.com>`; that exception never applies to owner source
+commits. A mismatch or transport failure is reported for inspection, never a
 history rewrite or automatic retry. The guard neither grants checks nor bypasses
 or changes protection; a queued or otherwise unconfirmed merge is not success.
+
+The account-association implementation is a proposed successor, not a live
+cutover claim. Schema version 1 is retained so older immutable workflow pins can
+read the additive policy field; those pins continue enforcing their original
+raw name/email rule until explicitly upgraded. Both the current central identity
+workflow and the installed `docs-quality-source-successor-v2` authority protect
+inputs changed by this migration. Their existing checks are expected to reject
+a direct change to their own protected implementation/policy. A legitimate
+cutover requires a separately reviewed immutable successor source, real positive
+and protected-input negative qualification, and owner-admin ruleset readback:
+add each new required context before removing its predecessor, preserving all
+unrelated checks, App identities, strictness and no-bypass restrictions. The
+current GitHub connector has no ruleset-administration capability. Preparing or
+pushing this proposal cannot complete that administrator transition, and local
+passing tests cannot replace a required check or authorize a forged status.
+The [migration procedure](docs/commit-identity-account-association.md) records
+the concrete pending steps.
 
 The canonical `actions_workflow_permissions.can_approve_pull_request_reviews`
 target is explicitly `false` at the organization default and every current

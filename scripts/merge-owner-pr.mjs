@@ -46,6 +46,14 @@ function ownerPull(pull, options, owner) {
   assert.equal(pull.head?.sha, options.head, "Stale or unexpected PR head; inspect the current diff before retrying");
 }
 
+function validHumanMetadata(person) {
+  return person && typeof person.name === "string" && person.name.trim().length > 0 &&
+    !/[\p{Cc}\p{Zl}\p{Zp}]/u.test(person.name) && typeof person.email === "string" &&
+    /^[^\s@]+@[^\s@]+$/u.test(person.email) &&
+    !/\[bot\]|^(github|web-flow|codex|openai(?: codex)?)$/iu.test(person.name.trim()) &&
+    !/\[bot\]|^noreply@github\.com$|^(?:codex|openai)@(?:openai\.com|users\.noreply\.github\.com)$/iu.test(person.email);
+}
+
 function ownerCommits(pages, pull, options, owner) {
   assert.ok(Array.isArray(pages) && pages.length > 0 && pages.every(Array.isArray), "Incomplete source commit pages");
   const commits = pages.flat();
@@ -56,7 +64,7 @@ function ownerCommits(pages, pull, options, owner) {
   for (const commit of commits) {
     for (const role of ["author", "committer"]) {
       assert.ok(commit[role]?.type === "User" && commit[role].login === owner.login &&
-        commit.commit?.[role]?.name === "iliya" && commit.commit[role].email === owner.email,
+        validHumanMetadata(commit.commit?.[role]),
       "Owner squash requires owner-only source author and committer. Preserve external contributions with the contributor-preserving flow; never squash their attribution into owner identity");
     }
   }
@@ -66,7 +74,8 @@ async function mergeOwnerPull() {
   const options = inputs(process.argv.slice(2));
   const policy = JSON.parse(await readFile(new URL("../governance/commit-author-identity.json", import.meta.url), "utf8"));
   const owner = policy.owner;
-  assert.equal(owner?.login, "777genius", "Canonical policy must identify the human owner");
+  assert.ok(policy.schema_version === 1 && owner?.login === "777genius" &&
+    owner.source_identity === "github-user-association", "Canonical policy must identify the human owner association mode");
   assert.ok(typeof owner.email === "string" && /^[^\s@]+@[^\s@]+$/u.test(owner.email), "Invalid canonical owner email");
   const bytes = await readFile(options.bodyFile);
   const body = bytes.toString("utf8");
@@ -107,13 +116,13 @@ async function mergeOwnerPull() {
     const final = api(`${root}/commits/${after.merge_commit_sha}`);
     assert.equal(final.sha, after.merge_commit_sha, "Unexpected final commit SHA");
     assert.ok(final.author?.type === "User" && final.author.login === owner.login, "Final commit author account must be User/777genius");
-    assert.equal(final.commit?.author?.email, owner.email, "Final commit author email differs from canonical owner policy");
+    assert.ok(validHumanMetadata(final.commit?.author), "Final commit author requires valid non-Bot/non-Codex raw metadata");
     const committer = final.commit?.committer;
     const githubCommitter = final.committer?.type === "User" && final.committer.login === "web-flow" &&
       committer?.name === "GitHub" && committer.email === "noreply@github.com";
     const ownerCommitter = final.committer?.type === "User" && final.committer.login === owner.login &&
-      committer?.name === "iliya" && committer.email === owner.email;
-    assert.ok(githubCommitter || ownerCommitter, "Final commit committer must be the exact owner or GitHub web-flow identity");
+      validHumanMetadata(committer);
+    assert.ok(githubCommitter || ownerCommitter, "Final commit committer must be associated with the owner and have valid human metadata, or be the exact GitHub web-flow identity");
     assert.equal(typeof final.commit?.message, "string", "Final commit message is missing");
     assert.equal(messageWithoutTerminalNewlines(final.commit.message), messageWithoutTerminalNewlines(expectedMessage),
       "Final commit message/body bytes or issue references differ from the supplied message");

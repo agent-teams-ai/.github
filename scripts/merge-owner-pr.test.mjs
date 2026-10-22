@@ -132,12 +132,51 @@ test("owner-opened PR cannot erase external source authorship or admit a technic
     commit => { commit.author = { login: "alice", type: "User" }; commit.commit.author = { name: "Alice", email: "alice@example.org" }; },
     commit => { commit.committer = { login: "web-flow", type: "User" }; commit.commit.committer = { name: "GitHub", email: "noreply@github.com" }; },
     commit => { commit.commit.author.name = "Codex"; },
-    commit => { commit.commit.committer.email = "wrong@example.org"; },
+    commit => { commit.commit.committer.email = "codex@openai.com"; },
     commit => { commit.author = null; },
   ]) {
     const scenario = ownerScenario(); mutate(scenario.responses[sourceEndpoint][0]);
     const fake = transport(t, scenario);
     failed(fake.run(argsFor(fake)), /owner-only source author and committer.*contributor-preserving flow/u);
+    assert.equal(merges(fake.trace()).length, 0);
+  }
+});
+
+test("profile display names and alternate emails pass for both associated source roles and final owner roles", t => {
+  for (const finalOwnerCommitter of [false, true]) {
+    const scenario = ownerScenario();
+    const source = scenario.responses[sourceEndpoint][0];
+    source.commit.author = { name: "Илья Зеленко", email: "777genius@users.noreply.github.com" };
+    source.commit.committer = { name: "777genius", email: "owner-alternate@example.org" };
+    scenario.after[commitEndpoint].commit.author = structuredClone(source.commit.author);
+    if (finalOwnerCommitter) {
+      scenario.after[commitEndpoint].committer = owner;
+      scenario.after[commitEndpoint].commit.committer = structuredClone(source.commit.committer);
+    }
+    const fake = transport(t, scenario);
+    assert.equal(fake.run(argsFor(fake)).status, 0);
+    assert.equal(merges(fake.trace()).length, 1);
+  }
+});
+
+test("raw owner impersonation, absent or foreign associations and invalid metadata reject either source role", t => {
+  for (const role of ["author", "committer"]) for (const mutate of [
+    source => { source[role] = null; },
+    source => { source[role] = undefined; },
+    source => { source[role] = { type: "User", login: "alice" }; },
+    source => { source[role] = { type: "Bot", login: "777genius" }; },
+    source => { source.commit[role].name = "github-actions[bot]"; },
+    source => { source.commit[role].name = "OpenAI Codex"; },
+    source => { source.commit[role].email = "openai@users.noreply.github.com"; },
+    source => { source.commit[role] = null; },
+    source => { source.commit[role].name = "Илья\nInjected"; },
+    source => { source.commit[role].email = "owner@example.org "; },
+  ]) {
+    const scenario = ownerScenario();
+    scenario.responses[sourceEndpoint][0].commit[role].name = "777genius";
+    mutate(scenario.responses[sourceEndpoint][0]);
+    const fake = transport(t, scenario);
+    failed(fake.run(argsFor(fake)), /owner-only source author and committer/u);
     assert.equal(merges(fake.trace()).length, 0);
   }
 });
@@ -207,7 +246,7 @@ test("GitHub may omit terminal newlines but interior body and issue references r
   failed(negative.run(argsFor(negative)), /message\/body bytes or issue references/u);
 });
 
-test("final committer allows only the exact ordinary owner or GitHub technical identity", t => {
+test("final committer requires an associated human owner or the exact GitHub technical identity", t => {
   const ordinary = ownerScenario();
   ordinary.after[commitEndpoint].committer = owner;
   ordinary.after[commitEndpoint].commit.committer = { name: "iliya", email };
@@ -262,7 +301,9 @@ test("post-merge PR/commit, account, email or message drift fails with reconcili
     [scenario => { scenario.after[commitEndpoint].sha = head; }, /Unexpected final commit SHA/u],
     [scenario => { scenario.after[commitEndpoint].author = { login: "alice", type: "User" }; }, /Final commit author account/u],
     [scenario => { scenario.after[commitEndpoint].author = null; }, /Final commit author account/u],
-    [scenario => { scenario.after[commitEndpoint].commit.author.email = "wrong@example.org"; }, /Final commit author email/u],
+    [scenario => { scenario.after[commitEndpoint].commit.author.email = "codex@openai.com"; }, /Final commit author requires/u],
+    [scenario => { scenario.after[commitEndpoint].commit.author.name = "GitHub"; }, /Final commit author requires/u],
+    [scenario => { scenario.after[commitEndpoint].commit.author = null; }, /Final commit author requires/u],
     [scenario => { scenario.after[commitEndpoint].commit.message = subject + "\n\nlost references"; }, /message\/body bytes or issue references/u],
     [scenario => { scenario.after[commitEndpoint].commit.message = subject + "\n\n" + body.replace("\r\n", "\n"); }, /message\/body bytes or issue references/u],
     [scenario => { scenario.after[commitEndpoint].commit.message = "chore: unexpected subject\n\n" + body; }, /message\/body bytes or issue references/u],
