@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: agent-teams-ai/.github
-          ref: 40cb631a65c901cd2a761cc9694f3c35be18f54b
+          ref: 6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29
           path: central
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020

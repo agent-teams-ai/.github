@@ -151,9 +151,10 @@ do not substitute a manual success status, bypass or consumer policy override.
 Admission runtime publication also has two stages: first publish the reviewed
 checker source, then explicitly update the reusable wrapper's literal central
 checkout to that published immutable revision and review the resulting wrapper.
-The wrapper in this preparation still checks out
-`40cb631a65c901cd2a761cc9694f3c35be18f54b`, so it continues running the predecessor
-checker until that second stage. Consumers explicitly adopt the final wrapper
+This wrapper now checks out the published, independently reviewed checker source
+`6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29`, tree
+`c2a03943c9b8e3071e4cc4534614b4f8f4618d96`, completing that explicit second
+publication stage. This does not activate the live identity policy. Consumers explicitly adopt the final wrapper
 revision and association caller together, then obtain their own hosted and
 required-check evidence. Missing callers remain `incomplete` and fail closed;
 there is no pending-identity exception that makes them pass.
