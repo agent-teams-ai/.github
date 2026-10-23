@@ -46,7 +46,18 @@ function ownerPull(pull, options, owner) {
   assert.equal(pull.head?.sha, options.head, "Stale or unexpected PR head; inspect the current diff before retrying");
 }
 
-function ownerCommits(pages, pull, options, owner) {
+function ownerNames(owner) {
+  assert.equal(owner.name, "iliya", "Canonical policy must retain the preferred owner name");
+  const aliases = Object.hasOwn(owner, "name_aliases") ? owner.name_aliases : [];
+  assert.ok(Array.isArray(aliases) && aliases.every(name => typeof name === "string" &&
+    name.length > 0 && name === name.trim() && !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u.test(name)),
+  "Owner name aliases must be an array of ordinary nonempty names without surrounding whitespace or control characters");
+  const names = [owner.name, ...aliases];
+  assert.equal(new Set(names).size, names.length, "Owner name aliases must be unique and must not repeat the canonical name");
+  return names;
+}
+
+function ownerCommits(pages, pull, options, owner, names) {
   assert.ok(Array.isArray(pages) && pages.length > 0 && pages.every(Array.isArray), "Incomplete source commit pages");
   const commits = pages.flat();
   assert.ok(Number.isSafeInteger(pull.commits) && pull.commits > 0 && pull.commits <= 250 &&
@@ -56,7 +67,7 @@ function ownerCommits(pages, pull, options, owner) {
   for (const commit of commits) {
     for (const role of ["author", "committer"]) {
       assert.ok(commit[role]?.type === "User" && commit[role].login === owner.login &&
-        commit.commit?.[role]?.name === "iliya" && commit.commit[role].email === owner.email,
+        names.includes(commit.commit?.[role]?.name) && commit.commit[role].email === owner.email,
       "Owner squash requires owner-only source author and committer. Preserve external contributions with the contributor-preserving flow; never squash their attribution into owner identity");
     }
   }
@@ -68,6 +79,7 @@ async function mergeOwnerPull() {
   const owner = policy.owner;
   assert.equal(owner?.login, "777genius", "Canonical policy must identify the human owner");
   assert.ok(typeof owner.email === "string" && /^[^\s@]+@[^\s@]+$/u.test(owner.email), "Invalid canonical owner email");
+  const names = ownerNames(owner);
   const bytes = await readFile(options.bodyFile);
   const body = bytes.toString("utf8");
   assert.ok(Buffer.from(body, "utf8").equals(bytes) && !body.includes("\0"), "Body file must be valid UTF-8 without NUL; bytes will not be normalized");
@@ -89,7 +101,7 @@ async function mergeOwnerPull() {
     assert.ok(Number.isSafeInteger(before.commits) && before.commits > 0 && before.commits <= 250,
       "Source commit count must be known and between 1 and 250");
     const pages = JSON.parse(gh(["api", "--hostname", "github.com", "--method", "GET", "--paginate", "--slurp", `${endpoint}/commits?per_page=100`]));
-    ownerCommits(pages, before, options, owner);
+    ownerCommits(pages, before, options, owner, names);
     const ready = api(endpoint);
     ownerPull(ready, options, owner);
     assert.ok(ready.base?.ref === before.base.ref && ready.base.sha === before.base.sha,
@@ -112,7 +124,7 @@ async function mergeOwnerPull() {
     const githubCommitter = final.committer?.type === "User" && final.committer.login === "web-flow" &&
       committer?.name === "GitHub" && committer.email === "noreply@github.com";
     const ownerCommitter = final.committer?.type === "User" && final.committer.login === owner.login &&
-      committer?.name === "iliya" && committer.email === owner.email;
+      names.includes(committer?.name) && committer.email === owner.email;
     assert.ok(githubCommitter || ownerCommitter, "Final commit committer must be the exact owner or GitHub web-flow identity");
     assert.equal(typeof final.commit?.message, "string", "Final commit message is missing");
     assert.equal(messageWithoutTerminalNewlines(final.commit.message), messageWithoutTerminalNewlines(expectedMessage),
