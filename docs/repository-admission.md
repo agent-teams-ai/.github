@@ -99,9 +99,10 @@ classification obligations.
    The checker renders to stdout only; it does not write, commit, install or
    administer GitHub. Use a reviewed new destination if redirecting stdout.
    Also install the exact central identity caller through
-   [commit identity onboarding](#commit-identity-onboarding), retaining its
-   qualified `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` pin until that owning
-   route publishes an explicitly reviewed successor.
+   [commit identity onboarding](#commit-identity-onboarding). This checker
+   successor requires the reviewed account-association implementation
+   `1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0`; it rejects the predecessor
+   raw-name pin. Read the activation boundary below before installing it.
 
 6. Check the inert consumer configuration from the central checkout:
 
@@ -129,6 +130,33 @@ Docs Protocol admission, executable-specification registration, hosted workflow
 availability/success or remote required-check enforcement. Follow the existing
 Docs admission contract below and the owning qualification ledgers for those
 separate claims; do not fabricate a qualified repository record.
+
+### Account-association successor activation
+
+The checker source now recognizes the exact identity implementation reviewed in
+[central PR #380](https://github.com/agent-teams-ai/.github/pull/380), commit
+`1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0`. The shared caller template is
+unchanged. Existing immutable admission runtimes retain their earlier identity
+pin; publishing this source does not upgrade their behavior or any consumer.
+
+This is preparation, not activation. At this delivery's observation, central
+main still lacks `owner.source_identity: github-user-association`. The reviewed
+identity workflow reads that live policy and fails without the field. Its
+protected-source successor qualification, owner-admin required-check transition,
+central merge and installed-main verification must complete before consumer
+activation. A rendered caller or `configured_not_qualified` result proves none
+of those steps. Retain every predecessor protection until its reviewed cutover;
+do not substitute a manual success status, bypass or consumer policy override.
+
+Admission runtime publication also has two stages: first publish the reviewed
+checker source, then explicitly update the reusable wrapper's literal central
+checkout to that published immutable revision and review the resulting wrapper.
+The wrapper in this preparation still checks out
+`40cb631a65c901cd2a761cc9694f3c35be18f54b`, so it continues running the predecessor
+checker until that second stage. Consumers explicitly adopt the final wrapper
+revision and association caller together, then obtain their own hosted and
+required-check evidence. Missing callers remain `incomplete` and fail closed;
+there is no pending-identity exception that makes them pass.
 
 ### Independent inventory backstop
 
@@ -391,10 +419,11 @@ sources of rules and caller bytes are the
 Central itself has a separately bootstrapped base-relative caller and is refused
 by this route. No consumer copies policy or receives a second template.
 
-1. Prepare the caller from a reviewed central checkout:
+1. Prepare the association caller from the reviewed successor checkout, subject
+   to the [activation boundary](#account-association-successor-activation):
 
    ```sh
-   node scripts/onboard-commit-author-identity.mjs render --revision 6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6
+   node scripts/onboard-commit-author-identity.mjs render --revision 1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0
    ```
 
    Rendering only prints the exact fixture with its placeholder replaced. It
@@ -406,8 +435,8 @@ by this route. No consumer copies policy or receives a second template.
    creates repositories, or opens/merges PRs. The first installation cannot
    protect its own bootstrap PR.
 
-2. Inspect the write-free remote plan from this central checkout, using authorized
-   `gh` access:
+2. After the central policy/implementation transition, inspect the write-free
+   remote plan from the matching central checkout, using authorized `gh` access:
 
    ```sh
    node scripts/onboard-commit-author-identity.mjs --repo agent-teams-ai/NEW_REPOSITORY
@@ -429,9 +458,12 @@ by this route. No consumer copies policy or receives a second template.
    template and workflow must byte-match unchanged regular Git files in this
    checkout. The installed default-head caller must exactly match the template
    and pin an accessible regular central workflow with the current trusted
-   implementation bytes. Exact pins need a retained, accessible commit: the
-   retained `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` source is already qualified;
-   recheck its availability and byte compatibility rather than switching to `main`.
+   implementation bytes. Exact pins need a retained, accessible commit and the
+   owning implementation's qualification. The earlier
+   `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` qualification covers its raw-name
+   behavior only; it does not qualify the association successor. Recheck the
+   selected revision's availability, byte compatibility and live admission
+   evidence rather than switching to `main` or treating review as activation.
 
    Organization Actions PR creation/approval must already be explicitly false;
    the command never changes organization settings. It may send only repository

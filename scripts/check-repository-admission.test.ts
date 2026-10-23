@@ -77,6 +77,28 @@ test("complete explicit SDK bootstrap reports configuration only without executi
   assert.ok(result.inspected_paths.includes("tsconfig.base.json"));
 });
 
+test("association successor requires its reviewed caller and rejects predecessor or unreviewed identity pins", async () => {
+  const path = ".github/workflows/commit-author-identity.yml";
+  const template = await readFile(new URL("./fixtures/commit-author-identity-caller.yml", import.meta.url), "utf8");
+  const reviewed = "1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0";
+  const { files, source } = await fixture();
+  files.set(path, template.replaceAll("CENTRAL_REVISION", reviewed));
+  const accepted = await checkRepositoryAdmission(source);
+  assert.deepEqual(accepted.issues, []);
+  assert.equal(accepted.status, "configured_not_qualified");
+  for (const pin of ["6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6", revision, "0".repeat(40), "main"]) {
+    files.set(path, template.replaceAll("CENTRAL_REVISION", pin));
+    const rejected = await checkRepositoryAdmission(source);
+    assert.equal(rejected.status, "incomplete", pin);
+    assert.equal(rejected.guide, BOOTSTRAP_GUIDE);
+    assert.ok(rejected.issues.some(issue => issue.path === path && issue.message.includes("trusted implementation pin")), pin);
+  }
+  files.delete(path);
+  const absent = await checkRepositoryAdmission(source);
+  assert.equal(absent.status, "incomplete");
+  assert.ok(absent.issues.some(issue => issue.path === path && issue.message.includes("missing")));
+});
+
 test("missing root foundation and wholly absent admission caller fail with the canonical guide", async () => {
   const { files, source } = await fixture();
   files.delete("foundation.config.yaml");
