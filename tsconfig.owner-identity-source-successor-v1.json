@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "include": [
+    "scripts/owner-identity-source-successor-v1.ts",
+    "scripts/owner-identity-source-successor-v1.test.ts"
+  ]
+}
