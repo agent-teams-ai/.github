@@ -19,3 +19,20 @@ test("reports structural and lifecycle drift as an actionable diff", () => {
   assert.deepEqual(drift.structuralChanges.map(({ field }) => field), ["default_branch", "is_fork", "fork_parent"]);
   assert.deepEqual(repositoryInventoryDrift([], inventory, policy).absentFromOrganization, ["agent-teams-ai/current"]);
 });
+
+test("individual registrations join the drift view without hiding other drift or claiming a new census", () => {
+  const registration = {
+    inventory: { ...inventory.repositories[0], repository: "agent-teams-ai/payments-sdk", id: 2, created_at: "2026-10-19T19:00:14Z" },
+    docs_protocol: { ...policy.repositories[0], repository: "agent-teams-ai/payments-sdk", repository_id: 2 },
+  };
+  const scope = { repositories: [registration] };
+  const payment = { ...live[0], full_name: registration.inventory.repository, id: 2, created_at: registration.inventory.created_at };
+  assert.deepEqual(assertRepositoryInventoryCurrent([...live, payment], inventory, policy, scope),
+    { missingFromSnapshot: [], absentFromOrganization: [], structuralChanges: [], missingClassification: [] });
+  assert.deepEqual(repositoryInventoryDrift(live, inventory, policy, scope).absentFromOrganization, [payment.full_name]);
+  const drift = repositoryInventoryDrift([{ ...live[0], visibility: "private" }, payment,
+    { ...payment, id: 3, full_name: "agent-teams-ai/another" }], inventory, policy, scope);
+  assert.equal(drift.structuralChanges[0].field, "visibility");
+  assert.deepEqual(drift.missingFromSnapshot, ["agent-teams-ai/another"]);
+  assert.equal(inventory.repositories.length, 1, "the historical snapshot is never mutated by projection");
+});
