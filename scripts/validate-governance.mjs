@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import {
   loadJson,
+  loadRepositoryRegistrationScope,
   validateActionsPolicy,
   validateCodeSecurityDefaults,
   validateDocsProtocolPolicy,
@@ -45,7 +46,8 @@ validateDocsProtocolCompatibilitySnapshot(
 );
 validateDocsQualifiedCohorts(docsCohorts, docsCohortsSchema);
 validateDocsProtocolExceptions(docsExceptions, docsExceptionsSchema);
-validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol);
+const registrations = await loadRepositoryRegistrationScope({ inventory, ledger, docsProtocol });
+validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol, registrations);
 validateDocsGovernanceReferences(docsCohorts, docsExceptions, docsProtocol, security);
 
 console.log("Governance verified: inventory, ledgers, security defaults, Actions, Docs Cohorts, exceptions, and documentation protocol admission.");

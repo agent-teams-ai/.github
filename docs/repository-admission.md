@@ -16,7 +16,7 @@ first reviewed bootstrap. SDKs, integrations and libraries need feature
 ownership for their real capabilities just as services do. Choose the appropriate
 module role; do not substitute an SDK exemption, empty scaffolding or a package
 installation for adoption. Existing repositories enter this route by explicit
-owner opt-in; this requirement does not initiate a fleet migration or rewrite
+owner opt-in or a reviewed central registration requiring full FMS; this requirement does not initiate a fleet migration or rewrite
 accepted decisions or immutable standards.
 
 The organization owns this bootstrap policy and its
@@ -134,7 +134,9 @@ separate claims; do not fabricate a qualified repository record.
 
 The existing six-hour, read-only organization inventory audit also reads
 immutable default-branch Git trees and bounded blobs for new repositories and
-explicit older opt-ins. It finds a wholly missing caller without requiring that
+explicit older opt-ins, including the canonical pending registration scope. A
+centrally registered repository remains mandatory by immutable repository ID
+when its caller and package opt-in marker both disappear. It finds a wholly missing caller without requiring that
 caller to have run. It reports configuration failures alongside inventory drift,
 including unsupported stacks pending an adapter. It never executes consumer
 files or modifies consumer policy, inventory or qualification records. A

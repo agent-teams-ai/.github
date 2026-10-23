@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
 import Ajv2020 from "ajv/dist/2020.js";
+import { parseDocument } from "yaml";
 
 function assert(condition, message) {
   if (!condition) {throw new Error(message);}
@@ -12,8 +13,9 @@ function isControlCodePoint(character) {
   return codePoint <= 0x1F || codePoint === 0x7F;
 }
 
-function validateSchema(value, schema, label) {
+function validateSchema(value, schema, label, relatedSchemas = []) {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
+  for (const related of relatedSchemas) {ajv.addSchema(related);}
   const validate = ajv.compile(schema);
   if (!validate(value)) {
     const details = validate.errors
@@ -486,6 +488,102 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
   );
 }
 
+/** One current, pending-only registration reader. The complete historical
+ * snapshot and qualification ledger remain independently validated authorities. */
+export function parseRepositoryRegistrationJson(source) {
+  assert(Buffer.byteLength(source) <= 1024 * 1024, "Registration supplement exceeds its bounded JSON size.");
+  const value = JSON.parse(source);
+  const document = parseDocument(source, { uniqueKeys: true });
+  assert(document.errors.length === 0, "Registration supplement JSON must not contain duplicate record keys.");
+  return value;
+}
+
+export function validateRepositoryRegistrationSupplements(registrations, schema, context) {
+  const { inventory, ledger, docsProtocol, inventorySchema, docsProtocolSchema } = context;
+  validateSchema(registrations, schema, "Repository registration supplements", [inventorySchema, docsProtocolSchema]);
+  assert(registrations.complete_inventory_snapshot_revision === inventory.snapshot_revision &&
+    registrations.historical_executable_ledger_revision === ledger.ledger_revision &&
+    registrations.docs_policy_snapshot_revision === docsProtocol.snapshot_revision,
+  "Registration supplement must bind the exact historical inventory, ledger and Docs policy basis.");
+  const names = new Set(inventory.repositories.map(record => record.repository));
+  const ids = new Set(inventory.repositories.map(record => record.id));
+  const ledgerNames = new Set(ledger.repositories.map(record => record.repository));
+  const ledgerIds = new Set(ledger.repositories.map(record => record.repository_id));
+  const docsNames = new Set(docsProtocol.repositories.map(record => record.repository));
+  const docsIds = new Set(docsProtocol.repositories.map(record => record.repository_id));
+  let latestObservation = "";
+  for (const registration of registrations.repositories) {
+    const record = registration.inventory;
+    const source = registration.source_change;
+    const docs = registration.docs_protocol;
+    const fms = registration.feature_module_standard;
+    assert(/^agent-teams-ai\/[A-Za-z0-9_.-]+$/u.test(record.repository),
+      "Registration repository must be one canonical GitHub organization/repository identity.");
+    assert(!names.has(record.repository) && !ids.has(record.id) &&
+      !ledgerNames.has(record.repository) && !ledgerIds.has(record.id) &&
+      !docsNames.has(record.repository) && !docsIds.has(record.id),
+    "Registration supplement identity collides with another registration or historical authority.");
+    names.add(record.repository); ids.add(record.id);
+    assert(!record.archived && !record.is_fork && record.fork_parent === null,
+      "Pending registration v1 supports active owned original repositories only.");
+    assert(Number.isFinite(Date.parse(registration.observed_at)) &&
+      new Date(registration.observed_at).toISOString() === registration.observed_at.replace(/Z$/u, ".000Z") &&
+      Number.isFinite(Date.parse(record.created_at)) &&
+      new Date(record.created_at).toISOString() === record.created_at.replace(/Z$/u, ".000Z") &&
+      record.created_at <= registration.observed_at &&
+      record.created_at.slice(0, 10) > ledger.snapshot_date &&
+      registration.observed_at.slice(0, 10) >= inventory.observed_at &&
+      registration.observed_at <= (context.asOf ?? new Date().toISOString()),
+    "Registration observation must be valid, dated after creation and outside the historical ledger snapshot, never in the future.");
+    latestObservation = [latestObservation, registration.observed_at.slice(0, 10)].toSorted().at(-1);
+    assert(registration.metadata_endpoint === `https://api.github.com/repos/${record.repository}` &&
+      source.repository === record.repository &&
+      source.pull_request_url === `https://github.com/${record.repository}/pull/${source.pull_request_number}`,
+    "Registration metadata and source change must belong to the exact registered repository.");
+    const paths = source.entries.map(entry => entry.path);
+    assert(new Set(paths).size === paths.length && paths.every(isCanonicalRepositoryPath) &&
+      ["AGENTS.md", "README.md", "package.json", fms.profile_path, fms.adoption_decision_path]
+        .every(path => paths.includes(path)),
+    "Registration source coordinates must uniquely cover owner routes, package, FMS profile and adoption decision.");
+    assert(docs.repository === record.repository && docs.repository_id === record.id &&
+      docs.governance_ownership === "organization_owned" && docs.repository_lifecycle === "active" &&
+      docs.source_provenance.kind === "original" && docs.source_provenance.parent_repository === null &&
+      docs.docs_role === "pending_classification" && docs.admission_status === "pending_classification" &&
+      docs.classification_evidence?.decision === "pending_onboarding" &&
+      docs.classification_evidence.observed_revision === source.observed_head &&
+      docs.classification_evidence.evidence_paths.every(path => paths.includes(path)),
+    "Registration Docs classification must remain pending and bind the same immutable source observation.");
+  }
+  assert(registrations.registration_revision.startsWith(`${latestObservation}.`),
+    "Registration revision date must match its latest individual observation; it is not a census date.");
+  const docsView = {
+    ...docsProtocol,
+    admission: { ...docsProtocol.admission,
+      expected_repository_count: docsProtocol.admission.expected_repository_count + registrations.repositories.length,
+      owned_repository_count: docsProtocol.admission.owned_repository_count + registrations.repositories.length },
+    repositories: [...docsProtocol.repositories, ...registrations.repositories.map(record => record.docs_protocol)],
+  };
+  // Reuse every existing Docs shape invariant. No admitted/candidate/default-
+  // branch evidence is synthesized by the registration projection.
+  validateDocsProtocolPolicy(docsView, docsProtocolSchema);
+  return registrations;
+}
+
+export async function loadRepositoryRegistrationScope(context) {
+  const [source, schema, inventorySchema, docsProtocolSchema, ledgerSchema] = await Promise.all([
+    readFile("governance/repository-registration-supplements.json", "utf8"),
+    loadJson("governance/repository-registration-supplements.schema.json"),
+    loadJson("governance/organization-repository-inventory.schema.json"),
+    loadJson("governance/docs-protocol-policy-v2.schema.json"),
+    loadJson("governance/executable-spec-qualification.schema.json"),
+  ]);
+  validateOrganizationRepositoryInventory(context.inventory, inventorySchema);
+  validateExecutableSpecLedger(context.ledger, ledgerSchema);
+  validateDocsProtocolPolicy(context.docsProtocol, docsProtocolSchema);
+  return validateRepositoryRegistrationSupplements(parseRepositoryRegistrationJson(source), schema,
+    { ...context, inventorySchema, docsProtocolSchema });
+}
+
 export function validateDocsProtocolPolicy(policy, schema) {
   validateSchema(policy, schema, "Documentation protocol policy");
   assert(
@@ -800,7 +898,7 @@ export function validateActionsPolicy(policy, schema) {
   assert(new Set(pending).size === pending.length, "Pending Actions repositories must be unique.");
 }
 
-export function validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol) {
+export function validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol, registrations) {
   const organizationApi = `https://api.github.com/orgs/${inventory.organization}`;
   assert(
     security.organization === inventory.organization &&
@@ -818,11 +916,11 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       docsProtocol.observed_at === inventory.observed_at,
     "Documentation protocol policy must reference the exact organization inventory snapshot.",
   );
-  const inventoryByRepository = new Map(
-    inventory.repositories.map((record) => [record.repository, record]),
-  );
-  const activeInventory = inventory.repositories.filter(({ archived }) => !archived);
-  const archivedInventory = inventory.repositories.filter(({ archived }) => archived);
+  const inventoryRecords = [...inventory.repositories, ...(registrations?.repositories.map(record => record.inventory) ?? [])];
+  const docsRecords = [...docsProtocol.repositories, ...(registrations?.repositories.map(record => record.docs_protocol) ?? [])];
+  const inventoryByRepository = new Map(inventoryRecords.map((record) => [record.repository, record]));
+  const activeInventory = inventoryRecords.filter(({ archived }) => !archived);
+  const archivedInventory = inventoryRecords.filter(({ archived }) => archived);
   const deletedProtocolById = new Map(docsProtocol.repositories
     .filter(({ repository_lifecycle: lifecycle }) => lifecycle === "deleted")
     .map((record) => [record.repository_id, record]));
@@ -864,7 +962,7 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     [...historicalLedger.values()].every((record) => known.has(record.repository) ||
       deletedProtocolById.get(record.repository_id)?.repository === record.repository),
   "Ledger scope must exactly match repository identities created by its dated organization snapshot.");
-  const activeDocsProtocol = docsProtocol.repositories.filter(
+  const activeDocsProtocol = docsRecords.filter(
     ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
   );
   const docsProtocolById = new Map(
