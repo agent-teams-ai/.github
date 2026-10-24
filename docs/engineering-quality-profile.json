@@ -9,11 +9,13 @@
     "tooling": [
       "scripts/**/*.mjs",
       "scripts/**/*.mts",
+      "scripts/**/*.ts",
       "tools/feature-module-standard/check.mjs"
     ],
     "tests": [
       "scripts/**/*.test.mjs",
       "scripts/**/*.test.mts",
+      "scripts/**/*.test.ts",
       "tools/feature-module-standard/check.test.mjs"
     ]
   },
@@ -29,11 +31,12 @@
       "tooling"
     ],
     "includedExtensions": [
-      ".mts"
+      ".mts",
+      ".ts"
     ]
   },
   "toolchain": {
-    "node": "24.21.0",
+    "node": "26.11.1",
     "pnpm": "11.18.0",
     "oxlint": "1.85.0"
   },
@@ -45,27 +48,16 @@
     "entryFiles": [
       "scripts/qualification-input-proof.mts",
       "scripts/qualification-input-proof.test.mts",
-      "scripts/node-compatibility-package-ownership.test.mts",
-      "scripts/assert-node-runtime.mts",
-      "scripts/check-node-compatibility.mts",
-      "scripts/check-node-compatibility.test.mts",
       "scripts/check-docs-verifier-authority.mts",
-      "scripts/check-docs-verifier-authority.test.mts"
+      "scripts/check-docs-verifier-authority.test.mts",
+      "scripts/npm-publish.test.mts",
+      "scripts/quality-process.ts",
+      "scripts/quality-process.test.ts",
+      "scripts/run-governance-tests.ts",
+      "scripts/run-governance-tests.test.ts",
+      "scripts/validate-renovate.ts",
+      "scripts/validate-renovate.test.ts",
+      "scripts/validate-renovate-abi.probe.ts"
     ]
-  },
-  "passiveHelpers": [
-    {
-      "id": "node-compatibility-tooling",
-      "owner": "governance-tooling",
-      "classification": "passive-parser-metadata",
-      "packageRoot": "tools/node-compatibility-tooling",
-      "sourceBoundary": "node-compatibility-tooling",
-      "compositionCapability": false,
-      "files": [
-        "tools/node-compatibility-tooling/package.json",
-        "tools/node-compatibility-tooling/pnpm-workspace.yaml",
-        "tools/node-compatibility-tooling/pnpm-lock.yaml"
-      ]
-    }
-  ]
+  }
 }

@@ -10,6 +10,15 @@
       "git_blob_sha": "d0bfff2033faf544fe65268c1dcdfd524d093015",
       "sha256": "851653f96643cf0466b67ab22963661976b00de44840fa3144a48a8c054f95fa",
       "profile_contract": "adoption-contract"
+    },
+    {
+      "version": "v1.1",
+      "status": "published",
+      "published_at": "2026-10-16",
+      "path": "docs/architecture/feature-module-standard/v1.1.md",
+      "git_blob_sha": "bd949a9a670862fea851a7791fce772fdef3b4fc",
+      "sha256": "cfa088ef7396139554fe5e3bcc839271b23299c6b60c569a3a7f1cd7c9f0bc6c",
+      "profile_contract": "adoption-contract"
     }
   ]
 }

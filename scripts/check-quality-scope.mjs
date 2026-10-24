@@ -10,167 +10,405 @@ const execFileAsync = promisify(execFile);
 const root = new URL("../", import.meta.url);
 const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"];
 const FOUNDATION_PRESET = "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json";
-const TYPED_FILES = [
-  "scripts/qualification-input-proof.mts",
-  "scripts/qualification-input-proof.test.mts",
-  "scripts/node-compatibility-package-ownership.test.mts",
-  "scripts/assert-node-runtime.mts",
-  "scripts/check-node-compatibility.mts",
-  "scripts/check-node-compatibility.test.mts",
-  "scripts/check-docs-verifier-authority.mts",
-  "scripts/check-docs-verifier-authority.test.mts",
-];
 const EXPECTED_SCRIPTS = {
   precheck: "node scripts/check-quality-scope.mjs",
-  check: "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && pnpm node:compatibility:install && node scripts/check-node-compatibility.mts && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
-  "node:compatibility:install": "pnpm --dir tools/node-compatibility-tooling install --frozen-lockfile --ignore-scripts --ignore-pnpmfile --config.engine-strict=true --config.strict-peer-dependencies=true",
+  check: "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
   "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
   "quality:lint": "node scripts/run-quality-lint.mjs",
   "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
   "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
-  "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs scripts/node-compatibility-package-ownership.test.mts",
+  "test:critical": "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
+  "renovate:validate": "pnpm --dir tools/renovate-validation run validate",
   "quality:typecheck": "tsc --project tsconfig.tooling.json",
   "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
-  test: "node --test scripts/*.test.mjs scripts/*.test.mts tools/feature-module-standard/check.test.mjs",
+  test: "node scripts/run-governance-tests.ts",
 };
+
 const isTrackedSource = relativePath => SOURCE_SUFFIXES.some(suffix => relativePath.endsWith(suffix));
 
 export function classifySourcePath(relativePath) {
   const normalized = relativePath.replaceAll("\\", "/");
-  if (!isTrackedSource(normalized)) { return "non-source"; }
-  if (/^scripts\/[^/]+\.test\.(?:mjs|mts)$/u.test(normalized) || normalized === "tools/feature-module-standard/check.test.mjs") { return "test"; }
-  if (/^scripts\/[^/]+\.(?:mjs|mts)$/u.test(normalized) || normalized === "tools/feature-module-standard/check.mjs") { return "tooling"; }
+  if (!isTrackedSource(normalized)) {return "non-source";}
+  if (/^scripts\/[^/]+\.test\.(?:mjs|mts|ts)$/u.test(normalized) ||
+      normalized === "tools/feature-module-standard/check.test.mjs") {return "test";}
+  if (/^scripts\/[^/]+\.(?:mjs|mts|ts)$/u.test(normalized) ||
+      normalized === "tools/feature-module-standard/check.mjs") {return "tooling";}
   return null;
 }
+
 export function classifyTrackedPaths(trackedPaths) {
-  const classified = [], unclassified = [];
+  const classified = [];
+  const unclassified = [];
   for (const relativePath of [...new Set(trackedPaths)].toSorted()) {
     const role = classifySourcePath(relativePath);
-    if (role === null) { unclassified.push(relativePath); }
-    else if (role !== "non-source") { classified.push({ path: relativePath, role }); }
+    if (role === null) {unclassified.push(relativePath);}
+    else if (role !== "non-source") {classified.push({ path: relativePath, role });}
   }
   return { classified, unclassified };
 }
+
 export function deriveLintPaths(census, profile) {
-  return census.classified.filter(entry => profile.lint.includedRoles.includes(entry.role) ||
-    profile.lint.includedExtensions.some(suffix => entry.path.endsWith(suffix))).map(entry => entry.path).toSorted();
+  return census.classified
+    .filter(entry => profile.lint.includedRoles.includes(entry.role) ||
+      profile.lint.includedExtensions.some(suffix => entry.path.endsWith(suffix)))
+    .map(entry => entry.path)
+    .toSorted();
 }
+
 function assertLintPolicy(config) {
   assert.deepEqual(Object.keys(config).toSorted(), ["$schema", "extends", "options"].toSorted(),
     "Oxlint config must contain only schema, one public preset, and suppression options");
   assert.equal(config.$schema, "./node_modules/oxlint/configuration_schema.json");
   assert.deepEqual(config.extends, [FOUNDATION_PRESET], "Foundation public Node preset changed");
-  assert.deepEqual(config.options, { reportUnusedDisableDirectives: "error", respectEslintDisableDirectives: false });
+  assert.deepEqual(config.options, {
+    reportUnusedDisableDirectives: "error",
+    respectEslintDisableDirectives: false,
+  });
 }
+
 function assertWorkflow(workflowText) {
-  const steps = parseYaml(workflowText)?.jobs?.check?.steps;
+  const workflow = parseYaml(workflowText);
+  const steps = workflow?.jobs?.check?.steps;
   assert.ok(Array.isArray(steps), "CI check job steps are missing");
-  assert.equal(steps.filter(step => step?.with?.["node-version-file"] === ".node-version").length, 1,
-    "CI must select the owning Node test tooling pin");
+  assert.equal(steps.filter(step => step?.with?.["node-version-file"] === ".node-version").length, 1, "CI must select the owning Node test tooling pin");
   const requiredSteps = steps.filter(step => step?.run === "pnpm check");
   assert.equal(requiredSteps.length, 1, "CI check job must contain exactly one pnpm check step");
-  assert.deepEqual(requiredSteps[0], { run: "pnpm check" }, "pnpm check step cannot be conditional or continue on error");
+  assert.deepEqual(requiredSteps[0], { run: "pnpm check" },
+    "pnpm check step cannot be conditional or continue on error");
+  assert.deepEqual(steps.filter(step => typeof step?.run === "string" && step.run.includes("tools/renovate-validation")), [
+    { name: "Install the isolated Node 24 Renovate tool without lifecycle scripts", run: "pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts" },
+    { name: "Build the allowed native validator dependency with managed Node 24", run: "pnpm --dir tools/renovate-validation run build:native" },
+  ], "CI must explicitly provision Renovate before checks without building its native dependency under Node 26");
 }
-export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig }) {
-  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.7.2", "Foundation dependency must use the exact released pin");
+
+export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig, workspacePolicy, renovateTool }) {
+  assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.7.2",
+    "Foundation dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint dependency must use the exact pin");
+  assert.equal(manifest.devDependencies?.["node-or-bun"], "0.2.1", "process runtime dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.typescript, "7.0.2", "tooling compiler must use the exact public pin");
   assert.equal(manifest.devDependencies?.["@types/node"], "24.19.1", "tooling types must stay in the Node 24 family");
-  for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) { assert.equal(manifest.scripts?.[name], command, `${name} route must stay canonical`); }
+  for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) {
+    assert.equal(manifest.scripts?.[name], command, `${name} route must stay canonical`);
+  }
   assert.deepEqual(profile, {
-    schemaVersion: "consumer-quality-profile-v1", status: "active-foundation", languages: ["javascript", "typescript"],
-    sourceRoots: {
-      tooling: ["scripts/**/*.mjs", "scripts/**/*.mts", "tools/feature-module-standard/check.mjs"],
-      tests: ["scripts/**/*.test.mjs", "scripts/**/*.test.mts", "tools/feature-module-standard/check.test.mjs"],
-    },
-    typedCoverage: false, requiredRoute: "pnpm check",
-    foundation: { version: "1.7.2", publicPreset: FOUNDATION_PRESET },
-    lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts"] },
-    typedTooling: { configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1", entryFiles: TYPED_FILES },
-    toolchain: { node: "24.21.0", pnpm: "11.18.0", oxlint: "1.85.0" },
-    passiveHelpers: [{
-      id: "node-compatibility-tooling", owner: "governance-tooling", classification: "passive-parser-metadata",
-      packageRoot: "tools/node-compatibility-tooling", sourceBoundary: "node-compatibility-tooling", compositionCapability: false,
-      files: ["tools/node-compatibility-tooling/package.json", "tools/node-compatibility-tooling/pnpm-workspace.yaml", "tools/node-compatibility-tooling/pnpm-lock.yaml"],
-    }],
-  }, "quality profile changed");
-  assert.deepEqual(toolingTsconfig, {
-    compilerOptions: {
-      target: "ES2024", module: "NodeNext", moduleResolution: "NodeNext", strict: true, noEmit: true,
-      allowImportingTsExtensions: true, verbatimModuleSyntax: true, erasableSyntaxOnly: true,
-      noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true, types: ["node"],
-    },
-    include: TYPED_FILES,
-  }, "strict compiler scope and settings must stay exact");
-  assert.deepEqual(requiredTests, {
-    schemaVersion: 1,
-    required: [
-      { file: "scripts/check-quality-scope.test.mjs", names: ["actual repository adopts the Foundation preset through the canonical route"], kind: "test" },
-      { file: "scripts/check-quality-scope.test.mjs", names: ["actual tracked source census distinguishes tooling, tests, and authority data"], kind: "test" },
-      { file: "scripts/check-quality-scope.test.mjs", names: ["actual derived tooling paths exactly match Oxlint debug selection"], kind: "test" },
-      { file: "tools/feature-module-standard/check.test.mjs", names: ["accepts the checked-in immutable Feature Module Standard"], kind: "test" },
-      { file: "tools/feature-module-standard/check.test.mjs", names: ["rejects digest, path, marker, and manifest-shape drift"], kind: "test" },
-      { file: "tools/feature-module-standard/check.test.mjs", names: ["allows append-only successors but rejects mutation or removal"], kind: "test" },
-      { file: "scripts/check-quality-scope.test.mjs", names: ["installed source boundary rejects missing inputs and governed dist source"], kind: "test" },
-      { file: "scripts/check-quality-scope.test.mjs", names: ["installed mandatory runner rejects omitted and skipped identities with exact OS exceptions"], kind: "test" },
-      { file: "scripts/node-compatibility-package-ownership.test.mts", names: ["installed source boundary accepts the relocated passive parser and rejects ownership drift"], kind: "test" },
-    ], exceptions: [],
-  }, "mandatory test inventory must retain exact identities and files");
-  assert.deepEqual(sourcePolicy, {
-    schemaVersion: 3, workspace: { kind: "pnpm", manifest: "pnpm-workspace.yaml" }, rootPackage: true,
-    packageRoots: ["tools/node-compatibility-tooling"],
-    governedRoots: ["scripts", "tools/feature-module-standard", "tools/node-compatibility-tooling"],
-    boundaries: [
-      { id: "governance-tooling", dependencyMode: "development", roots: ["scripts"], entrypoints: [], allow: {
-        boundaries: ["feature-module-standard"], packages: ["@agent-teams/ci-input-proof", "ajv", "yaml"],
-        builtins: ["node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises", "node:module", "node:os", "node:path", "node:test", "node:url", "node:util", "node:vm", "node:zlib"],
-        runtimeReferences: ["commonjs", "dynamic"],
-      } },
-      { id: "feature-module-standard", dependencyMode: "development", roots: ["tools/feature-module-standard"], entrypoints: ["tools/feature-module-standard/check.mjs"], allow: {
-        boundaries: [], packages: [],
-        builtins: ["node:assert/strict", "node:child_process", "node:crypto", "node:fs", "node:fs/promises", "node:os", "node:path", "node:test", "node:url", "node:util"],
-        runtimeReferences: [],
-      } },
-      { id: "node-compatibility-tooling", dependencyMode: "development", roots: ["tools/node-compatibility-tooling"], entrypoints: [], allow: { boundaries: [], packages: [], builtins: [], runtimeReferences: [] } },
+  "schemaVersion": "consumer-quality-profile-v1",
+  "status": "active-foundation",
+  "languages": [
+    "javascript",
+    "typescript"
+  ],
+  "sourceRoots": {
+    "tooling": [
+      "scripts/**/*.mjs",
+      "scripts/**/*.mts",
+      "scripts/**/*.ts",
+      "tools/feature-module-standard/check.mjs"
     ],
-  }, "source boundaries must retain every declared tooling root and exact package owner");
+    "tests": [
+      "scripts/**/*.test.mjs",
+      "scripts/**/*.test.mts",
+      "scripts/**/*.test.ts",
+      "tools/feature-module-standard/check.test.mjs"
+    ]
+  },
+  "typedCoverage": false,
+  "requiredRoute": "pnpm check",
+  "foundation": {
+    "version": "1.7.2",
+    "publicPreset": "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
+  },
+  "lint": {
+    "configPath": "oxlint.json",
+    "includedRoles": [
+      "tooling"
+    ],
+    "includedExtensions": [
+      ".mts",
+      ".ts"
+    ]
+  },
+  "toolchain": {
+    "node": "26.11.1",
+    "pnpm": "11.18.0",
+    "oxlint": "1.85.0"
+  },
+  "typedTooling": {
+    "configPath": "tsconfig.tooling.json",
+    "command": "pnpm quality:typecheck",
+    "compiler": "7.0.2",
+    "nodeTypes": "24.19.1",
+    "entryFiles": [
+      "scripts/qualification-input-proof.mts",
+      "scripts/qualification-input-proof.test.mts",
+      "scripts/check-docs-verifier-authority.mts",
+      "scripts/check-docs-verifier-authority.test.mts",
+      "scripts/npm-publish.test.mts",
+      "scripts/quality-process.ts",
+      "scripts/quality-process.test.ts",
+      "scripts/run-governance-tests.ts",
+      "scripts/run-governance-tests.test.ts",
+      "scripts/validate-renovate.ts",
+      "scripts/validate-renovate.test.ts",
+      "scripts/validate-renovate-abi.probe.ts"
+    ]
+  }
+}, "quality profile changed");
+  assert.deepEqual(toolingTsconfig, {
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "scripts/qualification-input-proof.mts",
+    "scripts/qualification-input-proof.test.mts",
+    "scripts/check-docs-verifier-authority.mts",
+    "scripts/check-docs-verifier-authority.test.mts",
+    "scripts/npm-publish.test.mts",
+    "scripts/quality-process.ts",
+    "scripts/quality-process.test.ts",
+    "scripts/run-governance-tests.ts",
+    "scripts/run-governance-tests.test.ts",
+    "scripts/validate-renovate.ts",
+    "scripts/validate-renovate.test.ts",
+    "scripts/validate-renovate-abi.probe.ts"
+  ]
+}, "strict compiler scope and settings must stay exact");
+  assert.deepEqual(requiredTests, {
+  "schemaVersion": 1,
+  "required": [
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "actual repository adopts the Foundation preset through the canonical route"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "actual tracked source census distinguishes tooling, tests, and authority data"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "actual derived tooling paths exactly match Oxlint debug selection"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tools/feature-module-standard/check.test.mjs",
+      "names": [
+        "accepts the checked-in immutable Feature Module Standard"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tools/feature-module-standard/check.test.mjs",
+      "names": [
+        "rejects digest, path, marker, and manifest-shape drift"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "tools/feature-module-standard/check.test.mjs",
+      "names": [
+        "allows append-only successors but rejects mutation or removal"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "installed source boundary rejects missing inputs and governed dist source"
+      ],
+      "kind": "test"
+    },
+    {
+      "file": "scripts/check-quality-scope.test.mjs",
+      "names": [
+        "installed mandatory runner rejects omitted and skipped identities with exact OS exceptions"
+      ],
+      "kind": "test"
+    }
+  ],
+  "exceptions": []
+}, "mandatory test inventory must retain exact identities and files");
+  assert.deepEqual(sourcePolicy, {
+  "schemaVersion": 3,
+  "workspace": {
+    "kind": "pnpm",
+    "manifest": "pnpm-workspace.yaml"
+  },
+  "rootPackage": true,
+  "packageRoots": [
+    "tools/renovate-validation"
+  ],
+  "governedRoots": [
+    "scripts",
+    "tools/feature-module-standard",
+    "tools/renovate-validation"
+  ],
+  "boundaries": [
+    {
+      "id": "governance-tooling",
+      "dependencyMode": "development",
+      "roots": [
+        "scripts"
+      ],
+      "entrypoints": [],
+      "allow": {
+        "boundaries": [
+          "feature-module-standard"
+        ],
+        "packages": [
+          "@agent-teams/ci-input-proof",
+          "ajv",
+          "node-or-bun",
+          "yaml"
+        ],
+        "builtins": [
+          "node:assert/strict",
+          "node:child_process",
+          "node:crypto",
+          "node:fs",
+          "node:fs/promises",
+          "node:module",
+          "node:os",
+          "node:path",
+          "node:test",
+          "node:test/reporters",
+          "node:url",
+          "node:util",
+          "node:vm",
+          "node:zlib"
+        ],
+        "runtimeReferences": [
+          "commonjs",
+          "dynamic"
+        ]
+      }
+    },
+    {
+      "id": "feature-module-standard",
+      "dependencyMode": "development",
+      "roots": [
+        "tools/feature-module-standard"
+      ],
+      "entrypoints": [
+        "tools/feature-module-standard/check.mjs"
+      ],
+      "allow": {
+        "boundaries": [],
+        "packages": [],
+        "builtins": [
+          "node:assert/strict",
+          "node:child_process",
+          "node:crypto",
+          "node:fs",
+          "node:fs/promises",
+          "node:os",
+          "node:path",
+          "node:test",
+          "node:url",
+          "node:util"
+        ],
+        "runtimeReferences": []
+      }
+    },
+    {
+      "id": "renovate-validation",
+      "dependencyMode": "development",
+      "roots": [
+        "tools/renovate-validation"
+      ],
+      "entrypoints": [],
+      "allow": {
+        "boundaries": [],
+        "packages": [
+          "renovate"
+        ],
+        "builtins": [],
+        "runtimeReferences": []
+      }
+    }
+  ]
+}, "source boundaries must retain every declared tooling root");
   assert.deepEqual(foundationConfig, {
-    schemaVersion: 2, project: { id: "organization-governance" },
-    capabilities: { "architecture.source-dependencies": { configPath: "docs/engineering-quality-source-policy.yaml" } },
-  }, "installed source gate configuration changed");
-  assert.equal(nodeVersion.trim(), "24.21.0", "owning test tooling lane must use Node 24.21.0");
-  assert.equal(manifest.engines?.node, ">=24.18.0 <25 || >=26.10.0 <27", "production Node 24 and bounded Node 26 compatibility must remain independent of critical execution tooling");
+  "schemaVersion": 2,
+  "project": {
+    "id": "organization-governance"
+  },
+  "capabilities": {
+    "architecture.source-dependencies": {
+      "configPath": "docs/engineering-quality-source-policy.yaml"
+    }
+  }
+}, "installed source gate configuration changed");
+  assert.equal(nodeVersion.trim(), "26.11.1", "owning test tooling lane must use Node 26.11.1");
+  assert.equal(manifest.engines?.node, ">=24.18.0 <25 || >=26.10.0 <27", "package engines must keep Node 24 compatibility and admit the Node 26 default");
+  for (const key of ["engineStrict", "strictPeerDependencies", "saveExact"]) {
+    assert.equal(workspacePolicy[key], true, `pnpm 11 requires effective ${key} in workspace YAML`);
+  }
+  assert.deepEqual(workspacePolicy.packages, ["."], "The root workspace must not absorb the isolated Node 24 tool");
+  assert.equal(workspacePolicy.verifyDepsBeforeRun, "error", "Checks must reject dependency drift without implicit installation");
+  assert.deepEqual(renovateTool, {
+    name: "central-renovate-validation", version: "0.0.0", private: true, packageManager: "pnpm@11.18.0",
+    engines: { node: ">=24.18.0 <25" },
+    devEngines: { runtime: { name: "node", version: "24.21.0", onFail: "download" } },
+    scripts: {
+      "build:native": "node -e \"if (process.version !== 'v24.21.0') throw Error('Renovate runtime mismatch')\" && pnpm rebuild re2",
+      validate: "node ../../scripts/validate-renovate.ts",
+    },
+    devDependencies: { renovate: "44.24.2" },
+  }, "Renovate must remain an isolated exact Node 24 validation tool");
   assertLintPolicy(lintConfig);
   assertWorkflow(workflow);
-  const normalizedTrackedPaths = [...new Set(trackedPaths.map(relativePath => relativePath.replaceAll("\\", "/")))].toSorted();
-  assert.deepEqual(normalizedTrackedPaths.filter(relativePath => relativePath.startsWith("tools/node-compatibility-tooling/")), profile.passiveHelpers[0].files.toSorted(), "passive parser metadata inventory must remain closed");
-  assert.deepEqual(normalizedTrackedPaths.filter(relativePath => relativePath.startsWith("scripts/node-compatibility-tooling/")), [], "passive parser metadata must not remain inside the scripts package scope");
-  for (const file of TYPED_FILES) { assert.ok(normalizedTrackedPaths.includes(file), `required typed source is missing: ${file}`); }
-  for (const file of ["scripts/assert-node-runtime.mjs", "scripts/check-node-compatibility.mjs", "scripts/check-node-compatibility.test.mjs"]) {
-    assert.ok(!normalizedTrackedPaths.includes(file), `obsolete compatibility JavaScript or shim is forbidden: ${file}`);
-  }
   const census = classifyTrackedPaths(trackedPaths);
   assert.deepEqual(census.unclassified, [], `unclassified executable source: ${census.unclassified.join(", ")}`);
   assert.ok(census.classified.some(entry => entry.role === "tooling"), "tooling census is empty");
   assert.ok(census.classified.some(entry => entry.role === "test"), "test census is empty");
   return census;
 }
+
 export async function readQualityAdoption(base = root) {
   const readJson = async relativePath => JSON.parse(await readFile(new URL(relativePath, base), "utf8"));
   const cwd = path.dirname(fileURLToPath(new URL("package.json", base)));
   const { stdout } = await execFileAsync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd, encoding: "utf8" });
   return {
-    manifest: await readJson("package.json"), profile: await readJson("docs/engineering-quality-profile.json"),
-    lintConfig: await readJson("oxlint.json"), toolingTsconfig: await readJson("tsconfig.tooling.json"),
+    manifest: await readJson("package.json"),
+    profile: await readJson("docs/engineering-quality-profile.json"),
+    lintConfig: await readJson("oxlint.json"),
+    toolingTsconfig: await readJson("tsconfig.tooling.json"),
     requiredTests: await readJson("docs/engineering-quality-required-tests.json"),
     sourcePolicy: parseYaml(await readFile(new URL("docs/engineering-quality-source-policy.yaml", base), "utf8")),
     foundationConfig: parseYaml(await readFile(new URL("foundation.config.yaml", base), "utf8")),
-    trackedPaths: stdout.split("\0").filter(Boolean), nodeVersion: await readFile(new URL(".node-version", base), "utf8"),
+    trackedPaths: stdout.split("\0").filter(Boolean),
+    nodeVersion: await readFile(new URL(".node-version", base), "utf8"),
     workflow: await readFile(new URL(".github/workflows/ci.yml", base), "utf8"),
+    workspacePolicy: parseYaml(await readFile(new URL("pnpm-workspace.yaml", base), "utf8")),
+    renovateTool: await readJson("tools/renovate-validation/package.json"),
   };
 }
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const census = assertQualityAdoption(await readQualityAdoption());
-  const counts = Object.fromEntries(["tooling", "test"].map(role => [role, census.classified.filter(entry => entry.role === role).length]));
+  const counts = Object.fromEntries(["tooling", "test"].map(role => [
+    role,
+    census.classified.filter(entry => entry.role === role).length,
+  ]));
   process.stdout.write(`central quality scope verified: ${JSON.stringify(counts)}\n`);
 }

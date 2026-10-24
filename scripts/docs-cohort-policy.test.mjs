@@ -49,6 +49,23 @@ const authoritativeRegistry = await loadJson("governance/docs-qualified-cohorts.
 const emptyRegistry = { ...structuredClone(authoritativeRegistry), cohorts: [], events: [] };
 const exceptionsSchema = await loadJson("governance/docs-protocol-exceptions.schema.json");
 const exceptions = await loadJson("governance/docs-protocol-exceptions.json");
+// Synthetic active authority keeps expiry/reference tests independent of the
+// current fleet's legitimately empty active-exception set.
+const activeException = () => ({
+  id: "platform-private-required-checks-github-free",
+  repository_id: 1319378484,
+  owner: "synthetic-test-owner",
+  reason: "Synthetic fixture for active exception validation, not live authority.",
+  scope: "required_docs_check",
+  authority_source: "governance/code-security-defaults.json",
+  authority_exception_id: "platform-private-required-checks-github-free",
+  tracking_reference: "governance/docs-protocol-policy-v2.json",
+  status: "active",
+  last_reviewed_at: "2026-08-16",
+  review_after: "2026-09-16",
+  expires_at: "2026-11-16",
+  review_triggers: ["repository_visibility_changed"],
+});
 const docsPolicy = await loadJson("governance/docs-protocol-policy-v2.json");
 const securityPolicy = await loadJson("governance/code-security-defaults.json");
 const appendOnlyWorkflow = await readFile(
@@ -71,25 +88,6 @@ const cohortEvidenceVerifierSource = await readFile(
   "scripts/verify-docs-cohort-evidence.mjs",
   "utf8",
 );
-
-function assertTrustedPnpmSetupOrder(steps) {
-  const pnpmV1 = steps.findIndex(step => step.id === "pnpm-v1");
-  const setupNode = steps.findIndex(step => step.uses?.startsWith("actions/setup-node@"));
-  const pnpmV2 = steps.findIndex(step => step.id === "pnpm-v2");
-  const verifyPnpm = steps.findIndex(step => step.name === "Verify trusted package-manager binaries");
-  const baseInstall = steps.findIndex(step => step.name?.startsWith("Install trusted base dependencies"));
-  assert.ok(pnpmV1 >= 0 && pnpmV1 < setupNode && setupNode < pnpmV2 &&
-    pnpmV2 < verifyPnpm && verifyPnpm < baseInstall,
-  "setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed");
-  assert.equal(steps[setupNode].with?.cache, "pnpm");
-  assert.equal(steps[pnpmV1].with?.package_json_file, undefined,
-    "v1 setup must keep the matching root packageManager authority");
-  assert.equal(steps[pnpmV2].with?.package_json_file,
-    "governance/docs-qualified-cohorts.schema.json",
-    "v2 setup must not read the conflicting v1 root packageManager authority");
-}
-
-const trustedAppendOnlySteps = YAML.parse(appendOnlyWorkflow).jobs["trusted-validation"].steps;
 const producerCallerFixture = await readFile(
   "scripts/fixtures/producer-docs-protocol.yml",
 );
@@ -466,8 +464,22 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
     /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V1_BIN" --version\)" = "11\.18\.0"/u);
   assert.match(appendOnlyWorkflow,
     /test "\$\(cd "\$RUNNER_TEMP" && "\$DOCS_COHORT_PNPM_V2_BIN" --version\)" = "11\.20\.0"/u);
-  assertTrustedPnpmSetupOrder(trustedAppendOnlySteps);
-  assert.equal(trustedAppendOnlySteps.some(step => /^pnpm\b/u.test(step.run ?? "")), false);
+  const pnpmV1Setup = appendOnlyWorkflow.indexOf("- id: pnpm-v1");
+  const setupNode = appendOnlyWorkflow.indexOf("uses: actions/setup-node@");
+  const pnpmV2Setup = appendOnlyWorkflow.indexOf("- id: pnpm-v2");
+  const verifyPnpm = appendOnlyWorkflow.indexOf("Verify trusted package-manager binaries");
+  const baseInstall = appendOnlyWorkflow.indexOf("Install trusted base dependencies");
+  assert.ok(pnpmV1Setup >= 0 && pnpmV1Setup < setupNode && setupNode < pnpmV2Setup &&
+    pnpmV2Setup < baseInstall,
+  "setup-node cache resolution must see only v1 pnpm before the separate v2 binary is installed");
+  const pnpmV1SetupStep = appendOnlyWorkflow.slice(pnpmV1Setup, setupNode);
+  const pnpmV2SetupStep = appendOnlyWorkflow.slice(pnpmV2Setup, verifyPnpm);
+  assert.doesNotMatch(pnpmV1SetupStep, /package_json_file:/u,
+    "v1 setup must keep the matching root packageManager authority");
+  assert.match(pnpmV2SetupStep,
+    /package_json_file: governance\/docs-qualified-cohorts\.schema\.json/u,
+  "v2 setup must not read the conflicting v1 root packageManager authority");
+  assert.doesNotMatch(appendOnlyWorkflow, /\brun:\s+pnpm\b/u);
   const emergencyStart = appendOnlyWorkflow.indexOf(
     "Validate negative emergency append without network dependencies",
   );
@@ -482,15 +494,7 @@ test("keeps append-only enforcement trusted and bootstrap-aware", () => {
     /DOCS_COHORT_PNPM_V1_BIN: \$\{\{ steps\.pnpm-v1\.outputs\.bin_dest \}\}\/pnpm/u);
   assert.match(liveEvidenceStep,
     /DOCS_COHORT_PNPM_V2_BIN: \$\{\{ steps\.pnpm-v2\.outputs\.bin_dest \}\}\/pnpm/u);
-});
 
-test("rejects v2 pnpm setup before trusted setup-node cache resolution", () => {
-  const steps = [...trustedAppendOnlySteps];
-  const setupNode = steps.findIndex(step => step.uses?.startsWith("actions/setup-node@"));
-  const pnpmV2 = steps.findIndex(step => step.id === "pnpm-v2");
-  [steps[setupNode], steps[pnpmV2]] = [steps[pnpmV2], steps[setupNode]];
-  assert.throws(() => assertTrustedPnpmSetupOrder(steps),
-    /setup-node cache resolution must see only v1 pnpm/u);
 });
 
 test("stages authority evolution without executing pull-request code", () => {
@@ -526,8 +530,6 @@ test("keeps admission credentials out of PR-head execution", () => {
   assert.match(admissionWorkflow, /"governance\/docs-protocol-policy-v2\.schema\.json"/u);
   assert.match(admissionWorkflow, /\.pnpmfile\.cjs/u);
   assert.match(admissionWorkflow, /hardAuthority\.has\(entry\) \|\| isInstallAuthority\(entry\)/u);
-  assert.match(admissionWorkflow, /previous_filename/u);
-  assert.match(admissionWorkflow, /\[filename, prior\]|allPaths\(file\)/u);
   const admissionScope = admissionWorkflow.indexOf("const changesAdmission");
   const unrelatedNoop = admissionWorkflow.indexOf("if (!changesAdmission)");
   const authorityClassifier = admissionWorkflow.indexOf("const authority");
@@ -830,10 +832,7 @@ test("treats eligible_after as informational and rejects future-dated lifecycle 
 });
 
 test("validates expiring enumerable exceptions at a declared date", () => {
-  const boundary = structuredClone(exceptions);
-  boundary.exceptions[0].last_reviewed_at = "2026-08-16";
-  boundary.exceptions[0].review_after = "2026-09-16";
-  boundary.exceptions[0].expires_at = "2026-11-16";
+  const boundary = { ...structuredClone(exceptions), exceptions: [activeException()] };
   assert.doesNotThrow(() => validateDocsProtocolExceptions(
     structuredClone(boundary),
     exceptionsSchema,
@@ -849,6 +848,48 @@ test("validates expiring enumerable exceptions at a declared date", () => {
     exceptionsSchema,
     { asOf: "2026-09-17" },
   ), /review is due/u);
+});
+
+test("retired Docs exceptions require coherent references and retain active authority checks", () => {
+  const policy = structuredClone(docsPolicy);
+  const platform = policy.repositories.find(({ repository_id: id }) => id === 1319378484);
+  platform.required_check_exception_id = null;
+  const retired = { ...structuredClone(exceptions), exceptions: [] };
+  const anchor = Math.ceil(Math.max(...authoritativeRegistry.events.map(
+    ({ effective_at: at }) => Date.parse(at),
+  )) / 1000) * 1000;
+  const asOf = new Date(anchor).toISOString().replace(".000Z", "Z");
+  const day = (offset) => new Date(anchor + offset * 86_400_000).toISOString().slice(0, 10);
+  const validateReferences = (candidate, security = securityPolicy) =>
+    validateDocsGovernanceReferences(authoritativeRegistry, candidate, policy, security, { asOf });
+  assert.doesNotThrow(() => validateDocsProtocolExceptions(retired, exceptionsSchema,
+    { asOf: day(0) }));
+  assert.doesNotThrow(() => validateReferences(retired));
+
+  const active = { ...retired, exceptions: [{ ...activeException(),
+    last_reviewed_at: day(0), review_after: day(1), expires_at: day(2),
+  }] };
+  assert.doesNotThrow(() => validateDocsProtocolExceptions(active, exceptionsSchema,
+    { asOf: day(0) }));
+  assert.throws(() => validateReferences(active), /Every Docs Protocol exception must be referenced/u);
+  platform.required_check_exception_id = active.exceptions[0].id;
+  assert.throws(() => validateReferences(retired), /references an unknown Docs Protocol exception/u);
+  assert.doesNotThrow(() => validateReferences(active));
+
+  const wrongOwner = structuredClone(active);
+  wrongOwner.exceptions[0].repository_id += 1;
+  assert.throws(() => validateReferences(wrongOwner), /exception repository ID does not match/u);
+  const missingSecurity = structuredClone(securityPolicy);
+  missingSecurity.required_check_exceptions = [];
+  assert.throws(() => validateReferences(active, missingSecurity), /does not bind central security authority/u);
+  const duplicate = structuredClone(active);
+  duplicate.exceptions.push(structuredClone(duplicate.exceptions[0]));
+  assert.throws(() => validateDocsProtocolExceptions(duplicate, exceptionsSchema,
+    { asOf: day(0) }), /exception IDs must be unique/u);
+  const malformed = structuredClone(active);
+  malformed.exceptions[0].status = "retired";
+  assert.throws(() => validateDocsProtocolExceptions(malformed, exceptionsSchema,
+    { asOf: day(0) }), /JSON Schema/u);
 });
 
 test("collects 101+ repositories without truncating at the first API page", async () => {

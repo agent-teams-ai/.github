@@ -147,8 +147,10 @@ to new repositories. Follow [repository admission](docs/repository-admission.md)
 for the reviewed consumer change and governance update.
 
 The external Craig fork remains explicitly exempt with review triggers. The
-Platform GitHub Free required-check exception remains separately authoritative;
-it does not waive the local or CI documentation gate. Continuous live inventory
+obsolete Platform private/GitHub Free Docs exception is retired as recorded in
+[the dated retirement evidence](governance/evidence/docs-admission/platform-required-check-exception-retirement-20261019.md).
+Platform's local and CI documentation gate remains mandatory; its remote Docs
+required-check enforcement gap remains explicit. Continuous live inventory
 drift audit runs every six hours with a dedicated read-only organization credential
 and fails unless visible private repositories match the organization total. ReviewRouter,
 Codex authentication, and interactive user credentials must not be repurposed for it.
@@ -176,30 +178,35 @@ updates only; Renovate owns routine version updates.
 
 Do not assume that a transferred repository received an organization default.
 Audit and explicitly apply the visibility-appropriate configuration after a
-transfer. The current private `agent-teams-platform` repository has a documented
-GitHub Free exception, `platform-private-required-checks-github-free`, defined
-once in the code-security snapshot and referenced by the other policy records.
-Policy must not describe those CI gates as remotely enforced.
+transfer. Platform was observed public on 2026-10-19. The older private-repository
+exception `platform-private-required-checks-github-free` and its references in the
+dated security, Actions and executable-specification snapshots remain historical
+evidence. The current Docs policy no longer references that exception. The live
+observation found only the identity ruleset, so it does not establish remote Docs
+required-check enforcement.
 
 The dated Actions posture is recorded separately in
 [`governance/actions-policy.json`](governance/actions-policy.json). Default
 workflow permissions are read-only and workflow approval is disabled. Immutable
-action-reference enforcement is enabled organization-wide. Platform retains the
-separate required-check exception
-`platform-private-required-checks-github-free`; that GitHub Free limitation does
-not weaken immutable action-reference enforcement.
+action-reference enforcement is enabled organization-wide. Its historical
+Platform GitHub Free exception reference does not reactivate the retired Docs
+waiver and does not weaken immutable action-reference enforcement.
 
 ## Commit and pull request authorship
 
 The maintained owner requirement is defined once in
 [`governance/commit-author-identity.json`](governance/commit-author-identity.json).
-Organization automation generates proposed changes with the exact local owner
+Organization automation generates proposed changes with the canonical local owner
 Git name/email. The human owner opens owner release PRs after inspecting the
 exact generated diff, head SHA and base SHA. An author-email merge flag cannot
 transfer PR authorship. Bot PRs must be replaced by a human-opened PR; rewriting
 an external human contribution as the owner is forbidden. Known Bot/GitHub
 and known Codex/OpenAI source commit authors are rejected. Owner source commits
-require both raw author and committer to be exactly `iliya <iliyazelenkog@gmail.com>`;
+require both raw author and committer to use the exact email
+`iliyazelenkog@gmail.com` and either exact name `iliya` or `Илия`.
+The owner approved the `Илия` alias on 2026-10-23 for commits produced by the
+GitHub integration; newly generated local commits still use canonical `iliya`.
+Aliases do not authorize alternate emails or name normalization.
 GitHub/web-flow is not an owner source committer exception. External human
 contributions retain their original author and committer, including GitHub's
 technical committer. The generated final squash after merge has the owner's
@@ -207,9 +214,11 @@ GitHub committer/display-name exception and is verified separately with `gh`.
 
 The trusted reusable identity workflow reads GitHub metadata and inert caller
 bytes, never PR code. It checks every commit (paginated, at most 250; split larger
-PRs), preserves external human author metadata, and checks the exact owner
-name/email on owner-associated commits. Unassociated commits bearing the owner
-name also require that identity. This checks metadata, not cryptographic owner
+PRs), preserves external human author metadata, and checks exact accepted owner
+names and the exact owner email on owner-associated commits. Unassociated commits
+bearing a canonical or alias owner name are classified case-insensitively and also
+require exact accepted identity bytes. An associated external contributor sharing
+an owner display name retains their original attribution. This checks metadata, not cryptographic owner
 identity. It rejects Bot PR authors even when every source commit is owner-authored.
 During a checker run, a same-head Bot PR also blocks success on a human PR.
 GitHub commit statuses belong to a SHA, not a PR number: a Bot PR can reuse a
@@ -239,6 +248,17 @@ workflow artifact bytes, not the whole pinned repository. Other caller changes
 and central local reusable changes require a staged reviewed successor and
 required-check cutover; a deleted caller cannot certify itself. First installation
 is a reviewed bootstrap. The audit retains its implementation-byte verification.
+
+The optional `owner.name_aliases` array augments the canonical name. Missing or
+empty arrays retain canonical-only admission. Present aliases must be nonempty,
+trim-stable strings without Unicode control, format, line-separator or
+paragraph-separator characters; exact duplicates, including the canonical name,
+are invalid. Ordinary internal spaces are allowed only in explicitly configured
+aliases. Admission compares exact bytes without trimming or case folding.
+The alias-aware verifier and owner merge guard must be adopted together. Older
+pinned verifier implementations ignore this additive policy field, so adding
+the field alone does not activate aliases or complete the protected source
+transition and consumer pin upgrades.
 
 Native commit-email restrictions failed the TEST rebase merge qualification;
 they are supplementary unproven posture and are not shipped as enforcement.

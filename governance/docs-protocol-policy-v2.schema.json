@@ -157,6 +157,18 @@
         "evidence_class": { "const": "cohort-v2-supporting-canary" }
       }
     },
+    "generation3QualificationCoordinates": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_schema_version", "cohort_schema_version", "managed_state_schema_version", "receipt_schema_version", "execution_envelope_schema_version", "evidence_class"],
+      "properties": {
+        "profile_schema_version": { "const": 4 },
+        "cohort_schema_version": { "const": 3 },
+        "managed_state_schema_version": { "const": 3 },
+        "receipt_schema_version": { "const": 1 },
+        "execution_envelope_schema_version": { "const": 1 },
+        "evidence_class": { "const": "cohort-v3-supporting-canary" }
+      }
+    },
     "cohortV2PackageVersions": {
       "type": "object", "additionalProperties": false,
       "required": ["repository_mutation", "document_authoring", "docs_protocol", "docs_protocol_agent_teams", "engineering_foundation"],
@@ -235,10 +247,15 @@
         "cohort_binding_status": { "enum": ["not_applicable", "legacy_pre_cohort", "bootstrap_pending", "rollout_pending", "bound"] },
         "desired_cohort_id": { "oneOf": [{ "$ref": "#/$defs/cohortId" }, { "type": "null" }] },
         "observed_cohort_id": { "oneOf": [{ "$ref": "#/$defs/cohortId" }, { "type": "null" }] },
-        "desired_cohort_generation": { "const": 2 },
-        "observed_cohort_generation": { "oneOf": [{ "const": 2 }, { "type": "null" }] },
+        "desired_cohort_generation": { "enum": [2, 3] },
+        "observed_cohort_generation": { "oneOf": [{ "enum": [2, 3] }, { "type": "null" }] },
         "exact_cohort_v2_packages": { "$ref": "#/$defs/cohortV2PackageVersions" },
-        "v3_qualification_coordinates": { "$ref": "#/$defs/v3QualificationCoordinates" },
+        "v3_qualification_coordinates": {
+          "oneOf": [
+            { "$ref": "#/$defs/v3QualificationCoordinates" },
+            { "$ref": "#/$defs/generation3QualificationCoordinates" }
+          ]
+        },
         "observed_cohort_record_digest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
         "observed_cohort_event_digest": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
         "profile_path": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "null" }] },
@@ -299,7 +316,27 @@
             { "type": "null" }
           ]
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "desired_cohort_generation": { "const": 2 } }, "required": ["desired_cohort_generation"] },
+          "then": {
+            "properties": {
+              "observed_cohort_generation": { "oneOf": [{ "const": 2 }, { "type": "null" }] },
+              "v3_qualification_coordinates": { "$ref": "#/$defs/v3QualificationCoordinates" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "desired_cohort_generation": { "const": 3 } }, "required": ["desired_cohort_generation"] },
+          "then": {
+            "properties": {
+              "observed_cohort_generation": { "oneOf": [{ "const": 3 }, { "type": "null" }] },
+              "v3_qualification_coordinates": { "$ref": "#/$defs/generation3QualificationCoordinates" }
+            }
+          }
+        }
+      ]
     }
   }
 }

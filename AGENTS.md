@@ -7,6 +7,15 @@ Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).
 
+Before choosing or duplicating reusable development tooling, read the
+[development tools catalog](docs/development-tools.md) and follow its link to
+the owning guide. Check availability and repository adoption before using a tool.
+
+Before choosing backend technologies, read the
+[backend stack reference](docs/backend-stack.md). Apply the target repository's
+explicit adoption and existing decisions; do not install the entire stack or
+change pins merely because a reference exists.
+
 For feature-module architecture:
 
 1. Start at the [Feature Module Standard index](docs/architecture/feature-module-standard/README.md).
@@ -25,9 +34,9 @@ For feature-module architecture:
 For governance JavaScript quality, read
 [the consumer quality route](docs/engineering-quality.md) and
 [its profile](docs/engineering-quality-profile.json). Use the owning
-`.node-version` tooling pin for `pnpm quality:check` (focused/fast) and
-`pnpm check` (complete); the installed critical-test runner requires Node
-24.21.0 or later in the Node 24 family. Preserve its exact required identities
+`.node-version` tooling pin for the focused quality commands in that guide and
+`pnpm check` (complete); the repository default is Node 26.11.1 while package
+engines keep Node 24 compatibility. Preserve its exact required identities
 and selected entry files.
 
 <!-- agent-teams:quality-standard:start -->

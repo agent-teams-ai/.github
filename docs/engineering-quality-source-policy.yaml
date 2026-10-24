@@ -4,11 +4,11 @@ workspace:
   manifest: pnpm-workspace.yaml
 rootPackage: true
 packageRoots:
-  - tools/node-compatibility-tooling
+  - tools/renovate-validation
 governedRoots:
   - scripts
   - tools/feature-module-standard
-  - tools/node-compatibility-tooling
+  - tools/renovate-validation
 boundaries:
   - id: governance-tooling
     dependencyMode: development
@@ -21,6 +21,7 @@ boundaries:
       packages:
         - "@agent-teams/ci-input-proof"
         - ajv
+        - node-or-bun
         - yaml
       builtins:
         - node:assert/strict
@@ -32,6 +33,7 @@ boundaries:
         - node:os
         - node:path
         - node:test
+        - node:test/reporters
         - node:url
         - node:util
         - node:vm
@@ -60,13 +62,14 @@ boundaries:
         - node:url
         - node:util
       runtimeReferences: []
-  - id: node-compatibility-tooling
+  - id: renovate-validation
     dependencyMode: development
     roots:
-      - tools/node-compatibility-tooling
+      - tools/renovate-validation
     entrypoints: []
     allow:
       boundaries: []
-      packages: []
+      packages:
+        - renovate
       builtins: []
       runtimeReferences: []

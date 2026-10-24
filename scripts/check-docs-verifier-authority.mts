@@ -32,6 +32,21 @@ const installerNames = new Set(["package.json", "pnpm-lock.yaml", "pnpm-workspac
   "yarn.lock", "package-lock.json", "npm-shrinkwrap.json"]);
 const closure = ["ajv@8.20.0", "yaml@2.9.0", "fast-deep-equal@3.1.3", "fast-uri@3.1.5",
   "json-schema-traverse@1.0.0", "require-from-string@2.0.2"];
+// Operator binding: agent-teams-ai/.github#359, reviewed head 2a443681de099040f744f3cb28c35722bb97f2b1.
+// The installer's rebased commit SHA is intentionally not authority; these reviewed blobs bind content.
+const node26DefaultTransition = Object.freeze({
+  source: Object.freeze({ repository: "agent-teams-ai/.github", pullRequest: 359, reviewedHead: "2a443681de099040f744f3cb28c35722bb97f2b1" }),
+  changes: Object.freeze([
+    [".node-version", "df6ae3370f9f89272d88629c442cf554d6c1f9fb", "d8750199bbef3481a89eaf452088c384f4025508"],
+    ["AGENTS.md", "5103769cb5f5f26438b15c5ce11b1234f505a748", "d31e50aa17c1cb2008fd87191ffceec5d421ab0a"],
+    ["docs/engineering-quality-profile.json", "3a7f60d0af07bbbdf9b742bba39894f7deaf078e", "93a1b876c19153c51fad0a03d9fa331034cd8cea"],
+    ["docs/engineering-quality.md", "7edd8695a2e06d609336e73e1f861d46b2b65b46", "2368570df3db82c664ad59426a40b7f832191ab2"],
+    ["package.json", "75e4d98b44aa0f777cc03c57857e1e023ec6c1b0", "51f9bfb4bf250acd795f4bb2384f9b58132e24ae"],
+    ["scripts/check-quality-scope.mjs", "3dc6329177e56aea18c13fe8e59ad8e4c6a671e3", "18588dc80475e459ccd784c9af25312585ce4c40"],
+    ["scripts/check-quality-scope.test.mjs", "3a025636bcfd0e1796695b5b0ad0b5f398b2709b", "4e7a343ddddcda2326ad761c056a1ba61059f9ab"],
+    ["scripts/merge-owner-pr.test.mjs", "34adcaee7d8bc85698fecdeb59cb882bccdcdaaa", "e3afa253f69e77021bce4f77a7e5bee70064653c"],
+  ] as const),
+});
 const oid = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const validPath = (value: unknown): value is string => typeof value === "string" && value.length <= 4096 &&
   !/[\\\0]/u.test(value) && value.split("/").every(part => part !== "" && part !== "." && part !== "..");
@@ -44,7 +59,8 @@ const without = (value: Record<string, unknown>, keys: string[]) =>
 const gitBlob = (bytes: Buffer): string => createHash("sha1")
   .update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 
-export function assertVerifierDependencies(baseManifest: string, baseLock: string, headManifest: string, headLock: string): void {
+function assertVerifierDependencyPolicy(baseManifest: string, baseLock: string, headManifest: string, headLock: string,
+  node26Default: boolean): void {
   const manifest = [baseManifest, headManifest].map(text => object(JSON.parse(text)));
   const locks = [baseLock, headLock].map(text => {
     const doc = parseDocument(text, { uniqueKeys: true });
@@ -54,7 +70,19 @@ export function assertVerifierDependencies(baseManifest: string, baseLock: strin
   const [before, after] = manifest;
   const [oldLock, newLock] = locks;
   assert.ok(before && after && oldLock && newLock);
-  assert.deepEqual(without(after, ["devDependencies"]), without(before, ["devDependencies"]), "Manifest policy/native routes changed");
+  if (node26Default) {
+    const oldEngines = object(before.engines), newEngines = object(after.engines);
+    assert.deepEqual(without(after, ["devDependencies", "engines"]), without(before, ["devDependencies", "engines"]),
+      "Node26-default manifest policy changed");
+    assert.deepEqual(without(newEngines, ["node"]), without(oldEngines, ["node"]), "Node26-default engine policy changed");
+    assert.equal(oldEngines.node, ">=24.18.0 <25", "Unexpected Node26-default source engine");
+    assert.equal(newEngines.node, ">=24.18.0 <25 || >=26.10.0 <27", "Unexpected Node26-default target engine");
+    assert.deepEqual(after.devDependencies, before.devDependencies, "Node26-default verifier dependencies changed");
+    assert.equal(headLock, baseLock, "Node26-default lock changed");
+    assert.deepEqual(newLock, oldLock, "Node26-default lock changed");
+  } else {
+    assert.deepEqual(without(after, ["devDependencies"]), without(before, ["devDependencies"]), "Manifest policy/native routes changed");
+  }
   assert.deepEqual(without(newLock, ["importers", "packages", "snapshots"]),
     without(oldLock, ["importers", "packages", "snapshots"]), "Lock globals changed");
   const importers = locks.map(lock => object(lock.importers));
@@ -94,7 +122,27 @@ export function assertVerifierDependencies(baseManifest: string, baseLock: strin
   }
 }
 
-export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, baseLock: Buffer): "noop" | "dependencies" {
+export function assertVerifierDependencies(baseManifest: string, baseLock: string, headManifest: string, headLock: string): void {
+  assertVerifierDependencyPolicy(baseManifest, baseLock, headManifest, headLock, false);
+}
+
+const exactEntry = (entry: Record<string, unknown> | undefined, path: string, sha: string) =>
+  entry?.path === path && entry.mode === "100644" && entry.type === "blob" && entry.sha === sha;
+
+function matchesNode26DefaultTransition(base: Map<string, Record<string, unknown>>, head: Map<string, Record<string, unknown>>,
+  files: Record<string, unknown>[], changedLeaves: Set<string>): boolean {
+  const expectedPaths = node26DefaultTransition.changes.map(([path]) => path);
+  if (files.length !== expectedPaths.length || changedLeaves.size !== expectedPaths.length ||
+      expectedPaths.some(path => !changedLeaves.has(path))) {return false;}
+  return node26DefaultTransition.changes.every(([path, before, after]) => {
+    const file = files.find(candidate => candidate.filename === path);
+    return file !== undefined && file.status === "modified" && file.previous_filename === undefined &&
+      file.sha === after && exactEntry(base.get(path), path, before) && exactEntry(head.get(path), path, after);
+  });
+}
+
+export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, baseLock: Buffer):
+  "noop" | "dependencies" | "node26-default" {
   const evidence = object(raw);
   assert.ok(Number.isSafeInteger(evidence.changedFiles) && Number(evidence.changedFiles) >= 1 && Number(evidence.changedFiles) <= 3000, "Invalid changed_files");
   const trees = [evidence.baseTree, evidence.headTree].map(rawTree => {
@@ -116,6 +164,17 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
   const [base, head] = trees;
   assert.ok(base && head);
   assert.ok(Array.isArray(evidence.files) && evidence.files.length === evidence.changedFiles, "Incomplete pagination");
+  const changedLeaves = new Set<string>();
+  for (const path of new Set([...base.keys(), ...head.keys()])) {
+    const oldEntry = base.get(path), newEntry = head.get(path);
+    const oldLeaf = oldEntry?.type === "tree" ? undefined : oldEntry;
+    const newLeaf = newEntry?.type === "tree" ? undefined : newEntry;
+    if (oldLeaf?.sha !== newLeaf?.sha || oldLeaf?.mode !== newLeaf?.mode || oldLeaf?.type !== newLeaf?.type) {
+      changedLeaves.add(path);
+    }
+  }
+  const node26Default = matchesNode26DefaultTransition(base, head, evidence.files.map(rawFile => object(rawFile)), changedLeaves);
+  const node26Paths = new Set<string>(node26DefaultTransition.changes.map(([path]) => path));
   const filenames = new Set<string>();
   const declared = new Set<string>();
   for (const rawFile of evidence.files) {
@@ -128,33 +187,33 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
     assert.ok(file.status !== "renamed" || file.previous_filename !== undefined, "Missing rename origin");
     const origin = String(file.previous_filename ?? file.filename);
     declared.add(file.filename); if (file.status === "renamed") {declared.add(origin);}
+    for (const path of [file.filename, origin]) {
+      assert.ok((node26Default && node26Paths.has(path)) || (!protectedPaths.includes(path) &&
+        !path.split("/").includes("node_modules") &&
+        (!(installerNames.has(path.split("/").at(-1)!)) || ["package.json", "pnpm-lock.yaml"].includes(path))),
+      `Protected authority path: ${path}`);
+    }
     const oldEntry = base.get(origin), newEntry = head.get(file.filename);
     assert.ok(file.status === "added" || oldEntry, "Missing base file");
     assert.ok(file.status === "removed" ? oldEntry?.sha === file.sha && !newEntry : newEntry?.sha === file.sha, "Unbound changed-file blob");
-    for (const path of [file.filename, origin]) {
-      assert.ok(!protectedPaths.includes(path) && !path.split("/").includes("node_modules") &&
-        (!(installerNames.has(path.split("/").at(-1)!)) || ["package.json", "pnpm-lock.yaml"].includes(path)), `Protected authority path: ${path}`);
-    }
     if (file.status === "added") {assert.ok(!base.has(file.filename) && file.previous_filename === undefined, "Inconsistent added-file metadata");}
     if (["modified", "removed", "changed"].includes(String(file.status))) {assert.equal(file.previous_filename, undefined, "Unexpected rename metadata");}
     if (file.status === "renamed") {assert.ok(origin !== file.filename && !head.has(origin), "Incomplete rename metadata");}
   }
-  for (const path of new Set([...base.keys(), ...head.keys()])) {
-    const oldEntry = base.get(path), newEntry = head.get(path);
-    const oldLeaf = oldEntry?.type === "tree" ? undefined : oldEntry;
-    const newLeaf = newEntry?.type === "tree" ? undefined : newEntry;
-    if (oldLeaf?.sha !== newLeaf?.sha || oldLeaf?.mode !== newLeaf?.mode || oldLeaf?.type !== newLeaf?.type)
-      {assert.ok(declared.has(path), `Unlisted changed Git leaf: ${path}`);}
-  }
+  for (const path of changedLeaves) {assert.ok(declared.has(path), `Unlisted changed Git leaf: ${path}`);}
   for (const path of protectedPaths) {
     assert.ok(base.has(path), `Missing protected input: ${path}`);
-    assert.deepEqual(head.get(path), base.get(path), `Protected input changed: ${path}`);
+    if (!node26Default || !node26Paths.has(path)) {
+      assert.deepEqual(head.get(path), base.get(path), `Protected input changed: ${path}`);
+    }
     assert.equal(base.get(path)!.mode, "100644", `Protected input must be regular: ${path}`);
   }
   // Optional installer controls and shadow paths are protected even if pagination omits them.
   for (const path of new Set([...base.keys(), ...head.keys()])) {
     if (path.split("/").includes("node_modules") || installerNames.has(path.split("/").at(-1)!)) {
-      if (!["package.json", "pnpm-lock.yaml"].includes(path)) {assert.deepEqual(head.get(path), base.get(path), `Install authority changed: ${path}`);}
+      if (!["package.json", "pnpm-lock.yaml"].includes(path) && !(node26Default && path === ".node-version")) {
+        assert.deepEqual(head.get(path), base.get(path), `Install authority changed: ${path}`);
+      }
     }
   }
   const sources = [baseManifest, baseLock];
@@ -169,7 +228,8 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
     assert.equal(blob.sha, head.get(path)!.sha, "Unbound head data");
     return bytes.toString("utf8");
   });
-  assertVerifierDependencies(baseManifest.toString("utf8"), baseLock.toString("utf8"), headSources[0]!, headSources[1]!);
+  assertVerifierDependencyPolicy(baseManifest.toString("utf8"), baseLock.toString("utf8"), headSources[0]!, headSources[1]!, node26Default);
+  if (node26Default) {return "node26-default";}
   return ["package.json", "pnpm-lock.yaml"].some(path => base.get(path)!.sha !== head.get(path)!.sha) ? "dependencies" : "noop";
 }
 

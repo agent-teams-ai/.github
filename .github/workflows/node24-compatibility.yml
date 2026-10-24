@@ -1,0 +1,43 @@
+name: Node.js 24 compatibility
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node24-compatibility-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compatibility:
+    name: Node.js 24 compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.21.0"
+          cache: pnpm
+      - name: Prove selected Node runtime
+        run: node -e "if (process.version !== 'v24.21.0') throw Error('Node runtime mismatch')"
+      - name: Install the frozen compatible toolchain
+        run: pnpm install --frozen-lockfile --config.engine-strict=true --strict-peer-dependencies
+      - name: Install the isolated Node 24 Renovate tool without lifecycle scripts
+        run: pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+      - name: Build the allowed native validator dependency with managed Node 24
+        run: pnpm --dir tools/renovate-validation run build:native
+      - run: pnpm check

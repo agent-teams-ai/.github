@@ -49,6 +49,7 @@ const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  p
 // expose the skipped legacy alternative; schema 1 executes neither qualifier.
 const legacyQualification = "Run only the exact installed agent-teams-docs qualify CLI";
 const v2Qualification = "Run Cohort v2 qualification through the trusted base-owned runner";
+const currentWorkflowQualification = "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
 function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 : 2) {
   const step = (name, conclusion = "success") => ({ name, status: "completed", conclusion });
   if (role === "trusted-qualification") return [
@@ -60,14 +61,29 @@ function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 
   return [];
 }
 
-test("admission execution fixtures follow canonical legacy and v2 workflow branches", async () => {
+test("admission execution fixtures retain legacy, old v2, and current generation dispatch", async () => {
   const workflow = YAML.parse(await readFile(".github/workflows/docs-protocol-check.yml", "utf8"));
   const steps = workflow.jobs["trusted-qualification"].steps;
-  for (const [name, profile] of [[legacyQualification, "legacy"], [v2Qualification, "cohort-v2"]]) {
+  for (const [name, condition] of [
+    [legacyQualification, "needs.trusted-authorize.outputs.qualification-profile == 'legacy'"],
+    [currentWorkflowQualification, "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' || needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'"],
+  ]) {
     const matching = steps.filter((step) => step.name === name);
     assert.equal(matching.length, 1);
-    assert.equal(matching[0].if, `needs.trusted-authorize.outputs.qualification-profile == '${profile}'`);
+    assert.equal(matching[0].if, condition);
   }
+  assert.match(
+    steps.find((step) => step.name === "Set up Node for trusted qualification tooling").with["node-version"],
+    /cohort-v3.*26\.11\.1.*24\.21\.0/u,
+  );
+  const registry = JSON.parse(await readFile(REGISTRY_PATH));
+  const pinnedV2 = registry.cohorts.find((row) => row.cohort_id === "docs-2026-09-08-stable15");
+  const pinnedSteps = YAML.parse((await readAdmissionBaseFile(
+    pinnedV2.reusable_workflow.path, pinnedV2.reusable_workflow.revision,
+  )).toString()).jobs["trusted-qualification"].steps;
+  assert.equal(pinnedSteps.filter((step) => step.name === v2Qualification).length, 1);
+  assert.equal(pinnedSteps.find((step) => step.name === v2Qualification).if,
+    "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'");
 });
 
 async function fixture(t) {
@@ -1215,7 +1231,9 @@ async function stable31Change(t, inverse = false) {
     await writeFile(join(directory, "governance", name), await readFile(new URL(`../governance/${name}`, import.meta.url)));
   await writeFile(join(directory, REGISTRY_PATH), registryBytes);
   const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
-  await writeFile(paths.exceptions, await readFile(new URL(`../${EXCEPTIONS_PATH}`, import.meta.url)));
+  // This October 3 replay owns the packet's original exception and dates,
+  // independently of later retirement in the current active-exception file.
+  await writeFile(paths.exceptions, stable31Raw.get(`controller-snapshot/${EXCEPTIONS_PATH}`));
   const saved = { GH_TOKEN: process.env.GH_TOKEN, DOCS_GOVERNANCE_READ_TOKEN: process.env.DOCS_GOVERNANCE_READ_TOKEN };
   for (const key of Object.keys(saved)) process.env[key] = "synthetic-TEST-only";
   t.after(() => { for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });

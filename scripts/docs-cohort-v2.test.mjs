@@ -3,14 +3,18 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
+import Ajv2020 from "ajv/dist/2020.js";
+
 import {
   assertDocsCohortAppendOnly,
   cohortEventDigest,
   cohortRecordDigest,
   DOCS_COHORT_V2_DEPENDENCY_EDGES,
   DOCS_COHORT_V2_PACKAGES,
+  DOCS_COHORT_V3_CURRENT_RUNTIME,
   docsCohortTransitionKind,
   docsRuntimeClosureV2Evidence,
+  isDocsCohortSelectableForRepository,
   qualifiedCohortProjection,
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
@@ -20,11 +24,24 @@ import {
 } from "./verify-docs-cohort-v2-receipt.mjs";
 
 const schema = JSON.parse(await readFile("governance/docs-qualified-cohorts.schema.json", "utf8"));
+const consumerPolicySchema = JSON.parse(await readFile("governance/docs-protocol-policy-v2.schema.json", "utf8"));
 const current = JSON.parse(await readFile("governance/docs-qualified-cohorts.json", "utf8"));
+const currentConsumerPolicy = JSON.parse(await readFile("governance/docs-protocol-policy-v2.json", "utf8"));
 const INTEGRITY = `sha512-${"A".repeat(86)}==`;
 const VERSION = "1.0.0-rc.1";
 const HISTORICAL_V1_COHORT_ID = "docs-2026-08-17-rc1";
 const FIXTURE_AS_OF = "2026-09-04T03:00:00Z";
+// Exact existing schemas/qualified-docs-cohort/v3.schema.json properties.canaryRepositoryIds fragment.
+const EXISTING_CANARY_REPOSITORY_IDS_SCHEMA_FRAGMENT = {
+  type: "array",
+  minItems: 1,
+  maxItems: 32,
+  uniqueItems: true,
+  items: {
+    type: "string",
+    pattern: "^[1-9][0-9]*$",
+  },
+};
 
 function historicalV1QualifiedPrefix(source) {
   const record = source.cohorts.find(({ cohort_id }) => cohort_id === HISTORICAL_V1_COHORT_ID);
@@ -162,6 +179,72 @@ function fixture() {
   return { registry, record, closure };
 }
 
+function gen3Fixture() {
+  const base = fixture();
+  const registry = structuredClone(base.registry);
+  const record = structuredClone(base.record);
+  Object.assign(record, {
+    cohort_generation: 3,
+    cohort_id: "docs-2026-09-04-v3-rc1",
+    candidate_digest: `sha256:${"d".repeat(64)}`,
+    policy_identity: {
+      id: "agent-teams.docs-protocol-current-policy",
+      version: "3.0.0",
+      digest: `sha256:${"e".repeat(64)}`,
+    },
+    schemas: {
+      consumer_integration: 4,
+      managed_state: 3,
+      qualification_receipt: 1,
+      docs_protocol: 1,
+      foundation_plan: 1,
+      foundation_journal: 1,
+      foundation_receipt: 1,
+      foundation_envelope: 5,
+    },
+    runtime: {
+      selected_lane: DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane,
+      node: DOCS_COHORT_V3_CURRENT_RUNTIME.node,
+      pnpm: DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
+      qualification_runtime: {
+        node_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.nodeVersion,
+        pnpm_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.pnpmVersion,
+        platform: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.platform,
+        architecture: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.architecture,
+      },
+    },
+    evidence_references: ["test:cohort-v3-inert-fixture"],
+    record_digest: `sha256:${"f".repeat(64)}`,
+  });
+  record.record_digest = cohortRecordDigest(record);
+  registry.cohorts.splice(-1, 1, record);
+  registry.events.splice(historicalV1.events.length);
+  let previous = registry.events.at(-1).event_digest;
+  const eventTimes = ["2026-09-03T00:00:00Z", "2026-09-03T01:00:00Z", "2026-09-04T00:00:00Z"];
+  for (const [index, state] of ["PUBLISHED_UNQUALIFIED", "VERIFIED", "QUALIFIED"].entries()) {
+    const event = {
+      sequence: registry.events.length + 1,
+      cohort_id: record.cohort_id,
+      state,
+      effective_at: eventTimes[index],
+      support_until: null,
+      evidence_references: [`test:v3-${state.toLowerCase()}`],
+      canary_evidence: [],
+      previous_event_digest: previous,
+      event_digest: `sha256:${"0".repeat(64)}`,
+    };
+    event.event_digest = cohortEventDigest(event);
+    registry.events.push(event);
+    previous = event.event_digest;
+  }
+  return { registry, record, closure: base.closure };
+}
+
+function acceptsConsumerPolicy(value) {
+  const validate = new Ajv2020({ allErrors: true, strict: true }).compile(consumerPolicySchema);
+  return validate(value);
+}
+
 test("coexists with byte-immutable v1 and dispatches only on the explicit v2 discriminator", () => {
   const { registry, record } = fixture();
   assert.doesNotThrow(() => validateDocsQualifiedCohorts(registry, schema, {
@@ -178,6 +261,176 @@ test("coexists with byte-immutable v1 and dispatches only on the explicit v2 dis
     asOf: FIXTURE_AS_OF,
   }), /JSON Schema/u);
   assert.notEqual(cohortRecordDigest(record), cohortRecordDigest(disguised));
+});
+
+test("preserves exact legacy projection digest and output bytes", () => {
+  const source = JSON.stringify(qualifiedCohortProjection(
+    historicalV1,
+    HISTORICAL_V1_COHORT_ID,
+    { asOf: FIXTURE_AS_OF },
+  ));
+  assert.equal(Buffer.byteLength(source, "utf8"), 1477);
+  assert.equal(createHash("sha256").update(source).digest("hex"),
+    "9fe0f1fd1e2ef8b27fde46da51f40256295922f128c750be4af876f76626202c");
+});
+
+test("projects an inert generation3 fixture into the exact unselected nominal shape", () => {
+  const { registry, record } = gen3Fixture();
+  assert.doesNotThrow(() => validateDocsQualifiedCohorts(registry, schema, {
+    asOf: FIXTURE_AS_OF,
+  }));
+  const projection = qualifiedCohortProjection(registry, record.cohort_id, {
+    asOf: FIXTURE_AS_OF,
+  });
+  assert.equal(projection.schemaVersion, 3);
+  assert.equal(projection.candidateDigest, record.candidate_digest);
+  assert.equal(projection.recordDigest, record.record_digest);
+  assert.equal(projection.lifecycleState, "QUALIFIED");
+  assert.deepEqual(projection.canaryRepositoryIds, ["1336577313"]);
+  assert.deepEqual(projection.schemas,
+    { consumerIntegration: 4, managedState: 3, qualificationReceipt: 1, docsProtocol: 1 });
+  assert.deepEqual(Object.keys(projection.packages), [
+    "repositoryMutation", "documentAuthoring", "docsProtocol",
+    "docsProtocolAgentTeams", "engineeringFoundation",
+  ]);
+  assert.deepEqual(Object.keys(projection.runtime), [
+    "policy", "selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosure",
+  ]);
+  assert.deepEqual(projection.runtime.policy, record.policy_identity);
+  assert.equal(projection.runtime.selectedLane, "node-26-managed-qualified");
+  assert.equal(projection.runtime.node, ">=26.0.0 <27");
+  assert.equal(projection.runtime.pnpm, ">=11.17.0 <12");
+  assert.deepEqual(projection.runtime.qualificationRuntime, {
+    nodeVersion: "26.11.1",
+    pnpmVersion: "11.20.0",
+    platform: "linux",
+    architecture: "x64",
+  });
+  assert.deepEqual(projection.runtime.runtimeClosure, {
+    domain: "agent-teams.docs-runtime-closure/v2",
+    digest: record.runtime_closure.digest,
+  });
+  assert.equal("selected" in projection, false);
+  assert.equal("managedCandidateSelected" in projection, false);
+});
+
+test("gen3 canaryRepositoryIds satisfy the exact existing nominal string schema fragment", () => {
+  const { registry, record } = gen3Fixture();
+  const { canaryRepositoryIds } = qualifiedCohortProjection(registry, record.cohort_id, {
+    asOf: FIXTURE_AS_OF,
+  });
+  const validateCanaryRepositoryIds = new Ajv2020({ allErrors: true, strict: true })
+    .compile(EXISTING_CANARY_REPOSITORY_IDS_SCHEMA_FRAGMENT);
+  assert.equal(validateCanaryRepositoryIds(canaryRepositoryIds), true);
+  assert.equal(canaryRepositoryIds.every((id) => validateCanaryRepositoryIds([id])), true);
+  assert.equal(validateCanaryRepositoryIds([1336577313]), false);
+  assert.equal(validateCanaryRepositoryIds(["malformed"]), false);
+});
+
+test("rejects unknown and mixed generations instead of falling back to legacy", () => {
+  const { registry, record } = gen3Fixture();
+  assert.throws(() => cohortRecordDigest({ ...record, cohort_generation: 4 }),
+    /closed digest domain/u);
+  const mixed = structuredClone(registry);
+  mixed.cohorts.at(-1).schemas.managed_state = 2;
+  assert.throws(() => validateDocsQualifiedCohorts(mixed, schema, {
+    asOf: FIXTURE_AS_OF,
+  }), /JSON Schema/u);
+  const disguisedV2 = structuredClone(record);
+  disguisedV2.cohort_generation = 2;
+  delete disguisedV2.candidate_digest;
+  delete disguisedV2.policy_identity;
+  disguisedV2.runtime = {
+    node: ">=24.18.0 <25",
+    pnpm: ">=11.17.0 <12",
+    apply_platforms: ["linux", "macos"],
+    check_plan_platforms: ["linux", "macos", "windows"],
+  };
+  disguisedV2.record_digest = cohortRecordDigest(disguisedV2);
+  const invalid = structuredClone(registry);
+  invalid.cohorts.splice(-1, 1, disguisedV2);
+  assert.throws(() => validateDocsQualifiedCohorts(invalid, schema, {
+    asOf: FIXTURE_AS_OF,
+  }), /JSON Schema/u);
+});
+
+test("rejects wrong schema, policy, lane, qualification tuple, candidate, and digests", () => {
+  const semanticCases = [
+    [(record) => { record.policy_identity.version = "3.0.1"; }, /policy identity/u],
+    [(record) => { record.runtime.selected_lane = "node-24-production-default"; }, /managed Node 26 lane/u],
+    [(record) => { record.runtime.qualification_runtime.node_version = "26.11.2"; }, /qualification tuple/u],
+    [(record) => { record.candidate_digest = `sha256:${"0".repeat(64)}`; }, /candidateDigest/u],
+    [(record) => { record.policy_identity.digest = `sha256:${"0".repeat(64)}`; }, /policy identity/u],
+  ];
+  for (const [mutate, expected] of semanticCases) {
+    const { registry, record } = gen3Fixture();
+    mutate(record);
+    record.record_digest = cohortRecordDigest(record);
+    assert.throws(() => validateDocsQualifiedCohorts(registry, {
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+    }, { asOf: FIXTURE_AS_OF }), expected);
+  }
+  const wrongRecordDigest = gen3Fixture();
+  wrongRecordDigest.record.record_digest = `sha256:${"0".repeat(64)}`;
+  assert.throws(() => validateDocsQualifiedCohorts(wrongRecordDigest.registry, {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    type: "object",
+  }, { asOf: FIXTURE_AS_OF }), /record digest/u);
+  for (const mutate of [
+    (record) => { record.schemas.qualification_receipt = 3; },
+    (record) => { record.candidate_digest = `sha256:${"0".repeat(64)}`; },
+    (record) => { record.policy_identity.digest = `sha256:${"0".repeat(64)}`; },
+  ]) {
+    const { registry, record } = gen3Fixture();
+    mutate(record);
+    record.record_digest = cohortRecordDigest(record);
+    assert.throws(() => validateDocsQualifiedCohorts(registry, schema, {
+      asOf: FIXTURE_AS_OF,
+    }), /JSON Schema/u);
+  }
+});
+
+test("shape alone does not select a candidate; missing qualification and canary evidence refuse", () => {
+  const { registry, record } = gen3Fixture();
+  const projection = qualifiedCohortProjection(registry, record.cohort_id, {
+    asOf: FIXTURE_AS_OF,
+  });
+  assert.equal("selected" in projection, false);
+  assert.equal(isDocsCohortSelectableForRepository(record, "PUBLISHED_UNQUALIFIED", 1336577313), false);
+  assert.equal(isDocsCohortSelectableForRepository(record, "QUALIFIED", 999), false);
+  assert.equal(isDocsCohortSelectableForRepository(record, "QUALIFIED", 1336577313), true);
+  assert.throws(() => qualifiedCohortProjection(registry, "missing-qualified-record", {
+    asOf: FIXTURE_AS_OF,
+  }), /no immutable QUALIFIED projection/u);
+});
+
+test("consumer policy accepts one closed generation3 pair and rejects cross-generation pairs", () => {
+  assert.equal(acceptsConsumerPolicy(currentConsumerPolicy), true);
+  const valid = structuredClone(currentConsumerPolicy);
+  const repository = valid.repositories[0];
+  Object.assign(repository, {
+    desired_cohort_generation: 3,
+    observed_cohort_generation: 3,
+    v3_qualification_coordinates: {
+      profile_schema_version: 4,
+      cohort_schema_version: 3,
+      managed_state_schema_version: 3,
+      receipt_schema_version: 1,
+      execution_envelope_schema_version: 1,
+      evidence_class: "cohort-v3-supporting-canary",
+    },
+  });
+  assert.equal(acceptsConsumerPolicy(valid), true);
+  const crossCoordinates = structuredClone(valid);
+  crossCoordinates.repositories[0].desired_cohort_generation = 2;
+  assert.equal(acceptsConsumerPolicy(crossCoordinates), false);
+  const crossObserved = structuredClone(valid);
+  crossObserved.repositories[0].observed_cohort_generation = 2;
+  assert.equal(acceptsConsumerPolicy(crossObserved), false);
+  const wrongReceipt = structuredClone(valid);
+  wrongReceipt.repositories[0].v3_qualification_coordinates.receipt_schema_version = 3;
+  assert.equal(acceptsConsumerPolicy(wrongReceipt), false);
 });
 
 test("v2 accepts optional closed publication reconciliation with fresh record digests", () => {

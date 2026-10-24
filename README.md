@@ -13,7 +13,9 @@ release procedures remain in the owning repository.
 ## Shared Files
 
 - [Engineering Quality Standard](docs/engineering-quality-standard.md) - common Clean Architecture, SOLID, DDD and DRY practices; repository agent files link here explicitly.
-- [Node Runtime Compatibility](docs/node-runtime-compatibility.md) - the Node 24 production default and bounded Node 26 compatibility migration.
+- [Node runtime compatibility](docs/node-runtime-compatibility.md) - the Node 26 tooling default and independent full Node 24 compatibility checks.
+- [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
+- [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
 
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.
@@ -51,6 +53,8 @@ release procedures remain in the owning repository.
 - `renovate-config.json` - organization Renovate preset.
 - `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter review and
   interaction workflows.
+- [npm trusted publication](docs/npm-trusted-publishing.md) - shared archive admission,
+  candidate readback and promotion through the pinned reusable workflow.
 - `.github/workflows/docs-protocol-check.yml` - fixed reusable documentation
   protocol gate with required exact Cohort assertions and no secrets.
 

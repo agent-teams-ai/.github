@@ -2,9 +2,13 @@ import { createHash } from "node:crypto";
 import { lstat, opendir, readFile, realpath } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 
+import { cohortRecordDigest } from "./docs-cohort-policy.mjs";
+
 const SHA = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const DIGEST = /^sha256:(?!0{64}$)[0-9a-f]{64}$/u;
 const SRI = /^sha512-[A-Za-z0-9+/]{86}==$/u;
+const VERSION = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?(?:\+[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/u;
+const RECEIPT_V3_NAMESPACE = "docs-protocol-cohort-v3-qualification-receipt/v1";
 const PACKAGE_AUTHORITY = Object.freeze([
   ["repositoryMutation", "@agent-teams/repository-mutation"],
   ["documentAuthoring", "@agent-teams/document-authoring"],
@@ -21,6 +25,25 @@ const CHECKS = Object.freeze([
   "schema-bindings-3-2-1",
   "runtime-closure-digest",
 ]);
+const CHECKS_V3 = Object.freeze([
+  "profile-v4",
+  "cohort-v3",
+  "cohort-assets",
+  "five-package-closure",
+  "exact-package-versions",
+  "exact-package-integrities",
+  "schema-bindings-4-3-1-qualification-receipt-1",
+  "runtime-closure-digest",
+  "policy-identity-source-digest",
+  "selected-lane-runtime",
+  "observed-node-runtime",
+]);
+const QUALIFICATION_RUNTIME_V3 = Object.freeze({
+  nodeVersion: "26.11.1",
+  pnpmVersion: "11.20.0",
+  platform: "linux",
+  architecture: "x64",
+});
 
 function fail(message) {throw new Error(message);}
 function exactObject(value) {return value !== null && typeof value === "object" && !Array.isArray(value);}
@@ -48,6 +71,9 @@ function receiptCanonicalJson(value) {
   return JSON.stringify(value);
 }
 function bodyDigest(body) {return sha256(receiptCanonicalJson(body));}
+function exactRecordDigest(record) {
+  return record?.record_digest === cohortRecordDigest(record);
+}
 function envelopeDigest(body) {
   return sha256(canonicalJson({ domain: "agent-teams.docs-cohort-v2-execution-envelope/v1", body }));
 }
@@ -57,29 +83,78 @@ function qualificationEventDigest(event) {
 }
 
 /**
- * Verifies Cohort v2 qualification output only as supporting canary evidence.
+ * Verifies Cohort v2 and nominal Cohort v3 output only as supporting evidence.
  * Central hosted CANARY check evidence remains independently mandatory.
  */
 export function verifyDocsCohortV2SupportingEvidence({ receipt, executionEnvelope, record, qualificationEvent }) {
-  const verified = verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualificationEvent });
+  const cohortV3 = record?.cohort_generation === 3;
+  const verified = cohortV3
+    ? verifyDocsCohortV3Receipt({ receipt, executionEnvelope, record, qualificationEvent })
+    : verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualificationEvent });
   if (!record.canary_repositories?.some(({ repository_id: id, repository }) =>
     id === executionEnvelope.checkout.repositoryId &&
     repository === executionEnvelope.checkout.repository)) {
     fail("Cohort v2 execution envelope checkout is not a declared canary repository.");
   }
-  return Object.freeze({ ...verified, evidenceClass: "cohort-v2-supporting-canary" });
+  return Object.freeze({
+    ...verified,
+    evidenceClass: cohortV3 ? "cohort-v3-supporting-canary" : "cohort-v2-supporting-canary",
+  });
 }
 
-// Internal byte-binding verifier, not an authorizer. The consumer CLI reaches
-// this only after the trusted workflow's authorization and installed-tree checks.
-function verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualificationEvent }) {
-  if (record?.cohort_generation !== 2) {fail("Qualification receipt requires an explicit Cohort v2 record.");}
+function verifyQualificationEvent(record, qualificationEvent) {
   if (!exactObject(qualificationEvent) || qualificationEvent.state !== "QUALIFIED" ||
     qualificationEvent.cohort_id !== record.cohort_id ||
     !DIGEST.test(qualificationEvent.event_digest ?? "") ||
     qualificationEvent.event_digest !== qualificationEventDigest(qualificationEvent)) {
     fail("Qualification receipt requires the exact immutable QUALIFIED event.");
   }
+}
+
+function verifyExecutionEnvelope(receiptDigest, executionEnvelope, record) {
+  if (!exactKeys(executionEnvelope, ["schemaVersion", "domain", "callerSha", "checkout",
+    "workflow", "authorizationDigest", "installEvidenceDigest", "receiptDigest", "envelopeDigest"]) ||
+    executionEnvelope.schemaVersion !== 1 ||
+    executionEnvelope.domain !== "agent-teams.docs-cohort-v2-execution-envelope/v1") {
+    fail("Cohort v2 execution envelope is not closed schema v1.");
+  }
+  const { envelopeDigest: claimedEnvelopeDigest, ...envelopeBody } = executionEnvelope;
+  if (!SHA.test(executionEnvelope.callerSha) || !DIGEST.test(executionEnvelope.authorizationDigest) ||
+    !DIGEST.test(executionEnvelope.installEvidenceDigest) ||
+    executionEnvelope.receiptDigest !== receiptDigest ||
+    claimedEnvelopeDigest !== envelopeDigest(envelopeBody)) {
+    fail("Cohort v2 execution envelope digest binding is invalid.");
+  }
+  if (!exactKeys(executionEnvelope.checkout, ["repository", "repositoryId", "revision"]) ||
+    executionEnvelope.checkout.revision !== executionEnvelope.callerSha ||
+    !Number.isSafeInteger(executionEnvelope.checkout.repositoryId) ||
+    executionEnvelope.checkout.repositoryId < 1 ||
+    !/^agent-teams-ai\/[A-Za-z0-9_.-]+$/u.test(executionEnvelope.checkout.repository ?? "")) {
+    fail("Cohort v2 execution envelope checkout identity is not immutable.");
+  }
+  if (!exactKeys(executionEnvelope.workflow, ["repository", "path", "revision", "blobSha",
+    "runId", "runAttempt"]) ||
+    executionEnvelope.workflow.repository !== record.reusable_workflow.repository ||
+    executionEnvelope.workflow.path !== record.reusable_workflow.path ||
+    executionEnvelope.workflow.revision !== record.reusable_workflow.revision ||
+    executionEnvelope.workflow.blobSha !== record.reusable_workflow.blob_sha ||
+    !SHA.test(executionEnvelope.workflow.revision) || !SHA.test(executionEnvelope.workflow.blobSha) ||
+    !Number.isSafeInteger(executionEnvelope.workflow.runId) || executionEnvelope.workflow.runId < 1 ||
+    !Number.isSafeInteger(executionEnvelope.workflow.runAttempt) || executionEnvelope.workflow.runAttempt < 1) {
+    fail("Cohort v2 execution envelope workflow identity differs from immutable authority.");
+  }
+  return Object.freeze({
+    receiptDigest,
+    envelopeDigest: claimedEnvelopeDigest,
+    centralCanaryEvidenceSatisfied: false,
+  });
+}
+
+// Internal byte-binding verifier, not an authorizer. The consumer CLI reaches
+// this only after the trusted workflow's authorization and installed-tree checks.
+function verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualificationEvent }) {
+  if (record?.cohort_generation !== 2) {fail("Qualification receipt requires an explicit Cohort v2 record.");}
+  verifyQualificationEvent(record, qualificationEvent);
   if (!exactKeys(receipt, ["schemaVersion", "receiptDigest", "cohortAdmissible",
     "profileSchemaVersion", "cohort", "packages", "schemas", "runtime", "checks"]) ||
     receipt.schemaVersion !== 3 || receipt.cohortAdmissible !== true ||
@@ -120,42 +195,143 @@ function verifyDocsCohortV2Receipt({ receipt, executionEnvelope, record, qualifi
       fail(`Qualification receipt v3 coordinate ${name} is not exact.`);
     }
   }
-  if (!exactKeys(executionEnvelope, ["schemaVersion", "domain", "callerSha", "checkout",
-    "workflow", "authorizationDigest", "installEvidenceDigest", "receiptDigest", "envelopeDigest"]) ||
-    executionEnvelope.schemaVersion !== 1 ||
-    executionEnvelope.domain !== "agent-teams.docs-cohort-v2-execution-envelope/v1") {
-    fail("Cohort v2 execution envelope is not closed schema v1.");
+  return verifyExecutionEnvelope(receiptDigest, executionEnvelope, record);
+}
+
+function validPublishedAsset(value, callerWorkflow) {
+  const keys = callerWorkflow
+    ? ["package", "path", "digest", "rendered_digest"]
+    : ["package", "path", "digest"];
+  return exactKeys(value, keys) &&
+    value.package === "@agent-teams/docs-protocol-agent-teams" &&
+    typeof value.path === "string" && value.path.length > 0 &&
+    DIGEST.test(value.digest ?? "") &&
+    (!callerWorkflow || DIGEST.test(value.rendered_digest ?? ""));
+}
+
+function verifyDocsCohortV3Receipt({ receipt, executionEnvelope, record, qualificationEvent }) {
+  if (record?.cohort_generation !== 3) {
+    fail("Qualification receipt requires an explicit Cohort v3 record.");
   }
-  const { envelopeDigest: claimedEnvelopeDigest, ...envelopeBody } = executionEnvelope;
-  if (!SHA.test(executionEnvelope.callerSha) || !DIGEST.test(executionEnvelope.authorizationDigest) ||
-    !DIGEST.test(executionEnvelope.installEvidenceDigest) ||
-    executionEnvelope.receiptDigest !== receiptDigest ||
-    claimedEnvelopeDigest !== envelopeDigest(envelopeBody)) {
-    fail("Cohort v2 execution envelope digest binding is invalid.");
+  verifyQualificationEvent(record, qualificationEvent);
+  if (!exactKeys(receipt, ["schemaVersion", "namespace", "receiptDigest", "cohortAdmissible",
+    "profileSchemaVersion", "cohort", "packages", "schemas", "policy", "runtime", "checks"]) ||
+    receipt.schemaVersion !== 1 || receipt.namespace !== RECEIPT_V3_NAMESPACE ||
+    receipt.cohortAdmissible !== true || receipt.profileSchemaVersion !== 4) {
+    fail("Qualification receipt is not one closed admissible Cohort v3 receipt.");
   }
-  if (!exactKeys(executionEnvelope.checkout, ["repository", "repositoryId", "revision"]) ||
-    executionEnvelope.checkout.revision !== executionEnvelope.callerSha ||
-    !Number.isSafeInteger(executionEnvelope.checkout.repositoryId) ||
-    executionEnvelope.checkout.repositoryId < 1 ||
-    !/^agent-teams-ai\/[A-Za-z0-9_.-]+$/u.test(executionEnvelope.checkout.repository ?? "")) {
-    fail("Cohort v2 execution envelope checkout identity is not immutable.");
+  const { receiptDigest, ...receiptBody } = receipt;
+  if (!DIGEST.test(receiptDigest ?? "") || receiptDigest !== bodyDigest(receiptBody)) {
+    fail("Qualification receipt Cohort v3 digest is invalid.");
   }
-  if (!exactKeys(executionEnvelope.workflow, ["repository", "path", "revision", "blobSha",
-    "runId", "runAttempt"]) ||
-    executionEnvelope.workflow.repository !== record.reusable_workflow.repository ||
-    executionEnvelope.workflow.path !== record.reusable_workflow.path ||
-    executionEnvelope.workflow.revision !== record.reusable_workflow.revision ||
-    executionEnvelope.workflow.blobSha !== record.reusable_workflow.blob_sha ||
-    !SHA.test(executionEnvelope.workflow.revision) || !SHA.test(executionEnvelope.workflow.blobSha) ||
-    !Number.isSafeInteger(executionEnvelope.workflow.runId) || executionEnvelope.workflow.runId < 1 ||
-    !Number.isSafeInteger(executionEnvelope.workflow.runAttempt) || executionEnvelope.workflow.runAttempt < 1) {
-    fail("Cohort v2 execution envelope workflow identity differs from immutable authority.");
+  if (!exactKeys(receipt.cohort, ["schemaVersion", "cohortId", "recordDigest",
+    "qualificationEventDigest", "candidateDigest"]) ||
+    receipt.cohort.schemaVersion !== 3 ||
+    receipt.cohort.cohortId !== record.cohort_id ||
+    !DIGEST.test(record.record_digest ?? "") ||
+    receipt.cohort.recordDigest !== record.record_digest ||
+    !exactRecordDigest(record) ||
+    receipt.cohort.qualificationEventDigest !== qualificationEvent.event_digest ||
+    !DIGEST.test(record.candidate_digest ?? "") ||
+    receipt.cohort.candidateDigest !== record.candidate_digest) {
+    fail("Qualification receipt Cohort v3 differs from the exact immutable authority.");
   }
-  return Object.freeze({
-    receiptDigest,
-    envelopeDigest: claimedEnvelopeDigest,
-    centralCanaryEvidenceSatisfied: false,
-  });
+  const assets = record.assets;
+  if (!exactKeys(assets, ["skill", "caller_workflow", "asset_catalog", "transition_catalog"]) ||
+    !validPublishedAsset(assets.skill, false) ||
+    !validPublishedAsset(assets.caller_workflow, true) ||
+    !validPublishedAsset(assets.asset_catalog, false) ||
+    !validPublishedAsset(assets.transition_catalog, false)) {
+    fail("Qualification receipt Cohort v3 assets are not exact nonzero bindings.");
+  }
+  const expectedRuntime = {
+    selectedLane: "node-26-managed-qualified",
+    node: ">=26.0.0 <27",
+    pnpm: ">=11.17.0 <12",
+    qualificationRuntime: QUALIFICATION_RUNTIME_V3,
+  };
+  const expectedPolicy = {
+    id: "agent-teams.docs-protocol-current-policy",
+    version: "3.0.0",
+    sourceDigest: record.policy_identity?.digest,
+  };
+  if (!exactKeys(receipt.schemas, ["consumerIntegration", "managedState",
+    "qualificationReceipt", "docsProtocol"]) ||
+    canonicalJson(receipt.schemas) !== canonicalJson({
+      consumerIntegration: 4,
+      managedState: 3,
+      qualificationReceipt: 1,
+      docsProtocol: 1,
+    }) || !exactKeys(record.schemas, ["consumer_integration", "managed_state",
+      "qualification_receipt", "docs_protocol", "foundation_plan", "foundation_journal",
+      "foundation_receipt", "foundation_envelope"]) ||
+    canonicalJson(record.schemas) !== canonicalJson({
+      consumer_integration: 4,
+      managed_state: 3,
+      qualification_receipt: 1,
+      docs_protocol: 1,
+      foundation_plan: 1,
+      foundation_journal: 1,
+      foundation_receipt: 1,
+      foundation_envelope: 5,
+    }) || !exactKeys(receipt.policy, ["id", "version", "sourceDigest"]) ||
+    canonicalJson(receipt.policy) !== canonicalJson(expectedPolicy) ||
+    !exactKeys(record.policy_identity, ["id", "version", "digest"]) ||
+    record.policy_identity.id !== expectedPolicy.id ||
+    record.policy_identity.version !== expectedPolicy.version ||
+    !DIGEST.test(record.policy_identity.digest ?? "") ||
+    !exactKeys(receipt.runtime, ["selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosure"]) ||
+    canonicalJson(receipt.runtime) !== canonicalJson({
+      ...expectedRuntime,
+      runtimeClosure: {
+        domain: "agent-teams.docs-runtime-closure/v2",
+        digest: record.runtime_closure?.digest,
+      },
+    }) ||
+    !exactKeys(record.runtime, ["selected_lane", "node", "pnpm", "qualification_runtime"]) ||
+    record.runtime.selected_lane !== expectedRuntime.selectedLane ||
+    record.runtime.node !== expectedRuntime.node ||
+    record.runtime.pnpm !== expectedRuntime.pnpm ||
+    !exactKeys(record.runtime.qualification_runtime, ["node_version", "pnpm_version",
+      "platform", "architecture"]) ||
+    canonicalJson(record.runtime.qualification_runtime) !== canonicalJson({
+      node_version: QUALIFICATION_RUNTIME_V3.nodeVersion,
+      pnpm_version: QUALIFICATION_RUNTIME_V3.pnpmVersion,
+      platform: QUALIFICATION_RUNTIME_V3.platform,
+      architecture: QUALIFICATION_RUNTIME_V3.architecture,
+    }) || !exactKeys(record.runtime_closure, ["schema_version", "domain", "package_manager",
+      "lockfile_version", "package_count", "projection_path", "digest"]) ||
+    record.runtime_closure.schema_version !== 2 ||
+    record.runtime_closure.domain !== "agent-teams.docs-runtime-closure/v2" ||
+    record.runtime_closure.package_manager !== "pnpm@11.20.0" ||
+    record.runtime_closure.lockfile_version !== "9.0" ||
+    !Number.isSafeInteger(record.runtime_closure.package_count) ||
+    record.runtime_closure.package_count < 5 ||
+    !DIGEST.test(record.runtime_closure.digest ?? "") ||
+    record.runtime_closure.projection_path !==
+      `governance/docs-runtime-closures/${record.runtime_closure.digest.replace(":", "-")}.json` ||
+    canonicalJson(receipt.checks) !== canonicalJson(CHECKS_V3)) {
+    fail("Qualification receipt Cohort v3 schema, policy, runtime, or checks differ.");
+  }
+  if (!Array.isArray(record.packages) || record.packages.length !== PACKAGE_AUTHORITY.length ||
+    canonicalJson(record.packages.map(({ name }) => name)) !==
+      canonicalJson(PACKAGE_AUTHORITY.map(([, name]) => name))) {
+    fail("Qualification receipt Cohort v3 authority is not the exact five-package closure.");
+  }
+  if (!Array.isArray(receipt.packages) || receipt.packages.length !== PACKAGE_AUTHORITY.length) {
+    fail("Qualification receipt Cohort v3 must contain exactly five coordinates.");
+  }
+  const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
+  for (const [index, [key, name]] of PACKAGE_AUTHORITY.entries()) {
+    const actual = receipt.packages[index];
+    const expected = packageByName.get(name);
+    if (!exactKeys(actual, ["key", "name", "version", "integrity"]) || actual.key !== key ||
+      actual.name !== name || !VERSION.test(actual.version ?? "") || actual.version !== expected?.version ||
+      actual.integrity !== expected?.integrity || !SRI.test(actual.integrity ?? "")) {
+      fail(`Qualification receipt Cohort v3 coordinate ${name} is not exact.`);
+    }
+  }
+  return verifyExecutionEnvelope(receiptDigest, executionEnvelope, record);
 }
 
 export function docsCohortV2ExecutionEnvelopeDigest(envelopeBody) {
@@ -192,8 +368,22 @@ async function packageRoot(installRoot, expected) {
   return matches[0];
 }
 
-async function packageTreeDigest(root, name) {
-  const entries = [];
+const INSTALLED_PACKAGE_TREE_DIGEST_DOMAIN =
+  "agent-teams.docs-installed-package-tree/v2";
+
+function updateTreeDigestField(hash, value) {
+  const bytes = Buffer.isBuffer(value) ? value : Buffer.from(value, "utf8");
+  const length = Buffer.alloc(8);
+  length.writeBigUInt64BE(BigInt(bytes.byteLength));
+  hash.update(length).update(bytes);
+}
+
+export async function installedPackageTreeDigest(root, name) {
+  const rootMetadata = await lstat(root);
+  if (!rootMetadata.isDirectory() || rootMetadata.isSymbolicLink()) {
+    fail(`${name} installed tree root is not a directory.`);
+  }
+  const entries = [{ kind: "directory", path: "", absolute: root }];
   async function visit(current) {
     const handle = await opendir(current);
     for await (const entry of handle) {
@@ -201,7 +391,7 @@ async function packageTreeDigest(root, name) {
       const path = join(current, entry.name);
       const portable = relative(root, path).split(sep).join("/");
       if (entry.isSymbolicLink()) {fail(`${name} installed tree contains a symlink.`);}
-      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable }); await visit(path);}
+      if (entry.isDirectory()) {entries.push({ kind: "directory", path: portable, absolute: path }); await visit(path);}
       else if (entry.isFile()) {entries.push({ kind: "file", path: portable, absolute: path });}
       else {fail(`${name} installed tree contains a non-file entry.`);}
     }
@@ -210,17 +400,27 @@ async function packageTreeDigest(root, name) {
   entries.sort((left, right) => Buffer.compare(
     Buffer.from(`${left.kind}\0${left.path}`), Buffer.from(`${right.kind}\0${right.path}`),
   ));
-  const hash = createHash("sha256"); let total = 0;
+  const hash = createHash("sha256");
+  updateTreeDigestField(hash, INSTALLED_PACKAGE_TREE_DIGEST_DOMAIN);
+  updateTreeDigestField(hash, String(entries.length));
+  let total = 0;
   for (const entry of entries) {
-    hash.update(entry.kind).update("\0").update(entry.path).update("\0");
+    const metadata = await lstat(entry.absolute);
+    const expectedKind = entry.kind === "directory" ? metadata.isDirectory() : metadata.isFile();
+    if (!expectedKind) {fail(`${name} installed tree entry kind changed.`);}
+    const mode = (metadata.mode & 0o777).toString(8).padStart(3, "0");
+    updateTreeDigestField(hash, entry.kind);
+    updateTreeDigestField(hash, entry.path);
+    updateTreeDigestField(hash, mode);
     if (entry.kind === "file") {
-      const metadata = await lstat(entry.absolute);
-      if (!metadata.isFile() || metadata.size > 16 * 1024 * 1024) {
+      if (metadata.size > 16 * 1024 * 1024) {
         fail(`${name} installed artifact exceeds its file bound.`);
       }
       const bytes = await readFile(entry.absolute); total += bytes.byteLength;
       if (total > 256 * 1024 * 1024) {fail(`${name} installed tree exceeds its byte bound.`);}
-      hash.update(bytes).update("\0");
+      updateTreeDigestField(hash, bytes);
+    } else {
+      updateTreeDigestField(hash, Buffer.alloc(0));
     }
   }
   return `sha256:${hash.digest("hex")}`;
@@ -255,9 +455,17 @@ async function verifyCommand(argv) {
   const authorization = authorizationEnvelope?.authorization;
   if (!exactKeys(authorizationEnvelope, ["authorization", "authorizationDigest"]) ||
     authorizationEnvelope.authorizationDigest !== authorizationDigest(authorization) ||
-    authorization?.qualificationProfile !== "cohort-v2" || authorization?.schemaVersion !== 2 ||
     authorization?.callerSha !== args["caller-sha"] || !SHA.test(args["caller-sha"])) {
-    fail("Cohort v2 central authorization is not exact.");
+    fail("Cohort central authorization is not exact.");
+  }
+  const authority = authorization.qualificationAuthority;
+  const record = authority?.registryRecord;
+  const generation = record?.cohort_generation;
+  const expectedAuthorizationSchema = generation === 3 ? 3 : generation === 2 ? 2 : undefined;
+  if (expectedAuthorizationSchema === undefined || authorization.schemaVersion !== expectedAuthorizationSchema ||
+    authorization.qualificationProfile !== (generation === 3 ? "cohort-v3" : "cohort-v2") ||
+    authority.recordDigest !== record.record_digest || !exactRecordDigest(record)) {
+    fail("Cohort central authorization generation or full record digest is not exact.");
   }
   const consumerRoot = await realpath(resolve(args.consumer));
   for (const [path, expectedDigest] of Object.entries(authorization.fileDigests ?? {})) {
@@ -287,23 +495,13 @@ async function verifyCommand(argv) {
     if (installedNames.has(installed.name)) {fail("Cohort v2 install evidence contains duplicate coordinates.");}
     installedNames.add(installed.name);
     const root = await packageRoot(installRoot, expected);
-    if (installed.treeDigest !== await packageTreeDigest(root, installed.name)) {
+    if (installed.treeDigest !== await installedPackageTreeDigest(root, installed.name)) {
       fail("Cohort v2 installed package bytes changed after trusted verification.");
     }
   }
   if (installedNames.size !== authorizedPackages.size) {
     fail("Cohort v2 install evidence omits an authorized coordinate.");
   }
-  const authority = authorization.qualificationAuthority;
-  const record = {
-    cohort_generation: authority?.cohortGeneration,
-    cohort_id: authority?.cohortId,
-    record_digest: authority?.recordDigest,
-    packages: authorization.expectedPackages,
-    reusable_workflow: authority?.reusableWorkflow,
-    runtime_closure: authorization.expectedRuntimeClosure,
-    canary_repositories: authority?.canaryRepositories,
-  };
   const envelopeBody = {
     schemaVersion: 1,
     domain: "agent-teams.docs-cohort-v2-execution-envelope/v1",
@@ -325,16 +523,19 @@ async function verifyCommand(argv) {
     installEvidenceDigest: sha256(installEvidenceSource),
     receiptDigest: receipt?.receiptDigest,
   };
-  const verified = verifyDocsCohortV2Receipt({
+  const verificationInput = {
     receipt,
     executionEnvelope: { ...envelopeBody, envelopeDigest: envelopeDigest(envelopeBody) },
     record,
     qualificationEvent: authority.qualificationEvent,
-  });
+  };
+  const verified = generation === 3
+    ? verifyDocsCohortV3Receipt(verificationInput)
+    : verifyDocsCohortV2Receipt(verificationInput);
   if (verified.centralCanaryEvidenceSatisfied !== false) {
     fail("Consumer receipt must never satisfy central CANARY evidence.");
   }
-  console.log("Cohort v2 authorized consumer qualification receipt is bound; central CANARY remains unsatisfied.");
+  console.log(`Cohort generation ${record.cohort_generation} authorized consumer qualification receipt is bound; central CANARY remains unsatisfied.`);
 }
 
 const isEntrypoint = process.argv[1] !== undefined &&

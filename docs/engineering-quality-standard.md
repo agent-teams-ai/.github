@@ -104,6 +104,83 @@ their successor process.
 
 Repository agent instructions link here; they do not duplicate this direction.
 
+## Language selection and runtime boundaries
+
+Owner direction recorded on 2026-10-22: TypeScript remains the main application
+language, but agents must consider another language or an existing native
+component when it offers a concrete advantage for the responsibility at hand.
+Do not choose TypeScript automatically for every critical component, and do not
+rewrite a component in Rust or another language merely because it is critical.
+
+Start by comparing mature libraries and the existing responsible component.
+Name the missing capability or measured limitation: operating-system resource
+custody, a bounded computation, a parser exposed to hostile input, memory safety
+at a native boundary, deployment constraints, or reuse of a suitable runtime.
+Distinguish those benefits from business correctness, distributed authority,
+cleanup completion and recovery, which still need their own explicit contracts.
+A language name or an apparently smaller implementation is not evidence of a
+stronger guarantee.
+
+Keep a different-language component behind the consuming owner's narrow port.
+Compare an in-process binding with a separate process according to the required
+failure boundary and supported deployment profile. Include serialization, FFI,
+ABI and protocol evolution, supported operating systems and architectures,
+packaging/signing, dependencies and licenses, observability, debugging, CI and
+release maintenance in the decision. Preserve the existing physical-custody
+owner and qualify the selected implementation instead of adding a second
+supervisor. A deferred native migration or synthetic experiment is not a
+qualified reusable implementation. Do not put a wire protocol between ordinary
+in-process TypeScript modules without a concrete boundary requirement.
+
+For a significant language/runtime choice, present the current-stack reuse
+option and the strongest alternative, the exact promised behavior, evidence and
+remaining uncertainty. Rate confidence, achievable reliability within that same
+scope, and complexity out of ten; higher complexity means more burden. Estimate
+new production/integration code and tests/fixtures separately, state total versus
+incremental cost, and account for platform/release work outside those LOC.
+Scores are engineering judgments, not measured availability. Run a bounded
+experiment only when its result can change the choice.
+
+Preserve accepted language, custody and deployment decisions. A reference stack
+does not adopt a consumer's storage, workflow engine or local deployment
+profile. Propose a scoped successor for a genuine conflict; continue unrelated
+work. This instruction does not approve a new runtime, migrate existing code or
+add an approval step for routine implementation choices.
+
+### TypeScript for JavaScript runtimes
+
+Use ordinary `.ts` source for new maintained code targeting JavaScript runtimes,
+with strict typechecking and the owner-selected TypeScript 7.0.2 or newer
+qualification baseline. Follow the target repository's exact adoption and
+dependency profile; a link to this guidance does not silently upgrade its pins
+or require an unrelated migration of existing JavaScript. A different language
+is an explicit implementation choice under the preceding criteria, not a way to
+avoid the relevant checks.
+
+## Universal tooling and discoverability
+
+Owner direction recorded on 2026-10-21: reusable tools are universal products.
+Their public package, CLI, configuration and API names must describe their
+purpose without coupling them to the Agent Teams organization or a consumer
+product. Repository ownership and hosting location do not restrict who can use
+a tool. Existing published identities change only through a scoped migration;
+this rule does not silently rename released artifacts.
+
+A general-purpose tool must work in an ordinary external project without
+organization credentials, product catalogs, governance admission or an
+organization-specific runtime. Keep optional organization policy separate from
+the portable mechanism and explicit stack presets. Universal does not mean
+loading every technology, introducing a plugin platform or guessing future needs.
+
+Document a tool before implementation: what it does, when to use it, ownership
+of consumer configuration, supported tasks and limits, and its actual availability.
+Its owning README is the authority for released installation and usage. Keep
+the [development tools catalog](development-tools.md) as agent navigation to
+that authority. Read the catalog before choosing or duplicating shared tooling.
+Mark planned work honestly; a plan is not an installable package. Repository
+agent instructions must route to this guidance explicitly; placing a file in
+the organization `.github` repository does not automatically load it elsewhere.
+
 ## Clean Architecture and ownership
 
 - Put invariants and policy with their semantic owner. Application use cases
@@ -247,9 +324,10 @@ opens a PR with `gh` before a failed-run rerun/current-input attestation.
 
 | Topic | Canonical entrypoint |
 | --- | --- |
-| Feature ownership, layers and dependency mechanisms | [Feature Module Standard index](architecture/feature-module-standard/README.md) and [v1](architecture/feature-module-standard/v1.md); the consumer's local adoption profile owns its exact scope |
+| Feature ownership, layers and dependency mechanisms | [Feature Module Standard index](architecture/feature-module-standard/README.md), [v1](architecture/feature-module-standard/v1.md) and [v1.1](architecture/feature-module-standard/v1.1.md); the consumer's local adoption profile owns its exact scope |
 | Get Modular construction and consumer adoption, when applicable | [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard); use the consumer's reviewed pin |
-| Reusable development tooling and checks | [Engineering Foundation](https://github.com/agent-teams-ai/engineering-foundation); repository profiles own applicability and actual commands |
+| Shared backend technology responsibilities | [Backend stack reference](backend-stack.md); apply the consumer's explicit adoption and product decisions, with frontend choices kept separate |
+| Reusable development tooling, purpose and availability | [Development tools catalog](development-tools.md), then the owning package README; [Engineering Foundation](https://github.com/agent-teams-ai/engineering-foundation) owns shared implementation, and consumer profiles own applicability and actual commands |
 | Commit and PR authorship | [Maintained owner policy](../GOVERNANCE.md#commit-and-pull-request-authorship) and [canonical identity/status rule](../governance/commit-author-identity.json); preserve external human authorship |
 | Contributions and decisions | [Contribution rules](../CONTRIBUTING.md) and [governance boundaries](../GOVERNANCE.md) |
 | Security reporting and organization defaults | [Security policy](../SECURITY.md) and [security baseline](organization-security-baseline.md) |

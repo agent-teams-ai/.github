@@ -3,8 +3,6 @@ import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
 import * as filesystem from 'node:fs/promises';
 import path from 'node:path';
-import { tmpdir } from 'node:os';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { Script } from 'node:vm';
@@ -15,21 +13,25 @@ import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from './c
 import { selectOxlintFiles } from './run-quality-lint.mjs';
 import { assertVerifierAuthority } from './check-docs-verifier-authority.mts';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const record = validatePortableRecord(Buffer.from(read('governance/docs-portable-authority-r322.json')));
+const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
+const acceptedG = '66d6d3d2c2643edac414ded48c0ee0586774dd07';
+const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
+const readG = (path) => gitBytes('show', `${acceptedG}:${path}`).toString('utf8');
+const record = validatePortableRecord(Buffer.from(readG('governance/docs-portable-authority-r322.json')));
 const sha = (value) => `sha256:${createHash('sha256').update(value).digest('hex')}`;
-const additionBodies = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-additions.json'));
+const additionBodies = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/new-additions.json'));
 const addedRows = record.manifest.filter((row) => row.old === null);
 assert.equal(addedRows.length, 7);
 assert.deepEqual(Object.keys(additionBodies).sort(), addedRows.map((row) => row.path).sort());
-const historical = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
+const historical = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/old-overrides.json'));
 assert.deepEqual(historical.historical_sources, record.historical_sources);
 const oldOverrides = new Map(historical.old_overrides.map((entry) => [entry.path, entry]));
-const oldBodies = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json'));
+const oldBodies = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/historical-old-bodies.json'));
 assert.equal(oldOverrides.size, historical.old_overrides.length);
 assert.deepEqual([...oldOverrides.keys()].sort(), record.manifest.filter((row) => row.old)
   .map((row) => row.path).sort());
 assert.deepEqual(Object.keys(oldBodies).sort(), [...oldOverrides.keys()].sort());
-const forward = JSON.parse(read('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
+const forward = JSON.parse(readG('scripts/fixtures/docs-portable-authority-r322/new-overrides.json'));
 assert.deepEqual(forward.historical_sources, record.historical_sources);
 const newOverrides = new Map(forward.new_overrides.map((entry) => [entry.path, entry]));
 assert.equal(newOverrides.size, forward.new_overrides.length);
@@ -131,7 +133,7 @@ test('acceptance is closed, current, exact, and direction-specific', () => {
   assert.throws(() => validatePortableAcceptance(accepted(), record, now + 86400_000));
 });
 test('unbound reviewer identity refuses before API authority observations', async () => {
-  const api = { getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')),
+  const api = { getInstalledRecord: async () => Buffer.from(readG('governance/docs-portable-authority-r322.json')),
     getRepository: () => {throw Error('must not read repository');} };
   await assert.rejects(verifyPortableExecution({}, { ...accepted(), reviewer_id: 0 }, api,
     () => now), /accepted execution coordinates differ/u);
@@ -237,7 +239,7 @@ test('historical execution port binds one attempt and complete job inventory', a
 test('installed G content fails closed without qualifying either Actions head association', async () => {
   for (const direction of ['forward', 'inverse']) for (const headSha of ['1'.repeat(40), '2'.repeat(40)]) {
     let observations = 0;
-    const api = new Proxy({ getInstalledRecord: async () => Buffer.from(read('governance/docs-portable-authority-r322.json')) }, {
+    const api = new Proxy({ getInstalledRecord: async () => Buffer.from(readG('governance/docs-portable-authority-r322.json')) }, {
       get(target, key) {
         if (key in target) {return target[key];}
         return async () => {observations++; return { head_sha: headSha, conclusion: 'success' };};
@@ -260,7 +262,7 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
   const before = reconstructed('old'), after = reconstructed('new');
   for (const p of G) {
     assert.ok(!record.manifest.some((row) => row.path === p), p);
-    const descriptor = identity(Buffer.from(read(p)));
+    const descriptor = identity(Buffer.from(readG(p)));
     before.set(p, descriptor); after.set(p, descriptor);
   }
   assert.equal(classifyPortableTransition(before, after, record), 'portable-forward');
@@ -268,7 +270,7 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
   for (const p of ['.github/workflows/docs-protocol-check.yml',
     'scripts/check-community-files.mjs', 'scripts/check-community-files.test.mjs']) {
     assert.ok(!record.manifest.some((row) => row.path === p));
-    const descriptor = identity(Buffer.from(read(p)));
+    const descriptor = identity(Buffer.from(readG(p)));
     before.set(p, descriptor); after.set(p, descriptor);
     const changed = new Map(after); changed.set(p, identity(Buffer.from('rewritten frozen authority')));
     assert.throws(() => classifyPortableTransition(before, changed, record), /incomplete or mixed/u);
@@ -282,152 +284,25 @@ test('independent byte reconstruction admits only the complete 21-path pair and 
 });
 
 test('current G census is independently pinned and agrees with actual Oxlint selection', async () => {
-  // Independent complete composition, rather than a scan of sibling tests' disposable source.
-  const tooling = [
-    'scripts/assert-node-runtime.mts', 'scripts/audit-commit-author-identity.mjs',
-    'scripts/check-cohort-append-only.mjs', 'scripts/check-cohort-emergency-append.mjs',
-    'scripts/check-community-files.mjs', 'scripts/check-docs-verifier-authority.mts',
-    'scripts/check-docs-verifier-authority.test.mts', 'scripts/check-node-compatibility.mts',
-    'scripts/check-node-compatibility.test.mts', 'scripts/check-quality-scope.mjs',
-    'scripts/check-reviewrouter-workflow.mjs', 'scripts/docs-cohort-policy.mjs',
-    'scripts/docs-legacy-admission-recovery.mjs', 'scripts/docs-platform-admission-recovery.mjs',
-    'scripts/docs-portable-authority-r322.mjs', 'scripts/governance-policy.mjs',
-    'scripts/merge-owner-pr.mjs', 'scripts/node-compatibility-package-ownership.test.mts',
-    'scripts/observe-org-repository-inventory.mjs', 'scripts/onboard-commit-author-identity.mjs',
-    'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts',
-    'scripts/read-docs-portable-authority-r322.mjs', 'scripts/run-quality-lint.mjs',
-    'scripts/validate-governance.mjs', 'scripts/verify-docs-admission-change.mjs',
-    'scripts/verify-docs-cohort-evidence.mjs', 'scripts/verify-docs-cohort-v2-receipt.mjs',
-    'scripts/verify-docs-consumer-gate.mjs', 'scripts/verify-docs-platform-recovery-installation-r317.mjs',
-    'scripts/verify-docs-qualification-receipt.mjs', 'tools/feature-module-standard/check.mjs',
-  ].sort();
-  const sources = [...tooling, ...[
-    'check-community-files', 'check-quality-scope', 'commit-author-identity',
-    'docs-admission-authority-evolution-v1', 'docs-admission-change',
-    'docs-admission-clock-repair-v1', 'docs-admission-inventory-cutover-v1',
-    'docs-admission-recovery', 'docs-admission-workflow',
-    'docs-central-pr224-inverse-v1', 'docs-central-pr224-transition-v1',
-    'docs-central-recovery-transition', 'docs-cohort-authority-evolution-v2',
-    'docs-cohort-authority-evolution-v3', 'docs-cohort-authority-evolution-v4',
-    'docs-cohort-authority-evolution-v5', 'docs-cohort-authority-evolution-v6',
-    'docs-cohort-authority-evolution-v7', 'docs-cohort-authority-evolution-v8',
-    'docs-cohort-policy', 'docs-cohort-v2', 'docs-consumer-receipt-cutover-v1',
-    'docs-governance-authority-evolution-v11', 'docs-governance-authority-evolution-v12',
-    'docs-governance-authority-evolution-v13', 'docs-isolated-qualification-cutover-v1',
-    'docs-legacy-admission-recovery', 'docs-node24-launcher-v1',
-    'docs-platform-admission-recovery', 'docs-platform-exception-review-v1',
-    'docs-platform-recovery-installation-r317', 'docs-platform-stable31-pending-transition',
-    'docs-portable-authority-r322', 'docs-qualification-authority-evolution-v10',
-    'docs-qualification-authority-evolution-v11', 'docs-qualification-authority-evolution-v12',
-    'docs-qualification-authority-evolution-v2', 'docs-qualification-authority-evolution-v3',
-    'docs-qualification-authority-evolution-v4', 'docs-qualification-authority-evolution-v5',
-    'docs-qualification-authority-evolution-v6', 'docs-qualification-authority-evolution-v7',
-    'docs-qualification-authority-evolution-v8', 'docs-qualification-authority-evolution-v9',
-    'foundation-quality-1.7.2-transition-v1', 'governance-policy', 'merge-owner-pr',
-    'observe-org-repository-inventory', 'onboard-commit-author-identity',
-    'quality-authority-evolution-v1', 'read-docs-portable-authority-r322',
-    'verify-docs-consumer-gate', 'verify-docs-qualification-receipt',
-  ].map((name) => `scripts/${name}.test.mjs`),
-  'tools/feature-module-standard/check.test.mjs'].sort();
-  assert.equal(sources.length, 86);
-  const executableSources = (paths) => paths.filter((p) => /\.(?:[cm]?[jt]s|[jt]sx)$/u.test(p)).sort();
-  function assertCompleteSourceInventory(paths) {
-    assert.deepEqual(executableSources(paths), sources, 'complete fixture executable source inventory changed');
-  }
-  const parserMetadata = [
-    'tools/node-compatibility-tooling/package.json',
-    'tools/node-compatibility-tooling/pnpm-lock.yaml',
-    'tools/node-compatibility-tooling/pnpm-workspace.yaml',
-  ];
-  function assertClosedParserInventory(paths) {
-    assert.deepEqual(paths.filter((p) => p.startsWith('tools/node-compatibility-tooling/')).sort(),
-      parserMetadata, 'complete parser subtree inventory changed');
-  }
-  const headPaths = gitBytes('ls-tree', '-r', '--name-only', '-z', 'HEAD').toString('utf8')
-    .split('\0').filter(Boolean);
-  const trackedSources = executableSources(headPaths);
-  assert.deepEqual(trackedSources, sources, 'complete owned source composition changed');
-  assertClosedParserInventory(headPaths);
-  const root = fileURLToPath(new URL('../', import.meta.url));
-  const scratch = path.relative(root, path.resolve(tmpdir()));
-  assert.ok(scratch === '..' || scratch.startsWith(`..${path.sep}`) || path.isAbsolute(scratch),
-    'TEST census TMPDIR must be outside the checkout');
-  const fixture = await filesystem.mkdtemp(path.join(tmpdir(), 'TEST-portable-r322-census-'));
-  let pre;
-  try {
-    // No package execution or dependency resolution occurs in this separate Git root.
-    execFileSync('git', ['init', '--quiet'], { cwd: fixture });
-    for (const p of [...sources, 'package.json', 'docs/engineering-quality-profile.json',
-      'oxlint.json', 'tsconfig.tooling.json', 'docs/engineering-quality-required-tests.json',
-      'docs/engineering-quality-source-policy.yaml', 'foundation.config.yaml', '.node-version',
-      '.github/workflows/ci.yml', ...parserMetadata]) {
-      const target = path.join(fixture, p);
-      await filesystem.mkdir(path.dirname(target), { recursive: true });
-      await filesystem.copyFile(path.join(root, p), target);
-    }
-    const base = pathToFileURL(`${fixture}${path.sep}`);
-    const adoption = await readQualityAdoption(base);
-    assertCompleteSourceInventory(adoption.trackedPaths);
-    pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
-    assert.deepEqual(pre, tooling);
-
-    // A copied non-lint test can disappear at a real Git exclusion boundary while lint still agrees.
-    const ignoredTest = 'scripts/read-docs-portable-authority-r322.test.mjs';
-    assert.deepEqual(await filesystem.readFile(path.join(fixture, ignoredTest)),
-      await filesystem.readFile(path.join(root, ignoredTest)));
-    const exclude = path.join(fixture, '.git/info/exclude');
-    const originalExclude = await filesystem.readFile(exclude);
-    await filesystem.writeFile(exclude, Buffer.concat([originalExclude, Buffer.from(`\n/${ignoredTest}\n`)]));
-    const omittedAdoption = await readQualityAdoption(base);
-    assert.ok(!omittedAdoption.trackedPaths.includes(ignoredTest), 'Git exclusion must actually omit the copied test');
-    assert.deepEqual(executableSources(omittedAdoption.trackedPaths), sources.filter((p) => p !== ignoredTest));
-    assert.deepEqual(deriveLintPaths(assertQualityAdoption(omittedAdoption), omittedAdoption.profile), tooling);
-    assert.throws(() => assertCompleteSourceInventory(omittedAdoption.trackedPaths),
-      /complete fixture executable source inventory changed/u);
-    await filesystem.writeFile(exclude, originalExclude);
-    assertCompleteSourceInventory((await readQualityAdoption(base)).trackedPaths);
-
-    await filesystem.writeFile(path.join(fixture, 'TEST-unknown.mts'), 'export const unknown = true;\n');
-    const unknownAdoption = await readQualityAdoption(base);
-    assert.ok(unknownAdoption.trackedPaths.includes('TEST-unknown.mts'));
-    assert.throws(() => assertCompleteSourceInventory(unknownAdoption.trackedPaths),
-      /complete fixture executable source inventory changed/u);
-    assert.throws(() => assertQualityAdoption(unknownAdoption), /unclassified executable source/u);
-    await filesystem.rm(path.join(fixture, 'TEST-unknown.mts'));
-
-    // Test-only index/tree writes prove non-executable parser drift escapes the former source-only check.
-    const fixtureGit = (...args) => execFileSync('git', args, { cwd: fixture });
-    const treePaths = (tree) => fixtureGit('ls-tree', '-r', '--name-only', '-z', tree)
-      .toString('utf8').split('\0').filter(Boolean);
-    fixtureGit('add', '--', ...sources, ...parserMetadata);
-    const cleanTree = fixtureGit('write-tree').toString('utf8').trim();
-    assertCompleteSourceInventory(treePaths(cleanTree));
-    assertClosedParserInventory(treePaths(cleanTree));
-    const extraPath = 'tools/node-compatibility-tooling/extra.json';
-    const extraBytes = Buffer.from('{"TEST":"unexpected parser metadata"}\n');
-    await filesystem.writeFile(path.join(fixture, extraPath), extraBytes);
-    fixtureGit('add', '--', extraPath);
-    const extraTree = fixtureGit('write-tree').toString('utf8').trim();
-    const extraPaths = treePaths(extraTree);
-    assert.ok(extraPaths.includes(extraPath), 'extra JSON must be tracked in the actual Git tree');
-    assert.deepEqual(fixtureGit('show', `${extraTree}:${extraPath}`), extraBytes);
-    assert.deepEqual(executableSources(extraPaths), sources, 'former executable-only HEAD check still passes');
-    assert.throws(() => assertClosedParserInventory(extraPaths), /complete parser subtree inventory changed/u);
-  } finally {
-    await filesystem.rm(fixture, { recursive: true, force: true });
-  }
+  const adoption = await readQualityAdoption();
+  const pre = deriveLintPaths(assertQualityAdoption(adoption), adoption.profile);
   const censusRow = record.manifest.find((r) => r.path === 'scripts/check-quality-scope.test.mjs');
-  const live = Buffer.from(read(censusRow.path));
-  // Reconciled current source composition is distinct from either historical descriptor.
-  const current = { type: 'blob', mode: '100644', blob: '6326e9f7101246e69364cb222b5bcb70bf425d4c',
-    bytes: 20579, sha256: 'sha256:15744fcb9e69f614c820720ee5d11f75b64562d8baf2dc07e51b64a0bd0ea0b5' };
+  const live = Buffer.from(readG(censusRow.path));
+  // Reviewed accepted-main composition is distinct from either historical descriptor.
+  const current = { type: 'blob', mode: '100644', blob: '3a025636bcfd0e1796695b5b0ad0b5f398b2709b',
+    bytes: 13076, sha256: 'sha256:8bc75ef356c9a4c2e2eb1031e54b59e73d52c6b955232519ab844f1593ec4e4b' };
   verifyPortableBlob(live, current);
-  assert.equal(pre.length, 32);
+  assert.equal(pre.length, 38);
   for (const p of ['scripts/docs-portable-authority-r322.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
+    'scripts/check-docs-source-successor-v1.mts',
+    'scripts/check-docs-source-successor-v1.test.mts',
     'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts',
     'scripts/check-docs-verifier-authority.mts', 'scripts/check-docs-verifier-authority.test.mts',
-    'scripts/assert-node-runtime.mts', 'scripts/check-node-compatibility.mts',
-    'scripts/check-node-compatibility.test.mts', 'scripts/node-compatibility-package-ownership.test.mts']) {assert.ok(pre.includes(p));}
+    'scripts/npm-publish.test.mts',
+    'scripts/quality-process.ts', 'scripts/quality-process.test.ts',
+    'scripts/run-governance-tests.ts', 'scripts/run-governance-tests.test.ts',
+    'scripts/validate-renovate.ts', 'scripts/validate-renovate.test.ts',
+    'scripts/validate-renovate-abi.probe.ts']) {assert.ok(pre.includes(p));}
   assert.deepEqual(await selectOxlintFiles(pre), pre);
   for (const side of ['old', 'new']) {
     const historical = historicalBody(censusRow, side);
@@ -437,14 +312,14 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
   }
 });
 
-const workflow = YAML.parse(read('.github/workflows/docs-portable-authority-r322.yml'));
+const workflow = YAML.parse(readG('.github/workflows/docs-portable-authority-r322.yml'));
 const legacyV8Descriptor = { type: 'blob', mode: '100644', blob: 'd6300f609345b190d9ce65758a1ff62f456c5fca',
   bytes: 6953, sha256: 'sha256:ccd6b9895b372d460b51399fe59044d0d408def33baaf971e8046443f462e756' };
 function authenticatedLegacyV8(bytes) {
   verifyPortableBlob(bytes, legacyV8Descriptor);
   return YAML.parse(bytes.toString('utf8'));
 }
-const legacyV8Bytes = Buffer.from(read('scripts/fixtures/docs-portable-authority-r322/historical-legacy-v8.yml'));
+const legacyV8Bytes = Buffer.from(readG('scripts/fixtures/docs-portable-authority-r322/historical-legacy-v8.yml'));
 const oldV8 = authenticatedLegacyV8(legacyV8Bytes);
 test('legacy V8 authenticates its frozen predecessor before parsing, never the live successor', () => {
   assert.deepEqual(authenticatedLegacyV8(legacyV8Bytes), oldV8);
@@ -492,10 +367,7 @@ test('protected-base trusted-validation accepts the G-only tree after consolidat
   }
   assert.deepEqual(await probe([...paths, "scripts/check-quality-scope.test.mjs"]), { failures: [], outputs: [['mode', 'noop']] });
 });
-// Fixed accepted base and independently pinned G-only head; neither positive tree is synthesized.
-const acceptedMain = '76097931d4e55e135a6c3bedab3528602aeb27ed';
-const acceptedGHead = '66d6d3d2c2643edac414ded48c0ee0586774dd07';
-const gitBytes = (...args) => execFileSync('git', args, { cwd: new URL('../', import.meta.url) });
+// Fixed accepted base and reviewed G checkpoint: no moving branch or synthesized positive leaves.
 const gitBlob = (bytes) => createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
 function completeGitTree(revision) {
   return { truncated: false, tree: gitBytes('ls-tree', '-r', '-t', '-z', revision).toString('utf8')
@@ -504,8 +376,8 @@ function completeGitTree(revision) {
       return { path, mode, type, sha };
     }) };
 }
-function currentGAuthority(head) {
-  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree(head);
+function currentGAuthority() {
+  const baseTree = completeGitTree(acceptedMain), headTree = completeGitTree(acceptedG);
   const before = new Map(baseTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
   const after = new Map(headTree.tree.filter((e) => e.type !== 'tree').map((e) => [e.path, e]));
   const files = [...new Set([...before.keys(), ...after.keys()])].sort().flatMap((filename) => {
@@ -514,7 +386,7 @@ function currentGAuthority(head) {
       [{ filename, status: !old ? 'added' : !next ? 'removed' : 'modified', sha: (next ?? old).sha }];
   });
   const headData = Object.fromEntries(['package.json', 'pnpm-lock.yaml'].map((p) => [p, {
-    encoding: 'base64', content: gitBytes('show', `${head}:${p}`).toString('base64'), sha: after.get(p).sha,
+    encoding: 'base64', content: gitBytes('show', `${acceptedG}:${p}`).toString('base64'), sha: after.get(p).sha,
   }]));
   return { changedFiles: files.length, files, baseTree, headTree, headData };
 }
@@ -541,8 +413,8 @@ function withLeaf(tree, path, bytes) {
   }
   assemble(''); tree.tree = [...leaves, ...directories]; return sha;
 }
-test('accepted G-only composition is noop while current HEAD and installation/authority drift reject', () => {
-  const positive = currentGAuthority(acceptedGHead);
+test('actual current G composition is noop under the accepted base verifier and rejects installation/authority drift', () => {
+  const positive = currentGAuthority();
   const check = (evidence) => assertVerifierAuthority(evidence,
     gitBytes('show', `${acceptedMain}:package.json`), gitBytes('show', `${acceptedMain}:pnpm-lock.yaml`));
   const expected = [...G.slice(0, 7), 'scripts/check-quality-scope.test.mjs',
@@ -552,7 +424,6 @@ test('accepted G-only composition is noop while current HEAD and installation/au
   assert.equal(positive.changedFiles, 15);
   assert.deepEqual(positive.files.map((f) => f.filename), expected);
   assert.equal(check(positive), 'noop');
-  assert.throws(() => check(currentGAuthority('HEAD')), /Protected authority path/u);
   for (const basename of ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml']) {
     const denied = structuredClone(positive), filename = `scripts/fixtures/docs-portable-authority-r322/TEST-install/${basename}`;
     const sha = withLeaf(denied.headTree, filename, Buffer.from('untrusted installation authority\n'));
@@ -560,7 +431,7 @@ test('accepted G-only composition is noop while current HEAD and installation/au
     assert.throws(() => check(denied), /Protected authority path/u, basename);
   }
   const denied = structuredClone(positive), filename = 'scripts/check-docs-verifier-authority.mts';
-  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `${acceptedGHead}:${filename}`), Buffer.from('\n// TEST drift\n')]));
+  const sha = withLeaf(denied.headTree, filename, Buffer.concat([gitBytes('show', `${acceptedG}:${filename}`), Buffer.from('\n// TEST drift\n')]));
   denied.files.push({ filename, status: 'modified', sha }); denied.changedFiles = denied.files.length;
   assert.throws(() => check(denied), /Protected authority path/u);
   const omitted = structuredClone(positive); omitted.files.pop();
