@@ -20,7 +20,7 @@ const EXPECTED_SCRIPTS = {
   "test:critical": "node scripts/compiler-floor.ts && agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
   "quality:typecheck": "tsc --project tsconfig.tooling.json",
   "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
-  test: "node --test scripts/*.test.mjs scripts/*.test.mts scripts/*.test.ts tools/feature-module-standard/check.test.mjs",
+  test: "node scripts/run-governance-tests.ts",
 };
 
 const isTrackedSource = relativePath => SOURCE_SUFFIXES.some(suffix => relativePath.endsWith(suffix));
@@ -81,6 +81,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
   assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.10.0",
     "Foundation dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.oxlint, "1.85.0", "Oxlint dependency must use the exact pin");
+  assert.equal(manifest.devDependencies?.["node-or-bun"], "0.2.1", "process runtime dependency must use the exact released pin");
   assert.equal(manifest.devDependencies?.typescript, "7.0.2", "tooling compiler must use the exact public pin");
   assert.equal(manifest.devDependencies?.["@types/node"], "24.19.1", "tooling types must stay in the Node 24 family");
   for (const [name, command] of Object.entries(EXPECTED_SCRIPTS)) {
@@ -100,7 +101,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts", ".ts"] },
     typedTooling: {
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
-      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/compiler-floor.ts", "scripts/compiler-floor.test.ts"],
+      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts", "scripts/compiler-floor.ts", "scripts/compiler-floor.test.ts"],
     },
     toolchain: { node: "26.11.1", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
@@ -125,6 +126,11 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     "scripts/qualification-input-proof.test.mts",
     "scripts/check-docs-verifier-authority.mts",
     "scripts/check-docs-verifier-authority.test.mts",
+    "scripts/npm-publish.test.mts",
+    "scripts/quality-process.ts",
+    "scripts/quality-process.test.ts",
+    "scripts/run-governance-tests.ts",
+    "scripts/run-governance-tests.test.ts",
     "scripts/compiler-floor.ts",
     "scripts/compiler-floor.test.ts"
   ]
@@ -218,6 +224,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
         "packages": [
           "@agent-teams/ci-input-proof",
           "ajv",
+          "node-or-bun",
           "yaml"
         ],
         "builtins": [
@@ -230,6 +237,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
           "node:os",
           "node:path",
           "node:test",
+          "node:test/reporters",
           "node:url",
           "node:util",
           "node:vm",

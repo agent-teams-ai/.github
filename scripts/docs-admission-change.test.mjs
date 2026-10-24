@@ -1231,7 +1231,9 @@ async function stable31Change(t, inverse = false) {
     await writeFile(join(directory, "governance", name), await readFile(new URL(`../governance/${name}`, import.meta.url)));
   await writeFile(join(directory, REGISTRY_PATH), registryBytes);
   const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
-  await writeFile(paths.exceptions, await readFile(new URL(`../${EXCEPTIONS_PATH}`, import.meta.url)));
+  // This October 3 replay owns the packet's original exception and dates,
+  // independently of later retirement in the current active-exception file.
+  await writeFile(paths.exceptions, stable31Raw.get(`controller-snapshot/${EXCEPTIONS_PATH}`));
   const saved = { GH_TOKEN: process.env.GH_TOKEN, DOCS_GOVERNANCE_READ_TOKEN: process.env.DOCS_GOVERNANCE_READ_TOKEN };
   for (const key of Object.keys(saved)) process.env[key] = "synthetic-TEST-only";
   t.after(() => { for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });

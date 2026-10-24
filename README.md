@@ -17,6 +17,9 @@ release procedures remain in the owning repository.
   [TypeScript for JavaScript runtimes](docs/engineering-quality-standard.md#typescript-for-javascript-runtimes).
   Repository agent files link here explicitly.
 
+- [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
+- [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
+
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.
 - `SECURITY.md` - private vulnerability reporting policy.
@@ -53,6 +56,8 @@ release procedures remain in the owning repository.
 - `renovate-config.json` - organization Renovate preset.
 - `.github/workflows/reviewrouter-*.yml` - pinned ReviewRouter review and
   interaction workflows.
+- [npm trusted publication](docs/npm-trusted-publishing.md) - shared archive admission,
+  candidate readback and promotion through the pinned reusable workflow.
 - `.github/workflows/docs-protocol-check.yml` - fixed reusable documentation
   protocol gate with required exact Cohort assertions and no secrets.
 

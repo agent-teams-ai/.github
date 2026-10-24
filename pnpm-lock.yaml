@@ -27,6 +27,9 @@ importers:
       ajv:
         specifier: 8.20.0
         version: 8.20.0
+      node-or-bun:
+        specifier: 0.2.1
+        version: 0.2.1
       oxlint:
         specifier: 1.85.0
         version: 1.85.0

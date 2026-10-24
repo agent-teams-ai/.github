@@ -28,6 +28,10 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
   assert.equal(classifySourcePath("scripts/qualification-input-proof.test.mts"), "test");
   assert.equal(classifySourcePath("scripts/compiler-floor.ts"), "tooling");
   assert.equal(classifySourcePath("scripts/compiler-floor.test.ts"), "test");
+  assert.equal(classifySourcePath("scripts/quality-process.ts"), "tooling");
+  assert.equal(classifySourcePath("scripts/quality-process.test.ts"), "test");
+  assert.equal(classifySourcePath("scripts/run-governance-tests.ts"), "tooling");
+  assert.equal(classifySourcePath("scripts/run-governance-tests.test.ts"), "test");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.mjs"), "tooling");
   assert.equal(classifySourcePath("tools/feature-module-standard/check.test.mjs"), "test");
   for (const authority of ["governance/policy.json", ".github/workflows/ci.yml", "GOVERNANCE.md"]) {
@@ -39,13 +43,18 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 32);
+  assert.equal(paths.length, 37);
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
   assert.ok(paths.includes("scripts/read-docs-portable-authority-r322.mjs"));
   assert.ok(paths.includes("scripts/check-docs-verifier-authority.mts"));
   assert.ok(paths.includes("scripts/check-docs-verifier-authority.test.mts"));
+  assert.ok(paths.includes("scripts/npm-publish.test.mts"));
+  assert.ok(paths.includes("scripts/quality-process.ts"));
+  assert.ok(paths.includes("scripts/quality-process.test.ts"));
+  assert.ok(paths.includes("scripts/run-governance-tests.ts"));
+  assert.ok(paths.includes("scripts/run-governance-tests.test.ts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
   assert.ok(paths.includes("scripts/compiler-floor.ts"));
@@ -60,8 +69,7 @@ const mutations = {
   "disabled strict typechecking": value => { value.toolingTsconfig.compilerOptions.strict = false; },
   "blanket library typecheck suppression": value => { value.toolingTsconfig.compilerOptions.skipLibCheck = true; },
   "a dropped typed test entry": value => { value.toolingTsconfig.include.pop(); },
-  "a missing mts test glob": value => { value.manifest.scripts.test = value.manifest.scripts.test.replace(" scripts/*.test.mts", ""); },
-  "a missing ts test glob": value => { value.manifest.scripts.test = value.manifest.scripts.test.replace(" scripts/*.test.ts", ""); },
+  "a replaced complete test runner": value => { value.manifest.scripts.test = "node --test scripts/*.test.mjs"; },
   "excluded typed lint selection": value => { value.profile.lint.includedExtensions = []; },
   "an unsupported critical tooling patch": value => { value.nodeVersion = "24.18.0\n"; },
   "the previous Node 24 default": value => { value.nodeVersion = "24.21.0\n"; },
@@ -79,6 +87,8 @@ const mutations = {
   "an ordinary TypeScript test outside the strict project": value => { value.trackedPaths.push("scripts/unlisted.test.ts"); },
   "a missing Foundation pin": value => { delete value.manifest.devDependencies["@agent-teams/engineering-foundation"]; },
   "a ranged Foundation pin": value => { value.manifest.devDependencies["@agent-teams/engineering-foundation"] = "^1.7.2"; },
+  "a missing process runtime pin": value => { delete value.manifest.devDependencies["node-or-bun"]; },
+  "a ranged process runtime pin": value => { value.manifest.devDependencies["node-or-bun"] = "^0.2.1"; },
   "a local lint rule": value => { value.lintConfig.rules = { "no-eval": "off" }; },
   "a local lint override": value => { value.lintConfig.overrides = []; },
   "a local lint ignore": value => { value.lintConfig.ignorePatterns = ["scripts/**"]; },

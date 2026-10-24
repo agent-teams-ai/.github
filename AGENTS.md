@@ -7,6 +7,15 @@ Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).
 
+Before choosing or duplicating reusable development tooling, read the
+[development tools catalog](docs/development-tools.md) and follow its link to
+the owning guide. Check availability and repository adoption before using a tool.
+
+Before choosing backend technologies, read the
+[backend stack reference](docs/backend-stack.md). Apply the target repository's
+explicit adoption and existing decisions; do not install the entire stack or
+change pins merely because a reference exists.
+
 For feature-module architecture:
 
 1. Start at the [Feature Module Standard index](docs/architecture/feature-module-standard/README.md).
@@ -29,7 +38,7 @@ For governance JavaScript quality, read
 `pnpm check` (complete); the repository default is Node 26.11.1 while package
 engines keep Node 24 compatibility. Preserve its exact required identities
 and selected entry files.
-Read the quality route's current compiler dependency block before invoking
+Read the quality route's current compiler dependency preflight before invoking
 Foundation; never bypass its metadata preflight to run an installed CLI.
 
 For new or changed maintained code targeting JavaScript runtimes, follow

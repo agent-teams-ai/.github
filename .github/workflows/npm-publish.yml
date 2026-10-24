@@ -1,0 +1,346 @@
+name: npm trusted publication
+
+on:
+  workflow_call:
+    inputs:
+      phase:
+        description: publish candidate archives, or promote after caller consumer verification
+        required: true
+        type: string
+      artifact-name:
+        description: Same-run release artifact, unique per run attempt
+        required: true
+        type: string
+      environment:
+        description: Environment configured in each npm trusted publisher
+        type: string
+        default: npm
+
+permissions:
+  contents: read
+
+jobs:
+  registry:
+    if: >-
+      github.repository_owner == 'agent-teams-ai' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_sha == github.sha &&
+      github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      actions: write # Only read artifacts and retire exact, verified upload intents.
+      id-token: write
+    env:
+      PHASE: ${{ inputs.phase }}
+      RELEASE_REPOSITORY: ${{ github.repository }}
+      RELEASE_SOURCE: ${{ github.sha }}
+      RELEASE_RUN_ID: ${{ github.run_id }}
+      RELEASE_RUN_ATTEMPT: ${{ github.run_attempt }}
+      TRIGGER_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      TRIGGER_EVENT: ${{ github.event.workflow_run.event }}
+      TRIGGER_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      TRIGGER_SOURCE: ${{ github.event.workflow_run.head_sha }}
+      TRIGGER_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+      RELEASE_REF: ${{ github.ref }}
+      RELEASE_EVENT: ${{ github.event_name }}
+      RELEASE_OWNER: ${{ github.repository_owner }}
+      npm_config_registry: https://registry.npmjs.org
+      npm_config_ignore_scripts: 'true'
+      npm_config_fetch_retries: '0'
+      npm_config_logs_max: '0'
+      npm_config_audit: 'false'
+      npm_config_fund: 'false'
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26.11.1
+      - name: Pin the OIDC-capable npm CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global npm@12.2.0 --ignore-scripts --registry=https://registry.npmjs.org
+          test "$(npm --version)" = 12.2.0
+          printf 'npm_config_userconfig=%s/npm-release.npmrc\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          : > "$RUNNER_TEMP/npm-release.npmrc"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: inputs.phase == 'promote'
+        with:
+          name: ${{ inputs.artifact-name }}-registry
+          path: registry
+      - name: Validate and reconcile the complete registry set
+        id: preflight
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$*" >&2; exit 1; }
+          [[ "$RELEASE_OWNER" = agent-teams-ai && "$RELEASE_REF" = refs/heads/main ]] || fail 'inadmissible origin'
+          if [[ "$RELEASE_EVENT" = workflow_run ]]; then
+            [[ "$TRIGGER_CONCLUSION" = success && "$TRIGGER_EVENT" = push && "$TRIGGER_BRANCH" = main && "$TRIGGER_SOURCE" = "$RELEASE_SOURCE" && "$TRIGGER_REPOSITORY" = "$RELEASE_REPOSITORY" ]] || fail 'inadmissible completed workflow'
+          else
+            [[ "$RELEASE_EVENT" = push || "$RELEASE_EVENT" = workflow_dispatch ]] || fail 'inadmissible event'
+          fi
+          [[ "$RELEASE_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || fail 'invalid run attempt' 
+          [[ "$PHASE" = publish || "$PHASE" = promote ]] || fail 'invalid phase'
+          [[ "$RELEASE_RUN_ID" =~ ^[1-9][0-9]*$ && "$RELEASE_SOURCE" =~ ^[0-9a-f]{40}$ ]] || fail 'invalid source identity'
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_ID_TOKEN
+          candidate="candidate-run-$RELEASE_RUN_ID"
+          mkdir -p evidence
+          test -f release/release.json && test ! -L release/release.json || fail 'missing manifest'
+          jq -e --arg repo "$RELEASE_REPOSITORY" --arg source "$RELEASE_SOURCE" '
+            .schemaVersion == 1 and .repository == $repo and .source == $source and
+            (.packages | type == "array" and length > 0 and length <= 50) and
+            (.packages | all(
+              (.name | type == "string" and test("^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$")) and
+              (.version | type == "string" and test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$")) and
+              (.file | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._-]*\\.tgz$") and (contains("..") | not)) and
+              (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+              (.integrity | type == "string" and test("^sha512-[A-Za-z0-9+/]{86}==$")))) and
+            ((.packages | map(.name) | unique | length) == (.packages | length)) and
+            ((.packages | map(.file) | unique | length) == (.packages | length))
+          ' release/release.json >/dev/null || fail 'invalid manifest'
+          cp release/release.json evidence/release.json
+          jq -r '.packages[] | [.name,.version,.file,.sha256,.integrity] | @tsv' release/release.json > evidence/packages.tsv
+          verify_archive() {
+            local archive="$1" package="$2" version="$3" hash="$4" integrity="$5"
+            test -f "$archive" && test ! -L "$archive" || fail 'archive is not a regular file'
+            test "$(wc -c < "$archive")" -le 104857600 || fail 'archive exceeds 100 MiB'
+            test "$(openssl dgst -sha256 "$archive" | awk '{print $NF}')" = "$hash" || fail 'archive SHA256 mismatch'
+            test "sha512-$(openssl dgst -sha512 -binary "$archive" | openssl base64 -A)" = "$integrity" || fail 'archive integrity mismatch'
+            tar -tzf "$archive" > evidence/tar-paths.txt || fail 'invalid archive'
+            awk '/^\// || /(^|\/)\.\.(\/|$)/ || !/^package\// {bad=1} END {exit bad}' evidence/tar-paths.txt || fail 'unsafe archive paths'
+            test "$(awk '$0 == "package/package.json" {n++} END {print n+0}' evidence/tar-paths.txt)" = 1 || fail 'ambiguous package metadata'
+            tar -tvzf "$archive" | awk 'substr($0,1,1) != "-" && substr($0,1,1) != "d" {bad=1} END {exit bad}' || fail 'archive contains links or special files'
+            tar -xOzf "$archive" package/package.json | jq -e --arg name "$package" --arg version "$version" --arg repo "$RELEASE_REPOSITORY" '
+              .name == $name and .version == $version and .private != true and
+              ((.repository | if type == "object" then .url else . end) |
+                type == "string" and (sub("^git\\+"; "") | sub("\\.git$"; "")) == ("https://github.com/" + $repo))
+            ' >/dev/null || fail 'archive package identity mismatch'
+          }
+          # Validate every local archive before the first registry request or write.
+          while IFS=$'\t' read -r name version file hash integrity; do
+            verify_archive "release/$file" "$name" "$version" "$hash" "$integrity"
+          done < evidence/packages.tsv
+          metadata() {
+            local name="$1" version="$2" status
+            status=$(curl --silent --show-error --max-time 60 --retry 0 --proto '=https' -o evidence/metadata.json -w '%{http_code}' "https://registry.npmjs.org/${name/\//%2f}/$version") || fail 'registry read failed'
+            case "$status" in 200) return 0;; 404) return 4;; *) fail "registry read HTTP $status";; esac
+          }
+          readback() {
+            local name="$1" version="$2" file="$3" hash="$4" integrity="$5" url status
+            jq -e --arg name "$name" --arg version "$version" --arg integrity "$integrity" '.name == $name and .version == $version and .dist.integrity == $integrity' evidence/metadata.json >/dev/null || fail 'registry metadata mismatch'
+            url=$(jq -er '.dist.tarball | select(type == "string" and test("^https://registry\\.npmjs\\.org/[A-Za-z0-9@%/._+-]+\\.tgz$"))' evidence/metadata.json) || fail 'unsafe registry tarball URL'
+            status=$(curl --silent --show-error --max-time 120 --max-filesize 104857600 --retry 0 --proto '=https' -o "evidence/$file.part" -w '%{http_code}' "$url") || fail 'registry archive read failed'
+            [[ "$status" != 404 ]] || return 4
+            [[ "$status" = 200 ]] || fail "registry archive HTTP $status"
+            verify_archive "evidence/$file.part" "$name" "$version" "$hash" "$integrity"
+            cmp "release/$file" "evidence/$file.part" || fail 'registry archive differs'
+            mv "evidence/$file.part" "evidence/$file"
+          }
+          wait_readback() {
+            local deadline=$((SECONDS + 1200))
+            until metadata "$1" "$2" && readback "$@"; do
+              (( SECONDS < deadline )) || fail 'registry processing exceeded 20 minutes'
+              sleep 10
+            done
+          }
+          if [[ "$PHASE" = promote ]]; then
+            cmp release/release.json registry/release.json || fail 'registry manifest differs'
+            jq -e --slurpfile manifest release/release.json --arg run "$RELEASE_RUN_ID" --arg tag "$candidate" '
+              .schemaVersion == 1 and .complete == true and .runId == $run and .candidateTag == $tag and
+              .repository == $manifest[0].repository and .source == $manifest[0].source and .packages == $manifest[0].packages
+            ' registry/receipt.json >/dev/null || fail 'invalid registry receipt'
+            while IFS=$'\t' read -r name version file hash integrity; do
+              verify_archive "registry/$file" "$name" "$version" "$hash" "$integrity"
+              cmp "release/$file" "registry/$file" || fail 'consumer archive differs'
+            done < evidence/packages.tsv
+          fi
+          # Public reads can succeed anonymously: require actual per-package OIDC exchange.
+          [[ "${GITHUB_ACTIONS:-}" = true && -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]] || fail 'GitHub OIDC request authority is unavailable'
+          umask 077
+          authority_dir=$(mktemp -d "$RUNNER_TEMP/npm-authority.XXXXXX")
+          trap 'rm -rf -- "$authority_dir"' EXIT
+          : > "$authority_dir/user.npmrc"
+          : > "$authority_dir/global.npmrc"
+          : > evidence/authority.tsv
+          while IFS=$'\t' read -r name version file hash integrity; do
+            if ! npm_config_cache="$authority_dir/cache" timeout --signal=TERM --kill-after=5s 90s npm dist-tag ls "$name" --json --ignore-scripts --registry=https://registry.npmjs.org --loglevel=verbose --logs-max=0 --color=false --progress=false --userconfig="$authority_dir/user.npmrc" --globalconfig="$authority_dir/global.npmrc" >/dev/null 2>"$authority_dir/stderr"; then
+              fail "OIDC exchange preflight failed for $name@$version"
+            fi
+            if grep -Eq '^npm (verbose|silly) oidc (Failed|Failure|Skipped)' "$authority_dir/stderr"; then
+              fail "OIDC exchange reported failure for $name@$version"
+            fi
+            test "$(grep -Fxc 'npm verbose oidc Successfully retrieved and set token' "$authority_dir/stderr")" = 1 || fail "OIDC exchange was not established for $name@$version"
+            printf 'oidc-exchange-verified\t%s\t%s\n' "$name" "$version" >> evidence/authority.tsv
+            rm -f -- "$authority_dir/stderr"
+          done < evidence/packages.tsv
+          rm -rf -- "$authority_dir"
+          trap - EXIT
+          # Reconcile the entire registry set before any mutation, including promotion.
+          : > evidence/absent.tsv
+          while IFS=$'\t' read -r name version file hash integrity; do
+            if metadata "$name" "$version"; then
+              wait_readback "$name" "$version" "$file" "$hash" "$integrity"
+            else
+              [[ "$PHASE" = publish ]] || fail 'promoted version is absent'
+              printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$version" "$file" "$hash" "$integrity" >> evidence/absent.tsv
+            fi
+          done < evidence/packages.tsv
+          if [[ "$PHASE" = publish && "$RELEASE_RUN_ATTEMPT" != 1 && -s evidence/absent.tsv ]]; then
+            fail 'reruns cannot upload absent versions after a possibly uncertain prior attempt'
+          fi
+          current_main() {
+            local status
+            status=$(curl --silent --show-error --max-time 60 --retry 0 --proto '=https' -H "Authorization: Bearer $GH_TOKEN" -o evidence/main.json -w '%{http_code}' "https://api.github.com/repos/$RELEASE_REPOSITORY/git/ref/heads/main") || fail 'main authority read failed'
+            [[ "$status" = 200 ]] || fail "main authority HTTP $status"
+            test "$(jq -r '.object.sha' evidence/main.json)" = "$RELEASE_SOURCE" || fail 'release source is no longer current main'
+          }
+          api() {
+            curl --fail --silent --show-error --max-time 60 --retry 0 --proto '=https' -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' "$@"
+          }
+          : > evidence/resolved-intents.tsv
+          if [[ "$PHASE" = publish ]]; then
+            # A prior durable intent is a possible write, regardless of its CLI result.
+            api "https://api.github.com/repos/$RELEASE_REPOSITORY/actions/runs/$RELEASE_RUN_ID" -o evidence/current-run.json
+            workflow_id=$(jq -er --arg source "$RELEASE_SOURCE" '. | select(.head_sha == $source and .head_branch == "main") | .workflow_id' evidence/current-run.json) || fail 'current publisher run identity mismatch'
+            api "https://api.github.com/repos/$RELEASE_REPOSITORY/actions/artifacts?name=npm-upload-intent&per_page=100" -o evidence/prior-intents.json
+            jq -e '.total_count | type == "number" and . <= 100' evidence/prior-intents.json >/dev/null || fail 'intent history exceeds bounded audit; operator reconciliation required'
+            jq -e '(.total_count == (.artifacts | length)) and (.artifacts | type == "array" and all((.id | type == "number") and (.expired | type == "boolean") and (.workflow_run.id | type == "number") and (.workflow_run.head_sha | type == "string" and test("^[0-9a-f]{40}$"))))' evidence/prior-intents.json >/dev/null || fail 'malformed intent history'
+            # This attempt has not uploaded its intent yet; include earlier attempts of this run.
+            jq -r '.artifacts[] | [.id,.expired,.workflow_run.id,.workflow_run.head_sha] | @tsv' evidence/prior-intents.json > evidence/prior-intents.tsv
+            while IFS=$'\t' read -r artifact_id expired prior_run prior_source; do
+              api "https://api.github.com/repos/$RELEASE_REPOSITORY/actions/runs/$prior_run" -o evidence/prior-run.json
+              if ! jq -e --argjson workflow "$workflow_id" --arg repo "$RELEASE_REPOSITORY" --arg source "$prior_source" '.workflow_id == $workflow and .head_branch == "main" and .head_sha == $source and .head_repository.full_name == $repo and (.event == "push" or .event == "workflow_run" or .event == "workflow_dispatch")' evidence/prior-run.json >/dev/null; then
+                continue
+              fi
+              [[ "$expired" = false ]] || fail 'prior intent expired; operator reconciliation required'
+              api --location --proto-redir '=https' "https://api.github.com/repos/$RELEASE_REPOSITORY/actions/artifacts/$artifact_id/zip" -o evidence/prior-intent.zip
+              unzip -p evidence/prior-intent.zip intent.json > evidence/prior-intent.json || fail 'prior intent archive is unreadable'
+              jq -e --arg repo "$RELEASE_REPOSITORY" --arg source "$prior_source" --arg run "$prior_run" '.schemaVersion == 1 and .repository == $repo and .source == $source and .runId == $run and
+                (.runAttempt | type == "string" and test("^[1-9][0-9]*$")) and
+                (.packages | type == "array" and length > 0 and length <= 50) and
+                (.absent | type == "array" and length > 0 and length <= 50 and all(
+                  (.name | type == "string" and test("^(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$")) and
+                  (.version | type == "string" and test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"))))' evidence/prior-intent.json >/dev/null || fail 'prior intent identity mismatch'
+              mkdir -p evidence/intents
+              cp evidence/prior-intent.json "evidence/intents/$artifact_id.json"
+              if jq -e --slurpfile manifest release/release.json '.packages == $manifest[0].packages' evidence/prior-intent.json >/dev/null; then
+                printf '%s\t%s\t%s\n' "$artifact_id" "$prior_run" "$prior_source" >> evidence/resolved-intents.tsv
+              fi
+              while IFS=$'\t' read -r name version file hash integrity; do
+                if jq -e --arg name "$name" --arg version "$version" '.absent | any(.name == $name and .version == $version)' evidence/prior-intent.json >/dev/null; then
+                  fail "prior upload intent for still-absent $name@$version; operator reconciliation required"
+                fi
+              done < evidence/absent.tsv
+            done < evidence/prior-intents.tsv
+          fi
+          if [[ "$PHASE" = publish && -s evidence/absent.tsv ]]; then
+            mkdir -p intent
+            jq -Rn '[inputs | split("\t") | {name:.[0],version:.[1]}]' < evidence/absent.tsv > evidence/absent.json
+            jq --arg run "$RELEASE_RUN_ID" --arg attempt "$RELEASE_RUN_ATTEMPT" --slurpfile absent evidence/absent.json '. + {runId:$run,runAttempt:$attempt,absent:$absent[0]}' release/release.json > intent/intent.json
+            echo 'has-upload=true' >> "$GITHUB_OUTPUT"
+          fi
+          # Only functions authored above are handed to the second trusted step.
+          declare -f fail metadata verify_archive readback wait_readback current_main > registry-functions.sh
+      - name: Preserve durable intent before the first upload
+        id: intent
+        if: inputs.phase == 'publish' && steps.preflight.outputs.has-upload == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-upload-intent
+          path: intent/intent.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Apply reconciled registry effects
+        id: effects
+        env:
+          CURRENT_INTENT_ID: ${{ steps.intent.outputs.artifact-id }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_ID_TOKEN
+          source registry-functions.sh
+          candidate="candidate-run-$RELEASE_RUN_ID"
+          allow_latest() {
+            jq -en --arg observed "$1" --arg target "$2" '
+              $observed == "" or
+              (($observed | test("^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$")) and
+               ([$observed,$target] | all(split(".") | map(tonumber) | all(. <= 9007199254740991))) and
+               (($observed | split(".") | map(tonumber)) <= ($target | split(".") | map(tonumber))))
+            ' >/dev/null || fail 'unexpected or newer latest; refusing downgrade'
+          }
+          if [[ "$PHASE" = publish ]]; then
+            while IFS=$'\t' read -r name version file hash integrity; do
+              current_main
+              printf 'upload-attempt\t%s\t%s\n' "$name" "$version" >> evidence/effects.tsv
+              # One CLI invocation only. A failed/uncertain write is never replayed here.
+              npm publish "$PWD/release/$file" --access public --tag "$candidate" --provenance --ignore-scripts --registry=https://registry.npmjs.org
+              wait_readback "$name" "$version" "$file" "$hash" "$integrity"
+            done < evidence/absent.tsv
+            jq --arg run "$RELEASE_RUN_ID" --arg tag "$candidate" '. + {complete:true,runId:$run,candidateTag:$tag}' release/release.json > evidence/receipt.json
+            if [[ -n "$CURRENT_INTENT_ID" ]]; then
+              mkdir -p evidence/intents
+              cp intent/intent.json "evidence/intents/$CURRENT_INTENT_ID.json"
+              printf '%s\t%s\t%s\n' "$CURRENT_INTENT_ID" "$RELEASE_RUN_ID" "$RELEASE_SOURCE" >> evidence/resolved-intents.tsv
+            fi
+          else
+            while IFS=$'\t' read -r name version file hash integrity; do
+              status=$(curl --silent --show-error --max-time 60 --retry 0 --proto '=https' -o evidence/tags.json -w '%{http_code}' "https://registry.npmjs.org/-/package/${name/\//%2f}/dist-tags") || fail 'tag read failed'
+              [[ "$status" = 200 ]] || fail "tag read HTTP $status"
+              latest=$(jq -er 'if has("latest") then .latest | select(type == "string") else "" end' evidence/tags.json) || fail 'unexpected latest value'
+              allow_latest "$latest" "$version"
+              if [[ "$latest" != "$version" ]]; then
+                current_main
+                printf 'promote-attempt\t%s\t%s\n' "$name" "$version" >> evidence/effects.tsv
+                npm dist-tag add "$name@$version" latest --ignore-scripts --registry=https://registry.npmjs.org
+              fi
+              deadline=$((SECONDS + 300))
+              while true; do
+                if metadata "$name" latest; then
+                  observed=$(jq -er '.version | select(type == "string")' evidence/metadata.json) || fail 'invalid latest readback'
+                  [[ "$observed" != "$version" ]] || break
+                  allow_latest "$observed" "$version"
+                fi
+                (( SECONDS < deadline )) || fail 'latest processing exceeded 5 minutes'
+                sleep 10
+              done
+            done < evidence/packages.tsv
+            cp registry/receipt.json evidence/receipt.json
+          fi
+      - name: Preserve registry evidence, including failures
+        id: evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ inputs.artifact-name }}-${{ inputs.phase == 'publish' && 'registry' || 'promotion' }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Retire only resolved upload intents after durable readback evidence
+        if: inputs.phase == 'publish' && steps.effects.outcome == 'success' && steps.evidence.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.complete == true' evidence/receipt.json >/dev/null
+          while IFS=$'\t' read -r artifact_id intent_run intent_source; do
+            [[ "$artifact_id" =~ ^[1-9][0-9]*$ && "$intent_run" =~ ^[1-9][0-9]*$ && "$intent_source" =~ ^[0-9a-f]{40}$ ]] || exit 1
+            endpoint="https://api.github.com/repos/$RELEASE_REPOSITORY/actions/artifacts/$artifact_id"
+            curl --fail --silent --show-error --max-time 60 --retry 0 --proto '=https' -H "Authorization: Bearer $GH_TOKEN" "$endpoint" -o evidence/retiring-intent.json
+            jq -e --argjson id "$artifact_id" --arg run "$intent_run" --arg source "$intent_source" '.id == $id and .name == "npm-upload-intent" and .expired == false and (.workflow_run.id | tostring) == $run and .workflow_run.head_sha == $source' evidence/retiring-intent.json >/dev/null
+            status=$(curl --silent --show-error --max-time 60 --retry 0 --proto '=https' -X DELETE -H "Authorization: Bearer $GH_TOKEN" -o /dev/null -w '%{http_code}' "$endpoint")
+            [[ "$status" = 204 ]] || exit 1
+          done < evidence/resolved-intents.tsv

@@ -151,11 +151,14 @@ policy binding was delivered separately in Central PR #354 before this cleanup.
 protocol. Review the exemption if the fork is detached, ownership changes, or
 organization-specific documentation is added.
 
-The private Platform repository retains
-`platform-private-required-checks-github-free`. Its local and CI documentation
-gate is still mandatory, but the policy must not claim unavailable GitHub Free
-required-check enforcement. Its owner, review boundary, expiry, and triggers are
-machine-readable in `governance/docs-protocol-exceptions.json`.
+The active Docs exception `platform-private-required-checks-github-free` is retired:
+Platform was observed public on 2026-10-19, so its private/GitHub Free rationale no
+longer applies. The [dated evidence](../governance/evidence/docs-admission/platform-required-check-exception-retirement-20261019.md)
+preserves the old authority coordinates and the remaining remote Docs enforcement
+gap. The current v2 reference is null and the active Docs exception set is empty;
+older security, Actions and executable-specification snapshot references remain
+historical. Local and CI documentation checks remain mandatory. This retirement
+neither installs a required-check rule nor certifies current consumer success.
 
 ## Inventory and drift
 
@@ -341,7 +344,7 @@ by this route. No consumer copies policy or receives a second template.
 On GitHub Free, visible inherited organization rules and repository-specific
 rules are distinct. An exact inherited rule may satisfy the configuration check,
 but there is no promise of automatic organization inheritance. Where required
-checks are unavailable (including the documented private Platform exception),
+checks are unavailable because of a verified current plan-tier limitation,
 report the plan-tier limitation; neither caller installation nor this command
 proves remote enforcement. The additive rule never removes other required checks.
 
