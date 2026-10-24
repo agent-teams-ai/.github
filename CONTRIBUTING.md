@@ -8,6 +8,11 @@ Read the [Engineering Quality Standard](docs/engineering-quality-standard.md)
 for shared practices, then apply the target repository's specific contracts
 and verification requirements.
 
+For a new owned production repository or an explicit older opt-in, complete
+[new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap):
+full explicit FMS adoption, Foundation quality configuration and real native CI.
+Do not claim qualification from the configuration checker alone.
+
 1. Read the target repository's `README.md`, `AGENTS.md`, and architecture
    documentation.
 2. Before coding, identify applicable accepted decisions for changes to public

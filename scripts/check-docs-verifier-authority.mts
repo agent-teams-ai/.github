@@ -27,6 +27,9 @@ const protectedPaths = [
   "tsconfig.tooling.json", "docs/engineering-quality-profile.json",
   "docs/engineering-quality-source-policy.yaml", "docs/engineering-quality-required-tests.json",
 ];
+// New authority introduced after the historical fixtures. Its addition, removal
+// or mutation still requires a reviewed source cutover; old trees may lack it.
+const laterProtectedPaths = ["governance/repository-registration-supplements.schema.json"];
 const installerNames = new Set(["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc",
   ".pnpmfile.cjs", ".pnpmfile.mjs", ".node-version", ".nvmrc", ".yarnrc", ".yarnrc.yml",
   "yarn.lock", "package-lock.json", "npm-shrinkwrap.json"]);
@@ -188,7 +191,7 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
     const origin = String(file.previous_filename ?? file.filename);
     declared.add(file.filename); if (file.status === "renamed") {declared.add(origin);}
     for (const path of [file.filename, origin]) {
-      assert.ok((node26Default && node26Paths.has(path)) || (!protectedPaths.includes(path) &&
+      assert.ok((node26Default && node26Paths.has(path)) || (!protectedPaths.includes(path) && !laterProtectedPaths.includes(path) &&
         !path.split("/").includes("node_modules") &&
         (!(installerNames.has(path.split("/").at(-1)!)) || ["package.json", "pnpm-lock.yaml"].includes(path))),
       `Protected authority path: ${path}`);
@@ -207,6 +210,13 @@ export function assertVerifierAuthority(raw: unknown, baseManifest: Buffer, base
       assert.deepEqual(head.get(path), base.get(path), `Protected input changed: ${path}`);
     }
     assert.equal(base.get(path)!.mode, "100644", `Protected input must be regular: ${path}`);
+  }
+  for (const path of laterProtectedPaths) {
+    assert.deepEqual(head.get(path), base.get(path), `Protected input changed: ${path}`);
+    if (base.has(path)) {
+      assert.equal(base.get(path)!.type, "blob", `Protected input must be a blob: ${path}`);
+      assert.equal(base.get(path)!.mode, "100644", `Protected input must be regular: ${path}`);
+    }
   }
   // Optional installer controls and shadow paths are protected even if pagination omits them.
   for (const path of new Set([...base.keys(), ...head.keys()])) {

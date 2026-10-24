@@ -1,0 +1,134 @@
+{
+  "$schema": "./repository-registration-supplements.schema.json",
+  "schema_version": 1,
+  "registration_revision": "2026-10-23.1",
+  "observation_scope": "individual_repository_metadata_not_complete_inventory",
+  "complete_inventory_snapshot_revision": "2026-09-16.1",
+  "historical_executable_ledger_revision": "2026-08-17.1",
+  "docs_policy_snapshot_revision": "2026-09-16.1",
+  "repositories": [
+    {
+      "inventory": {
+        "repository": "agent-teams-ai/payments-sdk",
+        "id": 1426051653,
+        "created_at": "2026-10-19T19:00:14Z",
+        "archived": false,
+        "visibility": "public",
+        "default_branch": "main",
+        "is_fork": false,
+        "fork_parent": null
+      },
+      "owner_reference": "https://github.com/777genius",
+      "observed_at": "2026-10-23T00:08:57Z",
+      "metadata_endpoint": "https://api.github.com/repos/agent-teams-ai/payments-sdk",
+      "default_branch_revision": "dcfadb0c199e69654b0aa25280f1b2a828b6d04f",
+      "source_change": {
+        "repository": "agent-teams-ai/payments-sdk",
+        "pull_request_number": 10,
+        "pull_request_url": "https://github.com/agent-teams-ai/payments-sdk/pull/10",
+        "observed_head": "133c10cb97df733d0c85eb039fa2145ee9bfb909",
+        "status": "draft_unmerged_observation",
+        "entries": [
+          {
+            "path": "AGENTS.md",
+            "git_blob_sha": "797c52ea37da174b77ed4d80272798eff90960f9"
+          },
+          {
+            "path": "README.md",
+            "git_blob_sha": "72fe699f7eb10d9e0bf94c5df720a770c6d19632"
+          },
+          {
+            "path": "architecture/feature-module-standard.json",
+            "git_blob_sha": "1d238e375ffb00c4eb93ccd02bfd8898ff7d4db9"
+          },
+          {
+            "path": "docs/feature-module-adoption.md",
+            "git_blob_sha": "646cb084381a51024de4ae2e09196983dffbbd09"
+          },
+          {
+            "path": "docs/implementation-plan.md",
+            "git_blob_sha": "c5bc3103c382c5c9efc5b03c2cb4920196f9ee93"
+          },
+          {
+            "path": "package.json",
+            "git_blob_sha": "73a03b4334b299e69d8c6de7da1238d4576e068c"
+          }
+        ]
+      },
+      "executable_specification": {
+        "applicability": "applicable",
+        "specification_maturity": "not_assessed",
+        "implementation_qualification": "not_qualified",
+        "deployment_qualification": "not_qualified",
+        "accepted_revision": null,
+        "accepted_evidence": [],
+        "declared_full_gate_command": "pnpm check",
+        "remote_required_checks": "not_observed",
+        "statement": "The full SDK reconstruction and fresh exact-source gates are in progress. This registers ownership and applicability only. No old or partial local run is accepted as current implementation/deployment qualification, and no remote required-check enforcement is asserted."
+      },
+      "docs_protocol": {
+        "repository": "agent-teams-ai/payments-sdk",
+        "repository_id": 1426051653,
+        "source_provenance": {
+          "kind": "original",
+          "parent_repository": null
+        },
+        "governance_ownership": "organization_owned",
+        "repository_lifecycle": "active",
+        "docs_role": "pending_classification",
+        "protocol_required": false,
+        "admission_status": "pending_classification",
+        "exact_package_version": null,
+        "exact_foundation_version": null,
+        "cohort_binding_status": "not_applicable",
+        "desired_cohort_id": null,
+        "observed_cohort_id": null,
+        "observed_cohort_record_digest": null,
+        "observed_cohort_event_digest": null,
+        "profile_path": null,
+        "caller_workflow_path": null,
+        "reusable_workflow_revision": null,
+        "qualification_evidence_path": null,
+        "fixed_gate_command": null,
+        "required_check_context": null,
+        "observed_default_branch_evidence": null,
+        "qualification": {
+          "status": "not_applicable",
+          "observed_revision": null,
+          "evidence_paths": []
+        },
+        "classification_evidence": {
+          "decision": "pending_onboarding",
+          "observed_revision": "133c10cb97df733d0c85eb039fa2145ee9bfb909",
+          "evidence_paths": [
+            "README.md",
+            "package.json",
+            "architecture/feature-module-standard.json",
+            "docs/feature-module-adoption.md"
+          ],
+          "rationale": "Owner 777genius has requested full FMS adoption and registration for this owned SDK. The observed draft source has no admitted managed Docs Protocol profile, Cohort binding or semantic gate. Docs applicability and managed admission remain pending explicit onboarding; SDK status is not an exemption and FMS adoption does not imply Docs qualification.",
+          "v2_qualification_coordinates": null
+        },
+        "exemption": null,
+        "required_check_exception_id": null
+      },
+      "feature_module_standard": {
+        "requirement": "full_adoption_all_production_modules",
+        "standard_version": "v1.1",
+        "profile_path": "architecture/feature-module-standard.json",
+        "adoption_decision_path": "docs/feature-module-adoption.md",
+        "qualification_status": "pending",
+        "qualified_revision": null,
+        "qualified_evidence_paths": []
+      },
+      "remaining_proof": [
+        "Final reviewed immutable Payments source revision and exact artifact blob coordinates.",
+        "Complete native check and positive/negative full-FMS, source-coverage and suppression gates on that same revision.",
+        "Fresh packed NodeNext/Bundler, real PostgreSQL, provider and queue qualification evidence attributable to the final revision.",
+        "Observed hosted checks and independently observed required-check enforcement; configuration does not establish either.",
+        "Explicit Docs applicability decision; if adopted, a qualified exact Cohort, managed profile/integration/qualification contract, inputless caller, semantic gate and actual hosted admission proof.",
+        "A future complete organization census before replacing the dated complete snapshot or reconciling a later historical ledger snapshot."
+      ]
+    }
+  ]
+}

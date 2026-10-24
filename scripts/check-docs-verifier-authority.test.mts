@@ -240,6 +240,28 @@ test("requires every required guard and reusable workflow even when absent from 
   }
 });
 
+test("new registration schema is protected without requiring it in historical trees", () => {
+  const path = "governance/repository-registration-supplements.schema.json";
+  assert.equal(check(authorityFixture()), "noop");
+  const stable = authorityFixture(), entry = { path, mode: "100644", type: "blob", sha: "a".repeat(40) };
+  stable.baseTree.tree.push({ ...entry }); stable.headTree.tree.push({ ...entry });
+  assert.equal(check(stable), "noop");
+  for (const mutation of ["added", "modified", "removed", "symlink", "unlisted"] as const) {
+    const fixture = authorityFixture();
+    if (mutation !== "added") { fixture.baseTree.tree.push({ ...entry }); }
+    if (mutation !== "removed") { fixture.headTree.tree.push({ ...entry,
+      ...(mutation === "modified" || mutation === "unlisted" ? { sha: "b".repeat(40) } : {}),
+      ...(mutation === "symlink" ? { mode: "120000" } : {}),
+    }); }
+    if (mutation !== "unlisted") {
+      fixture.files.push({ filename: path, status: ["added", "removed"].includes(mutation) ? mutation : "modified",
+        sha: mutation === "modified" ? "b".repeat(40) : entry.sha, previous_filename: undefined });
+      fixture.changedFiles = fixture.files.length;
+    }
+    assert.throws(() => check(fixture), /Protected authority path|Unlisted changed Git leaf/u, mutation);
+  }
+});
+
 test("allows declared unrelated workflow changes and their ancestor tree SHA changes", () => {
   const fixture = authorityFixture(), path = ".github/workflows/reviewrouter-interaction.yml", sha = "b".repeat(40);
   fixture.headTree.tree.find(entry => entry.path === path)!.sha = sha;

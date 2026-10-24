@@ -5,6 +5,8 @@ import test from "node:test";
 
 import {
   loadJson,
+  loadRepositoryRegistrationScope,
+  parseRepositoryRegistrationJson,
   validateActionsPolicy,
   validateCodeSecurityDefaults,
   validateDocsProtocolCompatibilitySnapshot,
@@ -12,6 +14,7 @@ import {
   validateExecutableSpecLedger,
   validateGovernanceReferences,
   validateOrganizationRepositoryInventory,
+  validateRepositoryRegistrationSupplements,
 } from "./governance-policy.mjs";
 
 const inventory = await loadJson("governance/organization-repository-inventory.json");
@@ -26,7 +29,70 @@ const docsProtocol = await loadJson("governance/docs-protocol-policy-v2.json");
 const docsProtocolSchema = await loadJson("governance/docs-protocol-policy-v2.schema.json");
 const stableDocsProtocolSource = await readFile("governance/docs-protocol-policy.json", "utf8");
 const stableDocsProtocolSchemaSource = await readFile("governance/docs-protocol-policy.schema.json", "utf8");
+const registrations = await loadJson("governance/repository-registration-supplements.json");
+const registrationSchema = await loadJson("governance/repository-registration-supplements.schema.json");
+const registrationContext = { inventory, ledger, docsProtocol, inventorySchema, docsProtocolSchema };
 const clone = (value) => structuredClone(value);
+
+test("pending Payments registration reconciles ownership without rewriting a historical census or qualification", async () => {
+  const scope = await loadRepositoryRegistrationScope({ inventory, ledger, docsProtocol });
+  const payment = scope.repositories.find(record => record.inventory.repository === "agent-teams-ai/payments-sdk");
+  assert.ok(payment);
+  assert.equal(payment.owner_reference, "https://github.com/777genius");
+  assert.equal(payment.executable_specification.specification_maturity, "not_assessed");
+  assert.equal(payment.executable_specification.implementation_qualification, "not_qualified");
+  assert.equal(payment.feature_module_standard.requirement, "full_adoption_all_production_modules");
+  assert.equal(payment.docs_protocol.admission_status, "pending_classification");
+  assert.ok(!inventory.repositories.some(record => record.repository === payment.inventory.repository));
+  assert.equal(inventory.observed_at, "2026-09-16");
+  assert.equal(ledger.snapshot_date, "2026-08-17");
+  assert.doesNotThrow(() => validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol, scope));
+});
+
+test("registration rejects identity collisions, duplicate records and duplicated source coordinates", () => {
+  for (const mutate of [
+    value => { value.repositories[0].inventory.id = inventory.repositories[0].id; },
+    value => { value.repositories.push(clone(value.repositories[0])); },
+    value => { value.repositories[0].source_change.entries.push({ ...value.repositories[0].source_change.entries[0], git_blob_sha: "a".repeat(40) }); },
+  ]) {
+    const changed = clone(registrations); mutate(changed);
+    assert.throws(() => validateRepositoryRegistrationSupplements(changed, registrationSchema, registrationContext), /collides|uniquely cover/u);
+  }
+});
+
+test("registration cannot promote maturity, qualification, Docs admission or FMS conformance without a new proof contract", () => {
+  for (const mutate of [
+    value => { value.executable_specification.specification_maturity = "implemented_internal_slice"; },
+    value => { value.executable_specification.implementation_qualification = "partially_qualified_internal_slice"; },
+    value => { value.executable_specification.accepted_revision = "a".repeat(40); },
+    value => { value.docs_protocol.admission_status = "admitted"; },
+    value => { value.feature_module_standard.qualification_status = "qualified"; },
+  ]) {
+    const changed = clone(registrations); mutate(changed.repositories[0]);
+    assert.throws(() => validateRepositoryRegistrationSupplements(changed, registrationSchema, registrationContext), /JSON Schema|must remain pending/u);
+  }
+});
+
+test("registration rejects stale authority basis, pre-creation observations and cross-repository source spoofing", () => {
+  for (const mutate of [
+    value => { value.complete_inventory_snapshot_revision = "2026-08-17.1"; },
+    value => { value.repositories[0].observed_at = "2026-10-18T00:00:00Z"; },
+    value => { value.repositories[0].observed_at = "2099-01-01T00:00:00Z"; },
+    value => { value.repositories[0].metadata_endpoint = "https://api.github.com/repos/agent-teams-ai/another"; },
+    value => { value.repositories[0].source_change.pull_request_url = "https://github.com/agent-teams-ai/another/pull/10"; },
+    value => { value.repositories[0].source_change.observed_head = "a".repeat(40); },
+  ]) {
+    const changed = clone(registrations); mutate(changed);
+    assert.throws(() => validateRepositoryRegistrationSupplements(changed, registrationSchema, registrationContext), /exact historical|dated after creation|exact registered|same immutable source/u);
+  }
+});
+
+test("registration JSON rejects duplicate keys before schema or status interpretation", () => {
+  for (const source of ['{"registration_revision":"2026-10-23.1","registration_revision":"2026-10-24.1"}',
+    '{"record":{"id":1,"id":2}}']) {
+    assert.throws(() => parseRepositoryRegistrationJson(source), /duplicate record keys/u);
+  }
+});
 const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime") => {
   const record = policy.repositories.find((candidate) => candidate.repository === repository);
   const revision = "a".repeat(40);
