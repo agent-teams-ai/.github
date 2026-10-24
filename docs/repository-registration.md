@@ -15,7 +15,11 @@ dated repository metadata, immutable source observations, mandatory full FMS and
 unqualified/pending axes. It has no positive qualification or exemption mode.
 
 The canonical reader is `loadRepositoryRegistrationScope` in
-[`scripts/governance-policy.mjs`](../scripts/governance-policy.mjs).
+[`scripts/repository-registration.ts`](../scripts/repository-registration.ts).
+The retained `scripts/governance-policy.mjs` entrypoint binds its existing
+historical semantic validators through narrow callbacks and re-exports the
+same API. The typed reader and the legacy validators share one strict
+[`schema validator`](../scripts/governance-schema.ts).
 `pnpm governance:validate` and the existing live inventory observer use that same
 reader. It validates the unchanged historical authorities first, rejects
 identity collisions and stale basis revisions, then reconciles the pending
@@ -123,7 +127,21 @@ what was observed; qualification must use fresh final-source evidence.
 The offline checker verifies structure, identity binding and pending status; it
 does not re-fetch GitHub or establish that the recorded blobs exist remotely.
 
-This delivery adds a schema to the existing protected verifier inputs and
-changes governance validation. It requires the existing separately reviewed
-source-authority installation/cutover procedure. It does not authorize its own
-installation or alter any existing required check.
+This candidate declares protected-input intent for the supplement schema and
+the three extracted modules: `scripts/governance-schema.ts`,
+`scripts/repository-registration.ts` and
+`scripts/repository-bootstrap-observation.ts`. The same intent covers their
+inspector dependency `scripts/check-repository-admission.ts`, the operational
+`scripts/observe-org-repository-inventory.mjs` bridge, its
+`.github/workflows/organization-inventory-drift.yml` launcher, the exact identity
+contract `scripts/fixtures/commit-author-identity-caller.yml`, and the reusable
+`.github/workflows/repository-admission-check.yml` entrypoint. The other direct
+local imports remain in the existing protected set; dependency and installer
+policy bind Ajv, YAML and the runtime inputs. Its verifier rejects addition,
+modification, removal and nonregular replacements while permitting their absence
+in historical trees. The installed immutable source does not acquire that policy
+by reading this candidate. A separately reviewed defining source, genuine
+positive and protected-input negative canaries, and the owning protection
+transition must establish actual enforcement. Until that readback exists,
+installed protection of these new helper paths remains unqualified. This
+delivery neither authorizes its own installation nor alters a required check.

@@ -6,7 +6,7 @@ import { parseDocument } from "yaml";
 
 export const BOOTSTRAP_GUIDE = "https://github.com/agent-teams-ai/.github/blob/main/docs/repository-admission.md#new-repository-bootstrap";
 export const BOOTSTRAP_START = "2026-10-22T00:00:00Z";
-export const IDENTITY_REVISION = "1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0";
+export const IDENTITY_REVISION = "77a0f46cbfc7688cbabbe12ee819e50ba6f64234";
 const revisionPattern = /^(?!0{40}$)[a-f0-9]{40}$/u;
 export const ADMISSION_CALLER = ".github/workflows/repository-admission.yml";
 export const MAX_FILE_BYTES = 256 * 1024;

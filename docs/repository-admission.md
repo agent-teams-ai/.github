@@ -100,9 +100,12 @@ classification obligations.
    administer GitHub. Use a reviewed new destination if redirecting stdout.
    Also install the exact central identity caller through
    [commit identity onboarding](#commit-identity-onboarding). This checker
-   successor requires the reviewed account-association implementation
-   `1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0`; it rejects the predecessor
-   raw-name pin. Read the activation boundary below before installing it.
+   requires the accepted alias-aware implementation
+   `77a0f46cbfc7688cbabbe12ee819e50ba6f64234`. Both source roles retain the
+   exact owner email and the two exact accepted names `iliya` and `Илия`.
+   The checker rejects the canonical-only predecessor and the broader proposed
+   account-association implementation. Read the publication and adoption
+   boundary below before installing the caller.
 
 6. Check the inert consumer configuration from the central checkout:
 
@@ -131,33 +134,39 @@ availability/success or remote required-check enforcement. Follow the existing
 Docs admission contract below and the owning qualification ledgers for those
 separate claims; do not fabricate a qualified repository record.
 
-### Account-association successor activation
+### Accepted identity policy and runtime publication
 
-The checker source now recognizes the exact identity implementation reviewed in
-[central PR #380](https://github.com/agent-teams-ai/.github/pull/380), commit
-`1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0`. The shared caller template is
-unchanged. Existing immutable admission runtimes retain their earlier identity
-pin; publishing this source does not upgrade their behavior or any consumer.
+The checker recognizes the exact alias-aware identity implementation accepted in
+[central PR #386](https://github.com/agent-teams-ai/.github/pull/386), commit
+`77a0f46cbfc7688cbabbe12ee819e50ba6f64234`. The shared caller template is
+unchanged. The canonical owner name remains `iliya`, the sole added alias is
+`Илия`, and both raw source roles require `iliyazelenkog@gmail.com`. Alternate
+names, alternate emails and normalization are not admitted. This delivery does
+not adopt the broader account-association proposal in PR #380 or its retained
+source-bootstrap candidate in PR #383.
 
-This is preparation, not activation. At this delivery's observation, central
-main still lacks `owner.source_identity: github-user-association`. The reviewed
-identity workflow reads that live policy and fails without the field. Its
-protected-source successor qualification, owner-admin required-check transition,
-central merge and installed-main verification must complete before consumer
-activation. A rendered caller or `configured_not_qualified` result proves none
-of those steps. Retain every predecessor protection until its reviewed cutover;
-do not substitute a manual success status, bypass or consumer policy override.
+Existing immutable admission runtimes retain their earlier identity pin;
+publishing this source does not upgrade their behavior or any consumer. A
+rendered caller or `configured_not_qualified` result does not prove hosted
+execution or required-check enforcement. Each consumer still needs an explicit
+reviewed pin upgrade or first-installation bootstrap, its real hosted checks,
+and an independently observed protection installation. Preserve active
+requirements through their owning transition; do not substitute manual success
+statuses, bypass or consumer policy overrides.
 
 Admission runtime publication also has two stages: first publish the reviewed
 checker source, then explicitly update the reusable wrapper's literal central
 checkout to that published immutable revision and review the resulting wrapper.
-This wrapper now checks out the published, independently reviewed checker source
+The retained wrapper still checks out earlier source
 `6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29`, tree
-`c2a03943c9b8e3071e4cc4534614b4f8f4618d96`, completing that explicit second
-publication stage. This does not activate the live identity policy. Consumers explicitly adopt the final wrapper
-revision and association caller together, then obtain their own hosted and
-required-check evidence. Missing callers remain `incomplete` and fail closed;
-there is no pending-identity exception that makes them pass.
+`c2a03943c9b8e3071e4cc4534614b4f8f4618d96`, whose checker requires the broader
+PR #380 identity pin. That runtime is not the accepted alias-aware checker and
+must not be activated for this delivery. After the reviewed checker source is
+published, update and independently verify the wrapper's literal checkout and
+its exact regression witness before any consumer adopts it. Consumers explicitly
+adopt the final wrapper revision and accepted identity caller together, then
+obtain their own hosted and required-check evidence. Missing callers remain
+`incomplete` and fail closed; no pending-identity exception makes them pass.
 
 ### Independent inventory backstop
 
@@ -420,11 +429,11 @@ sources of rules and caller bytes are the
 Central itself has a separately bootstrapped base-relative caller and is refused
 by this route. No consumer copies policy or receives a second template.
 
-1. Prepare the association caller from the reviewed successor checkout, subject
-   to the [activation boundary](#account-association-successor-activation):
+1. Prepare the accepted alias-aware caller from the matching reviewed checkout,
+   subject to the [publication and adoption boundary](#accepted-identity-policy-and-runtime-publication):
 
    ```sh
-   node scripts/onboard-commit-author-identity.mjs render --revision 1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0
+   node scripts/onboard-commit-author-identity.mjs render --revision 77a0f46cbfc7688cbabbe12ee819e50ba6f64234
    ```
 
    Rendering only prints the exact fixture with its placeholder replaced. It
@@ -436,7 +445,7 @@ by this route. No consumer copies policy or receives a second template.
    creates repositories, or opens/merges PRs. The first installation cannot
    protect its own bootstrap PR.
 
-2. After the central policy/implementation transition, inspect the write-free
+2. After reviewing the selected immutable implementation, inspect the write-free
    remote plan from the matching central checkout, using authorized `gh` access:
 
    ```sh
@@ -461,9 +470,9 @@ by this route. No consumer copies policy or receives a second template.
    and pin an accessible regular central workflow with the current trusted
    implementation bytes. Exact pins need a retained, accessible commit and the
    owning implementation's qualification. The earlier
-   `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` qualification covers its raw-name
-   behavior only; it does not qualify the association successor. Recheck the
-   selected revision's availability, byte compatibility and live admission
+   `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` qualification covers only its
+   original canonical-name behavior; it does not qualify the alias-aware
+   implementation. Recheck the selected revision's availability, byte compatibility and live admission
    evidence rather than switching to `main` or treating review as activation.
 
    Organization Actions PR creation/approval must already be explicitly false;

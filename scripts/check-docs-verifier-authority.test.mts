@@ -240,14 +240,26 @@ test("requires every required guard and reusable workflow even when absent from 
   }
 });
 
-test("new registration schema is protected without requiring it in historical trees", () => {
-  const path = "governance/repository-registration-supplements.schema.json";
-  assert.equal(check(authorityFixture()), "noop");
-  const stable = authorityFixture(), entry = { path, mode: "100644", type: "blob", sha: "a".repeat(40) };
+for (const path of ["governance/repository-registration-supplements.schema.json", "scripts/governance-schema.ts",
+  "scripts/repository-registration.ts", "scripts/repository-bootstrap-observation.ts", "scripts/check-repository-admission.ts",
+  "scripts/observe-org-repository-inventory.mjs", ".github/workflows/organization-inventory-drift.yml",
+  "scripts/fixtures/commit-author-identity-caller.yml", ".github/workflows/repository-admission-check.yml"]) {
+test(`new registration input ${path} is protected without requiring it in historical trees`, () => {
+  const absent = () => {
+    const fixture = authorityFixture();
+    fixture.baseTree.tree = fixture.baseTree.tree.filter(entry => entry.path !== path);
+    fixture.headTree.tree = fixture.headTree.tree.filter(entry => entry.path !== path);
+    return fixture;
+  };
+  assert.equal(check(absent()), "noop");
+  const stable = absent(), entry = { path, mode: "100644", type: "blob", sha: "a".repeat(40) };
   stable.baseTree.tree.push({ ...entry }); stable.headTree.tree.push({ ...entry });
   assert.equal(check(stable), "noop");
+  const retainedSymlink = absent(), link = { ...entry, mode: "120000" };
+  retainedSymlink.baseTree.tree.push({ ...link }); retainedSymlink.headTree.tree.push({ ...link });
+  assert.throws(() => check(retainedSymlink), /Protected input must be regular/u);
   for (const mutation of ["added", "modified", "removed", "symlink", "unlisted"] as const) {
-    const fixture = authorityFixture();
+    const fixture = absent();
     if (mutation !== "added") { fixture.baseTree.tree.push({ ...entry }); }
     if (mutation !== "removed") { fixture.headTree.tree.push({ ...entry,
       ...(mutation === "modified" || mutation === "unlisted" ? { sha: "b".repeat(40) } : {}),
@@ -261,6 +273,8 @@ test("new registration schema is protected without requiring it in historical tr
     assert.throws(() => check(fixture), /Protected authority path|Unlisted changed Git leaf/u, mutation);
   }
 });
+
+}
 
 test("allows declared unrelated workflow changes and their ancestor tree SHA changes", () => {
   const fixture = authorityFixture(), path = ".github/workflows/reviewrouter-interaction.yml", sha = "b".repeat(40);

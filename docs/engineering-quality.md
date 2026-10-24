@@ -6,7 +6,11 @@ existing validators. The consumer profile admits JavaScript and TypeScript tooli
 JSON, YAML and Markdown authority remain non-source. There are no production
 roots, Core/Assembly adoption or SDK grants. The small strict compiler project
 covers the input-proof and verifier-authority helpers, bounded quality-process
-execution, the canonical test runner, and their typed tests. Legacy JavaScript remains
+execution, the canonical test runner, repository admission and registration,
+the bounded remote bootstrap observer, and their typed tests. New registration
+and observer responsibilities live in ordinary `.ts` modules; retained JavaScript
+entrypoints contain only their narrow import, export and validator bindings.
+Legacy JavaScript remains
 untyped; `typedCoverage: false` still describes the repository honestly.
 
 `pnpm check` is the complete required route. Its prehook binds the dependency,
@@ -68,7 +72,7 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 | Public Node preset and source boundaries | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries` |
 | Source census and exact selection | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser |
 | Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets |
-| Strict typed tooling | Active only for the eight explicit `.mts`/`.ts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
+| Strict typed tooling | Active only for the explicit `.mts`/`.ts` entries enumerated in `tsconfig.tooling.json` and the consumer profile: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
 | Mandatory Node execution | Active and fail closed on published Foundation 1.7.2: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck |
 | Registry and development-only admission | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only` |
 | SDK growth authority | N/A: no SDK owner or inventory; no grant activation or release eligibility claim |

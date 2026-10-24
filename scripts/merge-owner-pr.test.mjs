@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -25,7 +25,7 @@ function fakeTransport() {
   }
   fs.appendFileSync(process.env.FAKE_GH_LOG, JSON.stringify(call) + "\n");
   if (args[0] === "pr" && args[1] === "merge") {
-    if (!config.mergeExit || config.mergeEffectBeforeFailure) fs.writeFileSync(process.env.FAKE_GH_EFFECT, "merged");
+    if (!config.mergeExit || config.mergeEffectBeforeFailure) {fs.writeFileSync(process.env.FAKE_GH_EFFECT, "merged");}
     if (config.mergeExit) { process.stderr.write("merge transport failed\n"); process.exit(config.mergeExit); }
     process.stdout.write("Merged (transport response alone is insufficient)\n");
     return;
@@ -33,7 +33,7 @@ function fakeTransport() {
   if (args[0] === "api") {
     const endpoint = args.at(-1);
     if (config.failEndpoint === endpoint) { process.stderr.write("API transport failed\n"); process.exit(1); }
-    if (config.overwriteBody && endpoint.includes("/pulls/")) fs.writeFileSync(config.overwriteBody, "changed after inspection");
+    if (config.overwriteBody && endpoint.includes("/pulls/")) {fs.writeFileSync(config.overwriteBody, "changed after inspection");}
     if (config.invalidJson === endpoint) { process.stdout.write("not JSON"); return; }
     const responses = fs.existsSync(process.env.FAKE_GH_EFFECT) ? { ...config.responses, ...config.after } : config.responses;
     if (Object.hasOwn(responses, endpoint)) {
@@ -49,7 +49,7 @@ function fakeTransport() {
   process.exit(2);
 }
 
-function transport(t, scenario) {
+function transport(t, scenario, policy) {
   const directory = mkdtempSync(path.join(tmpdir(), "owner-merge-test-"));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const config = path.join(directory, "scenario.json"), log = path.join(directory, "calls.jsonl");
@@ -60,13 +60,21 @@ function transport(t, scenario) {
   writeFileSync(config, JSON.stringify(scenario));
   writeFileSync(log, "");
   writeFileSync(bodyFile, body);
+  let selectedMergeCli = mergeCli;
+  if (policy !== undefined) {
+    mkdirSync(path.join(directory, "scripts"));
+    mkdirSync(path.join(directory, "governance"));
+    selectedMergeCli = path.join(directory, "scripts", "merge-owner-pr.mjs");
+    writeFileSync(selectedMergeCli, readFileSync(mergeCli));
+    writeFileSync(path.join(directory, "governance", "commit-author-identity.json"), JSON.stringify(policy));
+  }
   const env = { ...process.env, PATH: directory + path.delimiter + process.env.PATH, TMPDIR: directory,
     FAKE_GH_SCENARIO: config, FAKE_GH_LOG: log, FAKE_GH_EFFECT: effect };
   return {
     bodyFile, effect,
     setScenario: value => writeFileSync(config, JSON.stringify(value)),
     trace: () => readFileSync(log, "utf8").split("\n").filter(Boolean).map(line => JSON.parse(line)),
-    run: (args = [], cli = mergeCli) => spawnSync(process.execPath, [cli, ...args], { cwd: directory, env, encoding: "utf8", timeout: 10_000 }),
+    run: (args = [], cli = selectedMergeCli) => spawnSync(process.execPath, [cli, ...args], { cwd: directory, env, encoding: "utf8", timeout: 10_000 }),
   };
 }
 
@@ -140,6 +148,91 @@ test("owner-opened PR cannot erase external source authorship or admit a technic
     failed(fake.run(argsFor(fake)), /owner-only source author and committer.*contributor-preserving flow/u);
     assert.equal(merges(fake.trace()).length, 0);
   }
+});
+
+test("both exact owner names pass in all source author and committer combinations", t => {
+  for (const authorName of ["iliya", "Илия"]) {
+    for (const committerName of ["iliya", "Илия"]) {
+      const scenario = ownerScenario(), source = scenario.responses[sourceEndpoint][0];
+      source.commit.author.name = authorName;
+      source.commit.committer.name = committerName;
+      const fake = transport(t, scenario), result = fake.run(argsFor(fake));
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(merges(fake.trace()).length, 1);
+    }
+  }
+});
+
+test("owner aliases do not admit other raw names, alternate emails or missing source metadata", t => {
+  for (const role of ["author", "committer"]) {
+    for (const person of [
+      undefined, null, {}, { name: "Илия" }, { email },
+      ...["Iliya", "илия", "Илья", "Илья Зеленко", "777genius", "Илiя", " Илия", "Илия ",
+        "Ил\u200bия", "Илия\nInjected", "Codex", "OpenAI Codex", "GitHub", "github-actions[bot]"].map(name => ({ name, email })),
+      ...["wrong@example.org", "777genius@users.noreply.github.com", "noreply@github.com",
+        "ILIYAZELENKOG@gmail.com", email + " ", "codex@openai.com"].map(value => ({ name: "Илия", email: value })),
+    ]) {
+      const scenario = ownerScenario();
+      scenario.responses[sourceEndpoint][0].commit[role] = person;
+      const fake = transport(t, scenario);
+      failed(fake.run(argsFor(fake)), /owner-only source author and committer/u);
+      assert.equal(merges(fake.trace()).length, 0);
+    }
+  }
+});
+
+test("both alias source roles still require the actual owner User associations", t => {
+  for (const role of ["author", "committer"]) {
+    for (const account of [undefined, null, {},
+      { type: "User", login: "alice" }, { type: "Bot", login: "777genius" },
+      { type: "User", login: "web-flow" }, { type: "User", login: "github" }]) {
+      const scenario = ownerScenario(), source = scenario.responses[sourceEndpoint][0];
+      source.commit.author.name = "Илия";
+      source.commit.committer.name = "Илия";
+      source[role] = account;
+      const fake = transport(t, scenario);
+      failed(fake.run(argsFor(fake)), /owner-only source author and committer/u);
+      assert.equal(merges(fake.trace()).length, 0);
+    }
+  }
+});
+
+test("absent or empty policy aliases retain canonical-only source and final owner behavior", t => {
+  for (const absent of [true, false]) {
+    for (const aliasRole of [null, "author", "committer", "final"]) {
+      const policy = JSON.parse(readFileSync(new URL("../governance/commit-author-identity.json", import.meta.url), "utf8"));
+      if (absent) {delete policy.owner.name_aliases;} else {policy.owner.name_aliases = [];}
+      const scenario = ownerScenario();
+      if (aliasRole === "final") {
+        scenario.after[commitEndpoint].committer = owner;
+        scenario.after[commitEndpoint].commit.committer.name = "Илия";
+        scenario.after[commitEndpoint].commit.committer.email = email;
+      } else if (aliasRole) {scenario.responses[sourceEndpoint][0].commit[aliasRole].name = "Илия";}
+      const fake = transport(t, scenario, policy), result = fake.run(argsFor(fake));
+      if (aliasRole) {
+        failed(result, aliasRole === "final" ? /Final commit committer/u : /owner-only source author and committer/u);
+        assert.equal(merges(fake.trace()).length, aliasRole === "final" ? 1 : 0);
+      } else {assert.equal(result.status, 0, result.stderr);}
+    }
+  }
+});
+
+test("malformed or duplicate policy aliases fail before any GitHub operation", t => {
+  for (const aliases of [null, "Илия", {}, [null], [7], [""], [" "], [" Илия"], ["Илия "],
+    ["Илия\nInjected"], ["Илия\tInjected"], ["Ил\u200bия"], ["Илия\u2028Injected"],
+    ["Илия\u2029Injected"], ["Илия", "Илия"], ["iliya"]]) {
+    const policy = JSON.parse(readFileSync(new URL("../governance/commit-author-identity.json", import.meta.url), "utf8"));
+    policy.owner.name_aliases = aliases;
+    const fake = transport(t, ownerScenario(), policy);
+    failed(fake.run(argsFor(fake)), /Owner name aliases/u);
+    assert.deepEqual(fake.trace(), []);
+  }
+  const policy = JSON.parse(readFileSync(new URL("../governance/commit-author-identity.json", import.meta.url), "utf8"));
+  policy.owner.name_aliases = ["Owner Alias"];
+  const scenario = ownerScenario();
+  scenario.responses[sourceEndpoint][0].commit.author.name = "Owner Alias";
+  const fake = transport(t, scenario, policy), result = fake.run(argsFor(fake));
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test("missing, truncated, duplicate or head-unbound source evidence cannot merge", t => {
@@ -229,6 +322,34 @@ test("final committer allows only the exact ordinary owner or GitHub technical i
   }
 });
 
+test("final ordinary owner committer accepts approved aliases but preserves exact email and account checks", t => {
+  for (const name of ["iliya", "Илия"]) {
+    const scenario = ownerScenario();
+    scenario.after[commitEndpoint].committer = owner;
+    scenario.after[commitEndpoint].commit.committer = { name, email };
+    const fake = transport(t, scenario), result = fake.run(argsFor(fake));
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(merges(fake.trace()).length, 1);
+  }
+  for (const mutate of [
+    final => { final.commit.committer.name = "Илья"; },
+    final => { final.commit.committer.name = " Илия"; },
+    final => { final.commit.committer.email = "alternate@example.org"; },
+    final => { final.commit.committer.email += " "; },
+    final => { final.committer = null; },
+    final => { final.committer = { type: "Bot", login: "777genius" }; },
+    final => { final.committer = { type: "User", login: "alice" }; },
+    final => { final.committer = { type: "User", login: "web-flow" }; },
+  ]) {
+    const scenario = ownerScenario(), final = scenario.after[commitEndpoint];
+    final.committer = owner; final.commit.committer = { name: "Илия", email }; mutate(final);
+    const fake = transport(t, scenario), result = fake.run(argsFor(fake));
+    failed(result, /Final commit committer/u);
+    assert.equal(merges(fake.trace()).length, 1);
+    assert.match(result.stderr, /no verified success.*never rewrite history/u);
+  }
+});
+
 test("wrong auth, stale head, closed PR and unknown author cannot invoke merge", t => {
   for (const [mutate, expression] of [
     [scenario => { scenario.responses.user = { login: "alice", type: "User" }; }, /Authenticated gh user/u],
@@ -286,7 +407,7 @@ test("gh failures and invalid API data never fabricate success or retry an uncer
     const result = fake.run(argsFor(fake));
     failed(result, /API transport failed|JSON|merge transport failed/u);
     assert.equal(merges(fake.trace()).length, change.mergeExit ? 1 : 0);
-    if (change.mergeExit) assert.match(result.stderr, /Merge attempted; no verified success/u);
+    if (change.mergeExit) {assert.match(result.stderr, /Merge attempted; no verified success/u);}
   }
 });
 

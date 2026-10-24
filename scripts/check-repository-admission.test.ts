@@ -77,16 +77,19 @@ test("complete explicit SDK bootstrap reports configuration only without executi
   assert.ok(result.inspected_paths.includes("tsconfig.base.json"));
 });
 
-test("association successor requires its reviewed caller and rejects predecessor or unreviewed identity pins", async () => {
+test("accepted alias policy requires its reviewed caller and rejects broader, predecessor or unreviewed identity pins", async () => {
   const path = ".github/workflows/commit-author-identity.yml";
   const template = await readFile(new URL("./fixtures/commit-author-identity-caller.yml", import.meta.url), "utf8");
-  const reviewed = "1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0";
+  const reviewed = "77a0f46cbfc7688cbabbe12ee819e50ba6f64234";
+  assert.equal(IDENTITY_REVISION, reviewed);
+  assert.equal(execFileSync("git", ["show", `${reviewed}:.github/workflows/commit-author-identity-check.yml`], { encoding: "utf8" }),
+    await readFile(new URL("../.github/workflows/commit-author-identity-check.yml", import.meta.url), "utf8"));
   const { files, source } = await fixture();
   files.set(path, template.replaceAll("CENTRAL_REVISION", reviewed));
   const accepted = await checkRepositoryAdmission(source);
   assert.deepEqual(accepted.issues, []);
   assert.equal(accepted.status, "configured_not_qualified");
-  for (const pin of ["6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6", revision, "0".repeat(40), "main"]) {
+  for (const pin of ["1f8dc7a2ee33e3cc3810f0c4c2d5e9f3f20241d0", "6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6", revision, "0".repeat(40), "main"]) {
     files.set(path, template.replaceAll("CENTRAL_REVISION", pin));
     const rejected = await checkRepositoryAdmission(source);
     assert.equal(rejected.status, "incomplete", pin);
@@ -138,25 +141,34 @@ test("native no-op, comments and quoted command text cannot establish a gate", a
   for (const command of ["# pnpm check\nexit 0", "echo pnpm check", "true && pnpm check", "pnpm check || true", "echo 'pnpm check'", "if true; then pnpm check; fi"]) {
     assert.deepEqual(directCommands(command), []);
     const { files, source } = await fixture();
-    files.set(".github/workflows/checks.yaml", json({ on: { pull_request: null }, jobs: { check: { steps: [{ run: command }] } } }));
+    files.set(".github/workflows/checks.yaml", json({ on: { pull_request: null }, jobs: { check: { "runs-on": "ubuntu-24.04", steps: [{ run: command }] } } }));
     assert.ok((await checkRepositoryAdmission(source)).issues.some(issue => issue.path === ".github/workflows"), command);
   }
   assert.deepEqual(directCommands("# documentation\npnpm check"), ["pnpm check"]);
 });
 
 test("conditional PRs, conditional dependencies, absent needs and cycles cannot cover native gates", async () => {
+  const setup = { "runs-on": "ubuntu-24.04", steps: [{ run: "node --version" }] };
+  const check = { "runs-on": "ubuntu-24.04", needs: "setup", steps: [{ run: "pnpm check" }] };
+  const baseline = { on: { pull_request: null }, jobs: { setup, check } };
+  const { files, source } = await fixture();
+  files.set(".github/workflows/checks.yaml", json(baseline));
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
   const cases = [
-    { on: { pull_request: { paths: ["src/**"] } }, jobs: { check: { steps: [{ run: "pnpm check" }] } } },
-    { on: { pull_request: null }, jobs: { check: { if: "github.event_name == 'push'", steps: [{ run: "pnpm check" }] } } },
-    { on: { pull_request: null }, jobs: { setup: { if: "false", steps: [] }, check: { needs: "setup", steps: [{ run: "pnpm check" }] } } },
-    { on: { pull_request: null }, jobs: { check: { needs: "missing", steps: [{ run: "pnpm check" }] } } },
-    { on: { pull_request: null }, jobs: { setup: { needs: "check", steps: [] }, check: { needs: "setup", steps: [{ run: "pnpm check" }] } } },
-    { on: { pull_request: null }, jobs: { check: { steps: [{ if: "false", run: "pnpm check" }] } } },
+    { ...baseline, on: { pull_request: { paths: ["src/**"] } } },
+    { ...baseline, jobs: { setup, check: { ...check, if: "github.event_name == 'push'" } } },
+    { ...baseline, jobs: { setup: { ...setup, if: "false" }, check } },
+    { ...baseline, jobs: { setup, check: { ...check, needs: "missing" } } },
+    { ...baseline, jobs: { setup: { ...setup, needs: "check" }, check } },
+    { ...baseline, jobs: { setup, check: { ...check, steps: [{ if: "false", run: "pnpm check" }] } } },
+    { ...baseline, jobs: { setup, check: { ...check, "continue-on-error": true } } },
+    { ...baseline, jobs: { setup, check: { ...check, steps: [{ "continue-on-error": true, run: "pnpm check" }] } } },
   ];
   for (const workflow of cases) {
-    const { files, source } = await fixture();
     files.set(".github/workflows/checks.yaml", json(workflow));
-    assert.equal((await checkRepositoryAdmission(source)).status, "incomplete");
+    const result = await checkRepositoryAdmission(source);
+    assert.equal(result.status, "incomplete");
+    assert.ok(result.issues.some(issue => issue.path === ".github/workflows"));
   }
 });
 

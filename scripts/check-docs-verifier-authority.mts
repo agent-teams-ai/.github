@@ -29,7 +29,11 @@ const protectedPaths = [
 ];
 // New authority introduced after the historical fixtures. Its addition, removal
 // or mutation still requires a reviewed source cutover; old trees may lack it.
-const laterProtectedPaths = ["governance/repository-registration-supplements.schema.json"];
+const laterProtectedPaths = ["governance/repository-registration-supplements.schema.json",
+  "scripts/governance-schema.ts", "scripts/repository-registration.ts", "scripts/repository-bootstrap-observation.ts",
+  "scripts/check-repository-admission.ts", "scripts/observe-org-repository-inventory.mjs",
+  ".github/workflows/organization-inventory-drift.yml", "scripts/fixtures/commit-author-identity-caller.yml",
+  ".github/workflows/repository-admission-check.yml"];
 const installerNames = new Set(["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc",
   ".pnpmfile.cjs", ".pnpmfile.mjs", ".node-version", ".nvmrc", ".yarnrc", ".yarnrc.yml",
   "yarn.lock", "package-lock.json", "npm-shrinkwrap.json"]);
