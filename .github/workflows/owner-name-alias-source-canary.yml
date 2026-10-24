@@ -1,0 +1,15 @@
+name: Owner Name Alias Source Canary V1
+on:
+  push:
+    branches:
+      - qualification/owner-name-alias-positive-v1
+      - qualification/owner-name-alias-negative-v1
+permissions: &a1
+  actions: read
+  contents: read
+  pull-requests: read
+  statuses: write
+jobs:
+  source:
+    uses: agent-teams-ai/.github/.github/workflows/owner-name-alias-source-successor-v1.yml@0a578f16502c82e6f488f8a5716bbb32d5abe63d
+    permissions: *a1
