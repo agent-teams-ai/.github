@@ -74,9 +74,16 @@ jobs:
               const policyData = await content(central, policyPath, centralBranch.commit.sha);
               const policy = JSON.parse(policyData.text);
               const identity = policy.owner;
+              const validName = name => typeof name === "string" && name.length > 0 && name.trim() === name &&
+                !/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u.test(name);
               need(policy.schema_version === 1 && human({ type: "User", login: identity?.login }) &&
-                typeof identity.name === "string" && identity.name.length > 0 &&
+                validName(identity.name) &&
                 typeof identity.email === "string" && identity.email.includes("@"), "Invalid owner identity policy");
+              const aliases = Object.hasOwn(identity, "name_aliases") ? identity.name_aliases : [];
+              need(Array.isArray(aliases) &&
+                aliases.every(validName) && new Set([identity.name, ...aliases]).size === aliases.length + 1,
+                "Invalid owner identity name aliases");
+              const names = [identity.name, ...aliases];
               const template = await content(central, templatePath, centralBranch.commit.sha);
               const baseCaller = await content({ owner, repo }, callerPath, observed.base.sha);
               const headCaller = await content({ owner, repo }, callerPath, observed.head.sha);
@@ -119,9 +126,9 @@ jobs:
                   !/^(?:codex|openai)@(?:openai\.com|users\.noreply\.github\.com)$/iu.test(author.email.trim()),
                   "Codex/OpenAI source commit AUTHOR is forbidden");
                 const ownerAuthor = commit.author?.login.toLowerCase() === identity.login.toLowerCase() ||
-                  (commit.author === null && author.name.toLowerCase() === identity.name.toLowerCase()) || author.email === identity.email;
+                  (commit.author === null && names.some(name => author.name.toLowerCase() === name.toLowerCase())) || author.email === identity.email;
                 need(!ownerAuthor || [author, commit.commit?.committer].every(person =>
-                  person?.name === identity.name && person.email === identity.email),
+                  names.includes(person?.name) && person.email === identity.email),
                   "Owner source commits require exact raw author AND committer name/email");
               }
               const latest = (await github.rest.repos.getBranch({ ...central, branch: "main" })).data;
