@@ -67,18 +67,35 @@ test("the launcher fails before validation when native RE2 is missing", async t 
 
 test("check-time dependency drift fails without an implicit installation", async t => {
   const root = await disposable(t);
+  for (const [directory, version] of [["dependency", "1.0.0"], ["replacement", "2.0.0"]] as const) {
+    await mkdir(join(root, directory));
+    await writeFile(join(root, directory, "package.json"), JSON.stringify({ name: "dependency-drift-witness", version }));
+  }
   const manifest = {
     name: "missing-bootstrap-witness", version: "0.0.0", private: true,
     packageManager: "pnpm@11.18.0", scripts: { proof: "node -e \"throw Error('must not run')\"" },
-    dependencies: { yaml: "2.9.0" },
+    dependencies: { "dependency-drift-witness": "file:./dependency" },
   };
   await writeFile(join(root, "package.json"), JSON.stringify(manifest));
   await writeFile(join(root, "pnpm-workspace.yaml"), await readFile(join(repository, "pnpm-workspace.yaml")));
-  await pnpm(["install", "--offline", "--ignore-scripts", "--ignore-pnpmfile"], root);
+  await pnpm(["install", "--offline", "--ignore-scripts",
+    "--cache-dir", join(root, "empty-cache"), "--store-dir", join(root, "empty-store")], root);
   const originalLock = await readFile(join(root, "pnpm-lock.yaml"));
-  manifest.dependencies.yaml = "^2.9.0";
+  const installed = await readFile(join(root, "node_modules/dependency-drift-witness/package.json"));
+  const metadata: unknown = JSON.parse(installed.toString("utf8"));
+  assert.ok(metadata && typeof metadata === "object" && "version" in metadata);
+  assert.equal(metadata.version, "1.0.0");
+  const invoke = () => pnpm([`--config.cache-dir=${join(root, "empty-cache")}`, `--config.store-dir=${join(root, "empty-store")}`, "run", "proof"], root);
+  await assert.rejects(invoke(), error => {
+    const output = getQualityCommandOutput(error);
+    assert.ok(output !== null);
+    assert.match(output.stdout + output.stderr, /must not run/u);
+    assert.doesNotMatch(output.stdout + output.stderr, /ERR_PNPM_VERIFY_DEPS_BEFORE_RUN/u);
+    return true;
+  });
+  manifest.dependencies["dependency-drift-witness"] = "file:./replacement";
   await writeFile(join(root, "package.json"), JSON.stringify(manifest));
-  await assert.rejects(pnpm(["run", "proof"], root), error => {
+  await assert.rejects(invoke(), error => {
     const output = getQualityCommandOutput(error);
     assert.ok(output !== null);
     assert.match(output.stdout + output.stderr, /ERR_PNPM_VERIFY_DEPS_BEFORE_RUN/u);
@@ -86,6 +103,7 @@ test("check-time dependency drift fails without an implicit installation", async
     return true;
   });
   assert.deepEqual(await readFile(join(root, "pnpm-lock.yaml")), originalLock);
+  assert.deepEqual(await readFile(join(root, "node_modules/dependency-drift-witness/package.json")), installed);
 });
 
 test("real incompatible dependency rejects only when the adopted engine policy is effective", async t => {
