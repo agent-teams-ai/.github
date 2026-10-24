@@ -100,6 +100,84 @@ test("owner source committers must be exact, including unassociated owner author
     assert.match(f.failures[0], /exact raw author AND committer/u);
   }
 });
+test("all four exact canonical and alias raw-role combinations pass", async () => {
+  for (const authorName of ["iliya", "Илия"]) for (const committerName of ["iliya", "Илия"]) {
+    const f = fixture(); f.policy.owner.name_aliases = ["Илия"];
+    f.commits = [commit(human, authorName)]; f.commits[0].commit.committer.name = committerName;
+    await run(f);
+    assert.deepEqual(f.failures, []); assert.deepEqual(states(f), ["pending", "success"]);
+  }
+});
+test("connector owner metadata passes for every source commit without rewriting", async () => {
+  const f = fixture(); f.policy.owner.name_aliases = ["Илия"]; f.pull.commits = 4;
+  f.commits = ["d".repeat(40), "e".repeat(40), "f".repeat(40), head].map(sha => {
+    const value = commit(human, "Илия", "iliyazelenkog@gmail.com", sha);
+    value.commit.committer = { name: "Илия", email: "iliyazelenkog@gmail.com" };
+    return value;
+  });
+  await run(f);
+  assert.deepEqual(f.failures, []); assert.deepEqual(states(f), ["pending", "success"]);
+});
+test("absent aliases preserve canonical-only raw-role admission", async () => {
+  const canonical = fixture(); delete canonical.policy.owner.name_aliases;
+  await run(canonical); assert.deepEqual(states(canonical), ["pending", "success"]);
+  for (const role of ["author", "committer"]) {
+    const f = await rejected(value => { delete value.policy.owner.name_aliases; value.commits[0].commit[role].name = "Илия"; });
+    assert.match(f.failures[0], /exact raw author AND committer/u);
+  }
+});
+test("empty aliases remain canonical-only and ordinary internal spaces require explicit admission", async () => {
+  const canonical = fixture(); canonical.policy.owner.name_aliases = [];
+  await run(canonical); assert.deepEqual(canonical.failures, []); assert.deepEqual(states(canonical), ["pending", "success"]);
+  const spaced = fixture(); spaced.policy.owner.name_aliases = ["Iliya Owner"];
+  spaced.commits[0].commit.author.name = "Iliya Owner"; spaced.commits[0].commit.committer.name = "Iliya Owner";
+  await run(spaced); assert.deepEqual(spaced.failures, []); assert.deepEqual(states(spaced), ["pending", "success"]);
+  const unauthorized = await rejected(value => { value.policy.owner.name_aliases = []; value.commits[0].commit.author.name = "Илия"; });
+  assert.match(unauthorized.failures[0], /exact raw author AND committer/u);
+});
+test("malformed alias policies fail closed before commit inspection", async () => {
+  for (const aliases of [null, false, 1, "Илия", {}, [null], [1], [""], [" "], [" Илия"], ["Илия "],
+    ["Илия\t"], ["Илия\n"], ["Илия\u0000"], ["Ил\u200bия"], ["Илия\u00a0"], ["Ил\u2028ия"], ["Ил\u2029ия"],
+    ["iliya"], ["Илия", "Илия"], ["Илия", "iliya"]]) {
+    const f = await rejected(value => { value.policy.owner.name_aliases = aliases; });
+    assert.match(f.failures[0], /Invalid owner identity name aliases/u);
+    assert.ok(!f.operations.includes("commits"));
+  }
+});
+test("alias owner names and emails require exact bytes for both raw roles", async () => {
+  for (const role of ["author", "committer"]) for (const [field, values] of [
+    ["name", ["ИЛИЯ", "илия", " Илия", "Илия ", "Ил\u200bия", "wrong"]],
+    ["email", ["wrong@example.org", "iliyazelenkog@gmail.com ", "ILIYAZELENKOG@gmail.com"]],
+  ]) for (const value of values) {
+    const f = await rejected(changed => {
+      changed.policy.owner.name_aliases = ["Илия"];
+      changed.commits[0].commit.author.name = "Илия"; changed.commits[0].commit.committer.name = "Илия";
+      changed.commits[0].commit[role][field] = value;
+    });
+    assert.match(f.failures[0], /exact raw author AND committer/u);
+  }
+});
+test("unassociated aliases classify owner claims case-insensitively and reject wrong email", async () => {
+  for (const name of ["Илия", "ИЛИЯ", "илия"]) {
+    const f = await rejected(value => {
+      value.policy.owner.name_aliases = ["Илия"]; value.commits = [commit(null, name, "wrong@example.org")];
+    });
+    assert.match(f.failures[0], /exact raw author AND committer/u);
+  }
+  const f = fixture(); f.policy.owner.name_aliases = ["Илия"]; f.commits = [commit(null, "Илия")];
+  f.commits[0].commit.committer.name = "Илия";
+  await run(f); assert.deepEqual(f.failures, []); assert.deepEqual(states(f), ["pending", "success"]);
+});
+test("associated external authors sharing an alias retain original display and technical committer", async () => {
+  const f = fixture(); f.policy.owner.name_aliases = ["Илия"]; f.pull.user = { login: "alice", type: "User" };
+  f.commits = [commit(f.pull.user, "Илия", "alice@example.org")];
+  f.commits[0].committer = { login: "web-flow", type: "User" };
+  f.commits[0].commit.committer = { name: "GitHub", email: "noreply@github.com" };
+  const original = clone(f.commits);
+  await run(f);
+  assert.deepEqual(f.failures, []); assert.deepEqual(states(f), ["pending", "success"]);
+  assert.deepEqual(f.commits, original);
+});
 test("known unassociated Codex/OpenAI source authors cannot masquerade as humans", async () => {
   for (const [name, email] of [["Codex", "codex@openai.com"], ["OpenAI", "openai@openai.com"],
     [" OpenAI Codex ", "CODEX@OPENAI.COM"], ["Codex", "unknown@example.org"],
