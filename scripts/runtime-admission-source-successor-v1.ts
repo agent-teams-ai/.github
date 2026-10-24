@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, isAbsolute, join } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 
@@ -583,6 +583,7 @@ export async function assertBootstrapEnvironment(root: URL, environment: NodeJS.
   // pnpm11.18 dirs.js: Linux uses XDG_CONFIG_HOME/pnpm or ~/.config/pnpm.
   // System/user npmrc sources supply registry/auth settings, not executable YAML settings.
   const globalConfig = bootstrapGlobalConfigPath(environment);
+  assert.ok(isAbsolute(globalConfig), "Bootstrap global pnpm configuration path must be absolute");
   await assertAbsent(globalConfig, "Ambient global pnpm YAML configuration is forbidden before bootstrap");
   for (const directory of bootstrapDirectories) {
     for (const name of [".pnpmfile.cjs", ".pnpmfile.mjs"]) {

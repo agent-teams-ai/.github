@@ -1044,3 +1044,14 @@ test("bootstrap global configuration resolver matches pinned pnpm for empty and 
   assert.equal(bootstrapGlobalConfigPath({}), join(homedir(), ".config", "pnpm", "config.yaml"));
   assert.equal(bootstrapGlobalConfigPath({ XDG_CONFIG_HOME: "/fixed-config" }), "/fixed-config/pnpm/config.yaml");
 });
+
+
+test("pre-query bootstrap rejects relative global configuration paths before starting pnpm", async t => {
+  const f = await bootstrapFixture(t);
+  for (const value of ["relative-config", "../.config"]) {
+    const environment = { ...f.environment, XDG_CONFIG_HOME: value };
+    await assert.rejects(preflightBootstrap("a".repeat(40), f.root, environment), /configuration path must be absolute/u);
+    await assert.rejects(qualifyBootstrap("a".repeat(40), f.root, environment), /configuration path must be absolute/u);
+  }
+  await assert.rejects(readFile(f.marker), { code: "ENOENT" });
+});

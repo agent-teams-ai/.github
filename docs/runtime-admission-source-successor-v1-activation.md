@@ -63,7 +63,9 @@ the builtin-only `preflight` command:
 1. Rejects ambient `PNPM_CONFIG_*` and `NPM_CONFIG_*` overrides, existing Linux
    global pnpm YAML configuration, and root/child default hook files or symlinks.
    The pinned Linux config-directory resolver uses `XDG_CONFIG_HOME/pnpm` or
-   `~/.config/pnpm`; npmrc sources in pnpm11 supply registry/auth settings rather
+   `~/.config/pnpm`. The effective configuration path must be absolute, so it
+   cannot resolve differently in setup and child working directories. npmrc
+   sources in pnpm11 supply registry/auth settings rather
    than executable YAML settings. No credential/config file contents are collected.
 2. Binds the complete clean regular checkout to the actual source workflow SHA,
    then binds root package, lock, workspace and `.npmrc`, plus the three child
