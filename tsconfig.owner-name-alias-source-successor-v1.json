@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "include": [
+    "scripts/owner-name-alias-source-successor-v1.ts",
+    "scripts/owner-name-alias-source-successor-v1.test.ts"
+  ]
+}
