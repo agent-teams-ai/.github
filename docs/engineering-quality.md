@@ -6,8 +6,12 @@ existing validators. The consumer profile admits JavaScript and TypeScript tooli
 JSON, YAML and Markdown authority remain non-source. There are no production
 roots, Core/Assembly adoption or SDK grants. The small strict compiler project
 covers the input-proof and verifier-authority helpers, bounded quality-process
-execution, the canonical test runner, the compiler preflight, and their typed
-tests. Legacy JavaScript remains
+execution, the canonical test runner, the compiler preflight, repository
+admission and registration, the bounded remote bootstrap observer, the isolated
+Renovate launcher, and their typed tests. New registration and observer
+responsibilities live in ordinary
+`.ts` modules; retained JavaScript entrypoints contain only their narrow import,
+export and validator bindings. Legacy JavaScript remains
 untyped; `typedCoverage: false` still describes the repository honestly.
 
 New maintained code for JavaScript runtimes follows
@@ -55,18 +59,22 @@ introduced, and existing immutable evidence remains unchanged.
 
 ## Existing quality route
 
-`pnpm check` is the complete required route. Its prehook binds the dependency,
-profile, installed source policy, critical identities and selected test files.
+`pnpm check` is the complete required route after the explicit root and isolated
+Renovate [bootstrap](node-runtime-compatibility.md#explicit-installation-and-runtime-ownership).
+Checks reject dependency drift instead of implicitly installing packages. Its
+prehook binds the dependency, profile, installed source policy, critical identities and selected test files.
 The census includes tracked and untracked source, so new unclassified source
 cannot disappear before staging. Oxlint 1.85.0 still checks every tooling file
 with exact debug-selection agreement and the same strict suppression options.
-The derived selection contains 37 files and retains every existing tooling file
-and typed test alongside the compiler preflight and its tests. No exclusions or
-ignore rules are added.
+The derived selection retains every existing tooling file and typed test,
+including the compiler preflight, repository admission and registration, and the
+bounded bootstrap observer and isolated Renovate launcher. The adoption checker
+binds its exact census. No exclusions or ignore rules are added.
 
 `pnpm quality:boundaries` invokes the installed public source-dependency CLI.
-The v3 root-package profile retains the two existing owners: `scripts` and
-`tools/feature-module-standard`. Both are development boundaries; scripts may
+The v3 root-package profile retains `scripts` and
+`tools/feature-module-standard` and declares the isolated
+`tools/renovate-validation` package. These are development boundaries; scripts may
 consume only the checker's explicit entrypoint. Declared roots, source inputs
 and manifests must be readable regular paths. Disposable tests reject missing
 roots/entrypoints, a symlinked policy and forbidden imports in explicitly
@@ -93,9 +101,12 @@ import in the existing disposable rejection test.
 
 The repository default is official Node 26.11.1, selected through
 `.node-version`, the consumer profile (`toolchain.node`) and the existing CI
-file-based selection. The package engine is `>=24.18.0 <25 || >=26.10.0 <27`
-(the same Node 24+26 form as the r322 tooling package) and `engine-strict`
-stays on, so installs on both families are checked. Node 24 typings
+file-based selection. The package engine is `>=24.18.0 <25 || >=26.10.0 <27`.
+pnpm 11's effective workspace YAML enables strict engines, strict peers and exact
+saved versions; `.npmrc` alone does not enforce those settings. Frozen root
+installs on both families are checked. Renovate `44.24.2` is installed separately
+and runs only through its exact managed Node `24.21.0` runtime and native RE2
+preflight. Node 24 typings
 (`@types/node` 24.19.1) are retained. Trusted historical governance lanes
 (exact `24.21.0` allowlist in `scripts/check-community-files.mjs`), immutable
 Docs Cohort runtimes/workflows, accepted ADRs and published standards retain
@@ -116,7 +127,7 @@ Historical SHA receipts are unchanged; current-input evidence is separate.
 | Public Node preset and source boundaries | `pnpm quality:lint` covers all selected tooling; `pnpm quality:boundaries` retains its declared roots and runs after the compiler preflight |
 | Source census and exact selection | `node scripts/check-quality-scope.mjs` remains usable independently. `pnpm quality:scope` retains the installed boundary/runner fixtures against the exact current dependency |
 | Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets |
-| Strict typed tooling | Active for the explicit entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
+| Strict typed tooling | Active for the explicit `.mts`/`.ts` entries enumerated in `tsconfig.tooling.json` and the consumer profile: `pnpm quality:typecheck` invokes exact TypeScript 7.0.2 with Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
 | Mandatory Node execution | `pnpm test:critical` retains the eight exact identities and original contract. Their prior adoption result, including the nested positive control, is historical; current qualification binds the exact native dependency |
 | Registry and development-only admission | Both manual routes retain the same preflight: `node scripts/compiler-floor.ts && pnpm exec agent-teams-foundation assert-registry`; `node scripts/compiler-floor.ts && pnpm exec agent-teams-foundation assert-dev-only` |
 | SDK growth authority | N/A: no SDK owner or inventory; no grant activation or release eligibility claim |

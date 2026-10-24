@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import YAML from "yaml";
@@ -43,7 +43,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 37);
+  assert.equal(paths.length, 47);
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
@@ -55,6 +55,13 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/quality-process.test.ts"));
   assert.ok(paths.includes("scripts/run-governance-tests.ts"));
   assert.ok(paths.includes("scripts/run-governance-tests.test.ts"));
+  assert.ok(paths.includes("scripts/check-repository-admission.ts"));
+  assert.ok(paths.includes("scripts/check-repository-admission.test.ts"));
+  assert.ok(paths.includes("scripts/governance-schema.ts"));
+  assert.ok(paths.includes("scripts/repository-registration.ts"));
+  assert.ok(paths.includes("scripts/repository-registration.test.ts"));
+  assert.ok(paths.includes("scripts/repository-bootstrap-observation.ts"));
+  assert.ok(paths.includes("scripts/repository-bootstrap-observation.test.ts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
   assert.ok(paths.includes("scripts/compiler-floor.ts"));
@@ -64,6 +71,14 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
 
 const mutations = {
   "a changed TypeScript ESM package contract": value => { value.manifest.type = "commonjs"; },
+  "an absorbed runtime-specific tool": value => { value.workspacePolicy.packages.push("tools/renovate-validation"); },
+  "ineffective engine policy": value => { value.workspacePolicy.engineStrict = false; },
+  "ineffective peer policy": value => { delete value.workspacePolicy.strictPeerDependencies; },
+  "implicit check-time installation": value => { value.workspacePolicy.verifyDepsBeforeRun = "install"; },
+  "ranged isolated Renovate pin": value => { value.renovateTool.devDependencies.renovate = "^44.24.2"; },
+  "wrong isolated validator runtime": value => { value.renovateTool.devEngines.runtime.version = "26.11.1"; },
+  "unbounded native validator build": value => { value.renovateTool.scripts["build:native"] = "pnpm rebuild"; },
+  "missing isolated validator bootstrap": value => { value.workflow = value.workflow.replace("pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts", "true"); },
   "a ranged tooling compiler": value => { value.manifest.devDependencies.typescript = "^7.0.2"; },
   "foreign Node type definitions": value => { value.manifest.devDependencies["@types/node"] = "26.6.4"; },
   "disabled strict typechecking": value => { value.toolingTsconfig.compilerOptions.strict = false; },
@@ -154,6 +169,9 @@ test("installed source boundary rejects missing inputs and governed dist source"
   await put("docs/engineering-quality-source-policy.yaml", YAML.stringify(policy));
   await put("scripts/sample.mjs", 'import { value } from "../tools/feature-module-standard/check.mjs"; console.log(value);\n');
   await put("tools/feature-module-standard/check.mjs", "export const value = 1;\n");
+  for (const path of ["tools/renovate-validation/package.json", "tools/renovate-validation/pnpm-workspace.yaml", "tools/renovate-validation/pnpm-lock.yaml"]) {
+    await put(path, await readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+  }
   const run = () => runInstalled(foundationCli, ["check", "architecture.source-dependencies", "--format", "json"], root);
   assert.equal(run().status, 0, "ordinary declared tooling must qualify");
   // Failure: the installed parser silently exempts typed imports in governed roots.

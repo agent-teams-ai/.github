@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agent-teams-ai/.github/governance/repository-registration-supplements.schema.json",
+  "title": "Individually observed pending repository registrations; not a complete organization census",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "registration_revision",
+    "observation_scope",
+    "complete_inventory_snapshot_revision",
+    "historical_executable_ledger_revision",
+    "docs_policy_snapshot_revision",
+    "repositories"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "./repository-registration-supplements.schema.json"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "registration_revision": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}\\.[1-9][0-9]*$"
+    },
+    "observation_scope": {
+      "const": "individual_repository_metadata_not_complete_inventory"
+    },
+    "complete_inventory_snapshot_revision": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "historical_executable_ledger_revision": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "docs_policy_snapshot_revision": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "inventory",
+          "owner_reference",
+          "observed_at",
+          "metadata_endpoint",
+          "default_branch_revision",
+          "source_change",
+          "executable_specification",
+          "docs_protocol",
+          "feature_module_standard",
+          "remaining_proof"
+        ],
+        "properties": {
+          "inventory": {
+            "$ref": "https://github.com/agent-teams-ai/.github/governance/organization-repository-inventory.schema.json#/$defs/repository"
+          },
+          "owner_reference": {
+            "type": "string",
+            "pattern": "^https://github\\.com/[A-Za-z0-9-]+$"
+          },
+          "observed_at": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+          },
+          "metadata_endpoint": {
+            "type": "string",
+            "pattern": "^https://api\\.github\\.com/repos/agent-teams-ai/[^/]+$"
+          },
+          "default_branch_revision": {
+            "type": "string",
+            "pattern": "^(?!0{40}$)[a-f0-9]{40}$"
+          },
+          "source_change": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "pull_request_number",
+              "pull_request_url",
+              "observed_head",
+              "status",
+              "entries"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "pattern": "^agent-teams-ai/[^/]+$"
+              },
+              "pull_request_number": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "pull_request_url": {
+                "type": "string",
+                "pattern": "^https://github\\.com/agent-teams-ai/[^/]+/pull/[1-9][0-9]*$"
+              },
+              "observed_head": {
+                "type": "string",
+                "pattern": "^(?!0{40}$)[a-f0-9]{40}$"
+              },
+              "status": {
+                "const": "draft_unmerged_observation"
+              },
+              "entries": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 32,
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "git_blob_sha"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+                    },
+                    "git_blob_sha": {
+                      "type": "string",
+                      "pattern": "^(?!0{40}$)[a-f0-9]{40}$"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "executable_specification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "applicability",
+              "specification_maturity",
+              "implementation_qualification",
+              "deployment_qualification",
+              "accepted_revision",
+              "accepted_evidence",
+              "declared_full_gate_command",
+              "remote_required_checks",
+              "statement"
+            ],
+            "properties": {
+              "applicability": {
+                "const": "applicable"
+              },
+              "specification_maturity": {
+                "const": "not_assessed"
+              },
+              "implementation_qualification": {
+                "const": "not_qualified"
+              },
+              "deployment_qualification": {
+                "const": "not_qualified"
+              },
+              "accepted_revision": {
+                "type": "null"
+              },
+              "accepted_evidence": {
+                "type": "array",
+                "maxItems": 0
+              },
+              "declared_full_gate_command": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              },
+              "remote_required_checks": {
+                "const": "not_observed"
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "\\S"
+              }
+            }
+          },
+          "docs_protocol": {
+            "$ref": "https://github.com/agent-teams-ai/.github/governance/docs-protocol-policy-v2.schema.json#/$defs/repository"
+          },
+          "feature_module_standard": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requirement",
+              "standard_version",
+              "profile_path",
+              "adoption_decision_path",
+              "qualification_status",
+              "qualified_revision",
+              "qualified_evidence_paths"
+            ],
+            "properties": {
+              "requirement": {
+                "const": "full_adoption_all_production_modules"
+              },
+              "standard_version": {
+                "const": "v1.1"
+              },
+              "profile_path": {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+              },
+              "adoption_decision_path": {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+              },
+              "qualification_status": {
+                "const": "pending"
+              },
+              "qualified_revision": {
+                "type": "null"
+              },
+              "qualified_evidence_paths": {
+                "type": "array",
+                "maxItems": 0
+              }
+            }
+          },
+          "remaining_proof": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S"
+            }
+          }
+        }
+      }
+    }
+  }
+}

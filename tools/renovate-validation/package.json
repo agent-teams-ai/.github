@@ -1,0 +1,23 @@
+{
+  "name": "central-renovate-validation",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24.18.0 <25"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.21.0",
+      "onFail": "download"
+    }
+  },
+  "scripts": {
+    "build:native": "node -e \"if (process.version !== 'v24.21.0') throw Error('Renovate runtime mismatch')\" && pnpm rebuild re2",
+    "validate": "node ../../scripts/validate-renovate.ts"
+  },
+  "devDependencies": {
+    "renovate": "44.24.2"
+  }
+}

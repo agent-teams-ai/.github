@@ -3,6 +3,11 @@
 This repository owns organization-wide defaults and immutable shared
 architecture standards. It does not own product-specific architecture.
 
+For new owned production repositories and explicit older opt-ins, start at
+[new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap).
+Install its explicit FMS, Foundation and CI configuration; GitHub does not
+automatically inherit those artifacts or required checks.
+
 Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).

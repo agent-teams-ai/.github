@@ -33,4 +33,8 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install the isolated Node 24 Renovate tool without lifecycle scripts
+        run: pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+      - name: Build the allowed native validator dependency with managed Node 24
+        run: pnpm --dir tools/renovate-validation run build:native
       - run: pnpm check

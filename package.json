@@ -19,7 +19,7 @@
     "governance:inventory:audit": "node scripts/observe-org-repository-inventory.mjs --audit",
     "governance:validate": "node scripts/validate-governance.mjs",
     "test": "node scripts/run-governance-tests.ts",
-    "renovate:validate": "renovate-config-validator --strict renovate-config.json renovate.json",
+    "renovate:validate": "pnpm --dir tools/renovate-validation run validate",
     "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
     "quality:lint": "node scripts/run-quality-lint.mjs",
     "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
@@ -35,7 +35,6 @@
     "ajv": "8.20.0",
     "node-or-bun": "0.2.1",
     "oxlint": "1.85.0",
-    "renovate": "44.24.2",
     "typescript": "7.0.2",
     "yaml": "2.9.0"
   }

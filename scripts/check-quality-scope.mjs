@@ -18,6 +18,7 @@ const EXPECTED_SCRIPTS = {
   "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
   "quality:boundaries": "node scripts/compiler-floor.ts && agent-teams-foundation check architecture.source-dependencies",
   "test:critical": "node scripts/compiler-floor.ts && agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
+  "renovate:validate": "pnpm --dir tools/renovate-validation run validate",
   "quality:typecheck": "tsc --project tsconfig.tooling.json",
   "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
   test: "node scripts/run-governance-tests.ts",
@@ -74,9 +75,13 @@ function assertWorkflow(workflowText) {
   assert.equal(requiredSteps.length, 1, "CI check job must contain exactly one pnpm check step");
   assert.deepEqual(requiredSteps[0], { run: "pnpm check" },
     "pnpm check step cannot be conditional or continue on error");
+  assert.deepEqual(steps.filter(step => typeof step?.run === "string" && step.run.includes("tools/renovate-validation")), [
+    { name: "Install the isolated Node 24 Renovate tool without lifecycle scripts", run: "pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts" },
+    { name: "Build the allowed native validator dependency with managed Node 24", run: "pnpm --dir tools/renovate-validation run build:native" },
+  ], "CI must explicitly provision Renovate before checks without building its native dependency under Node 26");
 }
 
-export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig }) {
+export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPaths, workflow, requiredTests, sourcePolicy, foundationConfig, nodeVersion, toolingTsconfig, workspacePolicy, renovateTool }) {
   assert.equal(manifest.type, "module", "ordinary TypeScript tooling must retain its package-owned ESM contract");
   assert.equal(manifest.devDependencies?.["@agent-teams/engineering-foundation"], "1.10.0",
     "Foundation dependency must use the exact released pin");
@@ -101,7 +106,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts", ".ts"] },
     typedTooling: {
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
-      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts", "scripts/compiler-floor.ts", "scripts/compiler-floor.test.ts"],
+      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts", "scripts/compiler-floor.ts", "scripts/compiler-floor.test.ts", "scripts/check-repository-admission.ts", "scripts/check-repository-admission.test.ts", "scripts/governance-schema.ts", "scripts/repository-registration.ts", "scripts/repository-registration.test.ts", "scripts/repository-bootstrap-observation.ts", "scripts/repository-bootstrap-observation.test.ts", "scripts/validate-renovate.ts", "scripts/validate-renovate.test.ts", "scripts/validate-renovate-abi.probe.ts"],
     },
     toolchain: { node: "26.11.1", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
@@ -132,7 +137,17 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     "scripts/run-governance-tests.ts",
     "scripts/run-governance-tests.test.ts",
     "scripts/compiler-floor.ts",
-    "scripts/compiler-floor.test.ts"
+    "scripts/compiler-floor.test.ts",
+    "scripts/check-repository-admission.ts",
+    "scripts/check-repository-admission.test.ts",
+    "scripts/governance-schema.ts",
+    "scripts/repository-registration.ts",
+    "scripts/repository-registration.test.ts",
+    "scripts/repository-bootstrap-observation.ts",
+    "scripts/repository-bootstrap-observation.test.ts",
+    "scripts/validate-renovate.ts",
+    "scripts/validate-renovate.test.ts",
+    "scripts/validate-renovate-abi.probe.ts"
   ]
 }, "strict compiler scope and settings must stay exact");
   assert.deepEqual(requiredTests, {
@@ -204,10 +219,13 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     "manifest": "pnpm-workspace.yaml"
   },
   "rootPackage": true,
-  "packageRoots": [],
+  "packageRoots": [
+    "tools/renovate-validation"
+  ],
   "governedRoots": [
     "scripts",
-    "tools/feature-module-standard"
+    "tools/feature-module-standard",
+    "tools/renovate-validation"
   ],
   "boundaries": [
     {
@@ -275,6 +293,22 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
         ],
         "runtimeReferences": []
       }
+    },
+    {
+      "id": "renovate-validation",
+      "dependencyMode": "development",
+      "roots": [
+        "tools/renovate-validation"
+      ],
+      "entrypoints": [],
+      "allow": {
+        "boundaries": [],
+        "packages": [
+          "renovate"
+        ],
+        "builtins": [],
+        "runtimeReferences": []
+      }
     }
   ]
 }, "source boundaries must retain every declared tooling root");
@@ -291,6 +325,21 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
 }, "installed source gate configuration changed");
   assert.equal(nodeVersion.trim(), "26.11.1", "owning test tooling lane must use Node 26.11.1");
   assert.equal(manifest.engines?.node, ">=24.18.0 <25 || >=26.10.0 <27", "package engines must keep Node 24 compatibility and admit the Node 26 default");
+  for (const key of ["engineStrict", "strictPeerDependencies", "saveExact"]) {
+    assert.equal(workspacePolicy[key], true, `pnpm 11 requires effective ${key} in workspace YAML`);
+  }
+  assert.deepEqual(workspacePolicy.packages, ["."], "The root workspace must not absorb the isolated Node 24 tool");
+  assert.equal(workspacePolicy.verifyDepsBeforeRun, "error", "Checks must reject dependency drift without implicit installation");
+  assert.deepEqual(renovateTool, {
+    name: "central-renovate-validation", version: "0.0.0", private: true, packageManager: "pnpm@11.18.0",
+    engines: { node: ">=24.18.0 <25" },
+    devEngines: { runtime: { name: "node", version: "24.21.0", onFail: "download" } },
+    scripts: {
+      "build:native": "node -e \"if (process.version !== 'v24.21.0') throw Error('Renovate runtime mismatch')\" && pnpm rebuild re2",
+      validate: "node ../../scripts/validate-renovate.ts",
+    },
+    devDependencies: { renovate: "44.24.2" },
+  }, "Renovate must remain an isolated exact Node 24 validation tool");
   assertLintPolicy(lintConfig);
   assertWorkflow(workflow);
   const census = classifyTrackedPaths(trackedPaths);
@@ -321,6 +370,8 @@ export async function readQualityAdoption(base = root) {
     trackedPaths: stdout.split("\0").filter(Boolean),
     nodeVersion: await readFile(new URL(".node-version", base), "utf8"),
     workflow: await readFile(new URL(".github/workflows/ci.yml", base), "utf8"),
+    workspacePolicy: parseYaml(await readFile(new URL("pnpm-workspace.yaml", base), "utf8")),
+    renovateTool: await readJson("tools/renovate-validation/package.json"),
   };
 }
 

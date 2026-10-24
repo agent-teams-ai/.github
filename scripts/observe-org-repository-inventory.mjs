@@ -4,6 +4,11 @@ import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import { observeStableRepositoryInventory } from "./docs-cohort-policy.mjs";
+import { BOOTSTRAP_GUIDE } from "./check-repository-admission.ts";
+import { auditRepositoryBootstrapConfigurations, loadRemoteBootstrapSource } from "./repository-bootstrap-observation.ts";
+import { projectRepositoryRegistrations } from "./repository-registration.ts";
+export { auditRepositoryBootstrapConfigurations, loadRemoteBootstrapSource } from "./repository-bootstrap-observation.ts";
+import { loadRepositoryRegistrationScope } from "./governance-policy.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -48,10 +53,11 @@ function liveProjection(repository) {
     is_fork: repository.fork, fork_parent: repository.fork_parent };
 }
 
-export function repositoryInventoryDrift(liveRepositories, inventory, policy) {
+export function repositoryInventoryDrift(liveRepositories, inventory, policy, registrations) {
   const live = new Map(liveRepositories.map((record) => [record.full_name, liveProjection(record)]));
-  const declared = new Map(inventory.repositories.map((record) => [record.repository, record]));
-  const activePolicy = new Map(policy.repositories.filter(({ repository_lifecycle }) => repository_lifecycle === "active").map((record) => [record.repository, record]));
+  const { inventoryRecords: declaredRecords, docsRecords: policyRecords } = projectRepositoryRegistrations(inventory, policy, registrations);
+  const declared = new Map(declaredRecords.map((record) => [record.repository, record]));
+  const activePolicy = new Map(policyRecords.filter(({ repository_lifecycle }) => repository_lifecycle === "active").map((record) => [record.repository, record]));
   const missingFromSnapshot = [...live.keys()].filter((repository) => !declared.has(repository)).toSorted();
   const absentFromOrganization = [...declared.keys()].filter((repository) => !live.has(repository)).toSorted();
   const structuralChanges = [];
@@ -68,8 +74,8 @@ export function repositoryInventoryDrift(liveRepositories, inventory, policy) {
   return { missingFromSnapshot, absentFromOrganization, structuralChanges, missingClassification };
 }
 
-export function assertRepositoryInventoryCurrent(liveRepositories, inventory, policy) {
-  const drift = repositoryInventoryDrift(liveRepositories, inventory, policy);
+export function assertRepositoryInventoryCurrent(liveRepositories, inventory, policy, registrations) {
+  const drift = repositoryInventoryDrift(liveRepositories, inventory, policy, registrations);
   if (Object.values(drift).some((entries) => entries.length > 0)) {
     throw new Error(`Organization repository inventory drift detected. Add every new repository to the dated inventory and documentation policy as pending_classification before choosing adopted or N/A. Actionable diff:\n${JSON.stringify(drift, null, 2)}`);
   }
@@ -94,13 +100,32 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   }
   const policy = JSON.parse(await readFile("governance/docs-protocol-policy-v2.json", "utf8"));
   const inventory = JSON.parse(await readFile("governance/organization-repository-inventory.json", "utf8"));
+  const ledger = JSON.parse(await readFile("governance/executable-spec-qualification.json", "utf8"));
+  const registrations = await loadRepositoryRegistrationScope({ inventory, ledger, docsProtocol: policy });
   const first = await observeStableRepositoryInventory(fetchPage, { maxPages: policy.admission.live_drift_audit.max_pages });
   await assertCompletePrivateRepositoryVisibility(first);
-  if (process.argv.includes("--audit")) {assertRepositoryInventoryCurrent(first, inventory, policy);}
+  let driftError;
+  let bootstrap = [];
+  if (process.argv.includes("--audit")) {
+    try {assertRepositoryInventoryCurrent(first, inventory, policy, registrations);}
+    catch (error) {driftError = error;}
+    // Run even when inventory drifts, so a wholly absent caller is actionable
+    // alongside the pending-classification requirement for a new repository.
+    bootstrap = await auditRepositoryBootstrapConfigurations(first, loadRemoteBootstrapSource,
+      new Set(registrations.repositories.map(record => record.inventory.id)));
+  }
+  const bootstrapFailed = bootstrap.some(({ status }) => status !== "configured_not_qualified");
   process.stdout.write(`${JSON.stringify({
     organization: "agent-teams-ai",
     repository_count: first.length,
-    drift_status: process.argv.includes("--audit") ? "current" : "not_evaluated",
+    registration_scope: registrations.observation_scope,
+    registration_revision: registrations.registration_revision,
+    drift_status: process.argv.includes("--audit") ? driftError ? "drift_detected" : "current" : "not_evaluated",
+    bootstrap_status: process.argv.includes("--audit") ? bootstrapFailed ? "incomplete" : "configured_not_qualified" : "not_evaluated",
+    bootstrap_guide: BOOTSTRAP_GUIDE,
+    bootstrap,
     repositories: first,
   }, null, 2)}\n`);
+  if (driftError) {throw driftError;}
+  if (bootstrapFailed) {throw new Error(`Repository bootstrap configuration is incomplete. Follow ${BOOTSTRAP_GUIDE}`);}
 }

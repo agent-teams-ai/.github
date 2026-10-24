@@ -27,6 +27,7 @@ const docsProtocolSchema = await loadJson("governance/docs-protocol-policy-v2.sc
 const stableDocsProtocolSource = await readFile("governance/docs-protocol-policy.json", "utf8");
 const stableDocsProtocolSchemaSource = await readFile("governance/docs-protocol-policy.schema.json", "utf8");
 const clone = (value) => structuredClone(value);
+
 const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime") => {
   const record = policy.repositories.find((candidate) => candidate.repository === repository);
   const revision = "a".repeat(40);

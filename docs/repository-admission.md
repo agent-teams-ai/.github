@@ -1,4 +1,4 @@
-# Repository documentation protocol admission
+# Repository admission
 
 Every new organization-owned repository starts as `pending_classification`.
 Its owner explicitly chooses consumer, producer/controller, or N/A before any
@@ -24,6 +24,189 @@ source coverage and required typecheck gate. Establish those for new maintained
 TypeScript source; retain honest legacy coverage and the standard's bounded
 fixture/host exceptions. This routing does not change a pinned architecture
 standard, install a new gate or certify existing code.
+
+## New repository bootstrap
+
+New organization-owned production repositories created on or after
+**2026-10-22 UTC** must explicitly adopt the full immutable
+[Feature Module Standard v1.1](architecture/feature-module-standard/v1.1.md),
+Engineering Foundation quality coverage and deterministic native gates in their
+first reviewed bootstrap. SDKs, integrations and libraries need feature
+ownership for their real capabilities just as services do. Choose the appropriate
+module role; do not substitute an SDK exemption, empty scaffolding or a package
+installation for adoption. Existing repositories enter this route by explicit
+owner opt-in or a reviewed central registration requiring full FMS; this requirement does not initiate a fleet migration or rewrite
+accepted decisions or immutable standards.
+
+The organization owns this bootstrap policy and its
+[standalone configuration checker](../scripts/check-repository-admission.ts).
+Foundation owns portable validation mechanisms; the repository owns its domain,
+topology, adoption decision and exact gates. This is organization onboarding
+policy, not a second general-purpose quality engine or an installable package.
+
+### Supported configuration contract
+
+The first checker supports JavaScript/TypeScript projects with an exact
+`pnpm@x.y.z` or `bun@x.y.z` package manager declaration, a committed native
+lockfile and a default branch named `main`. Other stacks and branch layouts
+remain **unsupported_stack_pending** until an owned, reviewed adapter is added.
+The inventory audit conservatively includes new active owned repositories until
+their classification is resolved; it cannot infer that a repository is
+non-production from a missing package manifest. Archived repositories and
+external forks remain outside this bootstrap route. They keep their existing
+classification obligations.
+
+1. Read the [engineering baseline](engineering-quality-standard.md),
+   [tool catalog](development-tools.md) and immutable FMS before choosing tooling.
+   Record owner-approved adoption in a repository-local architecture document
+   and decision. Expose its one FMS profile from README and route AGENTS.md to
+   this exact bootstrap anchor. CLAUDE.md routes through AGENTS.md or this guide.
+   An older repository opting in also records `"repositoryAdmission": 1` in its
+   root package.json. Retain that explicit intent so the independent audit still
+   detects removal of its whole caller.
+
+2. Declare consumer-owned `architecture.source-dependencies`,
+   `quality.source-coverage` and `quality.suppression-governance` config paths in
+   root `foundation.config.yaml`. Source coverage binds the same source and
+   suppression policies, the type-aware lint configuration, the one
+   `featureProfilePath`, real production `compilerProjects`, and the scope,
+   typed and full native script names. Use the existing Foundation configuration
+   contracts and the consumer's exact released development-only Foundation/FMS
+   package pins. Source coverage includes the actual modules, SDKs and features.
+   Production compiler projects inherit strict, noUncheckedIndexedAccess and
+   exactOptionalPropertyTypes, through local configs or Foundation's named
+   base/node/bun strict presets. Weakening overrides remain failures. Other
+   external preset inheritance needs an explicitly supported adapter.
+
+3. The profile identifies the immutable standard's ID, version, canonical path,
+   content digest and nonzero source commit. Declare production, application and
+   excluded roots; every real module's role and feature/layer mapping; extensions
+   and deviations, including explicit empty arrays; architecture documentation;
+   decision records; and exact deterministic enforcement commands. Follow the
+   complete FMS conformance contract, including positive and negative topology
+   fixtures. This configuration check does not inspect or certify the semantics
+   of those fixtures or the feature implementation.
+
+4. Keep `check` as the full native script route. It executes the real FMS gate,
+   coverage scope and typed gates, strict compilation, native tests, complete
+   Foundation check, assert-dev-only and assert-registry. Every declared FMS
+   enforcement command must be reached by that route. Required pull-request CI
+   executes the complete route, in one job or split across unconditional jobs
+   with unconditional, acyclic and complete `needs` closures. Do not rely on
+   path filters, conditions, continue-on-error, comments, command text inside
+   echo, or exit-zero scripts. The static recognizer supports direct native
+   commands joined by `&&` in package scripts. Workflow steps also permit
+   newlines under an Ubuntu runner and GitHub's built-in bash/sh fail-fast
+   shells. Custom shells, other runners, wrappers, arbitrary shell, changed
+   working directories and reusable native gate jobs need a reviewed adapter.
+   Package-manager shell overrides and execution-control environment overrides
+   are rejected. Compiler help/version, dry-run/configuration probes and
+   disabled checking never count as compilation.
+   Repository-owned commands still require their native test and semantic review;
+   recognizing a command does not establish what its implementation does.
+
+5. From a reviewed central checkout, render the inputless canonical caller:
+
+   ```sh
+   node scripts/check-repository-admission.ts render REVIEWED_IMMUTABLE_CENTRAL_SHA
+   ```
+
+   Review its bytes and install them as
+   `.github/workflows/repository-admission.yml`. The retained central revision
+   must contain the reusable workflow and its literal immutable implementation
+   checkout. Never use `main`, supply a command, pass secrets or add a condition.
+   The checker renders to stdout only; it does not write, commit, install or
+   administer GitHub. Use a reviewed new destination if redirecting stdout.
+   Also install the exact central identity caller through
+   [commit identity onboarding](#commit-identity-onboarding). This checker
+   requires the accepted alias-aware implementation
+   `77a0f46cbfc7688cbabbe12ee819e50ba6f64234`. Both source roles retain the
+   exact owner email and the two exact accepted names `iliya` and `Илия`.
+   The checker rejects the canonical-only predecessor and the broader proposed
+   account-association implementation. Read the publication and adoption
+   boundary below before installing the caller.
+
+6. Check the inert consumer configuration from the central checkout:
+
+   ```sh
+   node scripts/check-repository-admission.ts --root /path/to/consumer
+   ```
+
+   Missing foundation configuration or an entirely absent caller exits nonzero
+   and links this guide. The checker reads bounded regular UTF-8 files only:
+   at most 256 files, 256 KiB per file and 4 MiB in total, with bounded compiler
+   inheritance and workflow/script graphs. Symlinks, malformed/aliased YAML,
+   invalid UTF-8 and unsafe paths fail closed. It never installs dependencies,
+   executes consumer commands, reads credentials or needs a secret.
+
+7. Run the consumer's complete native gates and appropriate disposable positive
+   and negative fixtures, then observe the exact hosted workflow and separately
+   configure and verify required-check enforcement. Bootstrap installation does
+   not protect its own first PR. GitHub community files do not automatically
+   install callers, packages, FMS profiles, rulesets or required checks.
+
+Success is deliberately **configured_not_qualified**. It proves the supported
+configuration is present and wired at the inspected bytes. It does not prove
+full FMS semantic conformance, installed package integrity, real source coverage,
+Docs Protocol admission, executable-specification registration, hosted workflow
+availability/success or remote required-check enforcement. Follow the existing
+Docs admission contract below and the owning qualification ledgers for those
+separate claims; do not fabricate a qualified repository record.
+
+### Accepted identity policy and runtime publication
+
+The checker recognizes the exact alias-aware identity implementation accepted in
+[central PR #386](https://github.com/agent-teams-ai/.github/pull/386), commit
+`77a0f46cbfc7688cbabbe12ee819e50ba6f64234`. The shared caller template is
+unchanged. The canonical owner name remains `iliya`, the sole added alias is
+`Илия`, and both raw source roles require `iliyazelenkog@gmail.com`. Alternate
+names, alternate emails and normalization are not admitted. This delivery does
+not adopt the broader account-association proposal in PR #380 or its retained
+source-bootstrap candidate in PR #383.
+
+Existing immutable admission runtimes retain their earlier identity pin;
+publishing this source does not upgrade their behavior or any consumer. A
+rendered caller or `configured_not_qualified` result does not prove hosted
+execution or required-check enforcement. Each consumer still needs an explicit
+reviewed pin upgrade or first-installation bootstrap, its real hosted checks,
+and an independently observed protection installation. Preserve active
+requirements through their owning transition; do not substitute manual success
+statuses, bypass or consumer policy overrides.
+
+Admission runtime publication also has two stages: first publish the reviewed
+checker source, then explicitly update the reusable wrapper's literal central
+checkout to that published immutable revision and review the resulting wrapper.
+The retained wrapper still checks out earlier source
+`6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29`, tree
+`c2a03943c9b8e3071e4cc4534614b4f8f4618d96`, whose checker requires the broader
+PR #380 identity pin. That runtime is not the accepted alias-aware checker and
+must not be activated for this delivery. After the reviewed checker source is
+published, update and independently verify the wrapper's literal checkout and
+its exact regression witness before any consumer adopts it. Consumers explicitly
+adopt the final wrapper revision and accepted identity caller together, then
+obtain their own hosted and required-check evidence. Missing callers remain
+`incomplete` and fail closed; no pending-identity exception makes them pass.
+
+### Independent inventory backstop
+
+The existing six-hour, read-only organization inventory audit also reads
+immutable default-branch Git trees and bounded blobs for new repositories and
+explicit older opt-ins, including the canonical pending registration scope. A
+centrally registered repository remains mandatory by immutable repository ID
+when its caller and package opt-in marker both disappear. It finds a wholly missing caller without requiring that
+caller to have run. It reports configuration failures alongside inventory drift,
+including unsupported stacks pending an adapter. It never executes consumer
+files or modifies consumer policy, inventory or qualification records. A
+successful snapshot remains configuration observation, not continuous
+enforcement or hosted qualification.
+
+The audit retains its dedicated `ORG_INVENTORY_READ_TOKEN`, stable two-pass
+pagination, complete-private-visibility assertion and fail-closed transport
+behavior. Its existing workflow supplies only that dedicated credential; never
+substitute interactive user, ReviewRouter or Codex credentials. Inaccessible
+repositories, truncated trees, unsafe blob modes, content identity mismatches or
+movement during a configuration observation fail the audit. A local fixture
+cannot establish that a real credential sees the complete private inventory.
 
 ## Admission contract
 
@@ -265,10 +448,11 @@ sources of rules and caller bytes are the
 Central itself has a separately bootstrapped base-relative caller and is refused
 by this route. No consumer copies policy or receives a second template.
 
-1. Prepare the caller from a reviewed central checkout:
+1. Prepare the accepted alias-aware caller from the matching reviewed checkout,
+   subject to the [publication and adoption boundary](#accepted-identity-policy-and-runtime-publication):
 
    ```sh
-   node scripts/onboard-commit-author-identity.mjs render --revision 6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6
+   node scripts/onboard-commit-author-identity.mjs render --revision 77a0f46cbfc7688cbabbe12ee819e50ba6f64234
    ```
 
    Rendering only prints the exact fixture with its placeholder replaced. It
@@ -280,8 +464,8 @@ by this route. No consumer copies policy or receives a second template.
    creates repositories, or opens/merges PRs. The first installation cannot
    protect its own bootstrap PR.
 
-2. Inspect the write-free remote plan from this central checkout, using authorized
-   `gh` access:
+2. After reviewing the selected immutable implementation, inspect the write-free
+   remote plan from the matching central checkout, using authorized `gh` access:
 
    ```sh
    node scripts/onboard-commit-author-identity.mjs --repo agent-teams-ai/NEW_REPOSITORY
@@ -303,9 +487,12 @@ by this route. No consumer copies policy or receives a second template.
    template and workflow must byte-match unchanged regular Git files in this
    checkout. The installed default-head caller must exactly match the template
    and pin an accessible regular central workflow with the current trusted
-   implementation bytes. Exact pins need a retained, accessible commit: the
-   retained `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` source is already qualified;
-   recheck its availability and byte compatibility rather than switching to `main`.
+   implementation bytes. Exact pins need a retained, accessible commit and the
+   owning implementation's qualification. The earlier
+   `6d843f3a2c3f616aa2f4b902a866b1ff1a18f9c6` qualification covers only its
+   original canonical-name behavior; it does not qualify the alias-aware
+   implementation. Recheck the selected revision's availability, byte compatibility and live admission
+   evidence rather than switching to `main` or treating review as activation.
 
    Organization Actions PR creation/approval must already be explicitly false;
    the command never changes organization settings. It may send only repository

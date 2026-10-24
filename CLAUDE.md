@@ -1,5 +1,8 @@
 @AGENTS.md
 
+New repository work follows
+[the bootstrap guide](docs/repository-admission.md#new-repository-bootstrap).
+
 <!-- agent-teams:quality-standard:start -->
 Before planning, implementing, or reviewing changes, read and follow the
 [organization Engineering Quality Standard](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md).

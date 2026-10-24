@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isProcessRuntimeError, PROCESS_CAPTURE_LIMIT_BYTES } from "node-or-bun";
@@ -257,7 +257,10 @@ test("real invalid UTF-8 on either stream fails closed without exposing output",
 test("actual quality lint CLI accepts its disposable repository and preserves a large real diagnostic batch", { timeout: 25_000 }, async () => {
   await fixture(async value => {
     for (const directory of ["scripts", "tools"]) {
-      await cp(join(repository, directory), join(value.root, directory), { recursive: true });
+      await cp(join(repository, directory), join(value.root, directory), {
+        recursive: true,
+        filter: source => !source.split(sep).includes("node_modules"),
+      });
     }
     const inputs = ["package.json", "pnpm-workspace.yaml", "oxlint.json", "tsconfig.tooling.json", "foundation.config.yaml", ".node-version", ".github/workflows/ci.yml", "docs/engineering-quality-profile.json", "docs/engineering-quality-source-policy.yaml", "docs/engineering-quality-required-tests.json"];
     for (const input of inputs) {

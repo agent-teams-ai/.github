@@ -1,0 +1,34 @@
+name: Repository bootstrap configuration
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  admission:
+    name: repository-admission
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Read consumer repository as inert configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: consumer
+          persist-credentials: false
+      - name: Read immutable central implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: agent-teams-ai/.github
+          ref: 6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29
+          path: central
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+      - name: Install only trusted central dependencies
+        run: pnpm --dir central install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+      - name: Validate bounded inert consumer configuration
+        run: node central/scripts/check-repository-admission.ts --root consumer

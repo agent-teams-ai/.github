@@ -1,3 +1,9 @@
+packages:
+  - .
+engineStrict: true
+strictPeerDependencies: true
+saveExact: true
+verifyDepsBeforeRun: error
 allowBuilds:
   core-js-pure: false
   dtrace-provider: false
