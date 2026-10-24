@@ -177,8 +177,8 @@ Admission runtime publication also has two stages: first publish the reviewed
 checker source, then explicitly update the reusable wrapper's literal central
 checkout to that published immutable revision and review the resulting wrapper.
 The wrapper now checks out the published and reviewed combined runtime
-`a00d63cf2a4c236edc486c7c17688c2bed00f9c0`, tree
-`c548cfedcaf531e7767287a4f346e7b89562890e`. The exact regression witness binds
+`a33b2c4a43b6ef0d1fb6457c534575a82e80493e`, tree
+`011e2c1f96b487c631416f94be0851d3f36f97f3`. The exact regression witness binds
 that same literal checkout. This establishes the source-publication binding;
 it does not establish combined full-gate success, hosted execution, installed
 protection or consumer activation. Final combined full and hosted qualification,
