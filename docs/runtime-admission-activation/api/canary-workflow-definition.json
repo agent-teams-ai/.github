@@ -1,0 +1,28 @@
+{
+  "name": "Runtime and Admission Source Canary V1",
+  "on": {
+    "push": {
+      "branches": [
+        "qualification/runtime-admission-positive-v1",
+        "qualification/runtime-admission-negative-v1"
+      ]
+    }
+  },
+  "permissions": {
+    "actions": "read",
+    "contents": "read",
+    "pull-requests": "read",
+    "statuses": "write"
+  },
+  "jobs": {
+    "source": {
+      "uses": "agent-teams-ai/.github/.github/workflows/runtime-admission-source-successor-v1.yml@d8f22cb27db9f348f30bbdfdea67d09faac8e3ab",
+      "permissions": {
+        "actions": "read",
+        "contents": "read",
+        "pull-requests": "read",
+        "statuses": "write"
+      }
+    }
+  }
+}

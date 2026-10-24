@@ -1,0 +1,35 @@
+{
+  "observed_at_utc": "2026-10-24T16:21:31Z",
+  "observer": {
+    "login": "777genius",
+    "id": 13103045
+  },
+  "repository": {
+    "id": 1316243981,
+    "full_name": "agent-teams-ai/.github",
+    "default_branch": "main",
+    "fork": false
+  },
+  "main_head": "e0f271740c13290b6bb729ffb79cb050253fc6b8",
+  "ruleset_ids": [
+    19979783,
+    24363205,
+    24367862,
+    25464594,
+    25464944,
+    25469495,
+    25775630
+  ],
+  "pagination": {
+    "includes_parents": true,
+    "per_page": 100,
+    "page_1_count": 7,
+    "page_2_count": 0
+  },
+  "source_ref": {
+    "ref": "refs/heads/governance/runtime-admission-source-successor-v1",
+    "observed_http_status": 404
+  },
+  "scope": "Dated read-only baseline. Not activation or continuous protection evidence.",
+  "current_user_can_bypass": "Viewer-specific observation; fresh owner-admin readback required before every transition."
+}

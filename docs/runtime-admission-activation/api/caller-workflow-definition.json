@@ -1,0 +1,30 @@
+{
+  "name": "Trusted Runtime and Admission Source Successor V1",
+  "on": {
+    "pull_request_target": {
+      "types": [
+        "opened",
+        "synchronize",
+        "reopened",
+        "edited"
+      ]
+    }
+  },
+  "permissions": {
+    "actions": "read",
+    "contents": "read",
+    "pull-requests": "read",
+    "statuses": "write"
+  },
+  "jobs": {
+    "source": {
+      "uses": "agent-teams-ai/.github/.github/workflows/runtime-admission-source-successor-v1.yml@d8f22cb27db9f348f30bbdfdea67d09faac8e3ab",
+      "permissions": {
+        "actions": "read",
+        "contents": "read",
+        "pull-requests": "read",
+        "statuses": "write"
+      }
+    }
+  }
+}

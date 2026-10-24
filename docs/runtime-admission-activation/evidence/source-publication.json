@@ -1,0 +1,63 @@
+{
+  "status": "review-branch-publication-only-not-source-activation",
+  "source": {
+    "sha": "d8f22cb27db9f348f30bbdfdea67d09faac8e3ab",
+    "tree": "18792ee5938138a430ce6f8bcc2d33f50471528a",
+    "parent": "fb87ba13102d2b7ab1db8c453c55d6eded6407ee",
+    "review_ref": "refs/heads/review/runtime-admission-source-successor-v1",
+    "defining_ref": "refs/heads/governance/runtime-admission-source-successor-v1",
+    "url": "https://github.com/agent-teams-ai/.github/commit/d8f22cb27db9f348f30bbdfdea67d09faac8e3ab"
+  },
+  "target": {
+    "repository": "agent-teams-ai/.github",
+    "repositoryId": 1316243981,
+    "pullRequest": 389,
+    "pullId": 4996927699,
+    "baseSHA": "e0f271740c13290b6bb729ffb79cb050253fc6b8",
+    "headSHA": "ec790f9e12c29c32c7dad1ad683a7d56476cacd3",
+    "baseTreeSHA": "18731af97b2d4ac56952cae9e0a167e379a73344",
+    "headTreeSHA": "3d2e31d0c769f12d7132819192d4409143fe96f2",
+    "commits": 39
+  },
+  "readback": {
+    "source_commit_and_review_ref": "independently-read-through-GitHub-REST",
+    "defining_ref_http_status": 404
+  },
+  "planner": "scripts/runtime-admission-source-successor-v1.ts at exact source.sha; no remote writes performed",
+  "superseded_review_source": {
+    "sha": "fb87ba13102d2b7ab1db8c453c55d6eded6407ee",
+    "tree": "56b7ba822e091adb6735eb5c0ec8baffe74e8d2b",
+    "parent": "ec790f9e12c29c32c7dad1ad683a7d56476cacd3",
+    "defining_ref_created": false,
+    "local_full_qualification": {
+      "local_commit": "ab6570ce2f15cbf26c0ff94e3ba9edda8529f154",
+      "tree": "56b7ba822e091adb6735eb5c0ec8baffe74e8d2b",
+      "equivalent_published_source": "fb87ba13102d2b7ab1db8c453c55d6eded6407ee",
+      "exit_code": 0,
+      "current_tests": 5779,
+      "frozen_tests": 9,
+      "failures": 0,
+      "skips": 0,
+      "cancellations": 0,
+      "todo": 0,
+      "clean_before_and_after": true,
+      "actual_managed_node24_re2_loaded": true,
+      "log_sha256": "dfdf0e6bd54b11dbdde7f4252d039661148108e71100bbb183df94d1a40cc038",
+      "scope": "S1 only. Not an S2 full-run or hosted qualification claim."
+    }
+  },
+  "refresh": {
+    "status": "unlocked-review-branch-fast-forward-only",
+    "finding": "Relative XDG_CONFIG_HOME could resolve the global pnpm configuration path against different root and child working directories.",
+    "correction": "Reject computed nonabsolute global pnpm configuration paths before lstat or any package-manager invocation; retain HOME fallback when XDG_CONFIG_HOME is empty.",
+    "error": "Bootstrap global pnpm configuration path must be absolute",
+    "qualification": {
+      "s2_focused_tests": 6,
+      "s2_strict_types": "pass",
+      "s2_lint": "pass",
+      "independent_review": "GO",
+      "hosted_bootstrap": "pending",
+      "hosted_source": "pending"
+    }
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "status": "dated-observations-not-source-qualification",
+  "integration": {
+    "repository": "agent-teams-ai/.github",
+    "pull_request": 389,
+    "head": "ec790f9e12c29c32c7dad1ad683a7d56476cacd3",
+    "tree": "3d2e31d0c769f12d7132819192d4409143fe96f2",
+    "base": "e0f271740c13290b6bb729ffb79cb050253fc6b8",
+    "local_equivalent_commit": "457820e810d715a3b5a1a46a3f181ecb95f865dc",
+    "hosted": [
+      {
+        "runtime": "Node 26.11.1",
+        "run_id": 40109802521,
+        "job_id": 120918950134,
+        "url": "https://github.com/agent-teams-ai/.github/actions/runs/40109802521/job/120918950134",
+        "conclusion": "success",
+        "current": {
+          "tests": 5725,
+          "pass": 5725,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "frozen": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "managed_renovate": "v24.21.0; RE2 loaded"
+      },
+      {
+        "runtime": "Node 24.21.0",
+        "run_id": 40109802586,
+        "job_id": 120918950310,
+        "url": "https://github.com/agent-teams-ai/.github/actions/runs/40109802586/job/120918950310",
+        "conclusion": "success",
+        "current": {
+          "tests": 5725,
+          "pass": 5725,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "frozen": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "managed_renovate": "v24.21.0; RE2 loaded"
+      }
+    ],
+    "local": [
+      {
+        "runtime": "Node 26.11.1",
+        "conclusion": "success",
+        "current": {
+          "tests": 5725,
+          "pass": 5725,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "frozen": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "log_sha256": "895115a24d7deeaf5ee8a39ca9bbe333412886383e81324148ede39399816f0c"
+      },
+      {
+        "runtime": "Node 24.21.0",
+        "conclusion": "failure",
+        "current": {
+          "tests": 5725,
+          "pass": 5723,
+          "fail": 2,
+          "skip": 0,
+          "cancel": 0
+        },
+        "frozen": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "log_sha256": "ab4e7cab9e1c2cdcc148993d334db7a2878759f937c0ed9b58a3cdcae83d767c",
+        "failures": [
+          "post-merge PR/commit, account, email or message drift fails with reconciliation guidance and no rewrite",
+          "gh failures and invalid API data never fabricate success or retry an uncertain merge"
+        ],
+        "observation": "Both failed on null subprocess status against expected 1, with unchanged 10-second child deadlines. Original helper did not retain spawn error/signal; exact cause was not established.",
+        "isolated_unchanged_rerun": {
+          "tests": 2,
+          "pass": 2,
+          "fail": 0,
+          "skip": 0,
+          "cancel": 0
+        },
+        "limitation": "The isolated pass is diagnostic evidence, not a successful complete local Node 24 run."
+      }
+    ],
+    "limitations": [
+      "Runtime CI success is not protected-source admission, source qualification, installed-main enforcement, or a merged-PR claim.",
+      "The successor source's defining governance ref and source lock were absent at the baseline observation."
+    ]
+  }
+}

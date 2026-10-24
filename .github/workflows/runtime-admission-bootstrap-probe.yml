@@ -1,0 +1,93 @@
+# Review-only evidence; do not merge this probe into main.
+# Mechanically derived from the reviewed S qualification bootstrap, without authority or publication steps.
+name: Runtime source bootstrap probe (no admission)
+on:
+  pull_request:
+    branches:
+      - completion/runtime-admission-integration
+    types:
+      - opened
+      - synchronize
+      - reopened
+permissions:
+  contents: read
+concurrency:
+  group: runtime-source-bootstrap-probe-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  bootstrap:
+    name: Bootstrap and full tests of reviewed source
+    if: github.head_ref == 'review/runtime-admission-source-successor-v1'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: agent-teams-ai/.github
+          ref: d8f22cb27db9f348f30bbdfdea67d09faac8e3ab
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Fetch the exact reviewed target as historical test data
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { TARGET } from './scripts/runtime-admission-source-successor-v1.ts';
+          const fixtureRef = 'refs/fixtures/runtime-admission-source-successor-v1/target';
+          execFileSync('git', ['fetch', '--no-tags', '--no-recurse-submodules',
+            'https://github.com/agent-teams-ai/.github.git', `${TARGET.headSHA}:${fixtureRef}`],
+            { stdio: 'inherit', timeout: 120_000 });
+          const actual = execFileSync('git', ['rev-parse', `${fixtureRef}^{commit}`, `${fixtureRef}^{tree}`],
+            { encoding: 'utf8' }).trim().split('\n');
+          if (actual[0] !== TARGET.headSHA || actual[1] !== TARGET.headTreeSHA) {
+            throw new Error('Historical target commit or tree differs from the reviewed binding');
+          }
+          NODE
+      - name: Prove source and ambient hook inputs without starting a package manager
+        run: |
+          node --input-type=module <<'NODE'
+          import { preflightBootstrap } from './scripts/runtime-admission-source-successor-v1.ts';
+          await preflightBootstrap('d8f22cb27db9f348f30bbdfdea67d09faac8e3ab');
+          console.log('Bootstrap-only probe: preflight passed for immutable reviewed S');
+          NODE
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+          cache: false
+      - name: Prove immutable hook-free bootstrap inputs before package-manager execution
+        run: |
+          node --input-type=module <<'NODE'
+          import { qualifyBootstrap } from './scripts/runtime-admission-source-successor-v1.ts';
+          await qualifyBootstrap('d8f22cb27db9f348f30bbdfdea67d09faac8e3ab');
+          console.log('Bootstrap-only probe: bootstrap passed for immutable reviewed S');
+          NODE
+      - run: pnpm install --frozen-lockfile
+      - name: Install the isolated Node 24 Renovate tool without lifecycle scripts
+        run: pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+      - name: Build the allowed native validator dependency with managed Node 24
+        run: pnpm --dir tools/renovate-validation run build:native
+      - name: Check the dedicated strict TypeScript project
+        run: pnpm exec tsc --project tsconfig.runtime-admission-source-successor-v1.json
+      - name: Lint all new source and test files
+        run: pnpm exec oxlint --config oxlint.json --no-ignore --disable-nested-config --deny-warnings scripts/runtime-admission-source-successor-v1.ts scripts/runtime-admission-source-successor-v1.test.ts
+      - name: Exercise accepting and rejecting source successor cases
+        run: node --test scripts/runtime-admission-source-successor-v1.test.ts
+      - name: Run the full pinned central quality suite
+        run: pnpm check
+      - name: Record exact source and bootstrap-only scope
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+          assert.equal(git('rev-parse', 'HEAD'), 'd8f22cb27db9f348f30bbdfdea67d09faac8e3ab');
+          assert.equal(git('rev-parse', 'HEAD^{tree}'), '18792ee5938138a430ce6f8bcc2d33f50471528a');
+          assert.equal(git('status', '--porcelain=v1', '--untracked-files=all'), '');
+          console.log(JSON.stringify({ source: 'd8f22cb27db9f348f30bbdfdea67d09faac8e3ab', tree: '18792ee5938138a430ce6f8bcc2d33f50471528a', evidence: 'bootstrap-and-tests-only', protectedSourceAdmission: false, permanentInstallation: false }));
+          NODE
