@@ -106,7 +106,7 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     lint: { configPath: "oxlint.json", includedRoles: ["tooling"], includedExtensions: [".mts", ".ts"] },
     typedTooling: {
       configPath: "tsconfig.tooling.json", command: "pnpm quality:typecheck", compiler: "7.0.2", nodeTypes: "24.19.1",
-      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts", "scripts/compiler-floor.ts", "scripts/compiler-floor.test.ts", "scripts/check-repository-admission.ts", "scripts/check-repository-admission.test.ts", "scripts/governance-schema.ts", "scripts/repository-registration.ts", "scripts/repository-registration.test.ts", "scripts/repository-bootstrap-observation.ts", "scripts/repository-bootstrap-observation.test.ts", "scripts/validate-renovate.ts", "scripts/validate-renovate.test.ts", "scripts/validate-renovate-abi.probe.ts"],
+      entryFiles: ["scripts/qualification-input-proof.mts", "scripts/qualification-input-proof.test.mts", "scripts/check-docs-verifier-authority.mts", "scripts/check-docs-verifier-authority.test.mts", "scripts/npm-publish.test.mts", "scripts/quality-process.ts", "scripts/quality-process.test.ts", "scripts/run-governance-tests.ts", "scripts/run-governance-tests.test.ts", "scripts/compiler-floor.ts", "scripts/compiler-floor.test.ts", "scripts/check-repository-admission.ts", "scripts/check-repository-admission.test.ts", "scripts/governance-schema.ts", "scripts/repository-registration.ts", "scripts/repository-registration.test.ts", "scripts/repository-bootstrap-observation.ts", "scripts/repository-bootstrap-observation.test.ts", "scripts/validate-renovate.ts", "scripts/validate-renovate.test.ts", "scripts/validate-renovate-abi.probe.ts", "scripts/runtime-admission-source-successor-v1.ts", "scripts/runtime-admission-source-successor-v1.test.ts"],
     },
     toolchain: { node: "26.11.1", pnpm: "11.18.0", oxlint: "1.85.0" },
   }, "quality profile changed");
@@ -147,7 +147,9 @@ export function assertQualityAdoption({ manifest, profile, lintConfig, trackedPa
     "scripts/repository-bootstrap-observation.test.ts",
     "scripts/validate-renovate.ts",
     "scripts/validate-renovate.test.ts",
-    "scripts/validate-renovate-abi.probe.ts"
+    "scripts/validate-renovate-abi.probe.ts",
+    "scripts/runtime-admission-source-successor-v1.ts",
+    "scripts/runtime-admission-source-successor-v1.test.ts"
   ]
 }, "strict compiler scope and settings must stay exact");
   assert.deepEqual(requiredTests, {
