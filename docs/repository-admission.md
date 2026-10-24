@@ -176,16 +176,18 @@ statuses, bypass or consumer policy overrides.
 Admission runtime publication also has two stages: first publish the reviewed
 checker source, then explicitly update the reusable wrapper's literal central
 checkout to that published immutable revision and review the resulting wrapper.
-The retained wrapper still checks out earlier source
-`6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29`, tree
-`c2a03943c9b8e3071e4cc4534614b4f8f4618d96`, whose checker requires the broader
-PR #380 identity pin. That runtime is not the accepted alias-aware checker and
-must not be activated for this delivery. After the reviewed checker source is
-published, update and independently verify the wrapper's literal checkout and
-its exact regression witness before any consumer adopts it. Consumers explicitly
-adopt the final wrapper revision and accepted identity caller together, then
-obtain their own hosted and required-check evidence. Missing callers remain
-`incomplete` and fail closed; no pending-identity exception makes them pass.
+The wrapper now checks out the published and reviewed combined runtime
+`a00d63cf2a4c236edc486c7c17688c2bed00f9c0`, tree
+`c548cfedcaf531e7767287a4f346e7b89562890e`. The exact regression witness binds
+that same literal checkout. This establishes the source-publication binding;
+it does not establish combined full-gate success, hosted execution, installed
+protection or consumer activation. Final combined full and hosted qualification,
+protected-source canaries and the owning protection transition remain pending.
+Keep the active requirements intact and do not activate consumers before those
+gates complete. Consumers then explicitly adopt the final wrapper revision and
+accepted identity caller together and obtain their own hosted and required-check
+evidence. Missing callers remain `incomplete` and fail closed; no pending-identity
+exception makes them pass.
 
 ### Independent inventory backstop
 

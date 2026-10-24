@@ -26,7 +26,7 @@ test("reusable workflow executes the exact published central implementation on i
   ]);
   assert.deepEqual(steps.filter(step => step.uses?.startsWith("actions/checkout@")).map(step => step.with), [
     { path: "consumer", "persist-credentials": false },
-    { repository: "agent-teams-ai/.github", ref: "6d1fa7740d84cdf810b7c30f821c6e2ab1fd7b29", path: "central", "persist-credentials": false },
+    { repository: "agent-teams-ai/.github", ref: "a00d63cf2a4c236edc486c7c17688c2bed00f9c0", path: "central", "persist-credentials": false },
   ]);
   for (const actionStep of steps.filter(step => step.uses !== undefined)) { assert.match(actionStep.uses ?? "", /@(?!0{40}$)[a-f0-9]{40}$/u); }
 });
