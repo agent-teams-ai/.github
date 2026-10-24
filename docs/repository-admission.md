@@ -6,6 +6,25 @@ admission. GitHub community defaults can supply this guidance, but GitHub does
 not automatically install packages, profiles, scripts, workflows, or required
 checks in a new repository.
 
+## Agent instructions and source language
+
+When preparing a repository or updating its agent instructions, make its local
+`AGENTS.md` explicitly require the
+[Engineering Quality Standard](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md),
+including [TypeScript for JavaScript runtimes](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md#typescript-for-javascript-runtimes).
+Route the repository's `CLAUDE.md`, Copilot instructions or other supported
+agent entrypoints to that same authority where those files are used. Link the
+canonical rules rather than copying a second policy into each repository.
+
+The organization `.github` repository's `AGENTS.md` does not automatically
+inherit into other repositories or every agent session. Supported community
+file defaults and a central link are not proof that an agent loaded the rules.
+Each repository owns its explicit local navigation, strict compiler project,
+source coverage and required typecheck gate. Establish those for new maintained
+TypeScript source; retain honest legacy coverage and the standard's bounded
+fixture/host exceptions. This routing does not change a pinned architecture
+standard, install a new gate or certify existing code.
+
 ## Admission contract
 
 The repository owner must:

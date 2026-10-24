@@ -292,12 +292,13 @@ test('current G census is independently pinned and agrees with actual Oxlint sel
   const current = { type: 'blob', mode: '100644', blob: '3a025636bcfd0e1796695b5b0ad0b5f398b2709b',
     bytes: 13076, sha256: 'sha256:8bc75ef356c9a4c2e2eb1031e54b59e73d52c6b955232519ab844f1593ec4e4b' };
   verifyPortableBlob(live, current);
-  assert.equal(pre.length, 35);
+  assert.equal(pre.length, 37);
   for (const p of ['scripts/docs-portable-authority-r322.mjs', 'scripts/read-docs-portable-authority-r322.mjs',
     'scripts/check-docs-source-successor-v1.mts',
     'scripts/check-docs-source-successor-v1.test.mts',
     'scripts/qualification-input-proof.mts', 'scripts/qualification-input-proof.test.mts',
     'scripts/check-docs-verifier-authority.mts', 'scripts/check-docs-verifier-authority.test.mts',
+    'scripts/compiler-floor.ts', 'scripts/compiler-floor.test.ts',
     'scripts/npm-publish.test.mts',
     'scripts/quality-process.ts', 'scripts/quality-process.test.ts',
     'scripts/run-governance-tests.ts', 'scripts/run-governance-tests.test.ts']) {assert.ok(pre.includes(p));}

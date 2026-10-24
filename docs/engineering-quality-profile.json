@@ -22,7 +22,7 @@
   "typedCoverage": false,
   "requiredRoute": "pnpm check",
   "foundation": {
-    "version": "1.7.2",
+    "version": "1.10.0",
     "publicPreset": "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
   },
   "lint": {
@@ -54,7 +54,9 @@
       "scripts/quality-process.ts",
       "scripts/quality-process.test.ts",
       "scripts/run-governance-tests.ts",
-      "scripts/run-governance-tests.test.ts"
+      "scripts/run-governance-tests.test.ts",
+      "scripts/compiler-floor.ts",
+      "scripts/compiler-floor.test.ts"
     ]
   }
 }

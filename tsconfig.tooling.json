@@ -23,6 +23,8 @@
     "scripts/quality-process.ts",
     "scripts/quality-process.test.ts",
     "scripts/run-governance-tests.ts",
-    "scripts/run-governance-tests.test.ts"
+    "scripts/run-governance-tests.test.ts",
+    "scripts/compiler-floor.ts",
+    "scripts/compiler-floor.test.ts"
   ]
 }

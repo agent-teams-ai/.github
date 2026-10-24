@@ -13,6 +13,7 @@ import {
   readQualityAdoption,
 } from "./check-quality-scope.mjs";
 import { selectOxlintFiles } from "./run-quality-lint.mjs";
+import { assertCompilerFloor } from "./compiler-floor.ts";
 
 const accepted = await readQualityAdoption();
 
@@ -25,6 +26,8 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
   assert.equal(classifySourcePath("scripts/governance-policy.test.mjs"), "test");
   assert.equal(classifySourcePath("scripts/qualification-input-proof.mts"), "tooling");
   assert.equal(classifySourcePath("scripts/qualification-input-proof.test.mts"), "test");
+  assert.equal(classifySourcePath("scripts/compiler-floor.ts"), "tooling");
+  assert.equal(classifySourcePath("scripts/compiler-floor.test.ts"), "test");
   assert.equal(classifySourcePath("scripts/quality-process.ts"), "tooling");
   assert.equal(classifySourcePath("scripts/quality-process.test.ts"), "test");
   assert.equal(classifySourcePath("scripts/run-governance-tests.ts"), "tooling");
@@ -40,7 +43,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 35);
+  assert.equal(paths.length, 37);
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
@@ -54,10 +57,13 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/run-governance-tests.test.ts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
+  assert.ok(paths.includes("scripts/compiler-floor.ts"));
+  assert.ok(paths.includes("scripts/compiler-floor.test.ts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
 const mutations = {
+  "a changed TypeScript ESM package contract": value => { value.manifest.type = "commonjs"; },
   "a ranged tooling compiler": value => { value.manifest.devDependencies.typescript = "^7.0.2"; },
   "foreign Node type definitions": value => { value.manifest.devDependencies["@types/node"] = "26.6.4"; },
   "disabled strict typechecking": value => { value.toolingTsconfig.compilerOptions.strict = false; },
@@ -77,6 +83,8 @@ const mutations = {
   "a dropped governed tooling root": value => { value.sourcePolicy.governedRoots.pop(); },
   "a disabled installed source gate": value => { delete value.foundationConfig.capabilities["architecture.source-dependencies"]; },
   "a new unclassified executable source": value => { value.trackedPaths.push("other/new-source.ts"); },
+  "an ordinary TypeScript helper outside the strict project": value => { value.trackedPaths.push("scripts/unlisted-helper.ts"); },
+  "an ordinary TypeScript test outside the strict project": value => { value.trackedPaths.push("scripts/unlisted.test.ts"); },
   "a missing Foundation pin": value => { delete value.manifest.devDependencies["@agent-teams/engineering-foundation"]; },
   "a ranged Foundation pin": value => { value.manifest.devDependencies["@agent-teams/engineering-foundation"] = "^1.7.2"; },
   "a missing process runtime pin": value => { delete value.manifest.devDependencies["node-or-bun"]; },
@@ -129,9 +137,12 @@ async function fixture(t) {
   return { root, put };
 }
 
-const runInstalled = (cli, args, root) => spawnSync(process.execPath, [cli, ...args], {
-  cwd: root, encoding: "utf8", timeout: 30000, maxBuffer: 2 * 1024 * 1024,
-});
+const runInstalled = (cli, args, root) => {
+  assertCompilerFloor();
+  return spawnSync(process.execPath, [cli, ...args], {
+    cwd: root, encoding: "utf8", timeout: 30000, maxBuffer: 2 * 1024 * 1024,
+  });
+};
 const outputOf = result => result.stdout + result.stderr;
 
 test("installed source boundary rejects missing inputs and governed dist source", async t => {

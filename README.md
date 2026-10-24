@@ -12,7 +12,11 @@ release procedures remain in the owning repository.
 
 ## Shared Files
 
-- [Engineering Quality Standard](docs/engineering-quality-standard.md) - common Clean Architecture, SOLID, DDD and DRY practices; repository agent files link here explicitly.
+- [Engineering Quality Standard](docs/engineering-quality-standard.md) - common
+  Clean Architecture, SOLID, DDD and DRY practices, including
+  [TypeScript for JavaScript runtimes](docs/engineering-quality-standard.md#typescript-for-javascript-runtimes).
+  Repository agent files link here explicitly.
+
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
 - [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
 

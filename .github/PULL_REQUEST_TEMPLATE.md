@@ -6,6 +6,11 @@ Describe the user or engineering outcome and the owning area.
 
 List the focused and complete verification commands with their results.
 
+For JavaScript-runtime source changes, name the owning strict typecheck and
+the new or migrated source it covers. Identify any scoped JavaScript use under
+the [Engineering Quality Standard](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md#typescript-for-javascript-runtimes)
+and its concrete boundary reason.
+
 ## Executable specification
 
 - Repository-owned schema or contract and version:

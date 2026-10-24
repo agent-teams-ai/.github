@@ -38,6 +38,14 @@ For governance JavaScript quality, read
 `pnpm check` (complete); the repository default is Node 26.11.1 while package
 engines keep Node 24 compatibility. Preserve its exact required identities
 and selected entry files.
+Read the quality route's current compiler dependency preflight before invoking
+Foundation; never bypass its metadata preflight to run an installed CLI.
+
+For new or changed maintained code targeting JavaScript runtimes, follow
+[TypeScript for JavaScript runtimes](docs/engineering-quality-standard.md#typescript-for-javascript-runtimes),
+including source coverage in the owning strict typecheck and the scoped
+JavaScript fixture/host cases. Existing JavaScript tooling is not an exemption
+for new helpers.
 
 <!-- agent-teams:quality-standard:start -->
 Before planning, implementing, or reviewing changes, read and follow the
