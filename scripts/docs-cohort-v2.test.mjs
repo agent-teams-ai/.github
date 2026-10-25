@@ -539,31 +539,71 @@ test("shape alone does not select a candidate; missing qualification and canary 
   );
 });
 
-test("consumer policy accepts one closed generation3 pair and rejects cross-generation pairs", () => {
+test("consumer policy stages distinct generation3 target and generation2 observed contracts", () => {
   assert.equal(acceptsConsumerPolicy(currentConsumerPolicy), true);
-  const valid = structuredClone(currentConsumerPolicy);
-  const repository = valid.repositories[0];
-  Object.assign(repository, {
+  const source = structuredClone(currentConsumerPolicy);
+  const index = source.repositories.findIndex(
+    ({ repository }) => repository === "agent-teams-ai/agent-runtime",
+  );
+  assert.ok(index >= 0);
+  assert.equal(source.repositories[index].desired_cohort_generation, 2);
+  assert.equal(source.repositories[index].observed_cohort_generation, 2);
+  const target = structuredClone(source);
+  const { registry, record } = gen3Fixture();
+  const qualification = registry.events.find(
+    ({ cohort_id, state }) => cohort_id === record.cohort_id && state === "QUALIFIED",
+  );
+  assert.ok(qualification);
+  // Inert schema rows only: existing generation3 record/coordinates do not assert physical qualification.
+  Object.assign(target.repositories[index], {
     desired_cohort_generation: 3,
     observed_cohort_generation: 3,
+    desired_cohort_id: record.cohort_id,
+    observed_cohort_id: record.cohort_id,
+    observed_cohort_record_digest: record.record_digest,
+    observed_cohort_event_digest: qualification.event_digest,
+    exact_foundation_version: record.packages[0].version,
+    exact_package_version: record.packages[1].version,
     v3_qualification_coordinates: {
-      profile_schema_version: 4,
-      cohort_schema_version: 3,
-      managed_state_schema_version: 3,
-      receipt_schema_version: 1,
+      profile_schema_version: record.schemas.consumer_integration,
+      cohort_schema_version: record.cohort_generation,
+      managed_state_schema_version: record.schemas.managed_state,
+      receipt_schema_version: record.schemas.qualification_receipt,
       execution_envelope_schema_version: 1,
       evidence_class: "cohort-v3-supporting-canary",
     },
   });
-  assert.equal(acceptsConsumerPolicy(valid), true);
-  const crossCoordinates = structuredClone(valid);
-  crossCoordinates.repositories[0].desired_cohort_generation = 2;
-  assert.equal(acceptsConsumerPolicy(crossCoordinates), false);
-  const crossObserved = structuredClone(valid);
-  crossObserved.repositories[0].observed_cohort_generation = 2;
-  assert.equal(acceptsConsumerPolicy(crossObserved), false);
-  const wrongReceipt = structuredClone(valid);
-  wrongReceipt.repositories[0].v3_qualification_coordinates.receipt_schema_version = 3;
+  assert.equal(acceptsConsumerPolicy(target), true);
+  for (const [desired, observed] of [
+    [target, source],
+    [source, target],
+  ]) {
+    const staged = structuredClone(desired);
+    const row = staged.repositories[index];
+    const observedRow = observed.repositories[index];
+    row.cohort_binding_status = "rollout_pending";
+    for (const field of [
+      "observed_cohort_generation",
+      "observed_cohort_id",
+      "observed_cohort_record_digest",
+      "observed_cohort_event_digest",
+      "exact_foundation_version",
+      "exact_package_version",
+      "qualification",
+      "observed_default_branch_evidence",
+      "reusable_workflow_revision",
+    ]) {
+      row[field] = structuredClone(observedRow[field]);
+    }
+    assert.equal(acceptsConsumerPolicy(staged), true);
+    const crossCoordinates = structuredClone(staged);
+    crossCoordinates.repositories[index].v3_qualification_coordinates = structuredClone(
+      observedRow.v3_qualification_coordinates,
+    );
+    assert.equal(acceptsConsumerPolicy(crossCoordinates), false);
+  }
+  const wrongReceipt = structuredClone(target);
+  wrongReceipt.repositories[index].v3_qualification_coordinates.receipt_schema_version = 3;
   assert.equal(acceptsConsumerPolicy(wrongReceipt), false);
 });
 

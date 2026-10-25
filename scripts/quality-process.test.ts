@@ -1,8 +1,23 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { createHash } from "node:crypto";
+import { findPackageJSON } from "node:module";
+import {
+  copyFile,
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isProcessRuntimeError, PROCESS_CAPTURE_LIMIT_BYTES } from "node-or-bun";
@@ -99,10 +114,18 @@ interface Fixture {
   waitReady(): Promise<number>;
 }
 
-async function fixture(work: (value: Fixture) => Promise<void>, budgetMs = 9_000): Promise<void> {
+async function fixture(
+  work: (value: Fixture) => Promise<void>,
+  budgetMs = 9_000,
+  parentSignal?: AbortSignal,
+): Promise<void> {
   const root = await mkdtemp(join(await realpath(tmpdir()), "central-quality-process-"));
   const ready = join(root, "child-ready.json");
   const lifecycle = new AbortController();
+  const signal =
+    parentSignal === undefined
+      ? lifecycle.signal
+      : AbortSignal.any([lifecycle.signal, parentSignal]);
   let ownedPid: number | undefined;
   const readPid = async (): Promise<number | undefined> => {
     try {
@@ -126,17 +149,14 @@ async function fixture(work: (value: Fixture) => Promise<void>, budgetMs = 9_000
   const value: Fixture = {
     root,
     ready,
-    signal: lifecycle.signal,
+    signal,
     run(source, args = [], options = {}) {
       const command = runQualityCommand({
         command: process.execPath,
         args: ["--input-type=module", "-e", source, "--", ready, ...args],
         cwd: root,
         ...options,
-        signal:
-          options.signal === undefined
-            ? lifecycle.signal
-            : AbortSignal.any([lifecycle.signal, options.signal]),
+        signal: options.signal === undefined ? signal : AbortSignal.any([signal, options.signal]),
       });
       // A readiness wait must never leave an early executor rejection unhandled.
       void command.catch(() => {});
@@ -145,6 +165,7 @@ async function fixture(work: (value: Fixture) => Promise<void>, budgetMs = 9_000
     async waitReady() {
       const until = Date.now() + 5_000;
       while (Date.now() < until) {
+        signal.throwIfAborted();
         const pid = await readPid();
         if (pid !== undefined) {
           return pid;
@@ -154,11 +175,14 @@ async function fixture(work: (value: Fixture) => Promise<void>, budgetMs = 9_000
       throw new Error("owned child did not publish its atomic PID handshake");
     },
   };
+  const pending = Promise.resolve().then(() => work(value));
   try {
-    await deadline(work(value), budgetMs);
+    await deadline(pending, budgetMs);
   } finally {
     // Cleanup follows assertions; it cannot turn failed executor custody into a pass.
     lifecycle.abort();
+    // Settle the final owned filesystem/process operation before the single cleanup owner removes paths.
+    await pending.catch(() => {});
     await readPid();
     if (ownedPid !== undefined && isAlive(ownedPid)) {
       await killOwnedChild(ownedPid);
@@ -392,13 +416,180 @@ void test(
   },
 );
 
+// Test-only physical copies of the actual CLI startup closure; no installer or lifecycle scripts.
+async function copyLintFixturePackages(root: string, signal: AbortSignal) {
+  const installation = await realpath(join(repository, "node_modules"));
+  const modules = join(root, "node_modules");
+  const copies = new Map<string, string>();
+  const packages: {
+    name: string;
+    version: string;
+    files: { source: string; target: string; sha256: string; bytes: number }[];
+  }[] = [];
+  const digest = async (filename: string) => {
+    signal.throwIfAborted();
+    const bytes = await readFile(filename, { signal });
+    signal.throwIfAborted();
+    return createHash("sha256").update(bytes).digest("hex");
+  };
+  const copyPackage = async (
+    name: string,
+    from: string,
+    optional = false,
+  ): Promise<string | undefined> => {
+    signal.throwIfAborted();
+    let metadataPath: string;
+    try {
+      const found = findPackageJSON(name, pathToFileURL(join(from, "package.json")));
+      if (found === undefined && optional) {
+        return undefined;
+      }
+      assert.ok(found, `Missing installed package metadata: ${name}`);
+      metadataPath = found;
+    } catch (error) {
+      if (
+        optional &&
+        error instanceof Error &&
+        "code" in error &&
+        ["MODULE_NOT_FOUND", "ERR_MODULE_NOT_FOUND"].includes(String(error.code))
+      ) {
+        return undefined;
+      }
+      throw error;
+    }
+    const source = await realpath(dirname(metadataPath));
+    signal.throwIfAborted();
+    const sourceRelative = relative(installation, source);
+    assert.ok(
+      sourceRelative !== ".." &&
+        !sourceRelative.startsWith(`..${sep}`) &&
+        !isAbsolute(sourceRelative),
+    );
+    const prior = copies.get(source);
+    if (prior !== undefined) {
+      return prior;
+    }
+    const target = join(modules, ".fixture-packages", String(copies.size));
+    copies.set(source, target);
+    signal.throwIfAborted();
+    await mkdir(dirname(target), { recursive: true });
+    const metadata: unknown = JSON.parse(
+      await readFile(join(source, "package.json"), { encoding: "utf8", signal }),
+    );
+    assert.ok(metadata !== null && typeof metadata === "object" && !Array.isArray(metadata));
+    const packageName: unknown = Reflect.get(metadata, "name");
+    const version: unknown = Reflect.get(metadata, "version");
+    assert.ok(typeof packageName === "string" && typeof version === "string");
+    const files: { source: string; target: string; sha256: string; bytes: number }[] = [];
+    const manifest = { name: packageName, version, files };
+    packages.push(manifest);
+    const materialize = async (entry: string, destination: string): Promise<void> => {
+      signal.throwIfAborted();
+      if (entry === join(source, "node_modules")) {
+        return;
+      }
+      const info = await lstat(entry);
+      signal.throwIfAborted();
+      if (info.isDirectory()) {
+        await mkdir(destination, { recursive: true });
+        signal.throwIfAborted();
+        for (const child of await readdir(entry)) {
+          await materialize(join(entry, child), join(destination, child));
+        }
+      } else {
+        assert.ok(
+          info.isFile() && !info.isSymbolicLink(),
+          "fixture packages contain only regular files",
+        );
+        const sha256 = await digest(entry);
+        signal.throwIfAborted();
+        try {
+          await link(entry, destination);
+        } catch (error) {
+          if (
+            !(
+              error instanceof Error &&
+              "code" in error &&
+              ["EXDEV", "EPERM", "ENOTSUP"].includes(String(error.code))
+            )
+          ) {
+            throw error;
+          }
+          signal.throwIfAborted();
+          await copyFile(entry, destination, constants.COPYFILE_FICLONE);
+        }
+        manifest.files.push({ source: entry, target: destination, sha256, bytes: info.size });
+      }
+      signal.throwIfAborted();
+    };
+    await materialize(source, target);
+    for (const field of ["dependencies", "optionalDependencies"]) {
+      const declarations: unknown = Reflect.get(metadata, field);
+      if (declarations === undefined) {
+        continue;
+      }
+      assert.ok(
+        declarations !== null && typeof declarations === "object" && !Array.isArray(declarations),
+      );
+      for (const dependency of Object.keys(declarations)) {
+        signal.throwIfAborted();
+        const copied = await copyPackage(dependency, source, field === "optionalDependencies");
+        if (copied === undefined) {
+          continue;
+        }
+        const dependencyLink = join(target, "node_modules", dependency);
+        signal.throwIfAborted();
+        await mkdir(dirname(dependencyLink), { recursive: true });
+        signal.throwIfAborted();
+        await symlink(copied, dependencyLink, process.platform === "win32" ? "junction" : "dir");
+      }
+    }
+    return target;
+  };
+  for (const name of [
+    "stack-toolchain",
+    "node-or-bun",
+    "yaml",
+    "@types/node",
+    "@agent-teams/ci-input-proof",
+  ]) {
+    const copied = await copyPackage(name, repository);
+    assert.ok(copied);
+    signal.throwIfAborted();
+    await mkdir(dirname(join(modules, name)), { recursive: true });
+    signal.throwIfAborted();
+    await symlink(copied, join(modules, name), process.platform === "win32" ? "junction" : "dir");
+  }
+  signal.throwIfAborted();
+  assert.equal(await realpath(modules), modules);
+  signal.throwIfAborted();
+  return { packages, digest };
+}
+
 void test(
   "actual quality lint CLI accepts its disposable repository and preserves a large real diagnostic batch",
   { timeout: 25_000 },
-  async () => {
-    await fixture(async (value) => {
-      for (const directory of ["scripts", "tools"]) {
-        await cp(join(repository, directory), join(value.root, directory), { recursive: true });
+  async (context) => {
+    const work = async (value: Fixture) => {
+      value.signal.throwIfAborted();
+      const tracked = spawnSync("git", ["ls-files", "-z"], {
+        cwd: repository,
+        encoding: "utf8",
+        timeout: 3_000,
+        maxBuffer: 1024 * 1024,
+      });
+      assert.ifError(tracked.error);
+      assert.equal(tracked.status, 0, tracked.stderr);
+      const sources = tracked.stdout
+        .split("\0")
+        .filter((path) => /^(?:scripts|tools)\/.*\.(?:mjs|mts|ts)$/u.test(path));
+      assert.ok(sources.length > 0);
+      for (const source of sources) {
+        value.signal.throwIfAborted();
+        const target = join(value.root, source);
+        await mkdir(dirname(target), { recursive: true });
+        value.signal.throwIfAborted();
+        await copyFile(join(repository, source), target, constants.COPYFILE_FICLONE);
       }
       const inputs = [
         "tsconfig.json",
@@ -415,15 +606,13 @@ void test(
         "docs/engineering-quality-required-tests.json",
       ];
       for (const input of inputs) {
+        value.signal.throwIfAborted();
         const target = join(value.root, input);
         await mkdir(dirname(target), { recursive: true });
-        await cp(join(repository, input), target);
+        value.signal.throwIfAborted();
+        await copyFile(join(repository, input), target, constants.COPYFILE_FICLONE);
       }
-      await symlink(
-        await realpath(join(repository, "node_modules")),
-        join(value.root, "node_modules"),
-        process.platform === "win32" ? "junction" : "dir",
-      );
+      const closure = await copyLintFixturePackages(value.root, value.signal);
       await writeFile(join(value.root, ".gitignore"), "node_modules/\n");
       const init = spawnSync("git", ["init", "--quiet"], {
         cwd: value.root,
@@ -510,6 +699,30 @@ void test(
         /retained authority source must be a regular file/u,
       );
       await assertDead(await value.waitReady());
-    }, 20_000);
+      for (const entry of closure.packages) {
+        for (const file of entry.files) {
+          value.signal.throwIfAborted();
+          assert.equal(
+            await closure.digest(file.source),
+            file.sha256,
+            "original dependency bytes must not change",
+          );
+          assert.equal(
+            await closure.digest(file.target),
+            file.sha256,
+            "fixture dependency bytes must not change",
+          );
+        }
+        context.diagnostic(
+          `physical fixture package ${JSON.stringify({ name: entry.name, version: entry.version, fileCount: entry.files.length })}`,
+        );
+        for (const file of entry.files) {
+          context.diagnostic(
+            `physical fixture file ${JSON.stringify({ name: entry.name, version: entry.version, ...file })}`,
+          );
+        }
+      }
+    };
+    await fixture(work, 20_000, context.signal);
   },
 );
