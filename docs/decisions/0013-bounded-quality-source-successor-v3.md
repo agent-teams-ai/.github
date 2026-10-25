@@ -92,3 +92,5 @@ v2/v1 gates and source-owned caller assertion. It establishes route shape only;
 the installation PR's complete native CI, installed-main canaries, required
 blocking proof and permanent cutover remain pending. It changes no production
 runtime, published architecture standard or Docs Cohort record.
+
+<!-- Quality source negative canary. -->
