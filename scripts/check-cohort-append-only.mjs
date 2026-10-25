@@ -3,10 +3,7 @@ import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 
 import { loadJson } from "./governance-policy.mjs";
-import {
-  assertDocsCohortAppendOnly,
-  validateDocsQualifiedCohorts,
-} from "./docs-cohort-policy.mjs";
+import { assertDocsCohortAppendOnly, validateDocsQualifiedCohorts } from "./docs-cohort-policy.mjs";
 import { parseJsonStrict } from "./verify-docs-consumer-gate.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -14,16 +11,12 @@ const path = "governance/docs-qualified-cohorts.json";
 const base = process.env["GITHUB_BASE_REF"];
 const currentPath = process.env["DOCS_COHORT_CURRENT_PATH"] ?? path;
 const previousPath = process.env["DOCS_COHORT_BASE_PATH"];
-const schemaPath = process.env["DOCS_COHORT_SCHEMA_PATH"] ??
-  "governance/docs-qualified-cohorts.schema.json";
+const schemaPath =
+  process.env["DOCS_COHORT_SCHEMA_PATH"] ?? "governance/docs-qualified-cohorts.schema.json";
 const REGISTRY_LIMIT = 8 * 1024 * 1024;
 
 async function loadRegistry(pathname) {
-  return parseJsonStrict(
-    await readFile(pathname, "utf8"),
-    pathname,
-    REGISTRY_LIMIT,
-  );
+  return parseJsonStrict(await readFile(pathname, "utf8"), pathname, REGISTRY_LIMIT);
 }
 
 async function loadPrevious(reference, current) {
@@ -68,7 +61,9 @@ if (previousPath !== undefined) {
   ]);
   validateDocsQualifiedCohorts(current, schema);
   assertDocsCohortAppendOnly(previous, current);
-  console.log("Qualified Docs Cohort head is schema-valid, lifecycle-valid, digest-bound, and append-only against the trusted base.");
+  console.log(
+    "Qualified Docs Cohort head is schema-valid, lifecycle-valid, digest-bound, and append-only against the trusted base.",
+  );
 } else if (["pull_request", "merge_group"].includes(event) && base !== undefined) {
   const current = await loadRegistry(currentPath);
   validateDocsQualifiedCohorts(current, await loadJson(schemaPath));

@@ -7,17 +7,32 @@ const testPath = "scripts/docs-qualification-authority-evolution-v8.test.mjs";
 const workflow = await readFile(workflowPath, "utf8");
 const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
 assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const source = scriptBlock
+  .split("\n")
+  .map((line) => line.slice(12))
+  .join("\n");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const execute = new AsyncFunction("context", "github", "core", source);
 const repository = "agent-teams-ai/.github";
 const baseSha = "a".repeat(40);
 const canonical = [
-  [".github/workflows/docs-protocol-check.yml", "modified", "efb9327218d89b6959ee38fa09b0e68f1ce5fe22"],
+  [
+    ".github/workflows/docs-protocol-check.yml",
+    "modified",
+    "efb9327218d89b6959ee38fa09b0e68f1ce5fe22",
+  ],
   ["scripts/check-community-files.mjs", "modified", "e7c3b33c1d0f0c8cd7b93d8da17a3de381e4f7b1"],
-  ["scripts/check-community-files.test.mjs", "modified", "5f1d4108f931ad3d90958d2c11adef79278d66da"],
+  [
+    "scripts/check-community-files.test.mjs",
+    "modified",
+    "5f1d4108f931ad3d90958d2c11adef79278d66da",
+  ],
   ["scripts/verify-docs-consumer-gate.mjs", "modified", "b70db90dcc2952576bc679289081bfba5dfc7cf4"],
-  ["scripts/verify-docs-consumer-gate.test.mjs", "modified", "f57791d2191ad807a19adbdc6a5f7cb186bda1a9"],
+  [
+    "scripts/verify-docs-consumer-gate.test.mjs",
+    "modified",
+    "f57791d2191ad807a19adbdc6a5f7cb186bda1a9",
+  ],
 ].map(([filename, status, sha]) => ({ filename, status, sha }));
 
 async function classify(options = {}) {
@@ -27,14 +42,20 @@ async function classify(options = {}) {
   const outputs = new Map();
   const context = {
     repo: { owner: "agent-teams-ai", repo: ".github" },
-    payload: { pull_request: {
-      number: 143,
-      changed_files: options.changedFiles ?? files.length,
-      head: { repo: options.missingHeadRepo ? null : {
-        full_name: options.headRepo ?? repository,
-      } },
-      base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
-    } },
+    payload: {
+      pull_request: {
+        number: 143,
+        changed_files: options.changedFiles ?? files.length,
+        head: {
+          repo: options.missingHeadRepo
+            ? null
+            : {
+                full_name: options.headRepo ?? repository,
+              },
+        },
+        base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
+      },
+    },
   };
   const github = {
     paginate: async () => paginated,
@@ -61,9 +82,15 @@ test("accepts only the exact pnpm-portability authority slice", async () => {
 
   for (const candidate of [
     { files: [...canonical, { filename: "docs/extra.md", status: "added" }] },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, status: "added" } : file) },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, status: "deleted" } : file) },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, previous_filename: "old.yml" } : file) },
+    { files: canonical.map((file, index) => (index === 0 ? { ...file, status: "added" } : file)) },
+    {
+      files: canonical.map((file, index) => (index === 0 ? { ...file, status: "deleted" } : file)),
+    },
+    {
+      files: canonical.map((file, index) =>
+        index === 0 ? { ...file, previous_filename: "old.yml" } : file,
+      ),
+    },
     { headRepo: "attacker/fork" },
     { missingHeadRepo: true },
     { baseRef: "feature" },
@@ -86,9 +113,9 @@ test("rejects every partial, missing, or wrong-blob authority slice", async () =
     assert.notEqual((await classify({ files: [{ ...file }] })).failures.length, 0);
     const incomplete = canonical.filter((_, candidateIndex) => candidateIndex !== index);
     assert.notEqual((await classify({ files: incomplete })).failures.length, 0);
-    const wrongBlob = canonical.map((candidate, candidateIndex) => candidateIndex === index
-      ? { ...candidate, sha: "f".repeat(40) }
-      : candidate);
+    const wrongBlob = canonical.map((candidate, candidateIndex) =>
+      candidateIndex === index ? { ...candidate, sha: "f".repeat(40) } : candidate,
+    );
     assert.notEqual((await classify({ files: wrongBlob })).failures.length, 0);
   }
 });

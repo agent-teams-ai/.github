@@ -10,10 +10,11 @@ import {
 } from "./check.mjs";
 
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
-const artifacts = new Map(await Promise.all(manifest.versions.map(async (record) => [
-  record.path,
-  await readFile(record.path),
-])));
+const artifacts = new Map(
+  await Promise.all(
+    manifest.versions.map(async (record) => [record.path, await readFile(record.path)]),
+  ),
+);
 const clone = (value) => structuredClone(value);
 
 function digests(source) {
@@ -84,8 +85,5 @@ test("allows append-only successors but rejects mutation or removal", () => {
 
   const removed = clone(manifest);
   removed.versions = [];
-  assert.throws(
-    () => validateAppendOnlyStandardHistory(removed, [manifest]),
-    /cannot be removed/u,
-  );
+  assert.throws(() => validateAppendOnlyStandardHistory(removed, [manifest]), /cannot be removed/u);
 });

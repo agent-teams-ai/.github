@@ -6,7 +6,10 @@ const workflowPath = ".github/workflows/docs-cohort-authority-evolution-v2.yml";
 const workflow = await readFile(workflowPath, "utf8");
 const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
 assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const source = scriptBlock
+  .split("\n")
+  .map((line) => line.slice(12))
+  .join("\n");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const execute = new AsyncFunction("context", "github", "core", source);
 const repository = "agent-teams-ai/.github";
@@ -27,12 +30,14 @@ async function classify(options = {}) {
   const outputs = new Map();
   const context = {
     repo: { owner: "agent-teams-ai", repo: ".github" },
-    payload: { pull_request: {
-      number: 89,
-      changed_files: options.changedFiles ?? files.length,
-      head: { repo: { full_name: options.headRepo ?? repository } },
-      base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
-    } },
+    payload: {
+      pull_request: {
+        number: 89,
+        changed_files: options.changedFiles ?? files.length,
+        head: { repo: { full_name: options.headRepo ?? repository } },
+        base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
+      },
+    },
   };
   const github = {
     paginate: async () => paginated,
@@ -60,8 +65,14 @@ test("stages only the exact fix-forward Cohort authority slice", async () => {
   const cases = [
     { files: canonical.slice(1) },
     { files: [...canonical, { filename: "README.md", status: "modified" }] },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, status: "deleted" } : file) },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, previous_filename: "old.mjs" } : file) },
+    {
+      files: canonical.map((file, index) => (index === 0 ? { ...file, status: "deleted" } : file)),
+    },
+    {
+      files: canonical.map((file, index) =>
+        index === 0 ? { ...file, previous_filename: "old.mjs" } : file,
+      ),
+    },
     { headRepo: "attacker/fork" },
     { baseRef: "feature" },
     { branchSha: "b".repeat(40) },

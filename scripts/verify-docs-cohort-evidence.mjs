@@ -25,15 +25,22 @@ const execFileAsync = promisify(execFile);
 const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/u;
 const TRANSITION_CATALOG_MAX_BYTES = 1024 * 1024;
 export function requirePlatformPending(result, entry, head) {
-  assert(result?.status === "recovery_pending" && result.repository_id === PLATFORM_RECOVERY.repository_id &&
-    result.repository_id === entry.repository_id && result.source_head === head &&
-    result.semantics === "unverified" && result.qualification === "unverified",
-  "Platform incident must remain recovery_pending with unverified semantics and qualification.");
+  assert(
+    result?.status === "recovery_pending" &&
+      result.repository_id === PLATFORM_RECOVERY.repository_id &&
+      result.repository_id === entry.repository_id &&
+      result.source_head === head &&
+      result.semantics === "unverified" &&
+      result.qualification === "unverified",
+    "Platform incident must remain recovery_pending with unverified semantics and qualification.",
+  );
   return result;
 }
 
 function assert(condition, message) {
-  if (!condition) {throw new Error(message);}
+  if (!condition) {
+    throw new Error(message);
+  }
 }
 
 function decisiveCheckRuns(checks) {
@@ -42,26 +49,48 @@ function decisiveCheckRuns(checks) {
     const run = /\/actions\/runs\/(\d+)\/job\/\d+$/u.exec(check.html_url ?? "")?.[1];
     const key = run === undefined ? `check:${check.id}` : `run:${run}`;
     const retained = byExecution.get(key);
-    if (retained === undefined || check.id > retained.id) {byExecution.set(key, check);}
+    if (retained === undefined || check.id > retained.id) {
+      byExecution.set(key, check);
+    }
   }
   return [...byExecution.values()].toSorted((left, right) => left.id - right.id);
 }
 
 export function currentAdmissionScope(policy, basePolicy, changedFiles) {
   // A direct fleet audit has no exact PR/base tuple and always checks every HEAD.
-  if (!basePolicy || !Array.isArray(changedFiles) ||
-    changedFiles.length !== 1 || changedFiles[0] !== POLICY_PATH) {return null;}
+  if (
+    !basePolicy ||
+    !Array.isArray(changedFiles) ||
+    changedFiles.length !== 1 ||
+    changedFiles[0] !== POLICY_PATH
+  ) {
+    return null;
+  }
   const { repositories: currentRows, ...currentGlobal } = policy;
   const { repositories: baseRows, ...baseGlobal } = basePolicy;
-  if (!Array.isArray(currentRows) || !Array.isArray(baseRows) ||
-    currentRows.length !== baseRows.length || !isDeepStrictEqual(currentGlobal, baseGlobal)) {return null;}
+  if (
+    !Array.isArray(currentRows) ||
+    !Array.isArray(baseRows) ||
+    currentRows.length !== baseRows.length ||
+    !isDeepStrictEqual(currentGlobal, baseGlobal)
+  ) {
+    return null;
+  }
   const changed = new Set();
   for (let i = 0; i < currentRows.length; i += 1) {
-    const row = currentRows[i], prior = baseRows[i];
-    if (row?.repository_id !== prior?.repository_id || row?.repository !== prior?.repository) {return null;}
+    const row = currentRows[i],
+      prior = baseRows[i];
+    if (row?.repository_id !== prior?.repository_id || row?.repository !== prior?.repository) {
+      return null;
+    }
     if (!isDeepStrictEqual(row, prior)) {
-      if (row.repository_lifecycle !== "active" || row.docs_role !== "consumer" ||
-        !["bound", "rollout_pending"].includes(row.cohort_binding_status)) {return null;}
+      if (
+        row.repository_lifecycle !== "active" ||
+        row.docs_role !== "consumer" ||
+        !["bound", "rollout_pending"].includes(row.cohort_binding_status)
+      ) {
+        return null;
+      }
       changed.add(row.repository_id);
     }
   }
@@ -78,9 +107,9 @@ async function command(program, args, options = {}) {
 }
 
 async function withIsolatedNpmOptions(options, execute) {
-  const env = Object.fromEntries(Object.entries(process.env).filter(
-    ([name]) => !name.toLowerCase().startsWith("npm_config_"),
-  ));
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.toLowerCase().startsWith("npm_config_")),
+  );
   const configRoot = await mkdtemp(join(tmpdir(), "docs-cohort-npm-config-"));
   try {
     const userConfig = join(configRoot, "user.npmrc");
@@ -103,19 +132,21 @@ async function withIsolatedNpmOptions(options, execute) {
 }
 
 async function npmJson(args) {
-  const { stdout } = await withIsolatedNpmOptions({}, (options) => command(
-    "npm",
-    [...args, "--registry=https://registry.npmjs.org/", "--json"],
-    options,
-  ));
+  const { stdout } = await withIsolatedNpmOptions({}, (options) =>
+    command("npm", [...args, "--registry=https://registry.npmjs.org/", "--json"], options),
+  );
   return JSON.parse(stdout);
 }
 
 function canonicalJson(value) {
-  if (Array.isArray(value)) {return `[${value.map(canonicalJson).join(",")}]`;}
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
   if (value !== null && typeof value === "object") {
-    return `{${Object.keys(value).toSorted().map((key) =>
-      `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+    return `{${Object.keys(value)
+      .toSorted()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -124,11 +155,11 @@ function provenanceStatement(attestations, packageEntry) {
   const matches = attestations.filter(
     ({ predicateType }) => predicateType === "https://slsa.dev/provenance/v1",
   );
-  assert(matches.length === 1, `${packageEntry.name} must have exactly one verified SLSA provenance attestation.`);
-  return JSON.parse(Buffer.from(
-    matches[0].bundle.dsseEnvelope.payload,
-    "base64",
-  ).toString("utf8"));
+  assert(
+    matches.length === 1,
+    `${packageEntry.name} must have exactly one verified SLSA provenance attestation.`,
+  );
+  return JSON.parse(Buffer.from(matches[0].bundle.dsseEnvelope.payload, "base64").toString("utf8"));
 }
 
 async function verifyPackage(packageEntry, adapters, verifiedEntry) {
@@ -138,50 +169,72 @@ async function verifyPackage(packageEntry, adapters, verifiedEntry) {
     adapters.npmTimes(packageEntry.name),
     adapters.fetchJson(packageEntry.provenance.registry_attestation_url),
   ]);
-  assert(metadata.dist?.integrity === packageEntry.integrity,
-    `${specifier} registry integrity differs from the Cohort.`);
-  assert(times[packageEntry.version] === packageEntry.published_at,
-    `${specifier} registry publication time differs from the Cohort.`);
-  assert(metadata.dist?.attestations?.url === packageEntry.provenance.registry_attestation_url,
-    `${specifier} registry attestation URL differs from the Cohort.`);
-  assert(verifiedEntry?.name === packageEntry.name && verifiedEntry.version === packageEntry.version &&
-    verifiedEntry.registry === "https://registry.npmjs.org/" &&
-    verifiedEntry.attestations?.url === packageEntry.provenance.registry_attestation_url,
-  `${specifier} is absent from the exact cryptographically verified npm audit result.`);
-  assert(Array.isArray(verifiedEntry.attestationBundles) &&
-    canonicalJson(verifiedEntry.attestationBundles) === canonicalJson(attestations.attestations),
-  `${specifier} raw registry attestation differs from the cryptographically verified audit bundle.`);
+  assert(
+    metadata.dist?.integrity === packageEntry.integrity,
+    `${specifier} registry integrity differs from the Cohort.`,
+  );
+  assert(
+    times[packageEntry.version] === packageEntry.published_at,
+    `${specifier} registry publication time differs from the Cohort.`,
+  );
+  assert(
+    metadata.dist?.attestations?.url === packageEntry.provenance.registry_attestation_url,
+    `${specifier} registry attestation URL differs from the Cohort.`,
+  );
+  assert(
+    verifiedEntry?.name === packageEntry.name &&
+      verifiedEntry.version === packageEntry.version &&
+      verifiedEntry.registry === "https://registry.npmjs.org/" &&
+      verifiedEntry.attestations?.url === packageEntry.provenance.registry_attestation_url,
+    `${specifier} is absent from the exact cryptographically verified npm audit result.`,
+  );
+  assert(
+    Array.isArray(verifiedEntry.attestationBundles) &&
+      canonicalJson(verifiedEntry.attestationBundles) === canonicalJson(attestations.attestations),
+    `${specifier} raw registry attestation differs from the cryptographically verified audit bundle.`,
+  );
   const statement = provenanceStatement(verifiedEntry.attestationBundles, packageEntry);
   const subject = statement.subject?.find(({ name }) => name.endsWith(`@${packageEntry.version}`));
-  const integrityHex = Buffer.from(packageEntry.integrity.slice("sha512-".length), "base64")
-    .toString("hex");
-  assert(subject?.digest?.sha512 === integrityHex,
-    `${specifier} provenance subject digest differs from registry integrity.`);
+  const integrityHex = Buffer.from(
+    packageEntry.integrity.slice("sha512-".length),
+    "base64",
+  ).toString("hex");
+  assert(
+    subject?.digest?.sha512 === integrityHex,
+    `${specifier} provenance subject digest differs from registry integrity.`,
+  );
   const build = statement.predicate?.buildDefinition;
   const workflow = build?.externalParameters?.workflow;
-  const commit = build?.resolvedDependencies?.find(({ digest }) => digest?.gitCommit)?.digest?.gitCommit;
+  const commit = build?.resolvedDependencies?.find(({ digest }) => digest?.gitCommit)?.digest
+    ?.gitCommit;
   const invocation = statement.predicate?.runDetails?.metadata?.invocationId;
-  assert(workflow?.repository === "https://github.com/agent-teams-ai/engineering-foundation" &&
-    workflow.path === packageEntry.provenance.source_workflow,
-  `${specifier} provenance workflow differs from the Cohort.`);
-  assert(commit === packageEntry.provenance.source_commit,
-    `${specifier} provenance source commit differs from the Cohort.`);
-  assert(invocation ===
-    `${packageEntry.provenance.workflow_run_url}/attempts/${packageEntry.provenance.workflow_run_attempt}`,
-  `${specifier} provenance workflow run differs from the Cohort.`);
-  const repository = await adapters.getRepository(packageEntry.provenance.source_repository);
-  const branch = await adapters.getDefaultBranch(
-    packageEntry.provenance.source_repository,
-    "main",
+  assert(
+    workflow?.repository === "https://github.com/agent-teams-ai/engineering-foundation" &&
+      workflow.path === packageEntry.provenance.source_workflow,
+    `${specifier} provenance workflow differs from the Cohort.`,
   );
-  assert(repository.id === packageEntry.provenance.source_repository_id &&
-    repository.full_name === packageEntry.provenance.source_repository &&
-    branch.protected === true &&
-    await adapters.isDefaultBranchAncestor(
-      packageEntry.provenance.source_repository,
-      "main",
-      packageEntry.provenance.source_commit,
-    ), `${specifier} provenance source is not on its protected main branch.`);
+  assert(
+    commit === packageEntry.provenance.source_commit,
+    `${specifier} provenance source commit differs from the Cohort.`,
+  );
+  assert(
+    invocation ===
+      `${packageEntry.provenance.workflow_run_url}/attempts/${packageEntry.provenance.workflow_run_attempt}`,
+    `${specifier} provenance workflow run differs from the Cohort.`,
+  );
+  const repository = await adapters.getRepository(packageEntry.provenance.source_repository);
+  const branch = await adapters.getDefaultBranch(packageEntry.provenance.source_repository, "main");
+  assert(
+    repository.id === packageEntry.provenance.source_repository_id &&
+      repository.full_name === packageEntry.provenance.source_repository &&
+      branch.protected === true &&
+      (await adapters.isDefaultBranchAncestor(
+        packageEntry.provenance.source_repository,
+        "main",
+        packageEntry.provenance.source_commit,
+      )),
+    `${specifier} provenance source is not on its protected main branch.`,
+  );
   const workflowRun = await adapters.getWorkflowRun(
     packageEntry.provenance.source_repository,
     packageEntry.provenance.workflow_run_id,
@@ -191,85 +244,128 @@ async function verifyPackage(packageEntry, adapters, verifiedEntry) {
     run.id === packageEntry.provenance.workflow_run_id &&
     run.run_attempt === attempt &&
     run.head_sha === packageEntry.provenance.source_commit &&
-    run.head_branch === "main" && run.event === "push" &&
-    run.status === "completed" && run.conclusion === conclusion &&
+    run.head_branch === "main" &&
+    run.event === "push" &&
+    run.status === "completed" &&
+    run.conclusion === conclusion &&
     run.path === packageEntry.provenance.source_workflow &&
     run.html_url === packageEntry.provenance.workflow_run_url &&
     run.repository?.id === packageEntry.provenance.source_repository_id &&
     run.repository?.full_name === packageEntry.provenance.source_repository;
   const reconciliation = packageEntry.provenance.reconciliation;
   if (reconciliation === undefined) {
-    assert(bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, "success"),
-      `${specifier} live release workflow run does not bind exact attempt/path/SHA/success.`);
+    assert(
+      bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, "success"),
+      `${specifier} live release workflow run does not bind exact attempt/path/SHA/success.`,
+    );
     return;
   }
   const originConclusion = workflowRun.conclusion;
-  assert(["failure", "cancelled"].includes(originConclusion) &&
-    bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, originConclusion),
-  `${specifier} reconciled origin release attempt must bind an exact terminal unsuccessful result.`);
+  assert(
+    ["failure", "cancelled"].includes(originConclusion) &&
+      bindsReleaseRun(workflowRun, packageEntry.provenance.workflow_run_attempt, originConclusion),
+    `${specifier} reconciled origin release attempt must bind an exact terminal unsuccessful result.`,
+  );
   const originJobs = await adapters.getWorkflowAttemptJobs(
     packageEntry.provenance.source_repository,
     packageEntry.provenance.workflow_run_id,
     packageEntry.provenance.workflow_run_attempt,
   );
   const originReleaseJobs = originJobs.filter(({ name }) => name === "release");
-  assert(originReleaseJobs.length === 1 &&
-    Number.isSafeInteger(originReleaseJobs[0].id) && originReleaseJobs[0].id > 0 &&
-    originReleaseJobs[0].run_attempt === packageEntry.provenance.workflow_run_attempt &&
-    originReleaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
-    originReleaseJobs[0].status === "completed" &&
-    originReleaseJobs[0].conclusion === originConclusion &&
-    originReleaseJobs[0].html_url ===
-      `${packageEntry.provenance.workflow_run_url}/job/${originReleaseJobs[0].id}`,
-  `${specifier} reconciled origin must have exactly one matching terminal unsuccessful release job.`);
-  assert(reconciliation.workflow_run_attempt > packageEntry.provenance.workflow_run_attempt,
-    `${specifier} reconciliation attempt must be strictly later than its failed origin.`);
+  assert(
+    originReleaseJobs.length === 1 &&
+      Number.isSafeInteger(originReleaseJobs[0].id) &&
+      originReleaseJobs[0].id > 0 &&
+      originReleaseJobs[0].run_attempt === packageEntry.provenance.workflow_run_attempt &&
+      originReleaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
+      originReleaseJobs[0].status === "completed" &&
+      originReleaseJobs[0].conclusion === originConclusion &&
+      originReleaseJobs[0].html_url ===
+        `${packageEntry.provenance.workflow_run_url}/job/${originReleaseJobs[0].id}`,
+    `${specifier} reconciled origin must have exactly one matching terminal unsuccessful release job.`,
+  );
+  assert(
+    reconciliation.workflow_run_attempt > packageEntry.provenance.workflow_run_attempt,
+    `${specifier} reconciliation attempt must be strictly later than its failed origin.`,
+  );
   const reconciledRun = await adapters.getWorkflowRun(
     packageEntry.provenance.source_repository,
     packageEntry.provenance.workflow_run_id,
     reconciliation.workflow_run_attempt,
   );
-  assert(bindsReleaseRun(reconciledRun, reconciliation.workflow_run_attempt, "success"),
-    `${specifier} reconciliation run does not bind exact attempt/path/SHA/success.`);
+  assert(
+    bindsReleaseRun(reconciledRun, reconciliation.workflow_run_attempt, "success"),
+    `${specifier} reconciliation run does not bind exact attempt/path/SHA/success.`,
+  );
   const reconciledJobs = await adapters.getWorkflowAttemptJobs(
     packageEntry.provenance.source_repository,
     packageEntry.provenance.workflow_run_id,
     reconciliation.workflow_run_attempt,
   );
   const releaseJobs = reconciledJobs.filter(({ name }) => name === "release");
-  assert(releaseJobs.length === 1 && releaseJobs[0].id === reconciliation.release_job_id &&
-    releaseJobs[0].run_attempt === reconciliation.workflow_run_attempt &&
-    releaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
-    releaseJobs[0].status === "completed" && releaseJobs[0].conclusion === "success" &&
-    releaseJobs[0].html_url === `${packageEntry.provenance.workflow_run_url}/job/${reconciliation.release_job_id}`,
-  `${specifier} reconciliation must bind exactly one successful release job.`);
+  assert(
+    releaseJobs.length === 1 &&
+      releaseJobs[0].id === reconciliation.release_job_id &&
+      releaseJobs[0].run_attempt === reconciliation.workflow_run_attempt &&
+      releaseJobs[0].head_sha === packageEntry.provenance.source_commit &&
+      releaseJobs[0].status === "completed" &&
+      releaseJobs[0].conclusion === "success" &&
+      releaseJobs[0].html_url ===
+        `${packageEntry.provenance.workflow_run_url}/job/${reconciliation.release_job_id}`,
+    `${specifier} reconciliation must bind exactly one successful release job.`,
+  );
 }
 
 export async function verifyInstalledPackageSignatures(packages, run = command) {
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-signatures-"));
   try {
-    await writeFile(join(root, "package.json"), "{\"name\":\"docs-cohort-signature-check\",\"private\":true}\n");
-    await withIsolatedNpmOptions({ cwd: root }, (options) => run("npm", [
-        "install", "--ignore-scripts", "--fund=false", "--audit=false", "--save-exact",
-        "--registry=https://registry.npmjs.org/",
-        ...packages.map(({ name, version }) => `${name}@${version}`),
-      ], options));
-    const { stdout } = await withIsolatedNpmOptions(
-      { cwd: root },
-      (options) => run("npm", [
-        "audit", "signatures", "--json", "--include-attestations",
-        "--registry=https://registry.npmjs.org/",
-      ], options),
+    await writeFile(
+      join(root, "package.json"),
+      '{"name":"docs-cohort-signature-check","private":true}\n',
+    );
+    await withIsolatedNpmOptions({ cwd: root }, (options) =>
+      run(
+        "npm",
+        [
+          "install",
+          "--ignore-scripts",
+          "--fund=false",
+          "--audit=false",
+          "--save-exact",
+          "--registry=https://registry.npmjs.org/",
+          ...packages.map(({ name, version }) => `${name}@${version}`),
+        ],
+        options,
+      ),
+    );
+    const { stdout } = await withIsolatedNpmOptions({ cwd: root }, (options) =>
+      run(
+        "npm",
+        [
+          "audit",
+          "signatures",
+          "--json",
+          "--include-attestations",
+          "--registry=https://registry.npmjs.org/",
+        ],
+        options,
+      ),
     );
     const result = JSON.parse(stdout);
-    assert(Array.isArray(result.invalid) && result.invalid.length === 0 &&
-      Array.isArray(result.missing) && result.missing.length === 0 &&
-      Array.isArray(result.verified),
-    "npm cryptographic signature audit did not return a complete verified attestation set.");
+    assert(
+      Array.isArray(result.invalid) &&
+        result.invalid.length === 0 &&
+        Array.isArray(result.missing) &&
+        result.missing.length === 0 &&
+        Array.isArray(result.verified),
+      "npm cryptographic signature audit did not return a complete verified attestation set.",
+    );
     for (const { name, version } of packages) {
-      assert(result.verified.filter((entry) =>
-        entry.name === name && entry.version === version).length === 1,
-      `npm cryptographic signature audit did not verify exactly one ${name}@${version} entry.`);
+      assert(
+        result.verified.filter((entry) => entry.name === name && entry.version === version)
+          .length === 1,
+        `npm cryptographic signature audit did not verify exactly one ${name}@${version} entry.`,
+      );
     }
     return result.verified;
   } finally {
@@ -277,45 +373,72 @@ export async function verifyInstalledPackageSignatures(packages, run = command) 
   }
 }
 
-export async function resolvePublishedRuntimeClosure(packages, runOrOptions = command, options = {}) {
+export async function resolvePublishedRuntimeClosure(
+  packages,
+  runOrOptions = command,
+  options = {},
+) {
   const run = typeof runOrOptions === "function" ? runOrOptions : command;
   const effectiveOptions = typeof runOrOptions === "function" ? options : runOrOptions;
   const cohortGeneration = effectiveOptions.cohortGeneration;
-  assert(cohortGeneration === undefined || cohortGeneration === 2,
-    "Runtime closure generation must be absent for v1 or explicitly 2 for v2.");
-  const v2 = cohortGeneration === 2;
+  assert(
+    cohortGeneration === undefined || cohortGeneration === 2 || cohortGeneration === 3,
+    "Runtime closure generation must be absent for v1 or explicitly 2 or 3.",
+  );
+  const v2 = cohortGeneration === 2 || cohortGeneration === 3;
   const expectedPnpmVersion = v2 ? "11.20.0" : "11.18.0";
   const pnpmBinary = effectiveOptions.pnpmBinary;
-  assert(typeof pnpmBinary === "string" && isAbsolute(pnpmBinary),
-    `Runtime closure ${v2 ? "v2" : "v1"} requires its trusted absolute pnpm binary path.`);
+  assert(
+    typeof pnpmBinary === "string" && isAbsolute(pnpmBinary),
+    `Runtime closure ${v2 ? "v2" : "v1"} requires its trusted absolute pnpm binary path.`,
+  );
   const roots = v2 ? packages.filter(({ role }) => role === "direct") : packages;
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-runtime-closure-"));
   try {
     await withIsolatedNpmOptions({ cwd: root }, async (isolatedOptions) => {
       const { stdout } = await run(pnpmBinary, ["--version"], isolatedOptions);
-      assert(stdout.trim() === expectedPnpmVersion,
-        `Runtime closure ${v2 ? "v2" : "v1"} pnpm binary version is not exact.`);
+      assert(
+        stdout.trim() === expectedPnpmVersion,
+        `Runtime closure ${v2 ? "v2" : "v1"} pnpm binary version is not exact.`,
+      );
     });
     await Promise.all([
-      writeFile(join(root, "package.json"), `${JSON.stringify({
-        name: "docs-cohort-runtime-closure",
-        private: true,
-        packageManager: `pnpm@${expectedPnpmVersion}`,
-        devDependencies: Object.fromEntries(roots.map(({ name, version }) => [name, version])),
-      })}\n`),
-      writeFile(join(root, ".npmrc"), [
-        "registry=https://registry.npmjs.org/",
-        "@agent-teams:registry=https://registry.npmjs.org/",
-        "ignore-scripts=true",
-        "verify-store-integrity=true",
-        "strict-peer-dependencies=true",
-        "",
-      ].join("\n")),
+      writeFile(
+        join(root, "package.json"),
+        `${JSON.stringify({
+          name: "docs-cohort-runtime-closure",
+          private: true,
+          packageManager: `pnpm@${expectedPnpmVersion}`,
+          devDependencies: Object.fromEntries(roots.map(({ name, version }) => [name, version])),
+        })}\n`,
+      ),
+      writeFile(
+        join(root, ".npmrc"),
+        [
+          "registry=https://registry.npmjs.org/",
+          "@agent-teams:registry=https://registry.npmjs.org/",
+          "ignore-scripts=true",
+          "verify-store-integrity=true",
+          "strict-peer-dependencies=true",
+          "",
+        ].join("\n"),
+      ),
     ]);
-    await withIsolatedNpmOptions({ cwd: root }, (isolatedOptions) => run(pnpmBinary, [
-        "install", "--dir", root, "--lockfile-only", "--ignore-scripts",
-        "--ignore-pnpmfile", "--ignore-workspace",
-      ], isolatedOptions));
+    await withIsolatedNpmOptions({ cwd: root }, (isolatedOptions) =>
+      run(
+        pnpmBinary,
+        [
+          "install",
+          "--dir",
+          root,
+          "--lockfile-only",
+          "--ignore-scripts",
+          "--ignore-pnpmfile",
+          "--ignore-workspace",
+        ],
+        isolatedOptions,
+      ),
+    );
     const lock = YAML.parse(await readFile(join(root, "pnpm-lock.yaml"), "utf8"));
     return v2
       ? docsRuntimeClosureV2Evidence(lock, packages)
@@ -328,26 +451,37 @@ export async function resolvePublishedRuntimeClosure(packages, runOrOptions = co
 function trustedCohortPnpmBinary(cohortGeneration) {
   const v1 = process.env.DOCS_COHORT_PNPM_V1_BIN;
   const v2 = process.env.DOCS_COHORT_PNPM_V2_BIN;
-  assert(typeof v1 === "string" && isAbsolute(v1) &&
-    typeof v2 === "string" && isAbsolute(v2) && v1 !== v2,
-  "Trusted Cohort verification requires distinct absolute v1 and v2 pnpm binary paths.");
-  return cohortGeneration === 2 ? v2 : v1;
+  assert(
+    typeof v1 === "string" &&
+      isAbsolute(v1) &&
+      typeof v2 === "string" &&
+      isAbsolute(v2) &&
+      v1 !== v2,
+    "Trusted Cohort verification requires distinct absolute v1 and v2 pnpm binary paths.",
+  );
+  assert(
+    cohortGeneration === undefined || cohortGeneration === 2 || cohortGeneration === 3,
+    "Unknown Cohort generation has no trusted pnpm binary.",
+  );
+  return cohortGeneration === 2 || cohortGeneration === 3 ? v2 : v1;
 }
 
-export async function defaultIsCommitAncestor(
-  repository,
-  revision,
-  descendant,
-  run = command,
-) {
-  if (revision === descendant) {return true;}
+export async function defaultIsCommitAncestor(repository, revision, descendant, run = command) {
+  if (revision === descendant) {
+    return true;
+  }
   try {
     const { stdout: comparisonOutput } = await run("gh", [
-      "api", `repos/${repository}/compare/${revision}...${descendant}`, "--jq", ".status",
+      "api",
+      `repos/${repository}/compare/${revision}...${descendant}`,
+      "--jq",
+      ".status",
     ]);
     return ["ahead", "identical"].includes(comparisonOutput.trim());
   } catch (error) {
-    if (!/\bHTTP 404\b/u.test(error?.stderr ?? "")) {throw error;}
+    if (!/\bHTTP 404\b/u.test(error?.stderr ?? "")) {
+      throw error;
+    }
   }
 
   const commitsPerPage = 100;
@@ -356,15 +490,18 @@ export async function defaultIsCommitAncestor(
     const { stdout: historyOutput } = await run("gh", [
       "api",
       `repos/${repository}/commits?sha=${descendant}&per_page=${commitsPerPage}&page=${page}`,
-      "--jq", ".[].sha",
+      "--jq",
+      ".[].sha",
     ]);
     const history = historyOutput.trim().split("\n").filter(Boolean);
-    if (history.includes(revision)) {return true;}
-    if (history.length < commitsPerPage) {return false;}
+    if (history.includes(revision)) {
+      return true;
+    }
+    if (history.length < commitsPerPage) {
+      return false;
+    }
   }
-  throw new Error(
-    `${repository} ancestry fallback exceeded ${maxPages * commitsPerPage} commits.`,
-  );
+  throw new Error(`${repository} ancestry fallback exceeded ${maxPages * commitsPerPage} commits.`);
 }
 
 export async function defaultIsDefaultBranchAncestor(
@@ -374,14 +511,19 @@ export async function defaultIsDefaultBranchAncestor(
   run = command,
 ) {
   const { stdout } = await run("gh", [
-    "api", `repos/${repository}/branches/${defaultBranch}`, "--jq", ".commit.sha",
+    "api",
+    `repos/${repository}/branches/${defaultBranch}`,
+    "--jq",
+    ".commit.sha",
   ]);
   return defaultIsCommitAncestor(repository, revision, stdout.trim(), run);
 }
 
 function workflowRunIdFromCheck(repository, check) {
   let url;
-  try {url = new URL(check.html_url);} catch {
+  try {
+    url = new URL(check.html_url);
+  } catch {
     throw new Error(`${repository} current required check URL is invalid.`);
   }
   const expectedPrefix = `/${repository}/actions/runs/`;
@@ -391,35 +533,55 @@ function workflowRunIdFromCheck(repository, check) {
   const match = /^(?<runId>[1-9][0-9]*)\/job\/(?<jobId>[1-9][0-9]*)$/u.exec(suffix);
   const runId = Number(match?.groups?.runId);
   const jobId = Number(match?.groups?.jobId);
-  assert(url.protocol === "https:" && url.hostname === "github.com" &&
-    url.search === "" && url.hash === "" &&
-    Number.isSafeInteger(runId) && Number.isSafeInteger(jobId) && jobId === check.id,
-  `${repository} current required check URL does not bind its exact Actions run/job.`);
+  assert(
+    url.protocol === "https:" &&
+      url.hostname === "github.com" &&
+      url.search === "" &&
+      url.hash === "" &&
+      Number.isSafeInteger(runId) &&
+      Number.isSafeInteger(jobId) &&
+      jobId === check.id,
+    `${repository} current required check URL does not bind its exact Actions run/job.`,
+  );
   return runId;
 }
 
 async function defaultReadPublishedPackage(packageEntry, paths) {
   const root = await mkdtemp(join(tmpdir(), "docs-cohort-package-"));
   try {
-    const { stdout } = await withIsolatedNpmOptions(
-      { cwd: root },
-      (options) => command("npm", [
-        "pack", `${packageEntry.name}@${packageEntry.version}`, "--ignore-scripts",
-        "--registry=https://registry.npmjs.org/", "--json",
-      ], options),
+    const { stdout } = await withIsolatedNpmOptions({ cwd: root }, (options) =>
+      command(
+        "npm",
+        [
+          "pack",
+          `${packageEntry.name}@${packageEntry.version}`,
+          "--ignore-scripts",
+          "--registry=https://registry.npmjs.org/",
+          "--json",
+        ],
+        options,
+      ),
     );
     const packed = JSON.parse(stdout);
     const filename = packed[0]?.filename;
     assert(typeof filename === "string", `${packageEntry.name} npm pack did not return a tarball.`);
-    assert(packed[0]?.integrity === packageEntry.integrity,
-      `${packageEntry.name} packed tarball integrity differs from the Cohort.`);
-    return new Map(await Promise.all(paths.map(async (path) => [
-      path,
-      (await command("tar", ["-xOf", filename, `package/${path}`], {
-        cwd: root,
-        encoding: null,
-      })).stdout,
-    ])));
+    assert(
+      packed[0]?.integrity === packageEntry.integrity,
+      `${packageEntry.name} packed tarball integrity differs from the Cohort.`,
+    );
+    return new Map(
+      await Promise.all(
+        paths.map(async (path) => [
+          path,
+          (
+            await command("tar", ["-xOf", filename, `package/${path}`], {
+              cwd: root,
+              encoding: null,
+            })
+          ).stdout,
+        ]),
+      ),
+    );
   } finally {
     await rm(root, { force: true, recursive: true });
   }
@@ -430,37 +592,51 @@ function sha256(content) {
 }
 
 function plainRecord(value, label) {
-  assert(value !== null && typeof value === "object" && !Array.isArray(value),
-    `${label} must be a plain JSON object.`);
+  assert(
+    value !== null && typeof value === "object" && !Array.isArray(value),
+    `${label} must be a plain JSON object.`,
+  );
   return value;
 }
 
 function hasExactKeys(value, keys) {
   const observed = Object.keys(value).toSorted();
-  return observed.length === keys.length && keys.toSorted().every(
-    (key, index) => observed[index] === key,
+  return (
+    observed.length === keys.length &&
+    keys.toSorted().every((key, index) => observed[index] === key)
   );
 }
 
 function parseTransitionCatalog(bytes) {
-  assert(bytes.byteLength <= TRANSITION_CATALOG_MAX_BYTES,
-    "Published transition catalog exceeds its trusted size bound.");
+  assert(
+    bytes.byteLength <= TRANSITION_CATALOG_MAX_BYTES,
+    "Published transition catalog exceeds its trusted size bound.",
+  );
   let source;
-  try {source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);} catch {
+  try {
+    source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
     throw new Error("Published transition catalog must be valid UTF-8.");
   }
   let parsed;
-  try {parsed = JSON.parse(source);} catch {
+  try {
+    parsed = JSON.parse(source);
+  } catch {
     throw new Error("Published transition catalog must be valid JSON.");
   }
   const catalog = plainRecord(parsed, "Published transition catalog");
-  assert(hasExactKeys(catalog, ["schemaVersion", "currentSourceExecutors", "directTargetBundles"]) &&
-    catalog.schemaVersion === 1,
-  "Published transition catalog fields are invalid.");
-  assert(Array.isArray(catalog.currentSourceExecutors) &&
-    catalog.currentSourceExecutors.length <= 32 &&
-    Array.isArray(catalog.directTargetBundles) && catalog.directTargetBundles.length <= 32,
-  "Published transition catalog lists must be bounded arrays.");
+  assert(
+    hasExactKeys(catalog, ["schemaVersion", "currentSourceExecutors", "directTargetBundles"]) &&
+      catalog.schemaVersion === 1,
+    "Published transition catalog fields are invalid.",
+  );
+  assert(
+    Array.isArray(catalog.currentSourceExecutors) &&
+      catalog.currentSourceExecutors.length <= 32 &&
+      Array.isArray(catalog.directTargetBundles) &&
+      catalog.directTargetBundles.length <= 32,
+    "Published transition catalog lists must be bounded arrays.",
+  );
   return catalog;
 }
 
@@ -470,8 +646,10 @@ function historyPath(digest, filename) {
 
 async function verifyTransitionCatalog(record, registry, asOf, publishedFiles, docs, adapters) {
   const catalog = parseTransitionCatalog(publishedFiles.get(record.assets.transition_catalog.path));
-  assert(catalog.currentSourceExecutors.length === 0,
-    `${record.cohort_id} fix-forward transition catalog cannot advertise source executors.`);
+  assert(
+    catalog.currentSourceExecutors.length === 0,
+    `${record.cohort_id} fix-forward transition catalog cannot advertise source executors.`,
+  );
   const managedDigests = canonicalDocsManagedAssetDigests({
     profilePath: QUALIFIED_DOCS_PROFILE_PATH,
     skillPath: QUALIFIED_DOCS_SKILL_PATH,
@@ -480,40 +658,65 @@ async function verifyTransitionCatalog(record, registry, asOf, publishedFiles, d
   const historyAssets = [];
   for (const rawTarget of catalog.directTargetBundles) {
     const target = plainRecord(rawTarget, "Published direct target bundle");
-    assert(hasExactKeys(target, [
-      "cohort", "skillPath", "skillDigest", "callerWorkflowPath",
-      "callerWorkflowDigest", "agentsRouteDigest", "docsScriptsDigest",
-    ]), "Published direct target bundle fields are invalid.");
+    assert(
+      hasExactKeys(target, [
+        "cohort",
+        "skillPath",
+        "skillDigest",
+        "callerWorkflowPath",
+        "callerWorkflowDigest",
+        "agentsRouteDigest",
+        "docsScriptsDigest",
+      ]),
+      "Published direct target bundle fields are invalid.",
+    );
     const targetCohort = plainRecord(target.cohort, "Published direct target Cohort");
     const targetId = targetCohort.cohortId;
-    assert(typeof targetId === "string" && !targetById.has(targetId),
-      "Published direct target Cohort identities must be unique strings.");
+    assert(
+      typeof targetId === "string" && !targetById.has(targetId),
+      "Published direct target Cohort identities must be unique strings.",
+    );
     const expected = qualifiedCohortProjection(registry, targetId, { asOf });
-    assert(canonicalJson(targetCohort) === canonicalJson(expected),
-      `${targetId} published transition binding differs from central immutable authority.`);
-    assert(target.skillDigest === expected.assets.skillDigest &&
-      target.callerWorkflowDigest === expected.assets.callerWorkflowDigest &&
-      target.agentsRouteDigest === managedDigests.agentsRouteDigest &&
-      target.docsScriptsDigest === managedDigests.docsScriptsDigest &&
-      SHA256_DIGEST.test(target.agentsRouteDigest) && SHA256_DIGEST.test(target.docsScriptsDigest),
-    `${targetId} published transition asset digests are invalid.`);
-    assert(target.skillPath === historyPath(target.skillDigest, "skill.md") &&
-      target.callerWorkflowPath === historyPath(target.callerWorkflowDigest, "caller.yml"),
-    `${targetId} published transition assets are not content-addressed.`);
+    assert(
+      canonicalJson(targetCohort) === canonicalJson(expected),
+      `${targetId} published transition binding differs from central immutable authority.`,
+    );
+    assert(
+      target.skillDigest === expected.assets.skillDigest &&
+        target.callerWorkflowDigest === expected.assets.callerWorkflowDigest &&
+        target.agentsRouteDigest === managedDigests.agentsRouteDigest &&
+        target.docsScriptsDigest === managedDigests.docsScriptsDigest &&
+        SHA256_DIGEST.test(target.agentsRouteDigest) &&
+        SHA256_DIGEST.test(target.docsScriptsDigest),
+      `${targetId} published transition asset digests are invalid.`,
+    );
+    assert(
+      target.skillPath === historyPath(target.skillDigest, "skill.md") &&
+        target.callerWorkflowPath === historyPath(target.callerWorkflowDigest, "caller.yml"),
+      `${targetId} published transition assets are not content-addressed.`,
+    );
     targetById.set(targetId, target);
-    historyAssets.push([target.skillPath, target.skillDigest],
-      [target.callerWorkflowPath, target.callerWorkflowDigest]);
+    historyAssets.push(
+      [target.skillPath, target.skillDigest],
+      [target.callerWorkflowPath, target.callerWorkflowDigest],
+    );
   }
   for (const origin of record.upgrade_from) {
-    assert(targetById.has(origin),
-      `${record.cohort_id} transition catalog does not bundle required upgrade origin ${origin}.`);
+    assert(
+      targetById.has(origin),
+      `${record.cohort_id} transition catalog does not bundle required upgrade origin ${origin}.`,
+    );
   }
-  if (historyAssets.length === 0) {return;}
+  if (historyAssets.length === 0) {
+    return;
+  }
   const paths = [...new Set(historyAssets.map(([path]) => path))];
   const historicalFiles = await adapters.readPublishedPackage(docs, paths);
   for (const [path, digest] of historyAssets) {
-    assert(historicalFiles.has(path) && sha256(historicalFiles.get(path)) === digest,
-      `${path} published historical asset differs from its immutable digest.`);
+    assert(
+      historicalFiles.has(path) && sha256(historicalFiles.get(path)) === digest,
+      `${path} published historical asset differs from its immutable digest.`,
+    );
   }
 }
 
@@ -525,13 +728,18 @@ const CALLER_WORKFLOW_PLACEHOLDERS = [
 
 export function renderCallerWorkflowTemplate(content, reusableWorkflow) {
   const template = content.toString("utf8");
-  assert(Buffer.from(template, "utf8").equals(content),
-    "Published caller workflow template must be valid UTF-8.");
+  assert(
+    Buffer.from(template, "utf8").equals(content),
+    "Published caller workflow template must be valid UTF-8.",
+  );
   const observed = template.match(/\{\{[^{}]+\}\}/gu) ?? [];
-  assert(observed.length === CALLER_WORKFLOW_PLACEHOLDERS.length &&
-    CALLER_WORKFLOW_PLACEHOLDERS.every(([token]) =>
-      observed.filter((entry) => entry === token).length === 1),
-  "Published caller workflow template must contain each exact authority placeholder once and no others.");
+  assert(
+    observed.length === CALLER_WORKFLOW_PLACEHOLDERS.length &&
+      CALLER_WORKFLOW_PLACEHOLDERS.every(
+        ([token]) => observed.filter((entry) => entry === token).length === 1,
+      ),
+    "Published caller workflow template must contain each exact authority placeholder once and no others.",
+  );
   let rendered = template;
   for (const [token, field] of CALLER_WORKFLOW_PLACEHOLDERS) {
     rendered = rendered.replace(token, reusableWorkflow[field]);
@@ -540,83 +748,127 @@ export function renderCallerWorkflowTemplate(content, reusableWorkflow) {
 }
 
 async function verifyPublishedContents(record, registry, asOf, adapters) {
-  const v2 = record.cohort_generation === 2;
+  const v2 = record.cohort_generation === 2 || record.cohort_generation === 3;
   const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
   const foundation = packageByName.get("@agent-teams/engineering-foundation");
-  const docs = packageByName.get(v2
-    ? "@agent-teams/docs-protocol-agent-teams"
-    : "@agent-teams/docs-protocol");
-  assert(foundation !== undefined && docs !== undefined,
-    `${record.cohort_id} published content owners are absent from the explicit Cohort.`);
+  const docs = packageByName.get(
+    v2 ? "@agent-teams/docs-protocol-agent-teams" : "@agent-teams/docs-protocol",
+  );
+  assert(
+    foundation !== undefined && docs !== undefined,
+    `${record.cohort_id} published content owners are absent from the explicit Cohort.`,
+  );
   const paths = ["package.json", ...Object.values(record.assets).map(({ path }) => path)];
   const publishedFiles = await adapters.readPublishedPackage(docs, paths);
   const manifest = JSON.parse(publishedFiles.get("package.json").toString("utf8"));
   if (v2) {
-    const expectedDependencies = record.dependency_edges
-      .filter(({ from }) => from === docs.name)
-      .map(({ to }) => packageByName.get(to));
-    assert(expectedDependencies.every((entry) =>
-      entry !== undefined && manifest.dependencies?.[entry.name] === entry.version),
-    `${docs.name}@${docs.version} must bind its exact declared Cohort v2 dependency edges.`);
+    for (const entry of record.packages) {
+      const packageManifest =
+        entry.name === docs.name
+          ? manifest
+          : JSON.parse(
+              (await adapters.readPublishedPackage(entry, ["package.json"]))
+                .get("package.json")
+                .toString("utf8"),
+            );
+      const expectedDependencies = record.dependency_edges
+        .filter(({ from }) => from === entry.name)
+        .map(({ to }) => packageByName.get(to));
+      assert(
+        record.packages.filter((dependency) =>
+          Object.hasOwn(packageManifest.dependencies ?? {}, dependency.name),
+        ).length === expectedDependencies.length &&
+          expectedDependencies.every(
+            (dependency) =>
+              dependency !== undefined &&
+              packageManifest.dependencies?.[dependency.name] === dependency.version,
+          ),
+        `${entry.name}@${entry.version} must bind its exact declared Cohort dependency edges.`,
+      );
+    }
   } else {
-    assert(manifest.dependencies?.[foundation.name] === foundation.version,
-      `${docs.name}@${docs.version} must depend on exact ${foundation.name}@${foundation.version}.`);
+    assert(
+      manifest.dependencies?.[foundation.name] === foundation.version,
+      `${docs.name}@${docs.version} must depend on exact ${foundation.name}@${foundation.version}.`,
+    );
   }
   for (const [label, asset] of Object.entries(record.assets)) {
-    assert(asset.package === docs.name, `${label} must be sourced from the published Docs package.`);
-    assert(sha256(publishedFiles.get(asset.path)) === asset.digest,
-      `${label} published asset digest differs from the Cohort.`);
+    assert(
+      asset.package === docs.name,
+      `${label} must be sourced from the published Docs package.`,
+    );
+    assert(
+      sha256(publishedFiles.get(asset.path)) === asset.digest,
+      `${label} published asset digest differs from the Cohort.`,
+    );
   }
   const callerTemplate = publishedFiles.get(record.assets.caller_workflow.path);
   const renderedCaller = renderCallerWorkflowTemplate(callerTemplate, record.reusable_workflow);
-  assert(sha256(renderedCaller) === record.assets.caller_workflow.rendered_digest,
-    "caller_workflow rendered digest differs from its exact authority tuple.");
+  assert(
+    sha256(renderedCaller) === record.assets.caller_workflow.rendered_digest,
+    "caller_workflow rendered digest differs from its exact authority tuple.",
+  );
   await verifyTransitionCatalog(record, registry, asOf, publishedFiles, docs, adapters);
 }
 
 async function verifyCanaryEvidence(record, canaryEvent, adapters) {
-  if (canaryEvent === undefined) {return;}
+  if (canaryEvent === undefined) {
+    return;
+  }
   for (const evidence of canaryEvent.canary_evidence) {
     const repository = await adapters.getRepository(evidence.repository);
-    assert(repository.id === evidence.repository_id && repository.full_name === evidence.repository,
-      `${evidence.repository} identity differs from CANARY evidence.`);
-    assert(await adapters.isDefaultBranchAncestor(
-      evidence.repository,
-      repository.default_branch,
-      evidence.merge_revision,
-    ), `${evidence.repository} canary revision is not merged into its default branch.`);
+    assert(
+      repository.id === evidence.repository_id && repository.full_name === evidence.repository,
+      `${evidence.repository} identity differs from CANARY evidence.`,
+    );
+    assert(
+      await adapters.isDefaultBranchAncestor(
+        evidence.repository,
+        repository.default_branch,
+        evidence.merge_revision,
+      ),
+      `${evidence.repository} canary revision is not merged into its default branch.`,
+    );
     const checkRuns = await adapters.getCheckRuns(evidence.repository, evidence.merge_revision);
     const run = checkRuns.find(({ id }) => id === evidence.check_run_id);
-    assert(run?.head_sha === evidence.merge_revision &&
-      run.name === evidence.required_context &&
-      run.app?.id === evidence.integration_id &&
-      run.conclusion === "success" &&
-      run.html_url === evidence.check_run_url,
-    `${evidence.repository} hosted canary check does not exactly bind repo/head/context/integration/success.`);
-    assert(evidence.check_run_url.includes(`/actions/runs/${evidence.workflow_run_id}`),
-      `${evidence.repository} check URL does not bind the recorded workflow run.`);
+    assert(
+      run?.head_sha === evidence.merge_revision &&
+        run.name === evidence.required_context &&
+        run.app?.id === evidence.integration_id &&
+        run.conclusion === "success" &&
+        run.html_url === evidence.check_run_url,
+      `${evidence.repository} hosted canary check does not exactly bind repo/head/context/integration/success.`,
+    );
+    assert(
+      evidence.check_run_url.includes(`/actions/runs/${evidence.workflow_run_id}`),
+      `${evidence.repository} check URL does not bind the recorded workflow run.`,
+    );
     const workflowRun = await adapters.getLatestWorkflowRun(
       evidence.repository,
       evidence.workflow_run_id,
     );
-    assert(workflowRun.id === evidence.workflow_run_id &&
-      workflowRun.head_sha === evidence.merge_revision &&
-      workflowRun.head_branch === repository.default_branch &&
-      workflowRun.event === "push" &&
-      workflowRun.conclusion === "success" &&
-      workflowRun.workflow_id === evidence.workflow_id &&
-      workflowRun.path === evidence.caller_workflow_path &&
-      workflowRun.repository?.id === evidence.repository_id &&
-      workflowRun.repository?.full_name === evidence.repository,
-    `${evidence.repository} Actions run does not exactly bind repo/default-branch head/workflow/path/success.`);
+    assert(
+      workflowRun.id === evidence.workflow_run_id &&
+        workflowRun.head_sha === evidence.merge_revision &&
+        workflowRun.head_branch === repository.default_branch &&
+        workflowRun.event === "push" &&
+        workflowRun.conclusion === "success" &&
+        workflowRun.workflow_id === evidence.workflow_id &&
+        workflowRun.path === evidence.caller_workflow_path &&
+        workflowRun.repository?.id === evidence.repository_id &&
+        workflowRun.repository?.full_name === evidence.repository,
+      `${evidence.repository} Actions run does not exactly bind repo/default-branch head/workflow/path/success.`,
+    );
     const caller = await adapters.readRepositoryFile(
       evidence.repository,
       evidence.caller_workflow_path,
       evidence.merge_revision,
     );
-    assert(evidence.caller_workflow_digest === record.assets.caller_workflow.rendered_digest &&
-      sha256(caller) === evidence.caller_workflow_digest,
-    `${evidence.repository} committed caller bytes differ from the qualified rendered caller.`);
+    assert(
+      evidence.caller_workflow_digest === record.assets.caller_workflow.rendered_digest &&
+        sha256(caller) === evidence.caller_workflow_digest,
+      `${evidence.repository} committed caller bytes differ from the qualified rendered caller.`,
+    );
   }
 }
 
@@ -628,30 +880,49 @@ export async function verifyAdmissionRevision(
   observation,
   adapters,
 ) {
-  assert(["historical", "current"].includes(observation.binding), "Explicit admission binding is required.");
-  const checks = observation.check === undefined
-    ? await adapters.getCheckRuns(entry.repository, observation.revision)
-    : [observation.check];
+  assert(
+    ["historical", "current"].includes(observation.binding),
+    "Explicit admission binding is required.",
+  );
+  const checks =
+    observation.check === undefined
+      ? await adapters.getCheckRuns(entry.repository, observation.revision)
+      : [observation.check];
   const matchingChecks = checks.filter(({ id }) => id === observation.checkRunId);
   assert(matchingChecks.length === 1, "Historical check identity is missing or ambiguous.");
   const [check] = matchingChecks;
-  assert(check?.head_sha === observation.revision &&
-    check.name === evidence.required_context &&
-    check.app?.id === evidence.integration_id && check.conclusion === "success" &&
-    check.html_url === observation.checkRunUrl &&
-    evidence.required_context === entry.required_check_context,
-  `${entry.repository} live required check does not bind the observed head/context/app/success.`);
-  assert(workflowRunIdFromCheck(entry.repository, check) === observation.workflowRunId,
-    `${entry.repository} required check URL does not bind its observed workflow run.`);
+  assert(
+    check?.head_sha === observation.revision &&
+      check.name === evidence.required_context &&
+      check.app?.id === evidence.integration_id &&
+      check.conclusion === "success" &&
+      check.html_url === observation.checkRunUrl &&
+      evidence.required_context === entry.required_check_context,
+    `${entry.repository} live required check does not bind the observed head/context/app/success.`,
+  );
+  assert(
+    workflowRunIdFromCheck(entry.repository, check) === observation.workflowRunId,
+    `${entry.repository} required check URL does not bind its observed workflow run.`,
+  );
   const run = await adapters.getWorkflowRun(entry.repository, observation.workflowRunId);
-  assert(run.id === observation.workflowRunId && run.workflow_id === evidence.workflow_id &&
-    run.head_sha === observation.revision && run.head_branch === evidence.default_branch &&
-    run.event === "push" && run.conclusion === "success" &&
-    run.path === evidence.caller_workflow_path &&
-    run.repository?.id === entry.repository_id && run.repository?.full_name === entry.repository,
-  `${entry.repository} live workflow run does not bind the observed default-branch push.`);
+  assert(
+    run.id === observation.workflowRunId &&
+      run.workflow_id === evidence.workflow_id &&
+      run.head_sha === observation.revision &&
+      run.head_branch === evidence.default_branch &&
+      run.event === "push" &&
+      run.conclusion === "success" &&
+      run.path === evidence.caller_workflow_path &&
+      run.repository?.id === entry.repository_id &&
+      run.repository?.full_name === entry.repository,
+    `${entry.repository} live workflow run does not bind the observed default-branch push.`,
+  );
   const [caller, projectionBytes] = await Promise.all([
-    adapters.readRepositoryFile(entry.repository, evidence.caller_workflow_path, observation.revision),
+    adapters.readRepositoryFile(
+      entry.repository,
+      evidence.caller_workflow_path,
+      observation.revision,
+    ),
     adapters.readRepositoryFile(
       entry.repository,
       "architecture/foundation/docs-protocol-managed-state.json",
@@ -660,83 +931,207 @@ export async function verifyAdmissionRevision(
   ]);
   const historical = observation.binding === "historical";
   const callerDigest = record.assets.caller_workflow.rendered_digest;
-  assert(evidence.caller_workflow_path === entry.caller_workflow_path &&
-    (!historical || evidence.caller_workflow_digest === callerDigest) &&
-    sha256(caller) === callerDigest,
-  `${entry.repository} observed caller bytes differ from its Cohort.`);
+  assert(
+    evidence.caller_workflow_path === entry.caller_workflow_path &&
+      (!historical || evidence.caller_workflow_digest === callerDigest) &&
+      sha256(caller) === callerDigest,
+    `${entry.repository} observed caller bytes differ from its Cohort.`,
+  );
   let projection;
-  try {projection = JSON.parse(projectionBytes.toString("utf8"));} catch {
+  try {
+    projection = JSON.parse(projectionBytes.toString("utf8"));
+  } catch {
     throw new Error(`${entry.repository} observed managed projection is not JSON.`);
   }
   const authority = projection.cohortAuthority ?? projection;
-  assert(projection.cohortId === record.cohort_id &&
-    authority.recordDigest === record.record_digest &&
-    authority.qualificationEventDigest === qualification.event_digest &&
-    (!historical || (entry.observed_cohort_record_digest === record.record_digest &&
-      entry.observed_cohort_event_digest === qualification.event_digest)),
-  `${entry.repository} observed managed projection does not prove the observed Cohort.`);
+  assert(
+    projection.cohortId === record.cohort_id &&
+      authority.recordDigest === record.record_digest &&
+      authority.qualificationEventDigest === qualification.event_digest &&
+      (!historical ||
+        (entry.observed_cohort_record_digest === record.record_digest &&
+          entry.observed_cohort_event_digest === qualification.event_digest)),
+    `${entry.repository} observed managed projection does not prove the observed Cohort.`,
+  );
   if (observation.targetProjection) {
     const expected = observation.targetProjection;
     for (const field of ["schemaVersion", "cohortId", "packages", "schemas", "runtime"]) {
-      assert(isDeepStrictEqual(projection[field], expected[field]), `${entry.repository} target projection ${field} differs.`);
+      assert(
+        isDeepStrictEqual(projection[field], expected[field]),
+        `${entry.repository} target projection ${field} differs.`,
+      );
     }
-    for (const field of ["channel", "recordDigest", "qualificationEventDigest", "eligibleAfter", "upgradeFrom", "rollbackTo"]) {
-      assert(isDeepStrictEqual(authority[field], expected[field]), `${entry.repository} target authority ${field} differs.`);
+    for (const field of [
+      "channel",
+      "recordDigest",
+      "qualificationEventDigest",
+      "eligibleAfter",
+      "upgradeFrom",
+      "rollbackTo",
+      ...(record.cohort_generation === 3 ? ["candidateDigest"] : []),
+    ]) {
+      assert(
+        isDeepStrictEqual(authority[field], expected[field]),
+        `${entry.repository} target authority ${field} differs.`,
+      );
     }
     for (const [field, value] of Object.entries(expected.assets)) {
-      assert(projection.assets?.[field] === value, `${entry.repository} target asset ${field} differs.`);
+      assert(
+        projection.assets?.[field] === value,
+        `${entry.repository} target asset ${field} differs.`,
+      );
     }
-    assert(isDeepStrictEqual(projection.repository, { provider: "github", id: String(entry.repository_id),
-      nameWithOwner: entry.repository }), `${entry.repository} target projection repository differs.`);
+    assert(
+      isDeepStrictEqual(projection.repository, {
+        provider: "github",
+        id: String(entry.repository_id),
+        nameWithOwner: entry.repository,
+      }),
+      `${entry.repository} target projection repository differs.`,
+    );
     const workflow = record.reusable_workflow;
-    assert(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0 && run.status === "completed" &&
-      Array.isArray(run.referenced_workflows) && run.referenced_workflows.length === 1 &&
-      run.referenced_workflows[0].sha === workflow.revision &&
-      run.referenced_workflows[0].path === `${workflow.repository}/${workflow.path}@${workflow.revision}`,
-    `${entry.repository} target run does not bind its exact runner and attempt.`);
+    assert(
+      Number.isSafeInteger(run.run_attempt) &&
+        run.run_attempt > 0 &&
+        run.status === "completed" &&
+        Array.isArray(run.referenced_workflows) &&
+        run.referenced_workflows.length === 1 &&
+        run.referenced_workflows[0].sha === workflow.revision &&
+        run.referenced_workflows[0].path ===
+          `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+      `${entry.repository} target run does not bind its exact runner and attempt.`,
+    );
     // Read the same immutable consumer contract that the bound trusted jobs
     // authorize and verify. Generation alone cannot distinguish schema 1 (no
     // qualification) from schema 2 (legacy CLI). Never default missing evidence
     // to the no-qualification branch or accept a caller-supplied selector.
-    const integration = JSON.parse((await adapters.readRepositoryFile(entry.repository,
-      "architecture/foundation/docs-consumer-integration.json", observation.revision)).toString("utf8"));
-    assert(record.cohort_generation === 2 ? integration?.schemaVersion === 3
-      : [1, 2].includes(integration?.schemaVersion),
-    `${entry.repository} target integration contract does not match its Cohort generation.`);
-    const qualificationStep = integration.schemaVersion === 3
-      ? "Run Cohort v2 qualification through the trusted base-owned runner"
-      : "Run only the exact installed agent-teams-docs qualify CLI";
+    const integration = JSON.parse(
+      (
+        await adapters.readRepositoryFile(
+          entry.repository,
+          "architecture/foundation/docs-consumer-integration.json",
+          observation.revision,
+        )
+      ).toString("utf8"),
+    );
+    assert(
+      record.cohort_generation === 3
+        ? integration?.schemaVersion === 4
+        : record.cohort_generation === 2
+          ? integration?.schemaVersion === 3
+          : record.cohort_generation === undefined && [1, 2].includes(integration?.schemaVersion),
+      `${entry.repository} target integration contract does not match its Cohort generation.`,
+    );
+    const legacyStep = "Run only the exact installed agent-teams-docs qualify CLI";
+    const oldV2Step = "Run Cohort v2 qualification through the trusted base-owned runner";
+    const currentStep = "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
+    let qualificationStep = legacyStep;
+    if ([3, 4].includes(integration.schemaVersion)) {
+      const source = await adapters.readGitFile(
+        workflow.repository,
+        workflow.path,
+        workflow.revision,
+      );
+      assert(
+        Buffer.isBuffer(source),
+        `${entry.repository} qualification workflow source is missing.`,
+      );
+      const sourceBlob = createHash("sha1")
+        .update(`blob ${source.length}\0`)
+        .update(source)
+        .digest("hex");
+      assert(
+        sourceBlob === workflow.blob_sha,
+        `${entry.repository} qualification workflow source blob differs.`,
+      );
+      const steps = YAML.parse(source.toString("utf8"))?.jobs?.["trusted-qualification"]?.steps;
+      assert(Array.isArray(steps), `${entry.repository} qualification workflow role is missing.`);
+      const selected = steps.filter(({ name }) => [oldV2Step, currentStep].includes(name));
+      assert(
+        selected.length === 1 &&
+          (integration.schemaVersion !== 4 || selected[0].name === currentStep),
+        `${entry.repository} qualification workflow does not implement its exact generation.`,
+      );
+      const expectedIf =
+        selected[0].name === oldV2Step
+          ? "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'"
+          : "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' || needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'";
+      assert(
+        selected[0].if?.replace(/\s+/gu, " ").trim() === expectedIf,
+        `${entry.repository} qualification workflow dispatch differs from its exact role.`,
+      );
+      qualificationStep = selected[0].name;
+    }
     const jobs = await adapters.getWorkflowJobs(entry.repository, run.id, run.run_attempt);
-    const roles = ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"];
-    assert(jobs.length === roles.length && new Set(jobs.map((job) => job.id)).size === jobs.length &&
-      roles.every((role) => jobs.filter((job) => job.name.split(" / ").at(-1) === role).length === 1),
-    `${entry.repository} target qualification job evidence is incomplete/ambiguous.`);
+    const roles = [
+      "trusted-authorize",
+      "trusted-structural",
+      "trusted-qualification",
+      "docs-protocol-check",
+    ];
+    assert(
+      jobs.length === roles.length &&
+        new Set(jobs.map((job) => job.id)).size === jobs.length &&
+        roles.every(
+          (role) => jobs.filter((job) => job.name.split(" / ").at(-1) === role).length === 1,
+        ),
+      `${entry.repository} target qualification job evidence is incomplete/ambiguous.`,
+    );
     for (const job of jobs) {
-      assert(job.run_id === run.id && job.run_attempt === run.run_attempt && job.head_sha === observation.revision &&
-        job.status === "completed" && job.conclusion === "success" &&
-        job.html_url === `https://github.com/${entry.repository}/actions/runs/${run.id}/job/${job.id}`,
-      `${entry.repository} target trusted/semantic job is not exact current success.`);
+      assert(
+        job.run_id === run.id &&
+          job.run_attempt === run.run_attempt &&
+          job.head_sha === observation.revision &&
+          job.status === "completed" &&
+          job.conclusion === "success" &&
+          job.html_url ===
+            `https://github.com/${entry.repository}/actions/runs/${run.id}/job/${job.id}`,
+        `${entry.repository} target trusted/semantic job is not exact current success.`,
+      );
       const role = job.name.split(" / ").at(-1);
-      const required = role === "docs-protocol-check" ? ["Run repository semantic documentation gate"]
-        : role === "trusted-qualification" ? ["Confirm current controller authority stayed stable through qualification"] : [];
+      const required =
+        role === "docs-protocol-check"
+          ? ["Run repository semantic documentation gate"]
+          : role === "trusted-qualification"
+            ? ["Confirm current controller authority stayed stable through qualification"]
+            : [];
       const exactStep = (name, conclusion) => {
         const matching = job.steps.filter((step) => step.name === name);
-        return matching.length === 1 && matching[0].status === "completed" && matching[0].conclusion === conclusion;
+        return (
+          matching.length === 1 &&
+          matching[0].status === "completed" &&
+          matching[0].conclusion === conclusion
+        );
       };
-      const alternative = qualificationStep === "Run only the exact installed agent-teams-docs qualify CLI"
-        ? "Run Cohort v2 qualification through the trusted base-owned runner"
-        : "Run only the exact installed agent-teams-docs qualify CLI";
-      assert((role !== "trusted-qualification" ||
-        !job.steps.some((step) => step.name === alternative) || exactStep(alternative, "skipped")) &&
-        required.every((name) => exactStep(name, "success")) &&
-        (role !== "trusted-qualification" || exactStep(qualificationStep,
-          integration.schemaVersion === 1 ? "skipped" : "success")),
-      `${entry.repository} target qualification/semantics did not actually execute successfully.`);
-      if (role === "docs-protocol-check") {assert(job.id === check.id && job.html_url === check.html_url,
-        `${entry.repository} target semantic job differs from the required check.`);}
+      const alternatives = [legacyStep, oldV2Step, currentStep].filter(
+        (name) => name !== qualificationStep,
+      );
+      assert(
+        (role !== "trusted-qualification" ||
+          alternatives.every(
+            (alternative) =>
+              !job.steps.some((step) => step.name === alternative) ||
+              exactStep(alternative, "skipped"),
+          )) &&
+          required.every((name) => exactStep(name, "success")) &&
+          (role !== "trusted-qualification" ||
+            exactStep(qualificationStep, integration.schemaVersion === 1 ? "skipped" : "success")),
+        `${entry.repository} target qualification/semantics did not actually execute successfully.`,
+      );
+      if (role === "docs-protocol-check") {
+        assert(
+          job.id === check.id && job.html_url === check.html_url,
+          `${entry.repository} target semantic job differs from the required check.`,
+        );
+      }
     }
   }
-  return { repository: entry.repository, revision: observation.revision, check: structuredClone(check), run: structuredClone(run) };
+  return {
+    repository: entry.repository,
+    revision: observation.revision,
+    check: structuredClone(check),
+    run: structuredClone(run),
+  };
 }
 
 export async function verifyDocsAdmissionEvidence(policy, registry, schema, overrides = {}) {
@@ -749,21 +1144,28 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     },
     getDefaultBranch: async (repository, defaultBranch) => {
       const { stdout } = await command("gh", [
-        "api", `repos/${repository}/branches/${defaultBranch}`,
+        "api",
+        `repos/${repository}/branches/${defaultBranch}`,
       ]);
       return JSON.parse(stdout);
     },
     getDefaultBranchHead: async (repository, branch) => {
       const { stdout } = await command("gh", [
-        "api", `repos/${repository}/branches/${branch}`, "--jq", ".commit.sha",
+        "api",
+        `repos/${repository}/branches/${branch}`,
+        "--jq",
+        ".commit.sha",
       ]);
       return stdout.trim();
     },
     isCommitAncestor: defaultIsCommitAncestor,
     getCheckRuns: async (repository, revision) => {
       const { stdout } = await command("gh", [
-        "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100&filter=all`,
-        "--jq", ".check_runs[]",
+        "api",
+        "--paginate",
+        `repos/${repository}/commits/${revision}/check-runs?per_page=100&filter=all`,
+        "--jq",
+        ".check_runs[]",
       ]);
       return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
     },
@@ -773,30 +1175,62 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     },
     readRepositoryFile: async (repository, filePath, revision) => {
       const { stdout } = await command("gh", [
-        "api", `repos/${repository}/contents/${filePath}?ref=${revision}`, "--jq", ".content",
+        "api",
+        `repos/${repository}/contents/${filePath}?ref=${revision}`,
+        "--jq",
+        ".content",
       ]);
       return Buffer.from(stdout.replace(/\s/gu, ""), "base64");
     },
     getDecisionComment: async (repository, commentId) => {
-      const { stdout } = await command("gh", ["api", `repos/${repository}/issues/comments/${commentId}`]);
+      const { stdout } = await command("gh", [
+        "api",
+        `repos/${repository}/issues/comments/${commentId}`,
+      ]);
       return JSON.parse(stdout);
     },
     getCollaboratorPermission: async (repository, login) => {
-      const { stdout } = await command("gh", ["api", `repos/${repository}/collaborators/${login}/permission`]);
+      const { stdout } = await command("gh", [
+        "api",
+        `repos/${repository}/collaborators/${login}/permission`,
+      ]);
       return JSON.parse(stdout);
     },
     getWorkflowJobs: async (repository, runId, attempt) => {
-      const { stdout } = await command("gh", ["api", "--paginate", "--slurp",
-        `repos/${repository}/actions/runs/${runId}/attempts/${attempt}/jobs?per_page=100`]);
+      const { stdout } = await command("gh", [
+        "api",
+        "--paginate",
+        "--slurp",
+        `repos/${repository}/actions/runs/${runId}/attempts/${attempt}/jobs?per_page=100`,
+      ]);
       const pages = JSON.parse(stdout);
       assert(Array.isArray(pages) && pages.length > 0 && pages.length <= 32, "Invalid job pages.");
       const jobs = pages.flatMap((page) => page.jobs);
-      assert(pages.every((page) => Array.isArray(page.jobs) && page.total_count === jobs.length) &&
-        new Set(jobs.map((job) => job.id)).size === jobs.length, "Incomplete or duplicate workflow jobs.");
-      return jobs.map(({ id, run_id, run_attempt, head_sha, name, html_url, status, conclusion, steps }) =>
-        ({ id, run_id, run_attempt, head_sha, name, html_url, status, conclusion,
-          steps: steps.map(({ name: stepName, number, status: stepStatus, conclusion: stepConclusion }) =>
-            ({ name: stepName, number, status: stepStatus, conclusion: stepConclusion })) }));
+      assert(
+        pages.every((page) => Array.isArray(page.jobs) && page.total_count === jobs.length) &&
+          new Set(jobs.map((job) => job.id)).size === jobs.length,
+        "Incomplete or duplicate workflow jobs.",
+      );
+      return jobs.map(
+        ({ id, run_id, run_attempt, head_sha, name, html_url, status, conclusion, steps }) => ({
+          id,
+          run_id,
+          run_attempt,
+          head_sha,
+          name,
+          html_url,
+          status,
+          conclusion,
+          steps: steps.map(
+            ({ name: stepName, number, status: stepStatus, conclusion: stepConclusion }) => ({
+              name: stepName,
+              number,
+              status: stepStatus,
+              conclusion: stepConclusion,
+            }),
+          ),
+        }),
+      );
     },
     getJobLog: async (repository, jobId) => {
       const { stdout } = await command("gh", [
@@ -812,34 +1246,63 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
   delete adapters.asOf;
   delete adapters.requireCredential;
 
-  const candidates = policy.repositories.filter((entry) =>
-    entry.repository_lifecycle === "active" && entry.docs_role === "consumer" &&
-    ["bound", "rollout_pending"].includes(entry.cohort_binding_status));
+  const candidates = policy.repositories.filter(
+    (entry) =>
+      entry.repository_lifecycle === "active" &&
+      entry.docs_role === "consumer" &&
+      ["bound", "rollout_pending"].includes(entry.cohort_binding_status),
+  );
   if (overrides.requireCredential === true && candidates.length > 0) {
-    assert(typeof process.env.GH_TOKEN === "string" && process.env.GH_TOKEN.length > 0,
-      "Live admission verification requires a job-scoped GH_TOKEN.");
+    assert(
+      typeof process.env.GH_TOKEN === "string" && process.env.GH_TOKEN.length > 0,
+      "Live admission verification requires a job-scoped GH_TOKEN.",
+    );
   }
   // An installed Platform incident authority requires a complete remaining-fleet
   // audit, even when the PR would otherwise qualify for changed-row admission.
-  const currentScope = overrides.fullFleetCurrent === true || overrides.platformRecovery
-    ? null : currentAdmissionScope(policy, overrides.basePolicy, overrides.recovery?.execution?.changed_files);
-  const report = { historical_verified: [], current_verified: [], current_not_evaluated: [], recovery_pending: [] };
+  const currentScope =
+    overrides.fullFleetCurrent === true || overrides.platformRecovery
+      ? null
+      : currentAdmissionScope(
+          policy,
+          overrides.basePolicy,
+          overrides.recovery?.execution?.changed_files,
+        );
+  const report = {
+    historical_verified: [],
+    current_verified: [],
+    current_not_evaluated: [],
+    recovery_pending: [],
+  };
   const platformAdapters = {
     ...adapters,
     evaluateRemainingFleet: async (scope) => {
-      assert(scope.platform_repository_id === 1319378484 &&
-        Number.isSafeInteger(scope.changed_repository_id) &&
-        scope.changed_repository_id !== 1319378484,
-      "Platform recovery requested an invalid remaining-fleet scope.");
-      const remaining = { ...policy, repositories: policy.repositories.filter((row) =>
-        row.repository_id !== 1319378484) };
-      const audit = await verifyDocsAdmissionEvidence(remaining, registry, schema,
-        { ...overrides, fullFleetCurrent: true, platformRecovery: undefined });
-      const expected = remaining.repositories.filter((row) => row.repository_lifecycle === "active" &&
-        row.docs_role === "consumer" && ["bound", "rollout_pending"].includes(row.cohort_binding_status));
-      assert(audit.historical_verified.length === expected.length &&
-        audit.current_verified.length + audit.recovery_pending.length === expected.length,
-      "Remaining fleet audit is incomplete.");
+      assert(
+        scope.platform_repository_id === 1319378484 &&
+          Number.isSafeInteger(scope.changed_repository_id) &&
+          scope.changed_repository_id !== 1319378484,
+        "Platform recovery requested an invalid remaining-fleet scope.",
+      );
+      const remaining = {
+        ...policy,
+        repositories: policy.repositories.filter((row) => row.repository_id !== 1319378484),
+      };
+      const audit = await verifyDocsAdmissionEvidence(remaining, registry, schema, {
+        ...overrides,
+        fullFleetCurrent: true,
+        platformRecovery: undefined,
+      });
+      const expected = remaining.repositories.filter(
+        (row) =>
+          row.repository_lifecycle === "active" &&
+          row.docs_role === "consumer" &&
+          ["bound", "rollout_pending"].includes(row.cohort_binding_status),
+      );
+      assert(
+        audit.historical_verified.length === expected.length &&
+          audit.current_verified.length + audit.recovery_pending.length === expected.length,
+        "Remaining fleet audit is incomplete.",
+      );
     },
   };
   const verifiedHeads = [];
@@ -847,176 +1310,344 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
   const currentChecks = [];
   for (const entry of candidates) {
     const evidence = entry.observed_default_branch_evidence;
-    const prior = overrides.basePolicy?.repositories.find((row) => row.repository_id === entry.repository_id);
-    const firstAdmission = prior?.admission_status === "admission_candidate" &&
+    const prior = overrides.basePolicy?.repositories.find(
+      (row) => row.repository_id === entry.repository_id,
+    );
+    const firstAdmission =
+      prior?.admission_status === "admission_candidate" &&
       prior.cohort_binding_status === "bootstrap_pending" &&
-      ["observed_cohort_id", "observed_cohort_record_digest", "observed_cohort_event_digest",
-        "exact_package_version", "exact_foundation_version", "reusable_workflow_revision",
-        "observed_default_branch_evidence"].every((field) => prior[field] === null) &&
-      (prior.observed_cohort_generation === null || prior.observed_cohort_generation === undefined) &&
+      [
+        "observed_cohort_id",
+        "observed_cohort_record_digest",
+        "observed_cohort_event_digest",
+        "exact_package_version",
+        "exact_foundation_version",
+        "reusable_workflow_revision",
+        "observed_default_branch_evidence",
+      ].every((field) => prior[field] === null) &&
+      (prior.observed_cohort_generation === null ||
+        prior.observed_cohort_generation === undefined) &&
       prior.exact_cohort_v2_packages === undefined &&
-      prior.qualification?.status === "not_qualified" && prior.qualification.observed_revision === null &&
-      Array.isArray(prior.qualification.evidence_paths) && prior.qualification.evidence_paths.length === 0;
-    const advancing = prior && !firstAdmission && (prior.observed_cohort_id !== entry.observed_cohort_id ||
-      !isDeepStrictEqual(prior.observed_default_branch_evidence, evidence));
-    assert(entry.admission_status === "admitted" && evidence !== null,
-      `${entry.repository} lacks live-verifiable admitted default-branch evidence.`);
+      prior.qualification?.status === "not_qualified" &&
+      prior.qualification.observed_revision === null &&
+      Array.isArray(prior.qualification.evidence_paths) &&
+      prior.qualification.evidence_paths.length === 0;
+    const advancing =
+      prior &&
+      !firstAdmission &&
+      (prior.observed_cohort_id !== entry.observed_cohort_id ||
+        !isDeepStrictEqual(prior.observed_default_branch_evidence, evidence));
+    assert(
+      entry.admission_status === "admitted" && evidence !== null,
+      `${entry.repository} lacks live-verifiable admitted default-branch evidence.`,
+    );
     const record = lifecycle.cohortById.get(entry.observed_cohort_id);
     const qualification = lifecycle.qualificationEventById.get(entry.observed_cohort_id);
-    assert(record !== undefined && qualification !== undefined,
-      `${entry.repository} observed Cohort is not qualified.`);
+    assert(
+      record !== undefined && qualification !== undefined,
+      `${entry.repository} observed Cohort is not qualified.`,
+    );
     const repository = await adapters.getRepository(entry.repository);
     if (overrides.requireCredential === true) {
-      assert(typeof repository.private === "boolean",
-        `${entry.repository} live visibility is missing from admission evidence.`);
+      assert(
+        typeof repository.private === "boolean",
+        `${entry.repository} live visibility is missing from admission evidence.`,
+      );
       if (repository.private) {
-        assert(typeof process.env.DOCS_GOVERNANCE_READ_TOKEN === "string" &&
-          process.env.DOCS_GOVERNANCE_READ_TOKEN.length > 0 &&
-          process.env.GH_TOKEN === process.env.DOCS_GOVERNANCE_READ_TOKEN,
-        `${entry.repository} private live admission requires DOCS_GOVERNANCE_READ_TOKEN.`);
+        assert(
+          typeof process.env.DOCS_GOVERNANCE_READ_TOKEN === "string" &&
+            process.env.DOCS_GOVERNANCE_READ_TOKEN.length > 0 &&
+            process.env.GH_TOKEN === process.env.DOCS_GOVERNANCE_READ_TOKEN,
+          `${entry.repository} private live admission requires DOCS_GOVERNANCE_READ_TOKEN.`,
+        );
       }
     }
-    assert(repository.id === entry.repository_id && repository.full_name === entry.repository &&
-      repository.default_branch === evidence.default_branch,
-    `${entry.repository} live identity/default branch differs from admission evidence.`);
+    assert(
+      repository.id === entry.repository_id &&
+        repository.full_name === entry.repository &&
+        repository.default_branch === evidence.default_branch,
+      `${entry.repository} live identity/default branch differs from admission evidence.`,
+    );
     if (advancing || firstAdmission) {
-      assert(prior.desired_cohort_id === entry.observed_cohort_id && entry.desired_cohort_id === entry.observed_cohort_id,
-        `${entry.repository} observation does not finalize the previously selected target.`);
+      assert(
+        prior.desired_cohort_id === entry.observed_cohort_id &&
+          entry.desired_cohort_id === entry.observed_cohort_id,
+        `${entry.repository} observation does not finalize the previously selected target.`,
+      );
     }
     if (advancing) {
       const old = prior.observed_default_branch_evidence;
-      assert(old && old.default_branch === evidence.default_branch &&
-        await adapters.isCommitAncestor(entry.repository, old.revision, evidence.revision),
-      `${entry.repository} prior historical observation is not ancestral to target success.`);
-      verifiedExecutions.push(await verifyAdmissionRevision(prior, old, lifecycle.cohortById.get(prior.observed_cohort_id),
-        lifecycle.qualificationEventById.get(prior.observed_cohort_id), {
-          binding: "historical", revision: old.revision, checkRunId: old.check_run_id,
-          checkRunUrl: old.check_run_url, workflowRunId: old.workflow_run_id,
-        }, adapters));
+      assert(
+        old &&
+          old.default_branch === evidence.default_branch &&
+          (await adapters.isCommitAncestor(entry.repository, old.revision, evidence.revision)),
+        `${entry.repository} prior historical observation is not ancestral to target success.`,
+      );
+      verifiedExecutions.push(
+        await verifyAdmissionRevision(
+          prior,
+          old,
+          lifecycle.cohortById.get(prior.observed_cohort_id),
+          lifecycle.qualificationEventById.get(prior.observed_cohort_id),
+          {
+            binding: "historical",
+            revision: old.revision,
+            checkRunId: old.check_run_id,
+            checkRunUrl: old.check_run_url,
+            workflowRunId: old.workflow_run_id,
+          },
+          adapters,
+        ),
+      );
     }
-    verifiedExecutions.push(await verifyAdmissionRevision(entry, evidence, record, qualification, {
-      binding: "historical",
-      ...((advancing || firstAdmission) ? { targetProjection: qualifiedCohortProjection(registry, record.cohort_id, { asOf: overrides.asOf }) } : {}),
-      revision: evidence.revision,
-      checkRunId: evidence.check_run_id,
-      checkRunUrl: evidence.check_run_url,
-      workflowRunId: evidence.workflow_run_id,
-    }, adapters));
+    verifiedExecutions.push(
+      await verifyAdmissionRevision(
+        entry,
+        evidence,
+        record,
+        qualification,
+        {
+          binding: "historical",
+          ...(advancing || firstAdmission
+            ? {
+                targetProjection: qualifiedCohortProjection(registry, record.cohort_id, {
+                  asOf: overrides.asOf,
+                }),
+              }
+            : {}),
+          revision: evidence.revision,
+          checkRunId: evidence.check_run_id,
+          checkRunUrl: evidence.check_run_url,
+          workflowRunId: evidence.workflow_run_id,
+        },
+        adapters,
+      ),
+    );
     report.historical_verified.push(entry.repository_id);
     let rowResult;
     let stableHead = false;
     for (let attempt = 1; attempt <= 2 && !stableHead; attempt += 1) {
       const head = await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch);
-      assert(await adapters.isCommitAncestor(entry.repository, evidence.revision, head),
-        `${entry.repository} admission revision is not an ancestor of the current default-branch head.`);
-      assert(!(advancing || firstAdmission) || head === evidence.revision, `${entry.repository} observed advancement is not the current target default head.`);
-      rowResult = { repository_id: entry.repository_id, revision: head, cohort_id: entry.observed_cohort_id };
+      assert(
+        await adapters.isCommitAncestor(entry.repository, evidence.revision, head),
+        `${entry.repository} admission revision is not an ancestor of the current default-branch head.`,
+      );
+      assert(
+        !(advancing || firstAdmission) || head === evidence.revision,
+        `${entry.repository} observed advancement is not the current target default head.`,
+      );
+      rowResult = {
+        repository_id: entry.repository_id,
+        revision: head,
+        cohort_id: entry.observed_cohort_id,
+      };
       if (currentScope && !currentScope.has(entry.repository_id)) {
         rowResult.status = "current_not_evaluated";
-        stableHead = await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch) === head;
+        stableHead =
+          (await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch)) === head;
         continue;
       }
       {
-        const matches = decisiveCheckRuns((await adapters.getCheckRuns(entry.repository, head)).filter((check) =>
-          check.head_sha === head && check.name === evidence.required_context &&
-          check.app?.id === evidence.integration_id));
+        const matches = decisiveCheckRuns(
+          (await adapters.getCheckRuns(entry.repository, head)).filter(
+            (check) =>
+              check.head_sha === head &&
+              check.name === evidence.required_context &&
+              check.app?.id === evidence.integration_id,
+          ),
+        );
         if (head === evidence.revision) {
           const admitted = matches.find(({ id }) => id === evidence.check_run_id);
-          assert(admitted?.html_url === evidence.check_run_url && admitted.conclusion === "success",
-            `${entry.repository} current default-branch head is missing its exact successful admitted check.`);
-          assert(matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
-            `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
-          currentChecks.push({ repository: entry.repository, revision: head,
-            checks: structuredClone(matches) });
-        } else if (matches.at(-1)?.conclusion === "failure" &&
-          entry.repository_id === 1319378484 && overrides.platformRecovery) {
+          assert(
+            admitted?.html_url === evidence.check_run_url && admitted.conclusion === "success",
+            `${entry.repository} current default-branch head is missing its exact successful admitted check.`,
+          );
+          assert(
+            matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
+            `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`,
+          );
+          currentChecks.push({
+            repository: entry.repository,
+            revision: head,
+            checks: structuredClone(matches),
+          });
+        } else if (
+          matches.at(-1)?.conclusion === "failure" &&
+          entry.repository_id === 1319378484 &&
+          overrides.platformRecovery
+        ) {
           // Route the latest decisive failure; the Platform verifier binds its
           // exact check and run to the base-owned incident proof.
-          rowResult = requirePlatformPending(await overrides.platformRecovery.verify(entry, head, platformAdapters), entry, head);
-        } else if (matches.length === 1 && matches[0].conclusion === "failure" && overrides.recovery) {
-          rowResult = await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, head,
-            overrides.recovery.execution, adapters);
-          assert(rowResult?.status === "recovery_pending", `${entry.repository} recovery returned a nonpending result.`);
+          rowResult = requirePlatformPending(
+            await overrides.platformRecovery.verify(entry, head, platformAdapters),
+            entry,
+            head,
+          );
+        } else if (
+          matches.length === 1 &&
+          matches[0].conclusion === "failure" &&
+          overrides.recovery
+        ) {
+          rowResult = await verifyRecoveryIncident(
+            await overrides.recovery.getCapability(),
+            entry,
+            head,
+            overrides.recovery.execution,
+            adapters,
+          );
+          assert(
+            rowResult?.status === "recovery_pending",
+            `${entry.repository} recovery returned a nonpending result.`,
+          );
         } else {
-          assert(matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
-            `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`);
+          assert(
+            matches.length > 0 && matches.every(({ conclusion }) => conclusion === "success"),
+            `${entry.repository} current default-branch head requires every decisive admitted check to succeed.`,
+          );
           const check = matches.at(-1);
-          currentChecks.push({ repository: entry.repository, revision: head,
-            checks: structuredClone(matches) });
+          currentChecks.push({
+            repository: entry.repository,
+            revision: head,
+            checks: structuredClone(matches),
+          });
           // Select from the current committed projection, then validate its exact
           // binding. Historical policy fields are never temporarily rewritten.
-          const bytes = await adapters.readRepositoryFile(entry.repository,
-            "architecture/foundation/docs-protocol-managed-state.json", head);
+          const bytes = await adapters.readRepositoryFile(
+            entry.repository,
+            "architecture/foundation/docs-protocol-managed-state.json",
+            head,
+          );
           const currentId = JSON.parse(bytes.toString("utf8")).cohortId;
-          assert([entry.observed_cohort_id, entry.desired_cohort_id].includes(currentId),
-            `${entry.repository} current projection selects an unrelated Cohort.`);
+          assert(
+            [entry.observed_cohort_id, entry.desired_cohort_id].includes(currentId),
+            `${entry.repository} current projection selects an unrelated Cohort.`,
+          );
           const currentRecord = lifecycle.cohortById.get(currentId);
           const currentQualification = lifecycle.qualificationEventById.get(currentId);
-          assert(currentRecord !== undefined && currentQualification !== undefined,
-            `${entry.repository} current Cohort is not qualified.`);
-          const generation = currentId === entry.desired_cohort_id
-            ? entry.desired_cohort_generation : entry.observed_cohort_generation;
-          assert(currentRecord.cohort_generation === 2 ? generation === 2 : generation === undefined,
-            `${entry.repository} current policy generation differs from its Cohort.`);
-          verifiedExecutions.push(await verifyAdmissionRevision(entry, evidence, currentRecord, currentQualification, {
-            binding: "current",
-            ...(currentId !== entry.observed_cohort_id ? {
-              targetProjection: qualifiedCohortProjection(registry, currentId, { asOf: overrides.asOf }),
-            } : {}),
-            revision: head,
-            checkRunId: check.id,
-            checkRunUrl: check.html_url,
-            workflowRunId: workflowRunIdFromCheck(entry.repository, check),
-            check,
-          }, adapters));
+          assert(
+            currentRecord !== undefined && currentQualification !== undefined,
+            `${entry.repository} current Cohort is not qualified.`,
+          );
+          const generation =
+            currentId === entry.desired_cohort_id
+              ? entry.desired_cohort_generation
+              : entry.observed_cohort_generation;
+          assert(
+            generation === currentRecord.cohort_generation,
+            `${entry.repository} current policy generation differs from its Cohort.`,
+          );
+          verifiedExecutions.push(
+            await verifyAdmissionRevision(
+              entry,
+              evidence,
+              currentRecord,
+              currentQualification,
+              {
+                binding: "current",
+                ...(currentId !== entry.observed_cohort_id ||
+                currentRecord.cohort_generation === 3 ||
+                (entry.cohort_binding_status === "rollout_pending" &&
+                  entry.desired_cohort_generation !== entry.observed_cohort_generation)
+                  ? {
+                      targetProjection: qualifiedCohortProjection(registry, currentId, {
+                        asOf: overrides.asOf,
+                      }),
+                    }
+                  : {}),
+                revision: head,
+                checkRunId: check.id,
+                checkRunUrl: check.html_url,
+                workflowRunId: workflowRunIdFromCheck(entry.repository, check),
+                check,
+              },
+              adapters,
+            ),
+          );
           rowResult.cohort_id = currentId;
         }
       }
-      stableHead = await adapters.getDefaultBranchHead(
-        entry.repository,
-        evidence.default_branch,
-      ) === head;
+      stableHead =
+        (await adapters.getDefaultBranchHead(entry.repository, evidence.default_branch)) === head;
     }
-    verifiedHeads.push({ repository: entry.repository, branch: evidence.default_branch,
-      head: rowResult.source_head ?? rowResult.revision });
-    assert(rowResult?.status === undefined || rowResult.status === "recovery_pending" ||
-      (rowResult.status === "current_not_evaluated" && currentScope && !currentScope.has(entry.repository_id)),
-    `${entry.repository} returned an unrecognized current classification.`);
-    report[rowResult.status === "recovery_pending" ? "recovery_pending" :
-      rowResult.status === "current_not_evaluated" ? "current_not_evaluated" : "current_verified"].push(rowResult);
-    assert(stableHead,
-      `${entry.repository} default-branch head changed repeatedly during live admission verification.`);
+    verifiedHeads.push({
+      repository: entry.repository,
+      branch: evidence.default_branch,
+      head: rowResult.source_head ?? rowResult.revision,
+    });
+    assert(
+      rowResult?.status === undefined ||
+        rowResult.status === "recovery_pending" ||
+        (rowResult.status === "current_not_evaluated" &&
+          currentScope &&
+          !currentScope.has(entry.repository_id)),
+      `${entry.repository} returned an unrecognized current classification.`,
+    );
+    report[
+      rowResult.status === "recovery_pending"
+        ? "recovery_pending"
+        : rowResult.status === "current_not_evaluated"
+          ? "current_not_evaluated"
+          : "current_verified"
+    ].push(rowResult);
+    assert(
+      stableHead,
+      `${entry.repository} default-branch head changed repeatedly during live admission verification.`,
+    );
   }
   for (const snapshot of verifiedExecutions) {
-    assert(isDeepStrictEqual(await adapters.getWorkflowRun(snapshot.repository, snapshot.run.id), snapshot.run),
-      `${snapshot.repository} workflow execution changed during the fleet admission audit.`);
+    assert(
+      isDeepStrictEqual(
+        await adapters.getWorkflowRun(snapshot.repository, snapshot.run.id),
+        snapshot.run,
+      ),
+      `${snapshot.repository} workflow execution changed during the fleet admission audit.`,
+    );
     const checks = await adapters.getCheckRuns(snapshot.repository, snapshot.revision);
     const exact = checks.filter((check) => check.id === snapshot.check.id);
-    assert(exact.length === 1 && isDeepStrictEqual(exact[0], snapshot.check),
-      `${snapshot.repository} admitted check changed during the fleet admission audit.`);
+    assert(
+      exact.length === 1 && isDeepStrictEqual(exact[0], snapshot.check),
+      `${snapshot.repository} admitted check changed during the fleet admission audit.`,
+    );
   }
   // Historical identity lookup above deliberately tolerates later executions.
   // Current success instead binds the complete decisive context/App set.
   for (const snapshot of currentChecks) {
-    const matches = decisiveCheckRuns((await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter((check) =>
-      check.head_sha === snapshot.revision && check.name === snapshot.checks[0].name &&
-      check.app?.id === snapshot.checks[0].app.id));
-    assert(isDeepStrictEqual(matches, snapshot.checks),
-      `${snapshot.repository} complete decisive admitted check set changed during the fleet admission audit.`);
+    const matches = decisiveCheckRuns(
+      (await adapters.getCheckRuns(snapshot.repository, snapshot.revision)).filter(
+        (check) =>
+          check.head_sha === snapshot.revision &&
+          check.name === snapshot.checks[0].name &&
+          check.app?.id === snapshot.checks[0].app.id,
+      ),
+    );
+    assert(
+      isDeepStrictEqual(matches, snapshot.checks),
+      `${snapshot.repository} complete decisive admitted check set changed during the fleet admission audit.`,
+    );
   }
   for (const pending of report.recovery_pending) {
     const entry = candidates.find((row) => row.repository_id === pending.repository_id);
     if (pending.repository_id === 1319378484 && overrides.platformRecovery) {
-      requirePlatformPending(await overrides.platformRecovery.verify(entry, pending.source_head, platformAdapters),
-        entry, pending.source_head);
+      requirePlatformPending(
+        await overrides.platformRecovery.verify(entry, pending.source_head, platformAdapters),
+        entry,
+        pending.source_head,
+      );
     } else {
-      await verifyRecoveryIncident(await overrides.recovery.getCapability(), entry, pending.source_head,
-        overrides.recovery.execution, adapters);
+      await verifyRecoveryIncident(
+        await overrides.recovery.getCapability(),
+        entry,
+        pending.source_head,
+        overrides.recovery.execution,
+        adapters,
+      );
     }
   }
   for (const snapshot of verifiedHeads) {
-    assert(await adapters.getDefaultBranchHead(snapshot.repository, snapshot.branch) === snapshot.head,
-      `${snapshot.repository} default-branch head changed during the fleet admission audit.`);
+    assert(
+      (await adapters.getDefaultBranchHead(snapshot.repository, snapshot.branch)) === snapshot.head,
+      `${snapshot.repository} default-branch head changed during the fleet admission audit.`,
+    );
   }
   return report;
 }
@@ -1025,8 +1656,10 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
   validateDocsQualifiedCohorts(registry, schema, { asOf: overrides.asOf });
   const record = registry.cohorts.find(({ cohort_id: id }) => id === cohortId);
   assert(record !== undefined, "Requested Qualified Docs Cohort does not exist.");
-  assert(record.cohort_generation !== 2 || record.rollback_to.length > 0,
-    `${record.cohort_id} V2 Cohort must declare at least one explicit rollback target.`);
+  assert(
+    record.cohort_generation === undefined || record.rollback_to.length > 0,
+    `${record.cohort_id} V2/V3 Cohort must declare at least one explicit rollback target.`,
+  );
   const adapters = {
     npmView: (specifier) => npmJson(["view", specifier]),
     npmTimes: (name) => npmJson(["view", name, "time"]),
@@ -1044,24 +1677,33 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
     },
     readRuntimeClosureEvidence: async (path) => {
       const revision = process.env.DOCS_COHORT_EVIDENCE_REF;
-      if (revision === undefined) {return readFile(path, "utf8");}
+      if (revision === undefined) {
+        return readFile(path, "utf8");
+      }
       const { stdout } = await command("gh", [
-        "api", `repos/agent-teams-ai/.github/contents/${path}?ref=${revision}`,
-        "--jq", ".content",
+        "api",
+        `repos/agent-teams-ai/.github/contents/${path}?ref=${revision}`,
+        "--jq",
+        ".content",
       ]);
       return Buffer.from(stdout.replace(/\s/gu, ""), "base64").toString("utf8");
     },
     readPublishedPackage: defaultReadPublishedPackage,
     getWorkflowBlob: async (entry) => {
       const { stdout } = await command("gh", [
-        "api", `repos/agent-teams-ai/.github/contents/${entry.path}?ref=${entry.revision}`, "--jq", ".sha",
+        "api",
+        `repos/agent-teams-ai/.github/contents/${entry.path}?ref=${entry.revision}`,
+        "--jq",
+        ".sha",
       ]);
       return stdout.trim();
     },
     getWorkflowSource: async (entry) => {
       const { stdout } = await command("gh", [
-        "api", `repos/agent-teams-ai/.github/contents/${entry.path}?ref=${entry.revision}`,
-        "--jq", ".content",
+        "api",
+        `repos/agent-teams-ai/.github/contents/${entry.path}?ref=${entry.revision}`,
+        "--jq",
+        ".content",
       ]);
       return Buffer.from(stdout.replace(/\s/gu, ""), "base64");
     },
@@ -1071,33 +1713,44 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
     },
     getDefaultBranch: async (repository, defaultBranch) => {
       const { stdout } = await command("gh", [
-        "api", `repos/${repository}/branches/${defaultBranch}`,
+        "api",
+        `repos/${repository}/branches/${defaultBranch}`,
       ]);
       return JSON.parse(stdout);
     },
     isDefaultBranchAncestor: defaultIsDefaultBranchAncestor,
     getCheckRuns: async (repository, revision) => {
       const { stdout } = await command("gh", [
-        "api", "--paginate", `repos/${repository}/commits/${revision}/check-runs?per_page=100&filter=all`,
-        "--jq", ".check_runs[]",
+        "api",
+        "--paginate",
+        `repos/${repository}/commits/${revision}/check-runs?per_page=100&filter=all`,
+        "--jq",
+        ".check_runs[]",
       ]);
       return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
     },
     getWorkflowRun: async (repository, runId, attempt) => {
-      assert(Number.isSafeInteger(attempt) && attempt > 0,
-        "Exact workflow run attempt is required.");
+      assert(
+        Number.isSafeInteger(attempt) && attempt > 0,
+        "Exact workflow run attempt is required.",
+      );
       const { stdout } = await command("gh", [
-        "api", `repos/${repository}/actions/runs/${runId}/attempts/${attempt}`,
+        "api",
+        `repos/${repository}/actions/runs/${runId}/attempts/${attempt}`,
       ]);
       return JSON.parse(stdout);
     },
     getWorkflowAttemptJobs: async (repository, runId, attempt) => {
-      assert(Number.isSafeInteger(attempt) && attempt > 0,
-        "Exact workflow jobs attempt is required.");
+      assert(
+        Number.isSafeInteger(attempt) && attempt > 0,
+        "Exact workflow jobs attempt is required.",
+      );
       const { stdout } = await command("gh", [
-        "api", "--paginate",
+        "api",
+        "--paginate",
         `repos/${repository}/actions/runs/${runId}/attempts/${attempt}/jobs?per_page=100`,
-        "--jq", ".jobs[]",
+        "--jq",
+        ".jobs[]",
       ]);
       return stdout.trim().split("\n").filter(Boolean).map(JSON.parse);
     },
@@ -1107,7 +1760,10 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
     },
     readRepositoryFile: async (repository, filePath, revision) => {
       const { stdout } = await command("gh", [
-        "api", `repos/${repository}/contents/${filePath}?ref=${revision}`, "--jq", ".content",
+        "api",
+        `repos/${repository}/contents/${filePath}?ref=${revision}`,
+        "--jq",
+        ".content",
       ]);
       return Buffer.from(stdout.replace(/\s/gu, ""), "base64");
     },
@@ -1116,13 +1772,21 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
   delete adapters.asOf;
   delete adapters.verifyCanary;
   const verifiedAttestations = await adapters.verifySignatures(record.packages);
-  assert(Array.isArray(verifiedAttestations),
-    "Cryptographic signature verifier did not return its exact verified attestation bundles.");
-  await Promise.all(record.packages.map((entry) => verifyPackage(
-    entry,
-    adapters,
-    verifiedAttestations.find(({ name, version }) => name === entry.name && version === entry.version),
-  )));
+  assert(
+    Array.isArray(verifiedAttestations),
+    "Cryptographic signature verifier did not return its exact verified attestation bundles.",
+  );
+  await Promise.all(
+    record.packages.map((entry) =>
+      verifyPackage(
+        entry,
+        adapters,
+        verifiedAttestations.find(
+          ({ name, version }) => name === entry.name && version === entry.version,
+        ),
+      ),
+    ),
+  );
   await verifyPublishedContents(record, registry, overrides.asOf, adapters);
   const runtimeClosure = await adapters.resolveRuntimeClosure(record.packages, {
     cohortGeneration: record.cohort_generation,
@@ -1130,40 +1794,56 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
   const runtimeClosureSource = await adapters.readRuntimeClosureEvidence(
     record.runtime_closure.projection_path,
   );
-  assert(runtimeClosure.authority.schema_version === record.runtime_closure.schema_version &&
-    (record.cohort_generation !== 2 ||
-      runtimeClosure.authority.domain === record.runtime_closure.domain) &&
-    runtimeClosure.authority.package_manager === record.runtime_closure.package_manager &&
-    runtimeClosure.authority.lockfile_version === record.runtime_closure.lockfile_version &&
-    runtimeClosure.authority.package_count === record.runtime_closure.package_count &&
-    runtimeClosure.authority.projection_path === record.runtime_closure.projection_path &&
-    runtimeClosure.authority.digest === record.runtime_closure.digest &&
-    runtimeClosure.source === runtimeClosureSource,
-  "Published package runtime closure differs from the immutable Cohort authority.");
-  assert(await adapters.getWorkflowBlob(record.reusable_workflow) === record.reusable_workflow.blob_sha,
-    "Reusable workflow revision does not resolve to the recorded blob SHA.");
+  assert(
+    runtimeClosure.authority.schema_version === record.runtime_closure.schema_version &&
+      (record.cohort_generation === undefined ||
+        runtimeClosure.authority.domain === record.runtime_closure.domain) &&
+      runtimeClosure.authority.package_manager === record.runtime_closure.package_manager &&
+      runtimeClosure.authority.lockfile_version === record.runtime_closure.lockfile_version &&
+      runtimeClosure.authority.package_count === record.runtime_closure.package_count &&
+      runtimeClosure.authority.projection_path === record.runtime_closure.projection_path &&
+      runtimeClosure.authority.digest === record.runtime_closure.digest &&
+      runtimeClosure.source === runtimeClosureSource,
+    "Published package runtime closure differs from the immutable Cohort authority.",
+  );
+  assert(
+    (await adapters.getWorkflowBlob(record.reusable_workflow)) ===
+      record.reusable_workflow.blob_sha,
+    "Reusable workflow revision does not resolve to the recorded blob SHA.",
+  );
   const workflowRepository = await adapters.getRepository(record.reusable_workflow.repository);
-  assert(workflowRepository.id === record.reusable_workflow.repository_id &&
-    workflowRepository.full_name === record.reusable_workflow.repository,
-    "Reusable workflow repository identity differs from the Cohort.");
+  assert(
+    workflowRepository.id === record.reusable_workflow.repository_id &&
+      workflowRepository.full_name === record.reusable_workflow.repository,
+    "Reusable workflow repository identity differs from the Cohort.",
+  );
   const workflowDefaultBranch = await adapters.getDefaultBranch(
     record.reusable_workflow.repository,
     workflowRepository.default_branch,
   );
-  assert(workflowDefaultBranch.protected === true,
-    "Reusable workflow default branch is not protected.");
-  assert(await adapters.isDefaultBranchAncestor(
-    record.reusable_workflow.repository,
-    workflowRepository.default_branch,
-    record.reusable_workflow.revision,
-  ), "Reusable workflow revision is not merged into its protected default branch.");
+  assert(
+    workflowDefaultBranch.protected === true,
+    "Reusable workflow default branch is not protected.",
+  );
+  assert(
+    await adapters.isDefaultBranchAncestor(
+      record.reusable_workflow.repository,
+      workflowRepository.default_branch,
+      record.reusable_workflow.revision,
+    ),
+    "Reusable workflow revision is not merged into its protected default branch.",
+  );
   const liveWorkflowBlob = await adapters.getWorkflowBlob({
     ...record.reusable_workflow,
     revision: workflowDefaultBranch.commit.sha,
   });
-  assert(liveWorkflowBlob === record.reusable_workflow.blob_sha,
-    "Reusable workflow bytes differ from the exact current protected-default-branch workflow.");
-  const workflowSource = (await adapters.getWorkflowSource(record.reusable_workflow)).toString("utf8");
+  assert(
+    liveWorkflowBlob === record.reusable_workflow.blob_sha,
+    "Reusable workflow bytes differ from the exact current protected-default-branch workflow.",
+  );
+  const workflowSource = (await adapters.getWorkflowSource(record.reusable_workflow)).toString(
+    "utf8",
+  );
   try {
     validateDocsProtocolWorkflow(YAML.parse(workflowSource), workflowSource);
   } catch (error) {
@@ -1179,12 +1859,7 @@ export async function verifyDocsCohortEvidence(registry, schema, cohortId, overr
   }
 }
 
-export async function verifyChangedDocsCohortEvidence(
-  previous,
-  current,
-  schema,
-  overrides = {},
-) {
+export async function verifyChangedDocsCohortEvidence(previous, current, schema, overrides = {}) {
   const lifecycle = validateDocsQualifiedCohorts(current, schema, { asOf: overrides.asOf });
   const previousCohortCount = previous.cohorts.length;
   const previousEventCount = previous.events.length;
@@ -1193,26 +1868,33 @@ export async function verifyChangedDocsCohortEvidence(
     ...current.events.slice(previousEventCount).map(({ cohort_id: id }) => id),
   ]);
   const positiveStates = new Set([
-    "PUBLISHED_UNQUALIFIED", "VERIFIED", "COOLDOWN", "QUALIFIED", "CANARY", "RECOMMENDED",
+    "PUBLISHED_UNQUALIFIED",
+    "VERIFIED",
+    "COOLDOWN",
+    "QUALIFIED",
+    "CANARY",
+    "RECOMMENDED",
   ]);
   for (const cohortId of changedIds) {
-    const appendedEvents = current.events.slice(previousEventCount).filter(
-      (event) => event.cohort_id === cohortId,
-    );
-    const isNewRecord = current.cohorts.slice(previousCohortCount).some(
-      (record) => record.cohort_id === cohortId,
-    );
+    const appendedEvents = current.events
+      .slice(previousEventCount)
+      .filter((event) => event.cohort_id === cohortId);
+    const isNewRecord = current.cohorts
+      .slice(previousCohortCount)
+      .some((record) => record.cohort_id === cohortId);
     const record = lifecycle.cohortById.get(cohortId);
-    assert(!isNewRecord || record.cohort_generation === 2 || record.rollback_to.length === 0,
-      `${cohortId} new V1 Cohort must declare explicit fix-forward rollback policy.`);
-    assert(!isNewRecord || record.cohort_generation !== 2 || record.rollback_to.length > 0,
-      `${cohortId} new V2 Cohort must declare at least one explicit rollback target.`);
+    assert(
+      !isNewRecord || record.cohort_generation !== undefined || record.rollback_to.length === 0,
+      `${cohortId} new V1 Cohort must declare explicit fix-forward rollback policy.`,
+    );
+    assert(
+      !isNewRecord || record.cohort_generation === undefined || record.rollback_to.length > 0,
+      `${cohortId} new V2/V3 Cohort must declare at least one explicit rollback target.`,
+    );
     if (!isNewRecord && !appendedEvents.some(({ state }) => positiveStates.has(state))) {
       continue;
     }
-    const verifyCanary = ["CANARY", "RECOMMENDED"].includes(
-      lifecycle.stateById.get(cohortId),
-    );
+    const verifyCanary = ["CANARY", "RECOMMENDED"].includes(lifecycle.stateById.get(cohortId));
     await verifyDocsCohortEvidence(current, schema, cohortId, {
       ...overrides,
       verifyCanary,
@@ -1222,29 +1904,37 @@ export async function verifyChangedDocsCohortEvidence(
 }
 
 function exactArgument(argv, name, required = false) {
-  const indexes = argv.flatMap((value, index) => value === name ? [index] : []);
-  assert(indexes.length <= 1 && (!required || indexes.length === 1) &&
-    (indexes.length === 0 || argv[indexes[0] + 1] !== undefined),
-  `Invalid ${name} argument.`);
+  const indexes = argv.flatMap((value, index) => (value === name ? [index] : []));
+  assert(
+    indexes.length <= 1 &&
+      (!required || indexes.length === 1) &&
+      (indexes.length === 0 || argv[indexes[0] + 1] !== undefined),
+    `Invalid ${name} argument.`,
+  );
   return indexes.length === 0 ? undefined : argv[indexes[0] + 1];
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const argv = process.argv.slice(2);
-  const registryPath = exactArgument(argv, "--registry") ??
-    "governance/docs-qualified-cohorts.json";
-  const schemaPath = exactArgument(argv, "--schema") ??
-    "governance/docs-qualified-cohorts.schema.json";
+  const registryPath =
+    exactArgument(argv, "--registry") ?? "governance/docs-qualified-cohorts.json";
+  const schemaPath =
+    exactArgument(argv, "--schema") ?? "governance/docs-qualified-cohorts.schema.json";
   const changedFrom = exactArgument(argv, "--changed-from");
   const admissionPolicyPath = exactArgument(argv, "--admission-policy");
   const cohortId = exactArgument(
-    argv, "--cohort", changedFrom === undefined && admissionPolicyPath === undefined,
+    argv,
+    "--cohort",
+    changedFrom === undefined && admissionPolicyPath === undefined,
   );
   const registry = await loadJson(registryPath);
   const schema = await loadJson(schemaPath);
   if (admissionPolicyPath !== undefined) {
     const verified = await verifyDocsAdmissionEvidence(
-      await loadJson(admissionPolicyPath), registry, schema, { requireCredential: true },
+      await loadJson(admissionPolicyPath),
+      registry,
+      schema,
+      { requireCredential: true },
     );
     console.log(JSON.stringify(verified));
   } else if (changedFrom !== undefined) {
@@ -1253,7 +1943,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       registry,
       schema,
     );
-    console.log(`Qualified Docs Cohort live evidence verified for ${changed.length} changed Cohort(s).`);
+    console.log(
+      `Qualified Docs Cohort live evidence verified for ${changed.length} changed Cohort(s).`,
+    );
   } else {
     await verifyDocsCohortEvidence(registry, schema, cohortId);
     console.log(`Qualified Docs Cohort evidence verified: ${cohortId}`);

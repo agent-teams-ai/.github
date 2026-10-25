@@ -8,7 +8,10 @@ const workflow = await readFile(
 );
 const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
 assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const source = scriptBlock
+  .split("\n")
+  .map((line) => line.slice(12))
+  .join("\n");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const execute = new AsyncFunction("context", "github", "core", source);
 
@@ -21,10 +24,12 @@ async function classify(options = {}) {
   const outputs = new Map();
   const context = {
     repo: { owner: "agent-teams-ai", repo: ".github" },
-    payload: { pull_request: {
-      number: 123,
-      changed_files: options.changedFiles ?? files.length,
-    } },
+    payload: {
+      pull_request: {
+        number: 123,
+        changed_files: options.changedFiles ?? files.length,
+      },
+    },
   };
   const github = {
     paginate: async () => paginated,
@@ -63,11 +68,15 @@ test("fails closed for workflow, script, schema, and install authority", async (
 });
 
 test("detects renamed authority and rejects incomplete or duplicate pagination", async () => {
-  const renamed = await classify({ files: [{
-    filename: "docs/retired-script.md",
-    previous_filename: "scripts/authority.mjs",
-    status: "renamed",
-  }] });
+  const renamed = await classify({
+    files: [
+      {
+        filename: "docs/retired-script.md",
+        previous_filename: "scripts/authority.mjs",
+        status: "renamed",
+      },
+    ],
+  });
   assert.match(renamed.failures[0], /separately staged/u);
 
   const data = [{ filename: "governance/docs-protocol-policy-v2.json", status: "modified" }];

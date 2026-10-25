@@ -4,12 +4,14 @@ import { createHash } from "node:crypto";
 import Ajv2020 from "ajv/dist/2020.js";
 
 function assert(condition, message) {
-  if (!condition) {throw new Error(message);}
+  if (!condition) {
+    throw new Error(message);
+  }
 }
 
 function isControlCodePoint(character) {
   const codePoint = character.codePointAt(0);
-  return codePoint <= 0x1F || codePoint === 0x7F;
+  return codePoint <= 0x1f || codePoint === 0x7f;
 }
 
 function validateSchema(value, schema, label) {
@@ -24,8 +26,15 @@ function validateSchema(value, schema, label) {
 }
 
 function isCanonicalRepositoryPath(path) {
-  if (typeof path !== "string" || path !== path.normalize("NFC")) {return false;}
-  if (path.startsWith("/") || path.includes("\\") || path.includes(":") || [...path].some(isControlCodePoint)) {
+  if (typeof path !== "string" || path !== path.normalize("NFC")) {
+    return false;
+  }
+  if (
+    path.startsWith("/") ||
+    path.includes("\\") ||
+    path.includes(":") ||
+    Array.from(path).some(isControlCodePoint)
+  ) {
     return false;
   }
   const segments = path.split("/");
@@ -45,7 +54,10 @@ function validateCoordinateChecksum(entries, digest, required, label) {
     assert(entries.length === 0 && digest === null, `${label} must be explicitly empty.`);
     return;
   }
-  assert(entries.length > 0 && digest !== null, `${label} must contain dated Git evidence coordinates.`);
+  assert(
+    entries.length > 0 && digest !== null,
+    `${label} must contain dated Git evidence coordinates.`,
+  );
   const paths = entries.map(({ path }) => path);
   assert(new Set(paths).size === paths.length, `${label} paths must be unique.`);
   assert(
@@ -60,17 +72,36 @@ function validateSpecificationEvidence(evidence, repository) {
     reviewed === (evidence.revision !== null && evidence.entries.length > 0),
     `${repository} reviewed specification coordinates require a source revision and entries.`,
   );
-  validateCoordinateChecksum(evidence.entries, evidence.coordinate_checksum_sha256, reviewed, `${repository} specification evidence`);
-  assert(reviewed || evidence.revision === null, `${repository} unreviewed specification evidence must not imply a revision.`);
+  validateCoordinateChecksum(
+    evidence.entries,
+    evidence.coordinate_checksum_sha256,
+    reviewed,
+    `${repository} specification evidence`,
+  );
+  assert(
+    reviewed || evidence.revision === null,
+    `${repository} unreviewed specification evidence must not imply a revision.`,
+  );
   const approval = evidence.approval_evidence;
   const approvalApplicable = approval.status !== "not_applicable";
   assert(
     approvalApplicable === (approval.revision !== null && approval.entries.length > 0),
     `${repository} approval evidence must cite a revision or be N/A.`,
   );
-  validateCoordinateChecksum(approval.entries, approval.coordinate_checksum_sha256, approvalApplicable, `${repository} approval evidence`);
-  assert(approvalApplicable || approval.revision === null, `${repository} N/A approval evidence must not imply a revision.`);
-  assert(!approvalApplicable || approval.revision === evidence.revision, `${repository} approval evidence revision must match the specification snapshot.`);
+  validateCoordinateChecksum(
+    approval.entries,
+    approval.coordinate_checksum_sha256,
+    approvalApplicable,
+    `${repository} approval evidence`,
+  );
+  assert(
+    approvalApplicable || approval.revision === null,
+    `${repository} N/A approval evidence must not imply a revision.`,
+  );
+  assert(
+    !approvalApplicable || approval.revision === evidence.revision,
+    `${repository} approval evidence revision must match the specification snapshot.`,
+  );
 }
 
 function validateQualification(qualification, repository, axis) {
@@ -164,17 +195,18 @@ function validateRemoteChecks(remote, repository) {
     unobserved === unobservedShape,
     `${repository} unobserved remote checks must use the exact reason shape.`,
   );
-  const identities = remote.checks.map(({ context, integration_id }) => `${context}\0${integration_id}`);
-  assert(new Set(identities).size === identities.length, `${repository} remote checks must be unique.`);
+  const identities = remote.checks.map(
+    ({ context, integration_id }) => `${context}\0${integration_id}`,
+  );
+  assert(
+    new Set(identities).size === identities.length,
+    `${repository} remote checks must be unique.`,
+  );
 }
 
 const maturityByApplicability = {
   capability_owner: ["capability_implemented"],
-  applicable: [
-    "synthetic_proposed",
-    "implemented_internal_slice",
-    "accepted_partial_projections",
-  ],
+  applicable: ["synthetic_proposed", "implemented_internal_slice", "accepted_partial_projections"],
   governance_only: ["governance_only"],
   not_applicable: ["not_applicable"],
 };
@@ -187,9 +219,7 @@ export function validateExecutableSpecLedger(ledger, schema) {
   );
   const repositories = new Set();
   const activeRepositoryIds = new Set();
-  const exclusions = new Set(
-    ledger.scope.archived_exclusions.map(({ repository }) => repository),
-  );
+  const exclusions = new Set(ledger.scope.archived_exclusions.map(({ repository }) => repository));
   const excludedRepositoryIds = new Set(
     ledger.scope.archived_exclusions.map(({ repository_id }) => repository_id),
   );
@@ -212,9 +242,18 @@ export function validateExecutableSpecLedger(ledger, schema) {
   );
   for (const record of ledger.repositories) {
     assert(!repositories.has(record.repository), `Duplicate repository: ${record.repository}`);
-    assert(!exclusions.has(record.repository), `${record.repository} cannot be both active and excluded.`);
-    assert(!activeRepositoryIds.has(record.repository_id), `Duplicate active repository ID: ${record.repository_id}`);
-    assert(!excludedRepositoryIds.has(record.repository_id), `${record.repository} ID cannot be both active and excluded.`);
+    assert(
+      !exclusions.has(record.repository),
+      `${record.repository} cannot be both active and excluded.`,
+    );
+    assert(
+      !activeRepositoryIds.has(record.repository_id),
+      `Duplicate active repository ID: ${record.repository_id}`,
+    );
+    assert(
+      !excludedRepositoryIds.has(record.repository_id),
+      `${record.repository} ID cannot be both active and excluded.`,
+    );
     repositories.add(record.repository);
     activeRepositoryIds.add(record.repository_id);
     validateSpecificationEvidence(record.specification_evidence, record.repository);
@@ -269,8 +308,7 @@ export function validateExecutableSpecLedger(ledger, schema) {
     }
     if (record.applicability === "capability_owner") {
       assert(
-        record.implementation_qualification.status ===
-          "capability_only_not_product_qualified" &&
+        record.implementation_qualification.status === "capability_only_not_product_qualified" &&
           record.deployment_qualification.status === "not_applicable" &&
           record.deployment_qualification.evidence_status === "not_applicable",
         `${record.repository} capability-owner qualification axes are inconsistent.`,
@@ -296,7 +334,10 @@ export function validateExecutableSpecLedger(ledger, schema) {
         `${record.repository} N/A axes are inconsistent.`,
       );
     }
-    for (const qualification of [record.implementation_qualification, record.deployment_qualification]) {
+    for (const qualification of [
+      record.implementation_qualification,
+      record.deployment_qualification,
+    ]) {
       assert(
         qualification.status !== "capability_only_not_product_qualified" ||
           qualification.evidence_status !== "governance_accepted_coordinates",
@@ -320,12 +361,10 @@ export function validateExecutableSpecLedger(ledger, schema) {
     }
   }
   const hasRemoteObservation = ledger.repositories.some(
-    ({ gate_contract }) =>
-      gate_contract.remote_required_checks.status !== "not_observed",
+    ({ gate_contract }) => gate_contract.remote_required_checks.status !== "not_observed",
   );
   assert(
-    hasRemoteObservation ===
-      (ledger.remote_enforcement.verification === "dated_api_observation"),
+    hasRemoteObservation === (ledger.remote_enforcement.verification === "dated_api_observation"),
     "Remote enforcement verification must match the repository observations.",
   );
   for (const { repository, gate_contract } of ledger.repositories) {
@@ -355,17 +394,22 @@ export function validateCodeSecurityDefaults(policy, schema) {
   validateSchema(policy, schema, "Code-security defaults snapshot");
   const ids = policy.defaults.map(({ id }) => id);
   assert(new Set(ids).size === ids.length, "Security configuration IDs must be unique.");
-  const targets = policy.defaults.map(({ default_for_new_repositories }) =>
-    default_for_new_repositories);
-  assert(new Set(targets).size === targets.length, "Security default visibility targets must be unique.");
-  assert(targets.includes("public"), "A public-repository security default is required.");
-  assert(targets.includes("private_and_internal"), "A private_and_internal security default is required.");
-  const observed = policy.defaults_evidence.verification === "observed_api_snapshot";
-  const defaultsEndpoint =
-    `https://api.github.com/orgs/${policy.organization}/code-security/configurations/defaults`;
+  const targets = policy.defaults.map(
+    ({ default_for_new_repositories }) => default_for_new_repositories,
+  );
   assert(
-    observed ===
-      (policy.defaults_evidence.endpoint === defaultsEndpoint),
+    new Set(targets).size === targets.length,
+    "Security default visibility targets must be unique.",
+  );
+  assert(targets.includes("public"), "A public-repository security default is required.");
+  assert(
+    targets.includes("private_and_internal"),
+    "A private_and_internal security default is required.",
+  );
+  const observed = policy.defaults_evidence.verification === "observed_api_snapshot";
+  const defaultsEndpoint = `https://api.github.com/orgs/${policy.organization}/code-security/configurations/defaults`;
+  assert(
+    observed === (policy.defaults_evidence.endpoint === defaultsEndpoint),
     "Observed security state must cite its API endpoint; unverified state must not.",
   );
   const organizationClaims = policy.organization_observations.map(({ claim }) => claim);
@@ -395,7 +439,7 @@ export function validateCodeSecurityDefaults(policy, schema) {
     );
   } else {
     assert(
-        twoFactor.transition_status !== "none" &&
+      twoFactor.transition_status !== "none" &&
         typeof twoFactor.risk === "string" &&
         twoFactor.risk.trim().length > 0 &&
         typeof twoFactor.compensation === "string" &&
@@ -403,19 +447,38 @@ export function validateCodeSecurityDefaults(policy, schema) {
       "A disabled two-factor requirement must record its transition, risk, and compensation.",
     );
   }
-  const exceptionRepositories = policy.required_check_exceptions.map(({ repository }) => repository);
+  const exceptionRepositories = policy.required_check_exceptions.map(
+    ({ repository }) => repository,
+  );
   const exceptionIds = policy.required_check_exceptions.map(({ id }) => id);
-  assert(new Set(exceptionRepositories).size === exceptionRepositories.length, "Required-check exceptions must be unique by repository.");
-  assert(new Set(exceptionIds).size === exceptionIds.length, "Required-check exception IDs must be unique.");
+  assert(
+    new Set(exceptionRepositories).size === exceptionRepositories.length,
+    "Required-check exceptions must be unique by repository.",
+  );
+  assert(
+    new Set(exceptionIds).size === exceptionIds.length,
+    "Required-check exception IDs must be unique.",
+  );
   const defaultIds = new Set(policy.defaults.map(({ id }) => id));
-  const defaultsById = new Map(policy.defaults.map((configuration) => [configuration.id, configuration]));
+  const defaultsById = new Map(
+    policy.defaults.map((configuration) => [configuration.id, configuration]),
+  );
   const attachments = policy.repository_attachments.map(({ repository }) => repository);
   const attachmentIds = policy.repository_attachments.map(({ repository_id }) => repository_id);
-  assert(new Set(attachments).size === attachments.length, "Security attachments must be unique by repository.");
-  assert(new Set(attachmentIds).size === attachmentIds.length, "Security attachments must be unique by repository ID.");
+  assert(
+    new Set(attachments).size === attachments.length,
+    "Security attachments must be unique by repository.",
+  );
+  assert(
+    new Set(attachmentIds).size === attachmentIds.length,
+    "Security attachments must be unique by repository ID.",
+  );
   for (const attachment of policy.repository_attachments) {
     const claims = attachment.evidence_records.map(({ claim }) => claim);
-    assert(new Set(claims).size === claims.length, `${attachment.repository} security evidence claims must be unique.`);
+    assert(
+      new Set(claims).size === claims.length,
+      `${attachment.repository} security evidence claims must be unique.`,
+    );
     const expectedEndpoints = new Map([
       [
         "configuration_attachment",
@@ -439,7 +502,10 @@ export function validateCodeSecurityDefaults(policy, schema) {
     const configuration = attachment.evidence_records.find(
       ({ claim }) => claim === "configuration_attachment",
     );
-    assert(defaultIds.has(configuration?.configuration_id), `${attachment.repository} references an unknown security configuration.`);
+    assert(
+      defaultIds.has(configuration?.configuration_id),
+      `${attachment.repository} references an unknown security configuration.`,
+    );
     const expectedVisibility =
       attachment.visibility === "public" ? "public" : "private_and_internal";
     assert(
@@ -453,9 +519,21 @@ export function validateCodeSecurityDefaults(policy, schema) {
 function inventoryChecksum(entries) {
   const canonical = [...entries]
     .toSorted(({ repository: left }, { repository: right }) =>
-      left < right ? -1 : left > right ? 1 : 0)
-    .map(({ repository, id, created_at: createdAt, archived, visibility, default_branch: branch, is_fork: fork, fork_parent: parent }) =>
-      `${repository}\0${id}\0${createdAt}\0${archived}\0${visibility}\0${branch}\0${fork}\0${JSON.stringify(parent)}\n`)
+      left < right ? -1 : left > right ? 1 : 0,
+    )
+    .map(
+      ({
+        repository,
+        id,
+        created_at: createdAt,
+        archived,
+        visibility,
+        default_branch: branch,
+        is_fork: fork,
+        fork_parent: parent,
+      }) =>
+        `${repository}\0${id}\0${createdAt}\0${archived}\0${visibility}\0${branch}\0${fork}\0${JSON.stringify(parent)}\n`,
+    )
     .join("");
   return createHash("sha256").update(canonical).digest("hex");
 }
@@ -468,7 +546,10 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
   );
   const repositories = inventory.repositories.map(({ repository }) => repository);
   const ids = inventory.repositories.map(({ id }) => id);
-  assert(new Set(repositories).size === repositories.length, "Inventory repositories must be unique.");
+  assert(
+    new Set(repositories).size === repositories.length,
+    "Inventory repositories must be unique.",
+  );
   assert(new Set(ids).size === ids.length, "Inventory repository IDs must be unique.");
   for (const record of inventory.repositories) {
     assert(
@@ -476,10 +557,15 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
       `${record.repository} fork identity and parent must agree.`,
     );
   }
-  const expectedForkEvidenceEndpoints = inventory.repositories.filter(({ is_fork: fork }) => fork)
-    .map(({ repository }) => `https://api.github.com/repos/${repository}`).toSorted();
-  assert(JSON.stringify(inventory.fork_evidence_endpoints.toSorted()) === JSON.stringify(expectedForkEvidenceEndpoints),
-    "Inventory fork evidence endpoints must exactly cover every current fork.");
+  const expectedForkEvidenceEndpoints = inventory.repositories
+    .filter(({ is_fork: fork }) => fork)
+    .map(({ repository }) => `https://api.github.com/repos/${repository}`)
+    .toSorted();
+  assert(
+    JSON.stringify(inventory.fork_evidence_endpoints.toSorted()) ===
+      JSON.stringify(expectedForkEvidenceEndpoints),
+    "Inventory fork evidence endpoints must exactly cover every current fork.",
+  );
   assert(
     inventory.checksum_sha256 === inventoryChecksum(inventory.repositories),
     "Inventory internal checksum does not match its structural entries.",
@@ -498,8 +584,10 @@ export function validateDocsProtocolPolicy(policy, schema) {
     ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
   );
   const activeNames = activeRecords.map(({ repository }) => repository);
-  assert(new Set(activeNames).size === activeNames.length,
-    "Active documentation protocol repository names must be unique.");
+  assert(
+    new Set(activeNames).size === activeNames.length,
+    "Active documentation protocol repository names must be unique.",
+  );
 
   const owned = activeRecords.filter(
     ({ governance_ownership: ownership }) => ownership === "organization_owned",
@@ -521,13 +609,15 @@ export function validateDocsProtocolPolicy(policy, schema) {
     ({ docs_role: role, cohort_binding_status: binding }) =>
       role === "consumer" && binding === "rollout_pending",
   );
-  assert(new Set(activeOwnedRollouts.map(
-    ({ desired_cohort_id: cohortId }) => cohortId,
-  )).size <= 1,
-    "Organization-owned rollout_pending consumers must form one desired-Cohort wave.");
+  assert(
+    new Set(activeOwnedRollouts.map(({ desired_cohort_id: cohortId }) => cohortId)).size <= 1,
+    "Organization-owned rollout_pending consumers must form one desired-Cohort wave.",
+  );
 
   const producer = activeRecords.filter(({ docs_role: role }) => role === "protocol_producer");
-  const controllers = activeRecords.filter(({ docs_role: role }) => role === "governance_controller");
+  const controllers = activeRecords.filter(
+    ({ docs_role: role }) => role === "governance_controller",
+  );
   assert(
     producer.length === 1 && producer[0].repository === policy.protocol.producer_repository,
     "Documentation protocol must have exactly one declared producer.",
@@ -576,19 +666,41 @@ export function validateDocsProtocolPolicy(policy, schema) {
     if (record.classification_evidence !== null && record.classification_evidence !== undefined) {
       const decision = record.classification_evidence.decision;
       const pending = ["pending_onboarding", "pending_authority_decision"].includes(decision);
-      const notApplicable = ["not_applicable_external_fork", "not_applicable_test_fixture"].includes(decision);
+      const notApplicable = [
+        "not_applicable_external_fork",
+        "not_applicable_test_fixture",
+      ].includes(decision);
       const candidateEvidencePaths = [
-        "package.json", record.profile_path, record.caller_workflow_path,
+        "package.json",
+        record.profile_path,
+        record.caller_workflow_path,
         record.qualification_evidence_path,
       ];
-      assert((decision === "adopted" && record.docs_role === "consumer" && record.admission_status === "admitted" && record.qualification.status === "qualified") ||
-        (decision === "bootstrap_candidate" && record.docs_role === "consumer" && record.admission_status === "admission_candidate" && record.qualification.status === "not_qualified" &&
-          candidateEvidencePaths.every((path) => path !== null && record.classification_evidence.evidence_paths.includes(path))) ||
-        (pending && record.docs_role === "pending_classification" && record.admission_status === "pending_classification") ||
-        (notApplicable && record.docs_role === "not_applicable" && ["not_applicable", "exception"].includes(record.admission_status)),
-      `${record.repository} classification evidence decision is incompatible with its protocol status.`);
-      assert(record.classification_evidence.evidence_paths.every(isCanonicalRepositoryPath),
-        `${record.repository} classification evidence paths must be canonical.`);
+      assert(
+        (decision === "adopted" &&
+          record.docs_role === "consumer" &&
+          record.admission_status === "admitted" &&
+          record.qualification.status === "qualified") ||
+          (decision === "bootstrap_candidate" &&
+            record.docs_role === "consumer" &&
+            record.admission_status === "admission_candidate" &&
+            record.qualification.status === "not_qualified" &&
+            candidateEvidencePaths.every(
+              (path) =>
+                path !== null && record.classification_evidence.evidence_paths.includes(path),
+            )) ||
+          (pending &&
+            record.docs_role === "pending_classification" &&
+            record.admission_status === "pending_classification") ||
+          (notApplicable &&
+            record.docs_role === "not_applicable" &&
+            ["not_applicable", "exception"].includes(record.admission_status)),
+        `${record.repository} classification evidence decision is incompatible with its protocol status.`,
+      );
+      assert(
+        record.classification_evidence.evidence_paths.every(isCanonicalRepositoryPath),
+        `${record.repository} classification evidence paths must be canonical.`,
+      );
     }
     const consumer = record.docs_role === "consumer";
     const admitted = record.admission_status === "admitted";
@@ -601,7 +713,10 @@ export function validateDocsProtocolPolicy(policy, schema) {
           record.exemption === null,
         `${record.repository} consumer admission contract is incomplete.`,
       );
-      assert(admitted === qualified, `${record.repository} admission and qualification status must agree.`);
+      assert(
+        admitted === qualified,
+        `${record.repository} admission and qualification status must agree.`,
+      );
       if (qualified) {
         const legacy = record.cohort_binding_status === "legacy_pre_cohort";
         const hosted = record.observed_default_branch_evidence;
@@ -639,7 +754,9 @@ export function validateDocsProtocolPolicy(policy, schema) {
                 hosted.revision === record.qualification.observed_revision &&
                 hosted.required_context === record.required_check_context &&
                 hosted.caller_workflow_path === record.caller_workflow_path &&
-                hosted.check_run_url.startsWith(`https://github.com/${record.repository}/actions/runs/`) &&
+                hosted.check_run_url.startsWith(
+                  `https://github.com/${record.repository}/actions/runs/`,
+                ) &&
                 hosted.check_run_url.includes(`/actions/runs/${hosted.workflow_run_id}`) &&
                 record.required_check_context !== null),
           `${record.repository} qualified admission requires bound package, distinct typed paths, nonzero consumer and reusable-workflow revisions, and complete evidence.`,
@@ -686,9 +803,11 @@ export function validateDocsProtocolPolicy(policy, schema) {
         );
       }
     } else {
-      const classifiedNotApplicable = record.docs_role === "not_applicable" &&
+      const classifiedNotApplicable =
+        record.docs_role === "not_applicable" &&
         ["not_applicable", "exception"].includes(record.admission_status);
-      const pendingClassification = record.docs_role === "pending_classification" &&
+      const pendingClassification =
+        record.docs_role === "pending_classification" &&
         record.admission_status === "pending_classification";
       assert(
         !record.protocol_required &&
@@ -706,7 +825,8 @@ export function validateDocsProtocolPolicy(policy, schema) {
           record.qualification_evidence_path === null &&
           record.required_check_context === null &&
           record.observed_default_branch_evidence === null &&
-          (classifiedNotApplicable || pendingClassification ||
+          (classifiedNotApplicable ||
+            pendingClassification ||
             ["governance_controller", "protocol_producer"].includes(record.docs_role)) &&
           record.qualification.status === "not_applicable" &&
           record.qualification.observed_revision === null &&
@@ -731,7 +851,8 @@ export function validateDocsProtocolPolicy(policy, schema) {
 }
 
 const STABLE3_POLICY_SHA256 = "e609db7a11397866211b5665e03217ad06c9e9356afc8214606b32017bd6d37d";
-const STABLE3_POLICY_SCHEMA_SHA256 = "fd8c377a16fc7141ca60b9011881486475c1a545170f875bcc6a4a19a7295571";
+const STABLE3_POLICY_SCHEMA_SHA256 =
+  "fd8c377a16fc7141ca60b9011881486475c1a545170f875bcc6a4a19a7295571";
 
 export function validateDocsProtocolCompatibilitySnapshot(
   stablePolicySource,
@@ -760,8 +881,9 @@ export function validateDocsProtocolCompatibilitySnapshot(
     "Stable3 and current documentation policies must govern the same organization.",
   );
 
-  const currentRepositories = new Set(currentPolicy.repositories.map((record) =>
-    `${record.repository}\0${record.repository_id}`));
+  const currentRepositories = new Set(
+    currentPolicy.repositories.map((record) => `${record.repository}\0${record.repository_id}`),
+  );
   for (const stableRecord of stablePolicy.repositories) {
     assert(
       currentRepositories.has(`${stableRecord.repository}\0${stableRecord.repository_id}`),
@@ -808,8 +930,7 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
         `${organizationApi}/actions/permissions/workflow` &&
       actions.organization_workflow_permissions.evidence_endpoint ===
         `${organizationApi}/actions/permissions/workflow` &&
-      actions.action_sha_pinning.evidence_endpoint ===
-        `${organizationApi}/actions/permissions`,
+      actions.action_sha_pinning.evidence_endpoint === `${organizationApi}/actions/permissions`,
     "Governance policy organization evidence must match the organization inventory authority.",
   );
   assert(
@@ -823,11 +944,15 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   );
   const activeInventory = inventory.repositories.filter(({ archived }) => !archived);
   const archivedInventory = inventory.repositories.filter(({ archived }) => archived);
-  const deletedProtocolById = new Map(docsProtocol.repositories
-    .filter(({ repository_lifecycle: lifecycle }) => lifecycle === "deleted")
-    .map((record) => [record.repository_id, record]));
-  assert(ledger.snapshot_date <= inventory.observed_at,
-    "Executable-spec ledger observation must not postdate the organization inventory.");
+  const deletedProtocolById = new Map(
+    docsProtocol.repositories
+      .filter(({ repository_lifecycle: lifecycle }) => lifecycle === "deleted")
+      .map((record) => [record.repository_id, record]),
+  );
+  assert(
+    ledger.snapshot_date <= inventory.observed_at,
+    "Executable-spec ledger observation must not postdate the organization inventory.",
+  );
   const activeLedger = new Map(ledger.repositories.map((record) => [record.repository, record]));
   const archivedLedger = new Map(
     ledger.scope.archived_exclusions.map((record) => [record.repository, record]),
@@ -837,14 +962,19 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     const deletedRecord = deletedProtocolById.get(ledgerRecord.repository_id);
     const isDeletedTombstone = !record && deletedRecord?.repository === ledgerRecord.repository;
     assert(
-      (record && !record.archived && ledgerRecord.repository_id === record.id &&
-        ledgerRecord.gate_contract.remote_required_checks.default_branch === record.default_branch) ||
-      isDeletedTombstone,
+      (record &&
+        !record.archived &&
+        ledgerRecord.repository_id === record.id &&
+        ledgerRecord.gate_contract.remote_required_checks.default_branch ===
+          record.default_branch) ||
+        isDeletedTombstone,
       `${ledgerRecord.repository} active ledger identity must match the organization inventory.`,
     );
     assert(
       ledgerRecord.gate_contract.remote_required_checks.status !==
-        "unavailable_free_private_repository" || record?.visibility === "private" || isDeletedTombstone,
+        "unavailable_free_private_repository" ||
+        record?.visibility === "private" ||
+        isDeletedTombstone,
       `${ledgerRecord.repository} private-repository ruleset unavailability requires private inventory visibility.`,
     );
   }
@@ -855,15 +985,23 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       `${exclusion.repository} archived exclusion must match the organization inventory.`,
     );
   }
-  const known = new Map(inventory.repositories
-    .filter(({ created_at }) => created_at.slice(0, 10) <= ledger.snapshot_date)
-    .map((record) => [record.repository, record]));
+  const known = new Map(
+    inventory.repositories
+      .filter(({ created_at }) => created_at.slice(0, 10) <= ledger.snapshot_date)
+      .map((record) => [record.repository, record]),
+  );
   const historicalLedger = new Map([...activeLedger, ...archivedLedger]);
-  assert([...known].every(([repository, record]) =>
-    historicalLedger.get(repository)?.repository_id === record.id) &&
-    [...historicalLedger.values()].every((record) => known.has(record.repository) ||
-      deletedProtocolById.get(record.repository_id)?.repository === record.repository),
-  "Ledger scope must exactly match repository identities created by its dated organization snapshot.");
+  assert(
+    [...known].every(
+      ([repository, record]) => historicalLedger.get(repository)?.repository_id === record.id,
+    ) &&
+      [...historicalLedger.values()].every(
+        (record) =>
+          known.has(record.repository) ||
+          deletedProtocolById.get(record.repository_id)?.repository === record.repository,
+      ),
+    "Ledger scope must exactly match repository identities created by its dated organization snapshot.",
+  );
   const activeDocsProtocol = docsProtocol.repositories.filter(
     ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
   );
@@ -882,19 +1020,26 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       `${record.repository} documentation protocol source provenance must match fork evidence.`,
     );
     if (record.created_at.slice(0, 10) > ledger.snapshot_date) {
-      assert(protocolRecord.classification_evidence !== null && protocolRecord.classification_evidence !== undefined,
-        `${record.repository} created after the prior qualification ledger requires machine-readable classification evidence.`);
+      assert(
+        protocolRecord.classification_evidence !== null &&
+          protocolRecord.classification_evidence !== undefined,
+        `${record.repository} created after the prior qualification ledger requires machine-readable classification evidence.`,
+      );
     }
     const decision = protocolRecord.classification_evidence?.decision;
     if (decision === "not_applicable_external_fork") {
-      assert(protocolRecord.source_provenance.kind === "fork" &&
-        protocolRecord.governance_ownership === "external",
-      `${record.repository} external-fork classification must match provenance and ownership.`);
+      assert(
+        protocolRecord.source_provenance.kind === "fork" &&
+          protocolRecord.governance_ownership === "external",
+        `${record.repository} external-fork classification must match provenance and ownership.`,
+      );
     }
     if (decision === "not_applicable_test_fixture") {
-      assert(protocolRecord.source_provenance.kind === "original" &&
-        protocolRecord.governance_ownership === "organization_owned",
-      `${record.repository} test-fixture classification must be organization-owned original provenance.`);
+      assert(
+        protocolRecord.source_provenance.kind === "original" &&
+          protocolRecord.governance_ownership === "organization_owned",
+        `${record.repository} test-fixture classification must be organization-owned original provenance.`,
+      );
     }
   }
   assert(
@@ -905,8 +1050,10 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     const protocolRecord = docsProtocol.repositories.find(
       ({ repository_id: id }) => id === record.id,
     );
-    assert(protocolRecord?.repository_lifecycle === "archived",
-      `${record.repository} documentation protocol tombstone must match archived inventory.`);
+    assert(
+      protocolRecord?.repository_lifecycle === "archived",
+      `${record.repository} documentation protocol tombstone must match archived inventory.`,
+    );
   }
   for (const attachment of security.repository_attachments) {
     const inventoryRecord = inventoryByRepository.get(attachment.repository);
@@ -919,12 +1066,18 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
     );
   }
   const exceptionIds = security.required_check_exceptions.map(({ id }) => id);
-  assert(new Set(exceptionIds).size === exceptionIds.length, "Required-check exception authority IDs must be unique.");
+  assert(
+    new Set(exceptionIds).size === exceptionIds.length,
+    "Required-check exception authority IDs must be unique.",
+  );
   const exceptions = new Map(
     security.required_check_exceptions.map((exception) => [exception.id, exception]),
   );
   const actionReferenceIds = actions.required_check_exception_ids;
-  assert(new Set(actionReferenceIds).size === actionReferenceIds.length, "Actions exception references must be unique.");
+  assert(
+    new Set(actionReferenceIds).size === actionReferenceIds.length,
+    "Actions exception references must be unique.",
+  );
   const actionReferences = new Set(actionReferenceIds);
   const ledgerReferenceRecords = ledger.repositories.filter(
     ({ gate_contract }) => gate_contract.remote_required_checks.exception_id !== null,
@@ -932,21 +1085,42 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
   const ledgerReferenceIds = ledgerReferenceRecords.map(
     ({ gate_contract }) => gate_contract.remote_required_checks.exception_id,
   );
-  assert(new Set(ledgerReferenceIds).size === ledgerReferenceIds.length, "Ledger exception references must be one-to-one.");
+  assert(
+    new Set(ledgerReferenceIds).size === ledgerReferenceIds.length,
+    "Ledger exception references must be one-to-one.",
+  );
   const ledgerReferences = new Map(
-    ledgerReferenceRecords.map((record) => [record.gate_contract.remote_required_checks.exception_id, record]),
+    ledgerReferenceRecords.map((record) => [
+      record.gate_contract.remote_required_checks.exception_id,
+      record,
+    ]),
   );
   for (const reference of actionReferenceIds) {
-    assert(exceptions.has(reference), `Actions policy references unknown required-check exception: ${reference}`);
+    assert(
+      exceptions.has(reference),
+      `Actions policy references unknown required-check exception: ${reference}`,
+    );
   }
   for (const [reference, record] of ledgerReferences) {
     const exception = exceptions.get(reference);
-    assert(exception, `${record.repository} references unknown required-check exception: ${reference}`);
-    assert(exception.repository === record.repository, `${record.repository} references an exception owned by another repository.`);
+    assert(
+      exception,
+      `${record.repository} references unknown required-check exception: ${reference}`,
+    );
+    assert(
+      exception.repository === record.repository,
+      `${record.repository} references an exception owned by another repository.`,
+    );
   }
   for (const exception of exceptions.values()) {
-    assert(actionReferences.has(exception.id), `Actions policy must reference required-check exception: ${exception.id}`);
-    assert(ledgerReferences.has(exception.id), `Executable-spec ledger must reference required-check exception: ${exception.id}`);
+    assert(
+      actionReferences.has(exception.id),
+      `Actions policy must reference required-check exception: ${exception.id}`,
+    );
+    assert(
+      ledgerReferences.has(exception.id),
+      `Executable-spec ledger must reference required-check exception: ${exception.id}`,
+    );
   }
   const protocolExceptionRecords = docsProtocol.repositories.filter(
     ({ required_check_exception_id: id }) => id !== null,

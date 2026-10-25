@@ -7,7 +7,10 @@ const testPath = "scripts/docs-cohort-authority-evolution-v3.test.mjs";
 const workflow = await readFile(workflowPath, "utf8");
 const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
 assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const source = scriptBlock
+  .split("\n")
+  .map((line) => line.slice(12))
+  .join("\n");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const execute = new AsyncFunction("context", "github", "core", source);
 const repository = "agent-teams-ai/.github";
@@ -32,14 +35,20 @@ async function classify(options = {}) {
   const outputs = new Map();
   const context = {
     repo: { owner: "agent-teams-ai", repo: ".github" },
-    payload: { pull_request: {
-      number: 152,
-      changed_files: options.changedFiles ?? files.length,
-      head: { repo: options.missingHeadRepo ? null : {
-        full_name: options.headRepo ?? repository,
-      } },
-      base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
-    } },
+    payload: {
+      pull_request: {
+        number: 152,
+        changed_files: options.changedFiles ?? files.length,
+        head: {
+          repo: options.missingHeadRepo
+            ? null
+            : {
+                full_name: options.headRepo ?? repository,
+              },
+        },
+        base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
+      },
+    },
   };
   const github = {
     paginate: async () => paginated,
@@ -70,17 +79,41 @@ test("fails closed for partial, wrong-identity, renamed, extra, and incomplete s
   for (const candidate of [
     { files: canonical.slice(0, 1) },
     { files: canonical.slice(1) },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, status: "added" } : file) },
-    { files: canonical.map((file, index) => index === 1 ? { ...file, status: "deleted" } : file) },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, sha: "f".repeat(40) } : file) },
-    { files: canonical.map((file, index) => index === 1 ? { ...file, sha: "f".repeat(40) } : file) },
-    { files: canonical.map((file, index) => index === 0 ? { ...file, previous_filename: ".github/workflows/old.yml" } : file) },
+    { files: canonical.map((file, index) => (index === 0 ? { ...file, status: "added" } : file)) },
+    {
+      files: canonical.map((file, index) => (index === 1 ? { ...file, status: "deleted" } : file)),
+    },
+    {
+      files: canonical.map((file, index) =>
+        index === 0 ? { ...file, sha: "f".repeat(40) } : file,
+      ),
+    },
+    {
+      files: canonical.map((file, index) =>
+        index === 1 ? { ...file, sha: "f".repeat(40) } : file,
+      ),
+    },
+    {
+      files: canonical.map((file, index) =>
+        index === 0 ? { ...file, previous_filename: ".github/workflows/old.yml" } : file,
+      ),
+    },
     { files: [...canonical, { filename: "docs/extra.md", status: "added", sha: "e".repeat(40) }] },
     { files: [{ filename: workflowPath, status: "modified", sha: "e".repeat(40) }] },
     { files: [{ filename: testPath, status: "modified", sha: "e".repeat(40) }] },
-    { files: [{ filename: "scripts/unrelated.test.mjs", status: "modified", sha: "e".repeat(40) }] },
-    { files: [{ filename: ".github/workflows/unrelated.yml", status: "modified", sha: "e".repeat(40) }] },
-    { files: [{ filename: "governance/unrelated.schema.json", status: "modified", sha: "e".repeat(40) }] },
+    {
+      files: [{ filename: "scripts/unrelated.test.mjs", status: "modified", sha: "e".repeat(40) }],
+    },
+    {
+      files: [
+        { filename: ".github/workflows/unrelated.yml", status: "modified", sha: "e".repeat(40) },
+      ],
+    },
+    {
+      files: [
+        { filename: "governance/unrelated.schema.json", status: "modified", sha: "e".repeat(40) },
+      ],
+    },
     { files: [{ filename: "package.json", status: "modified", sha: "e".repeat(40) }] },
     { files: canonical, changedFiles: 0 },
     { paginated: [workflowTarget], changedFiles: canonical.length },
@@ -108,7 +141,9 @@ test("treats non-authority registry, policy, and documentation data as noop", as
     "governance/unrelated.json",
     "docs/notes.md",
   ]) {
-    const result = await classify({ files: [{ filename, status: "modified", sha: "e".repeat(40) }] });
+    const result = await classify({
+      files: [{ filename, status: "modified", sha: "e".repeat(40) }],
+    });
     assert.deepEqual(result.failures, [], filename);
     assert.equal(result.outputs.get("mode"), "noop", filename);
   }

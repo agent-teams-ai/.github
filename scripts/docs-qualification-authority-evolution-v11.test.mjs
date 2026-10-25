@@ -9,7 +9,10 @@ const reviewedBlobSha = "217b6b6cfcfe0f208f3f7f30fbe948d5c3c5b0e4";
 const workflow = await readFile(workflowPath, "utf8");
 const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
 assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const source = scriptBlock
+  .split("\n")
+  .map((line) => line.slice(12))
+  .join("\n");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const execute = new AsyncFunction("context", "github", "core", source);
 const repository = "agent-teams-ai/.github";
@@ -23,21 +26,25 @@ const exactFile = Object.freeze({
 async function classify(options = {}) {
   const files = options.files ?? [exactFile];
   const paginated = options.paginated ?? files;
-  const changedFiles = Object.hasOwn(options, "changedFiles")
-    ? options.changedFiles
-    : files.length;
+  const changedFiles = Object.hasOwn(options, "changedFiles") ? options.changedFiles : files.length;
   const failures = [];
   const outputs = new Map();
   const context = {
     repo: { owner: "agent-teams-ai", repo: ".github" },
-    payload: { pull_request: {
-      number: 176,
-      changed_files: changedFiles,
-      head: { repo: options.missingHeadRepo ? null : {
-        full_name: options.headRepo ?? repository,
-      } },
-      base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
-    } },
+    payload: {
+      pull_request: {
+        number: 176,
+        changed_files: changedFiles,
+        head: {
+          repo: options.missingHeadRepo
+            ? null
+            : {
+                full_name: options.headRepo ?? repository,
+              },
+        },
+        base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
+      },
+    },
   };
   const github = {
     paginate: async () => paginated,
@@ -58,8 +65,8 @@ async function classify(options = {}) {
 }
 
 test("accepts the exact reviewed PR176 test blob and literal identity", async () => {
-  const acceptedBlobLiteral = /const expectedBlobSha = "(?<sha>[0-9a-f]{40})";/u
-    .exec(source)?.groups?.sha;
+  const acceptedBlobLiteral = /const expectedBlobSha = "(?<sha>[0-9a-f]{40})";/u.exec(source)
+    ?.groups?.sha;
   assert.equal(acceptedBlobLiteral, reviewedBlobSha);
 
   const accepted = await classify();
@@ -159,11 +166,11 @@ test("protects the full workflow, script, schema, and install-authority union", 
 
 test("keeps the successor base-owned, pinned, read-only, and non-executing", () => {
   assert.match(workflow, /^name: Trusted Docs Qualification Authority Evolution V11$/mu);
-  assert.match(workflow, /pull_request_target:\n    types: \[opened, synchronize, reopened, edited\]/u);
   assert.match(
     workflow,
-    /permissions:\n  contents: read\n  pull-requests: read\n\njobs:/u,
+    /pull_request_target:\n    types: \[opened, synchronize, reopened, edited\]/u,
   );
+  assert.match(workflow, /permissions:\n  contents: read\n  pull-requests: read\n\njobs:/u);
   assert.match(
     workflow,
     /trusted-qualification-authority-evolution-v11:\n    name: trusted-qualification-authority-evolution-v11/u,

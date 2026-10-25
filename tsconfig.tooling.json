@@ -10,9 +10,7 @@
     "erasableSyntaxOnly": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
   "include": [
     "scripts/qualification-input-proof.mts",

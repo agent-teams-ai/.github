@@ -114,7 +114,9 @@ export class GateInfrastructureError extends Error {
 }
 
 function assert(condition, message) {
-  if (!condition) {throw new GatePolicyError(message);}
+  if (!condition) {
+    throw new GatePolicyError(message);
+  }
 }
 
 export function gateErrorCode(error) {
@@ -128,34 +130,51 @@ export function shouldRunDocsGate(eventName, refName, defaultBranch) {
 }
 
 function qualificationRuntimeTuple(value, label) {
-  assert(exactKeys(value, QUALIFICATION_RUNTIME_KEYS) &&
-    typeof value.nodeVersion === "string" && value.nodeVersion.length > 0 &&
-    typeof value.pnpmVersion === "string" && value.pnpmVersion.length > 0 &&
-    typeof value.platform === "string" && value.platform.length > 0 &&
-    typeof value.architecture === "string" && value.architecture.length > 0,
-  `${label} is not the closed Node/pnpm/linux-x64 tuple.`);
+  assert(
+    exactKeys(value, QUALIFICATION_RUNTIME_KEYS) &&
+      typeof value.nodeVersion === "string" &&
+      value.nodeVersion.length > 0 &&
+      typeof value.pnpmVersion === "string" &&
+      value.pnpmVersion.length > 0 &&
+      typeof value.platform === "string" &&
+      value.platform.length > 0 &&
+      typeof value.architecture === "string" &&
+      value.architecture.length > 0,
+    `${label} is not the closed Node/pnpm/linux-x64 tuple.`,
+  );
   return Object.freeze({ ...value });
 }
 
 const productPolicyHost = Object.freeze({
   async readQualificationRuntime() {
     const executable = process.env.DOCS_COHORT_PNPM_EXECUTABLE ?? "pnpm";
-    assert(typeof executable === "string" && executable.length > 0 && executable.length <= 4096,
-      "Qualification pnpm executable policy is invalid.");
+    assert(
+      typeof executable === "string" && executable.length > 0 && executable.length <= 4096,
+      "Qualification pnpm executable policy is invalid.",
+    );
     let stdout;
     try {
       ({ stdout } = await execFileAsync(executable, ["--version"], {
-        encoding: "utf8", timeout: 10_000, maxBuffer: 64 * 1024, windowsHide: true,
+        encoding: "utf8",
+        timeout: 10_000,
+        maxBuffer: 64 * 1024,
+        windowsHide: true,
       }));
     } catch (error) {
-      throw new GateInfrastructureError("Unable to observe the trusted qualification pnpm runtime.", { cause: error });
+      throw new GateInfrastructureError(
+        "Unable to observe the trusted qualification pnpm runtime.",
+        { cause: error },
+      );
     }
-    return qualificationRuntimeTuple({
-      nodeVersion: process.versions.node,
-      pnpmVersion: stdout.trim(),
-      platform: process.platform,
-      architecture: process.arch,
-    }, "Observed host qualification runtime");
+    return qualificationRuntimeTuple(
+      {
+        nodeVersion: process.versions.node,
+        pnpmVersion: stdout.trim(),
+        platform: process.platform,
+        architecture: process.arch,
+      },
+      "Observed host qualification runtime",
+    );
   },
 });
 
@@ -176,10 +195,12 @@ function canonicalJson(value) {
     assert(Number.isSafeInteger(value), "Canonical JSON accepts only safe integers.");
     return JSON.stringify(value);
   }
-  if (Array.isArray(value)) {return `[${value.map(canonicalJson).join(",")}]`;}
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalJson).join(",")}]`;
+  }
   assert(typeof value === "object" && value !== undefined, "Value is not canonical JSON.");
   return `{${Object.entries(value)
-    .toSorted(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .toSorted(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
     .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`)
     .join(",")}}`;
 }
@@ -198,17 +219,29 @@ class JsonDuplicateScanner {
   }
 
   #space() {
-    while (/\s/u.test(this.source[this.offset] ?? "")) {this.offset += 1;}
+    while (/\s/u.test(this.source[this.offset] ?? "")) {
+      this.offset += 1;
+    }
   }
 
   #value() {
     this.#space();
     const character = this.source[this.offset];
-    if (character === "{") {this.#object(); return;}
-    if (character === "[") {this.#array(); return;}
-    if (character === '"') {this.#string(); return;}
+    if (character === "{") {
+      this.#object();
+      return;
+    }
+    if (character === "[") {
+      this.#array();
+      return;
+    }
+    if (character === '"') {
+      this.#string();
+      return;
+    }
     const tail = this.source.slice(this.offset);
-    const literal = /^(?:true|false|null|-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)/u.exec(tail)?.[0];
+    const literal =
+      /^(?:true|false|null|-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)/u.exec(tail)?.[0];
     assert(literal !== undefined, `${this.label} is not valid JSON near byte ${this.offset}.`);
     this.offset += literal.length;
   }
@@ -217,7 +250,10 @@ class JsonDuplicateScanner {
     this.offset += 1;
     const keys = new Set();
     this.#space();
-    if (this.source[this.offset] === "}") {this.offset += 1; return;}
+    if (this.source[this.offset] === "}") {
+      this.offset += 1;
+      return;
+    }
     while (true) {
       this.#space();
       assert(this.source[this.offset] === '"', `${this.label} object key is not a JSON string.`);
@@ -229,8 +265,14 @@ class JsonDuplicateScanner {
       this.offset += 1;
       this.#value();
       this.#space();
-      if (this.source[this.offset] === "}") {this.offset += 1; return;}
-      assert(this.source[this.offset] === ",", `${this.label} object entries are not comma-separated.`);
+      if (this.source[this.offset] === "}") {
+        this.offset += 1;
+        return;
+      }
+      assert(
+        this.source[this.offset] === ",",
+        `${this.label} object entries are not comma-separated.`,
+      );
       this.offset += 1;
     }
   }
@@ -238,12 +280,21 @@ class JsonDuplicateScanner {
   #array() {
     this.offset += 1;
     this.#space();
-    if (this.source[this.offset] === "]") {this.offset += 1; return;}
+    if (this.source[this.offset] === "]") {
+      this.offset += 1;
+      return;
+    }
     while (true) {
       this.#value();
       this.#space();
-      if (this.source[this.offset] === "]") {this.offset += 1; return;}
-      assert(this.source[this.offset] === ",", `${this.label} array entries are not comma-separated.`);
+      if (this.source[this.offset] === "]") {
+        this.offset += 1;
+        return;
+      }
+      assert(
+        this.source[this.offset] === ",",
+        `${this.label} array entries are not comma-separated.`,
+      );
       this.offset += 1;
     }
   }
@@ -282,8 +333,10 @@ export function parseYamlStrict(source, label, limit) {
     strict: true,
     uniqueKeys: true,
   });
-  assert(document.errors.length === 0,
-    `${label} is not strict duplicate-free YAML: ${document.errors.map(({ message }) => message).join("; ")}`);
+  assert(
+    document.errors.length === 0,
+    `${label} is not strict duplicate-free YAML: ${document.errors.map(({ message }) => message).join("; ")}`,
+  );
   visit(document, (_key, node) => {
     assert(!isAlias(node), `${label} must not contain YAML aliases.`);
     if (isNode(node)) {
@@ -299,7 +352,19 @@ function exactObject(value) {
 }
 
 function exactKeys(value, keys) {
-  return exactObject(value) && canonicalJson(Object.keys(value).toSorted()) === canonicalJson([...keys].toSorted());
+  return (
+    exactObject(value) &&
+    canonicalJson(
+      Object.keys(value).toSorted((left, right) =>
+        String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+      ),
+    ) ===
+      canonicalJson(
+        [...keys].toSorted((left, right) =>
+          String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+        ),
+      )
+  );
 }
 
 function assertRepositoryAuthority(policyEntry, repository) {
@@ -307,58 +372,79 @@ function assertRepositoryAuthority(policyEntry, repository) {
   const ownership = policyEntry.governance_ownership ?? policyEntry.ownership;
   const role = policyEntry.docs_role ?? policyEntry.role;
   const lifecycle = policyEntry.repository_lifecycle ?? "active";
-  assert(policyEntry.repository_id === repository.id && policyEntry.repository === repository.fullName,
-    "Caller immutable repository ID/name differs from central admission.");
-  const admitted = policyEntry.admission_status === "admitted" &&
+  assert(
+    policyEntry.repository_id === repository.id && policyEntry.repository === repository.fullName,
+    "Caller immutable repository ID/name differs from central admission.",
+  );
+  const admitted =
+    policyEntry.admission_status === "admitted" &&
     ["bound", "rollout_pending"].includes(policyEntry.cohort_binding_status ?? "bound") &&
     policyEntry.observed_cohort_id !== null;
-  const bootstrap = policyEntry.admission_status === "admission_candidate" &&
+  const bootstrap =
+    policyEntry.admission_status === "admission_candidate" &&
     policyEntry.cohort_binding_status === "bootstrap_pending" &&
     policyEntry.desired_cohort_id !== null &&
     policyEntry.observed_cohort_id === null;
-  assert(ownership === "organization_owned" && role === "consumer" && lifecycle === "active" &&
-    (admitted || bootstrap) && policyEntry.protocol_required === true,
-  "Caller is not an active admitted or bootstrap-candidate organization-owned Docs consumer.");
+  assert(
+    ownership === "organization_owned" &&
+      role === "consumer" &&
+      lifecycle === "active" &&
+      (admitted || bootstrap) &&
+      policyEntry.protocol_required === true,
+    "Caller is not an active admitted or bootstrap-candidate organization-owned Docs consumer.",
+  );
 }
 
 function stateFor(lifecycle, repositoryEntry, record, repositoryId, asOf) {
   const cohortId = record.cohort_id;
   const desired = repositoryEntry.desired_cohort_id;
   const observed = repositoryEntry.observed_cohort_id;
-  assert(cohortId === desired || cohortId === observed,
-    "Requested Cohort is neither the central desired nor observed state for this repository.");
+  assert(
+    cohortId === desired || cohortId === observed,
+    "Requested Cohort is neither the central desired nor observed state for this repository.",
+  );
   const registryState = lifecycle.stateById.get(cohortId);
-  let selectable = cohortId === desired &&
+  let selectable =
+    cohortId === desired &&
     isDocsCohortSelectableForRepository(record, registryState, repositoryId);
   if (cohortId === desired && desired !== observed) {
     if (repositoryEntry.cohort_binding_status === "bootstrap_pending" && observed === null) {
-      assert(repositoryEntry.admission_status === "admission_candidate" && selectable,
-        "Bootstrap candidate does not select an eligible desired Cohort.");
+      assert(
+        repositoryEntry.admission_status === "admission_candidate" && selectable,
+        "Bootstrap candidate does not select an eligible desired Cohort.",
+      );
     } else {
       const observedRecord = lifecycle.cohortById.get(observed);
       const transitionKind = docsCohortTransitionKind(observedRecord, record);
-      assert(transitionKind !== undefined,
-        "Central desired/observed Cohorts lack an explicit migration edge.");
-      selectable = transitionKind === "upgrade"
-        ? selectable
-        : isDocsCohortSupportedForExistingBinding(
-          registryState,
-          lifecycle.supportUntilById.get(cohortId),
-          Date.parse(asOf),
-          record,
-          repositoryId,
-        );
+      assert(
+        transitionKind !== undefined,
+        "Central desired/observed Cohorts lack an explicit migration edge.",
+      );
+      selectable =
+        transitionKind === "upgrade"
+          ? selectable
+          : isDocsCohortSupportedForExistingBinding(
+              registryState,
+              lifecycle.supportUntilById.get(cohortId),
+              Date.parse(asOf),
+              record,
+              repositoryId,
+            );
     }
   }
-  const supported = cohortId === observed && isDocsCohortSupportedForExistingBinding(
-    registryState,
-    lifecycle.supportUntilById.get(cohortId),
-    Date.parse(asOf),
-    record,
-    repositoryId,
+  const supported =
+    cohortId === observed &&
+    isDocsCohortSupportedForExistingBinding(
+      registryState,
+      lifecycle.supportUntilById.get(cohortId),
+      Date.parse(asOf),
+      record,
+      repositoryId,
+    );
+  assert(
+    selectable || supported,
+    `Requested Cohort state ${registryState} is neither selectable nor supported for this repository.`,
   );
-  assert(selectable || supported,
-    `Requested Cohort state ${registryState} is neither selectable nor supported for this repository.`);
 }
 
 function packagesFor(record) {
@@ -367,19 +453,26 @@ function packagesFor(record) {
   const names = fivePackage ? COORDINATE_PACKAGES_V2 : MANAGED_PACKAGES;
   return names.map((name) => {
     const value = packages.get(name);
-    assert(value !== undefined && EXACT_VERSION.test(value.version) && SRI.test(value.integrity),
-      `${name} Cohort package authority is invalid.`);
-    return { name, version: value.version, integrity: value.integrity, ...(fivePackage
-      ? { role: value.role }
-      : {}) };
+    assert(
+      value !== undefined && EXACT_VERSION.test(value.version) && SRI.test(value.integrity),
+      `${name} Cohort package authority is invalid.`,
+    );
+    return {
+      name,
+      version: value.version,
+      integrity: value.integrity,
+      ...(fivePackage ? { role: value.role } : {}),
+    };
   });
 }
 
 export function managedStateDigest(body, schemaVersion = 1) {
-  return sha256(canonicalJson({
-    domain: `agent-teams.docs-protocol.managed-state/v${schemaVersion}`,
-    body,
-  }));
+  return sha256(
+    canonicalJson({
+      domain: `agent-teams.docs-protocol.managed-state/v${schemaVersion}`,
+      body,
+    }),
+  );
 }
 
 export function canonicalManagedProjection(profile, cohort, repositoryIdentity) {
@@ -421,13 +514,18 @@ export function canonicalManagedProjection(profile, cohort, repositoryIdentity) 
 export function trustedInstallWorkspaceConfig(expectedPackages, qualificationProfile = "legacy") {
   const fivePackage = ["cohort-v2", "cohort-v3"].includes(qualificationProfile);
   const excludedNames = fivePackage ? COORDINATE_PACKAGES_V2 : MANAGED_PACKAGES;
-  assert(["legacy", "cohort-v2", "cohort-v3"].includes(qualificationProfile) &&
-    Array.isArray(expectedPackages) && expectedPackages.length === (fivePackage ? 5 : 2),
-    "Trusted install must select exactly the managed Cohort packages.");
+  assert(
+    ["legacy", "cohort-v2", "cohort-v3"].includes(qualificationProfile) &&
+      Array.isArray(expectedPackages) &&
+      expectedPackages.length === (fivePackage ? 5 : 2),
+    "Trusted install must select exactly the managed Cohort packages.",
+  );
   const exactVersions = new Map(expectedPackages.map(({ name, version }) => [name, version]));
-  assert(exactVersions.size === excludedNames.length && excludedNames.every((name) =>
-    EXACT_VERSION.test(exactVersions.get(name) ?? "")),
-  "Trusted install package exclusions must be exact managed package versions.");
+  assert(
+    exactVersions.size === excludedNames.length &&
+      excludedNames.every((name) => EXACT_VERSION.test(exactVersions.get(name) ?? "")),
+    "Trusted install package exclusions must be exact managed package versions.",
+  );
   return [
     "packages: []",
     "minimumReleaseAgeExclude:",
@@ -443,36 +541,73 @@ function assertProjection(projection, profile, expected, repository) {
     nameWithOwner: repository.fullName,
   };
 
-  assert([1, 2, 3, 4].includes(profile.schemaVersion) && profile.schemaVersion ===
-    (expected.cohort.schemaVersion === 3 ? 4
-      : expected.cohort.schemaVersion === 2 ? 3 : profile.schemaVersion) &&
-    profile.integrationRoot === "." &&
-    profile.packageManager === "pnpm" && profile.profilePath === QUALIFIED_DOCS_PROFILE_PATH &&
-    profile.skillPath === QUALIFIED_DOCS_SKILL_PATH &&
-    profile.callerWorkflowPath === CALLER_WORKFLOW_PATH &&
-    profile.managedStatePath === MANAGED_PROJECTION_PATH,
-  "Consumer integration profile has a non-canonical managed topology.");
-  assert(canonicalJson(profile.repository) === canonicalJson(repositoryIdentity),
-    "Consumer integration profile repository identity is forged.");
-  assert(canonicalJson(profile.cohort) === canonicalJson(expected.cohort),
-    "Consumer integration profile differs from the exact central immutable Cohort projection.");
+  assert(
+    [1, 2, 3, 4].includes(profile.schemaVersion) &&
+      profile.schemaVersion ===
+        (expected.cohort.schemaVersion === 3
+          ? 4
+          : expected.cohort.schemaVersion === 2
+            ? 3
+            : profile.schemaVersion) &&
+      profile.integrationRoot === "." &&
+      profile.packageManager === "pnpm" &&
+      profile.profilePath === QUALIFIED_DOCS_PROFILE_PATH &&
+      profile.skillPath === QUALIFIED_DOCS_SKILL_PATH &&
+      profile.callerWorkflowPath === CALLER_WORKFLOW_PATH &&
+      profile.managedStatePath === MANAGED_PROJECTION_PATH,
+    "Consumer integration profile has a non-canonical managed topology.",
+  );
+  assert(
+    canonicalJson(profile.repository) === canonicalJson(repositoryIdentity),
+    "Consumer integration profile repository identity is forged.",
+  );
+  assert(
+    canonicalJson(profile.cohort) === canonicalJson(expected.cohort),
+    "Consumer integration profile differs from the exact central immutable Cohort projection.",
+  );
   if (profile.schemaVersion === 4) {
     const optionalKeys = profile.governedDocsRoots === undefined ? [] : ["governedDocsRoots"];
-    assert(exactKeys(profile, ["schemaVersion", "repository", "integrationRoot", "packageManager",
-      "profilePath", "skillPath", "callerWorkflowPath", "managedStatePath", "cohort",
-      "qualification", ...optionalKeys]),
-    "Consumer integration profile v4 has a non-canonical closed shape.");
-    assert(canonicalJson(profile.qualification) === canonicalJson({
-      contractPath: QUALIFICATION_CONTRACT_PATH,
-      gateCommand: "pnpm docs:protocol:check",
-    }), "Consumer integration profile v4 lacks the exact managed qualification route.");
-    assert(profile.governedDocsRoots === undefined ||
-      (Array.isArray(profile.governedDocsRoots) && profile.governedDocsRoots.length > 0 &&
-        profile.governedDocsRoots.length <= 32 && new Set(profile.governedDocsRoots).size ===
-          profile.governedDocsRoots.length && profile.governedDocsRoots.every((path) =>
-            typeof path === "string" && path.length > 0 && path.length <= 512 &&
-            /^(?!.*(?:^|\/)\.{1,2}(?:\/|$))[A-Za-z0-9._@-]{1,255}(?:\/[A-Za-z0-9._@-]{1,255})*$/u.test(path))),
-    "Consumer integration profile v4 governedDocsRoots are not canonical.");
+    assert(
+      exactKeys(profile, [
+        "schemaVersion",
+        "repository",
+        "integrationRoot",
+        "packageManager",
+        "profilePath",
+        "skillPath",
+        "callerWorkflowPath",
+        "managedStatePath",
+        "cohort",
+        "qualification",
+        ...optionalKeys,
+      ]),
+      "Consumer integration profile v4 has a non-canonical closed shape.",
+    );
+    assert(
+      canonicalJson(profile.qualification) ===
+        canonicalJson({
+          contractPath: QUALIFICATION_CONTRACT_PATH,
+          gateCommand: "pnpm docs:protocol:check",
+        }),
+      "Consumer integration profile v4 lacks the exact managed qualification route.",
+    );
+    assert(
+      profile.governedDocsRoots === undefined ||
+        (Array.isArray(profile.governedDocsRoots) &&
+          profile.governedDocsRoots.length > 0 &&
+          profile.governedDocsRoots.length <= 32 &&
+          new Set(profile.governedDocsRoots).size === profile.governedDocsRoots.length &&
+          profile.governedDocsRoots.every(
+            (path) =>
+              typeof path === "string" &&
+              path.length > 0 &&
+              path.length <= 512 &&
+              /^(?!.*(?:^|\/)\.{1,2}(?:\/|$))[A-Za-z0-9._@-]{1,255}(?:\/[A-Za-z0-9._@-]{1,255})*$/u.test(
+                path,
+              ),
+          )),
+      "Consumer integration profile v4 governedDocsRoots are not canonical.",
+    );
   }
 
   const expectedManagedProjection = canonicalManagedProjection(
@@ -480,84 +615,135 @@ function assertProjection(projection, profile, expected, repository) {
     expected.cohort,
     repositoryIdentity,
   );
-  assert(canonicalJson(projection) === canonicalJson(expectedManagedProjection),
-    "Managed projection differs from the exact central immutable Cohort projection.");
+  assert(
+    canonicalJson(projection) === canonicalJson(expectedManagedProjection),
+    "Managed projection differs from the exact central immutable Cohort projection.",
+  );
 }
 
 function assertCallerWorkflow(workflow, source, expected) {
-  assert(sha256(source) === expected.callerWorkflowDigest,
-    "Caller workflow bytes differ from the Cohort-qualified rendered asset.");
-  assert(exactKeys(workflow, ["name", "on", "permissions", "jobs"]) &&
-    workflow.name === "Documentation Protocol" &&
-    canonicalJson(workflow.permissions) === canonicalJson({ contents: "read", "id-token": "write" }) &&
-    exactKeys(workflow.jobs, ["docs-protocol"]),
-  "Caller workflow root is not the canonical inputless shape.");
-  assert(exactKeys(workflow.on, ["merge_group", "pull_request", "push"]) &&
-    workflow.on.pull_request === null && workflow.on.merge_group === null && workflow.on.push === null,
-  "Caller workflow must use identical inputless PR, merge queue, and unfiltered push triggers.");
+  assert(
+    sha256(source) === expected.callerWorkflowDigest,
+    "Caller workflow bytes differ from the Cohort-qualified rendered asset.",
+  );
+  assert(
+    exactKeys(workflow, ["name", "on", "permissions", "jobs"]) &&
+      workflow.name === "Documentation Protocol" &&
+      canonicalJson(workflow.permissions) ===
+        canonicalJson({ contents: "read", "id-token": "write" }) &&
+      exactKeys(workflow.jobs, ["docs-protocol"]),
+    "Caller workflow root is not the canonical inputless shape.",
+  );
+  assert(
+    exactKeys(workflow.on, ["merge_group", "pull_request", "push"]) &&
+      workflow.on.pull_request === null &&
+      workflow.on.merge_group === null &&
+      workflow.on.push === null,
+    "Caller workflow must use identical inputless PR, merge queue, and unfiltered push triggers.",
+  );
   const job = workflow.jobs["docs-protocol"];
-  assert(exactKeys(job, ["uses"]) && job.uses ===
-    `${expected.workflow.repository}/${expected.workflow.path}@${expected.workflow.revision}`,
-  "Caller workflow must be inputless and bind the exact reusable workflow revision.");
+  assert(
+    exactKeys(job, ["uses"]) &&
+      job.uses ===
+        `${expected.workflow.repository}/${expected.workflow.path}@${expected.workflow.revision}`,
+    "Caller workflow must be inputless and bind the exact reusable workflow revision.",
+  );
 }
 
 function assertManifest(manifest, expectedPackages) {
-  assert(manifest.devEngines?.packageManager === undefined,
-    "Consumer devEngines.packageManager is forbidden; packageManager is the sole pnpm identity authority.");
+  assert(
+    manifest.devEngines?.packageManager === undefined,
+    "Consumer devEngines.packageManager is forbidden; packageManager is the sole pnpm identity authority.",
+  );
   const pnpmVersion = SUPPORTED_CONSUMER_PNPM.exec(manifest.packageManager ?? "");
-  assert(pnpmVersion !== null && Number(pnpmVersion[1]) >= 17,
-    "Consumer packageManager must pin an exact pnpm version in >=11.17.0 <12.");
+  assert(
+    pnpmVersion !== null && Number(pnpmVersion[1]) >= 17,
+    "Consumer packageManager must pin an exact pnpm version in >=11.17.0 <12.",
+  );
   const pnpm = manifest.pnpm;
-  assert(!exactObject(pnpm) || !["overrides", "packageExtensions", "patchedDependencies"]
-    .some((key) => Object.hasOwn(pnpm, key)),
-  "Consumer package.json contains forbidden pnpm mutation policy.");
-  assert(manifest.resolutions === undefined, "Consumer package.json contains forbidden resolutions.");
+  assert(
+    !exactObject(pnpm) ||
+      !["overrides", "packageExtensions", "patchedDependencies"].some((key) =>
+        Object.hasOwn(pnpm, key),
+      ),
+    "Consumer package.json contains forbidden pnpm mutation policy.",
+  );
+  assert(
+    manifest.resolutions === undefined,
+    "Consumer package.json contains forbidden resolutions.",
+  );
   const rootPackages = expectedPackages.filter(({ role }) => role !== "transitive");
   const transitivePackages = expectedPackages.filter(({ role }) => role === "transitive");
   for (const expected of rootPackages) {
-    assert(manifest.devDependencies?.[expected.name] === expected.version,
-      `${expected.name} must be one exact root devDependency.`);
+    assert(
+      manifest.devDependencies?.[expected.name] === expected.version,
+      `${expected.name} must be one exact root devDependency.`,
+    );
     for (const section of ["dependencies", "optionalDependencies", "peerDependencies"]) {
-      assert(manifest[section]?.[expected.name] === undefined,
-        `${expected.name} must not appear in ${section}.`);
+      assert(
+        manifest[section]?.[expected.name] === undefined,
+        `${expected.name} must not appear in ${section}.`,
+      );
     }
   }
   for (const expected of transitivePackages) {
-    for (const section of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
-      assert(manifest[section]?.[expected.name] === undefined,
-        `${expected.name} must remain a Cohort-qualified transitive coordinate.`);
+    for (const section of [
+      "dependencies",
+      "devDependencies",
+      "optionalDependencies",
+      "peerDependencies",
+    ]) {
+      assert(
+        manifest[section]?.[expected.name] === undefined,
+        `${expected.name} must remain a Cohort-qualified transitive coordinate.`,
+      );
     }
   }
 }
 
 function validateExactPnpmLockV2(manifest, lock, expectedPackages, options) {
   assertNoForbiddenLockPolicy(lock);
-  assert(exactObject(lock.importers?.["."]) && exactObject(lock.packages) && exactObject(lock.snapshots),
-    "Consumer v2 lockfile is missing its root importer, packages, or snapshots.");
+  assert(
+    exactObject(lock.importers?.["."]) && exactObject(lock.packages) && exactObject(lock.snapshots),
+    "Consumer v2 lockfile is missing its root importer, packages, or snapshots.",
+  );
   const byName = new Map(expectedPackages.map((entry) => [entry.name, entry]));
   const root = lock.importers["."];
   const resolvedLocators = new Map();
   for (const expected of expectedPackages) {
     const rootValues = managedEntries(root, expected.name);
-    assert(rootValues.length === (expected.role === "direct" ? 1 : 0),
-      `${expected.name} v2 root/transitive role differs from the Cohort.`);
+    assert(
+      rootValues.length === (expected.role === "direct" ? 1 : 0),
+      `${expected.name} v2 root/transitive role differs from the Cohort.`,
+    );
     if (expected.role === "direct") {
-      assert(rootValues[0]?.specifier === expected.version &&
-        rootValues[0]?.version?.split("(", 1)[0] === expected.version,
-      `${expected.name} v2 root binding is not exact.`);
+      assert(
+        rootValues[0]?.specifier === expected.version &&
+          rootValues[0]?.version?.split("(", 1)[0] === expected.version,
+        `${expected.name} v2 root binding is not exact.`,
+      );
       resolvedLocators.set(expected.name, `${expected.name}@${rootValues[0].version}`);
     }
     const physicalKey = `${expected.name}@${expected.version}`;
-    const physicalKeys = Object.keys(lock.packages).filter((key) => key.startsWith(`${expected.name}@`));
-    assert(physicalKeys.length === 1 && physicalKeys[0] === physicalKey &&
-      lock.packages[physicalKey]?.resolution?.integrity === expected.integrity,
-    `${expected.name} v2 physical resolution is not exact.`);
+    const physicalKeys = Object.keys(lock.packages).filter((key) =>
+      key.startsWith(`${expected.name}@`),
+    );
+    assert(
+      physicalKeys.length === 1 &&
+        physicalKeys[0] === physicalKey &&
+        lock.packages[physicalKey]?.resolution?.integrity === expected.integrity,
+      `${expected.name} v2 physical resolution is not exact.`,
+    );
   }
   for (const [importerName, importer] of Object.entries(lock.importers)) {
-    if (importerName === ".") {continue;}
+    if (importerName === ".") {
+      continue;
+    }
     for (const expected of expectedPackages) {
-      assert(managedEntries(importer, expected.name).length === 0,
-        `${expected.name} must not be a direct root in nested importer ${importerName}.`);
+      assert(
+        managedEntries(importer, expected.name).length === 0,
+        `${expected.name} must not be a direct root in nested importer ${importerName}.`,
+      );
     }
   }
   const internalEdges = [];
@@ -565,35 +751,51 @@ function validateExactPnpmLockV2(manifest, lock, expectedPackages, options) {
   const visited = new Set();
   while (pending.length > 0) {
     const name = pending.shift();
-    if (visited.has(name)) {continue;}
+    if (visited.has(name)) {
+      continue;
+    }
     visited.add(name);
     const locator = resolvedLocators.get(name);
     const snapshot = lock.snapshots[locator];
     assert(exactObject(snapshot), `${name} v2 snapshot is missing at its exact resolved locator.`);
     for (const section of ["dependencies", "optionalDependencies"]) {
       for (const [dependencyName, raw] of Object.entries(snapshot[section] ?? {})) {
-        if (!byName.has(dependencyName)) {continue;}
-        assert(typeof raw === "string" && raw.split("(", 1)[0] === byName.get(dependencyName).version,
-          `${name} -> ${dependencyName} does not bind the exact Cohort version.`);
+        if (!byName.has(dependencyName)) {
+          continue;
+        }
+        assert(
+          typeof raw === "string" && raw.split("(", 1)[0] === byName.get(dependencyName).version,
+          `${name} -> ${dependencyName} does not bind the exact Cohort version.`,
+        );
         const dependencyLocator = `${dependencyName}@${raw}`;
-        assert(resolvedLocators.get(dependencyName) === undefined ||
-          resolvedLocators.get(dependencyName) === dependencyLocator,
-        `${dependencyName} has ambiguous managed snapshot variants.`);
+        assert(
+          resolvedLocators.get(dependencyName) === undefined ||
+            resolvedLocators.get(dependencyName) === dependencyLocator,
+          `${dependencyName} has ambiguous managed snapshot variants.`,
+        );
         resolvedLocators.set(dependencyName, dependencyLocator);
         internalEdges.push({ from: name, to: dependencyName });
         pending.push(dependencyName);
       }
     }
   }
-  assert(resolvedLocators.size === expectedPackages.length,
-    "Consumer v2 runtime closure does not resolve all five managed identities.");
+  assert(
+    resolvedLocators.size === expectedPackages.length,
+    "Consumer v2 runtime closure does not resolve all five managed identities.",
+  );
   for (const expected of expectedPackages) {
     const physical = `${expected.name}@${expected.version}`;
-    const variants = Object.keys(lock.snapshots).filter((locator) => locator.split("(", 1)[0] === physical);
-    assert(variants.length === 1 && variants[0] === resolvedLocators.get(expected.name),
-      `${expected.name} has an additional or unresolved managed snapshot variant.`);
+    const variants = Object.keys(lock.snapshots).filter(
+      (locator) => locator.split("(", 1)[0] === physical,
+    );
+    assert(
+      variants.length === 1 && variants[0] === resolvedLocators.get(expected.name),
+      `${expected.name} has an additional or unresolved managed snapshot variant.`,
+    );
   }
-  internalEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
+  internalEdges.sort(({ from: a, to: b }, { from: c, to: d }) =>
+    a === c ? b.localeCompare(d) : a.localeCompare(c),
+  );
   const expectedEdges = [
     { from: "@agent-teams/document-authoring", to: "@agent-teams/repository-mutation" },
     { from: "@agent-teams/docs-protocol", to: "@agent-teams/document-authoring" },
@@ -603,16 +805,21 @@ function validateExactPnpmLockV2(manifest, lock, expectedPackages, options) {
     { from: "@agent-teams/engineering-foundation", to: "@agent-teams/document-authoring" },
     { from: "@agent-teams/engineering-foundation", to: "@agent-teams/repository-mutation" },
   ];
-  expectedEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
-  assert(canonicalJson(internalEdges) === canonicalJson(expectedEdges),
-    "Consumer v2 managed dependency edges are not exactly closed.");
+  expectedEdges.sort(({ from: a, to: b }, { from: c, to: d }) =>
+    a === c ? b.localeCompare(d) : a.localeCompare(c),
+  );
+  assert(
+    canonicalJson(internalEdges) === canonicalJson(expectedEdges),
+    "Consumer v2 managed dependency edges are not exactly closed.",
+  );
   assertManifest(manifest, expectedPackages);
   assertSafeWorkspacePolicy(options.workspace, lock, options.qualifiedRuntimeClosureLock);
 }
 
 function managedEntries(container, name) {
-  return ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]
-    .flatMap((section) => container?.[section]?.[name] === undefined ? [] : [container[section][name]]);
+  return ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"].flatMap(
+    (section) => (container?.[section]?.[name] === undefined ? [] : [container[section][name]]),
+  );
 }
 
 function assertNoForbiddenLockPolicy(value, path = "pnpm-lock.yaml") {
@@ -620,36 +827,45 @@ function assertNoForbiddenLockPolicy(value, path = "pnpm-lock.yaml") {
     value.forEach((entry, index) => assertNoForbiddenLockPolicy(entry, `${path}/${index}`));
     return;
   }
-  if (!exactObject(value)) {return;}
+  if (!exactObject(value)) {
+    return;
+  }
   for (const [key, entry] of Object.entries(value)) {
     assert(!ALWAYS_FORBIDDEN_LOCK_KEYS.has(key), `${path} contains forbidden lock policy ${key}.`);
-    assert(!ROOT_LOCK_POLICY_KEYS.has(key) || path === "pnpm-lock.yaml",
-      `${path} contains nested lock policy ${key}.`);
+    assert(
+      !ROOT_LOCK_POLICY_KEYS.has(key) || path === "pnpm-lock.yaml",
+      `${path} contains nested lock policy ${key}.`,
+    );
     assertNoForbiddenLockPolicy(entry, `${path}/${key}`);
   }
 }
 
 function packageSelectorPart(value, label) {
-  assert(typeof value === "string" && value.length > 0 && value.length <= 214,
-    `${label} is not a bounded package selector.`);
+  assert(
+    typeof value === "string" && value.length > 0 && value.length <= 214,
+    `${label} is not a bounded package selector.`,
+  );
   const separator = value.startsWith("@")
     ? value.indexOf("@", value.indexOf("/") + 1)
     : value.indexOf("@");
   const name = separator === -1 ? value : value.slice(0, separator);
   const range = separator === -1 ? null : value.slice(separator + 1);
-  assert(PACKAGE_NAME.test(name) && (range === null || (range.length > 0 && !/[>\s]/u.test(range))),
-    `${label} is not a supported package selector.`);
+  assert(
+    PACKAGE_NAME.test(name) && (range === null || (range.length > 0 && !/[>\s]/u.test(range))),
+    `${label} is not a supported package selector.`,
+  );
   return { name, range };
 }
 
 function overrideSelector(value) {
-  assert(typeof value === "string" && value.split(">").length <= 2,
-    `pnpm override selector ${String(value)} is not a supported single-edge selector.`);
+  assert(
+    typeof value === "string" && value.split(">").length <= 2,
+    `pnpm override selector ${String(value)} is not a supported single-edge selector.`,
+  );
   const parts = value.split(">");
   const child = packageSelectorPart(parts.at(-1), `pnpm override selector ${value}`);
-  const parent = parts.length === 2
-    ? packageSelectorPart(parts[0], `pnpm override parent ${value}`)
-    : null;
+  const parent =
+    parts.length === 2 ? packageSelectorPart(parts[0], `pnpm override parent ${value}`) : null;
   return { child, parent };
 }
 
@@ -678,267 +894,481 @@ function qualifiedVersionsByName(qualifiedRuntimeClosureLock) {
 function assertExactSecurityOverrides(workspace, lock, qualifiedRuntimeClosureLock) {
   const workspaceOverrides = workspace?.overrides;
   const lockOverrides = lock.overrides;
-  assert((workspaceOverrides === undefined) === (lockOverrides === undefined),
-    "pnpm overrides must be present identically in root workspace policy and lockfile metadata.");
-  if (workspaceOverrides === undefined) {return;}
-  assert(exactObject(workspaceOverrides) && exactObject(lockOverrides) &&
-    Object.keys(workspaceOverrides).length <= 64 &&
-    canonicalJson(workspaceOverrides) === canonicalJson(lockOverrides),
-  "pnpm overrides must be one bounded exact root policy projection.");
+  assert(
+    (workspaceOverrides === undefined) === (lockOverrides === undefined),
+    "pnpm overrides must be present identically in root workspace policy and lockfile metadata.",
+  );
+  if (workspaceOverrides === undefined) {
+    return;
+  }
+  assert(
+    exactObject(workspaceOverrides) &&
+      exactObject(lockOverrides) &&
+      Object.keys(workspaceOverrides).length <= 64 &&
+      canonicalJson(workspaceOverrides) === canonicalJson(lockOverrides),
+    "pnpm overrides must be one bounded exact root policy projection.",
+  );
   const qualifiedVersions = qualifiedVersionsByName(qualifiedRuntimeClosureLock);
   for (const [selector, target] of Object.entries(workspaceOverrides)) {
     const { child } = overrideSelector(selector);
-    assert(!MANAGED_PACKAGES.includes(child.name),
-      `pnpm override ${selector} must not target a managed Cohort package.`);
-    assert(typeof target === "string" && EXACT_VERSION.test(target),
-      `pnpm override ${selector} must select one exact registry version.`);
+    assert(
+      !MANAGED_PACKAGES.includes(child.name),
+      `pnpm override ${selector} must not target a managed Cohort package.`,
+    );
+    assert(
+      typeof target === "string" && EXACT_VERSION.test(target),
+      `pnpm override ${selector} must select one exact registry version.`,
+    );
     const qualified = qualifiedVersions.get(child.name);
-    assert(qualified === undefined || (qualified.size === 1 && qualified.has(target)),
-      `pnpm override ${selector} changes a Cohort-qualified runtime package.`);
+    assert(
+      qualified === undefined || (qualified.size === 1 && qualified.has(target)),
+      `pnpm override ${selector} changes a Cohort-qualified runtime package.`,
+    );
   }
 }
 
 function assertSafePackageExtensions(workspace, lock, qualifiedRuntimeClosureLock) {
   const extensions = workspace?.packageExtensions;
   const checksum = lock.packageExtensionsChecksum;
-  assert((extensions === undefined) === (checksum === undefined),
-    "pnpm package extensions must have one lockfile checksum projection.");
-  if (extensions === undefined) {return;}
-  assert(exactObject(extensions) && Object.keys(extensions).length <= 32 &&
-    typeof checksum === "string" && PACKAGE_EXTENSION_CHECKSUM.test(checksum),
-  "pnpm package extensions or their checksum exceed the safe policy shape.");
+  assert(
+    (extensions === undefined) === (checksum === undefined),
+    "pnpm package extensions must have one lockfile checksum projection.",
+  );
+  if (extensions === undefined) {
+    return;
+  }
+  assert(
+    exactObject(extensions) &&
+      Object.keys(extensions).length <= 32 &&
+      typeof checksum === "string" &&
+      PACKAGE_EXTENSION_CHECKSUM.test(checksum),
+    "pnpm package extensions or their checksum exceed the safe policy shape.",
+  );
   const qualifiedNames = qualifiedVersionsByName(qualifiedRuntimeClosureLock);
   for (const [selector, extension] of Object.entries(extensions)) {
     const selected = packageSelectorPart(selector, `pnpm package extension selector ${selector}`);
-    assert(!MANAGED_PACKAGES.includes(selected.name) && !qualifiedNames.has(selected.name),
-      `pnpm package extension ${selector} must not target the qualified Docs runtime.`);
-    assert(exactKeys(extension, ["peerDependencies"]) && exactObject(extension.peerDependencies) &&
-      Object.keys(extension.peerDependencies).length <= 32,
-    `pnpm package extension ${selector} may declare only bounded peerDependencies.`);
+    assert(
+      !MANAGED_PACKAGES.includes(selected.name) && !qualifiedNames.has(selected.name),
+      `pnpm package extension ${selector} must not target the qualified Docs runtime.`,
+    );
+    assert(
+      exactKeys(extension, ["peerDependencies"]) &&
+        exactObject(extension.peerDependencies) &&
+        Object.keys(extension.peerDependencies).length <= 32,
+      `pnpm package extension ${selector} may declare only bounded peerDependencies.`,
+    );
     for (const [name, range] of Object.entries(extension.peerDependencies)) {
-      assert(PACKAGE_NAME.test(name) && !MANAGED_PACKAGES.includes(name) &&
-        typeof range === "string" && range.length > 0 && range.length <= 128 &&
-        !/[:/\\$]/u.test(range),
-      `pnpm package extension ${selector} contains an unsafe peer dependency.`);
+      assert(
+        PACKAGE_NAME.test(name) &&
+          !MANAGED_PACKAGES.includes(name) &&
+          typeof range === "string" &&
+          range.length > 0 &&
+          range.length <= 128 &&
+          !/[:/\\$]/u.test(range),
+        `pnpm package extension ${selector} contains an unsafe peer dependency.`,
+      );
     }
   }
 }
 
 function assertSafeWorkspacePolicy(workspace, lock, qualifiedRuntimeClosureLock) {
-  assert(workspace === undefined || exactObject(workspace), "pnpm-workspace.yaml must be one mapping.");
-  assert(workspace?.patchedDependencies === undefined && workspace?.hooks === undefined,
-    "pnpm workspace contains forbidden patches or hooks.");
+  assert(
+    workspace === undefined || exactObject(workspace),
+    "pnpm-workspace.yaml must be one mapping.",
+  );
+  assert(
+    workspace?.patchedDependencies === undefined && workspace?.hooks === undefined,
+    "pnpm workspace contains forbidden patches or hooks.",
+  );
   assertExactSecurityOverrides(workspace, lock, qualifiedRuntimeClosureLock);
   assertSafePackageExtensions(workspace, lock, qualifiedRuntimeClosureLock);
 }
 
 export function validateExactPnpmLock(manifest, lock, expectedPackages, options = {}) {
-  assert(["legacy", "cohort-v2", "cohort-v3"].includes(options.qualificationProfile ?? "legacy"),
-    "Qualification profile must be explicit.");
+  assert(
+    ["legacy", "cohort-v2", "cohort-v3"].includes(options.qualificationProfile ?? "legacy"),
+    "Qualification profile must be explicit.",
+  );
   if (["cohort-v2", "cohort-v3"].includes(options.qualificationProfile)) {
     validateExactPnpmLockV2(manifest, lock, expectedPackages, options);
     return;
   }
   assert(expectedPackages.length === 2, "Legacy qualification requires exactly two packages.");
   assertNoForbiddenLockPolicy(lock);
-  assert(exactObject(lock.importers) && exactObject(lock.importers["."]) && exactObject(lock.packages),
-    "Consumer pnpm lockfile is missing its root importer or packages map.");
+  assert(
+    exactObject(lock.importers) && exactObject(lock.importers["."]) && exactObject(lock.packages),
+    "Consumer pnpm lockfile is missing its root importer or packages map.",
+  );
   const root = lock.importers["."];
   const rawByName = new Map();
   for (const expected of expectedPackages) {
     const rootValues = managedEntries(root, expected.name);
-    assert(rootValues.length === 1 && exactObject(rootValues[0]),
-      `${expected.name} root lock binding must be exact and unique.`);
+    assert(
+      rootValues.length === 1 && exactObject(rootValues[0]),
+      `${expected.name} root lock binding must be exact and unique.`,
+    );
     const binding = rootValues[0];
-    assert(binding.specifier === expected.version && typeof binding.version === "string" &&
-      !binding.version.startsWith("npm:") && binding.version.split("(", 1)[0] === expected.version,
-    `${expected.name} root lock binding differs from its exact Cohort version.`);
+    assert(
+      binding.specifier === expected.version &&
+        typeof binding.version === "string" &&
+        !binding.version.startsWith("npm:") &&
+        binding.version.split("(", 1)[0] === expected.version,
+      `${expected.name} root lock binding differs from its exact Cohort version.`,
+    );
     rawByName.set(expected.name, binding.version);
     for (const [importerName, importer] of Object.entries(lock.importers)) {
-      if (importerName === ".") {continue;}
-      assert(managedEntries(importer, expected.name).length === 0,
-        `${expected.name} is forbidden in nested importer ${importerName}.`);
+      if (importerName === ".") {
+        continue;
+      }
+      assert(
+        managedEntries(importer, expected.name).length === 0,
+        `${expected.name} is forbidden in nested importer ${importerName}.`,
+      );
     }
     const physicalKey = `${expected.name}@${expected.version}`;
-    const physicalKeys = Object.keys(lock.packages).filter((key) => key.startsWith(`${expected.name}@`));
-    assert(physicalKeys.length === 1 && physicalKeys[0] === physicalKey,
-      `${expected.name} must have one exact physical package resolution.`);
-    assert(lock.packages[physicalKey]?.resolution?.integrity === expected.integrity,
-      `${expected.name} physical resolution integrity differs from the Cohort.`);
-    const snapshotKeys = Object.keys(lock.snapshots ?? {}).filter((key) => key.startsWith(`${expected.name}@`));
-    assert(snapshotKeys.length === 1 && snapshotKeys[0] === `${expected.name}@${binding.version}`,
-      `${expected.name} must have one root-bound physical snapshot.`);
+    const physicalKeys = Object.keys(lock.packages).filter((key) =>
+      key.startsWith(`${expected.name}@`),
+    );
+    assert(
+      physicalKeys.length === 1 && physicalKeys[0] === physicalKey,
+      `${expected.name} must have one exact physical package resolution.`,
+    );
+    assert(
+      lock.packages[physicalKey]?.resolution?.integrity === expected.integrity,
+      `${expected.name} physical resolution integrity differs from the Cohort.`,
+    );
+    const snapshotKeys = Object.keys(lock.snapshots ?? {}).filter((key) =>
+      key.startsWith(`${expected.name}@`),
+    );
+    assert(
+      snapshotKeys.length === 1 && snapshotKeys[0] === `${expected.name}@${binding.version}`,
+      `${expected.name} must have one root-bound physical snapshot.`,
+    );
   }
-  const docsSnapshot = lock.snapshots?.[
-    `@agent-teams/docs-protocol@${rawByName.get("@agent-teams/docs-protocol")}`
-  ];
+  const docsSnapshot =
+    lock.snapshots?.[`@agent-teams/docs-protocol@${rawByName.get("@agent-teams/docs-protocol")}`];
   const foundationRaw = rawByName.get("@agent-teams/engineering-foundation");
-  assert(docsSnapshot?.dependencies?.["@agent-teams/engineering-foundation"] === foundationRaw,
-    "Docs Protocol lock snapshot has the wrong exact Foundation dependency.");
+  assert(
+    docsSnapshot?.dependencies?.["@agent-teams/engineering-foundation"] === foundationRaw,
+    "Docs Protocol lock snapshot has the wrong exact Foundation dependency.",
+  );
   assertManifest(manifest, expectedPackages);
   assertSafeWorkspacePolicy(options.workspace, lock, options.qualifiedRuntimeClosureLock);
 }
 
 function assertRepositoryTree(paths) {
-  assert(Array.isArray(paths) && paths.length <= 100_000, "Caller Git tree is missing or exceeds its safety bound.");
+  assert(
+    Array.isArray(paths) && paths.length <= 100_000,
+    "Caller Git tree is missing or exceeds its safety bound.",
+  );
   const normalized = paths.map(({ path, type, mode }) => ({ path, type, mode }));
   const files = new Map(normalized.map((entry) => [entry.path, entry]));
-  for (const required of [INTEGRATION_PROFILE_PATH, MANAGED_PROJECTION_PATH, CALLER_WORKFLOW_PATH,
-    "package.json", "pnpm-lock.yaml"]) {
+  for (const required of [
+    INTEGRATION_PROFILE_PATH,
+    MANAGED_PROJECTION_PATH,
+    CALLER_WORKFLOW_PATH,
+    "package.json",
+    "pnpm-lock.yaml",
+  ]) {
     const entry = files.get(required);
-    assert(entry?.type === "blob" && entry.mode !== "120000", `${required} must be one regular committed file.`);
+    assert(
+      entry?.type === "blob" && entry.mode !== "120000",
+      `${required} must be one regular committed file.`,
+    );
   }
   const workspace = files.get(PNPM_WORKSPACE_PATH);
-  assert(workspace === undefined || (workspace.type === "blob" && workspace.mode !== "120000"),
-    `${PNPM_WORKSPACE_PATH} must be one regular committed file when present.`);
+  assert(
+    workspace === undefined || (workspace.type === "blob" && workspace.mode !== "120000"),
+    `${PNPM_WORKSPACE_PATH} must be one regular committed file when present.`,
+  );
   for (const { path } of normalized) {
-    assert(!path.split("/").includes("node_modules"),
-      "Consumer tree must not commit or prepopulate node_modules.");
-    assert(path !== ".pnpmfile.cjs" && !path.endsWith("/.pnpmfile.cjs"),
-      "Consumer tree contains forbidden .pnpmfile.cjs.");
-    assert(path === "pnpm-lock.yaml" || !path.endsWith("/pnpm-lock.yaml"),
-      `Consumer tree contains unsupported nested lockfile ${path}.`);
-    assert(path === PNPM_WORKSPACE_PATH || !path.endsWith(`/${PNPM_WORKSPACE_PATH}`),
-      `Consumer tree contains unsupported nested workspace policy ${path}.`);
+    assert(
+      !path.split("/").includes("node_modules"),
+      "Consumer tree must not commit or prepopulate node_modules.",
+    );
+    assert(
+      path !== ".pnpmfile.cjs" && !path.endsWith("/.pnpmfile.cjs"),
+      "Consumer tree contains forbidden .pnpmfile.cjs.",
+    );
+    assert(
+      path === "pnpm-lock.yaml" || !path.endsWith("/pnpm-lock.yaml"),
+      `Consumer tree contains unsupported nested lockfile ${path}.`,
+    );
+    assert(
+      path === PNPM_WORKSPACE_PATH || !path.endsWith(`/${PNPM_WORKSPACE_PATH}`),
+      `Consumer tree contains unsupported nested workspace policy ${path}.`,
+    );
   }
 }
 
 export function validateQualificationContractV2Structure(integration, contract) {
-  assert([2, 4].includes(integration?.schemaVersion) && canonicalJson(integration.qualification) === canonicalJson({ contractPath: QUALIFICATION_CONTRACT_PATH, gateCommand: "pnpm docs:protocol:check" }),
-    "Managed integration qualification wrapper must own the exact contract path and semantic gate command.");
-  assert(contract !== null && typeof contract === "object" && !Array.isArray(contract) && canonicalJson(Object.keys(contract).toSorted()) === canonicalJson(["scenarios", "schemaVersion"]) && contract.schemaVersion === 2 && Array.isArray(contract.scenarios) && contract.scenarios.length >= 1 && contract.scenarios.length <= 32,
-    "Qualification contract must be one bounded schemaVersion 2 scenarios document.");
-  const ids = []; const types = [];
+  assert(
+    [2, 4].includes(integration?.schemaVersion) &&
+      canonicalJson(integration.qualification) ===
+        canonicalJson({
+          contractPath: QUALIFICATION_CONTRACT_PATH,
+          gateCommand: "pnpm docs:protocol:check",
+        }),
+    "Managed integration qualification wrapper must own the exact contract path and semantic gate command.",
+  );
+  assert(
+    contract !== null &&
+      typeof contract === "object" &&
+      !Array.isArray(contract) &&
+      canonicalJson(
+        Object.keys(contract).toSorted((left, right) =>
+          String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+        ),
+      ) === canonicalJson(["scenarios", "schemaVersion"]) &&
+      contract.schemaVersion === 2 &&
+      Array.isArray(contract.scenarios) &&
+      contract.scenarios.length >= 1 &&
+      contract.scenarios.length <= 32,
+    "Qualification contract must be one bounded schemaVersion 2 scenarios document.",
+  );
+  const ids = [];
+  const types = [];
   for (const scenario of contract.scenarios) {
-    assert(scenario !== null && typeof scenario === "object" && !Array.isArray(scenario) && canonicalJson(Object.keys(scenario).toSorted()) === canonicalJson(["expected", "id", "intent", "type"]) && typeof scenario.id === "string" && scenario.id.length > 0 && typeof scenario.type === "string" && scenario.type.length > 0 && scenario.intent !== null && typeof scenario.intent === "object" && !Array.isArray(scenario.intent) && scenario.expected !== null && typeof scenario.expected === "object" && !Array.isArray(scenario.expected),
-      "Every qualification scenario must have the exact v2 structural envelope.");
-    ids.push(scenario.id); types.push(scenario.type);
+    assert(
+      scenario !== null &&
+        typeof scenario === "object" &&
+        !Array.isArray(scenario) &&
+        canonicalJson(
+          Object.keys(scenario).toSorted((left, right) =>
+            String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+          ),
+        ) === canonicalJson(["expected", "id", "intent", "type"]) &&
+        typeof scenario.id === "string" &&
+        scenario.id.length > 0 &&
+        typeof scenario.type === "string" &&
+        scenario.type.length > 0 &&
+        scenario.intent !== null &&
+        typeof scenario.intent === "object" &&
+        !Array.isArray(scenario.intent) &&
+        scenario.expected !== null &&
+        typeof scenario.expected === "object" &&
+        !Array.isArray(scenario.expected),
+      "Every qualification scenario must have the exact v2 structural envelope.",
+    );
+    ids.push(scenario.id);
+    types.push(scenario.type);
   }
   assert(new Set(ids).size === ids.length, "Qualification scenario IDs must be unique.");
-  assert(new Set(types).size === types.length, "Qualification scenarios must contain exactly one scenario per declared type.");
+  assert(
+    new Set(types).size === types.length,
+    "Qualification scenarios must contain exactly one scenario per declared type.",
+  );
 }
 
 export function authorizeConsumerGate(input) {
   const workflow = input.workflowIdentity;
-  assert(SHA.test(input.callerSha) && SHA.test(input.controllerSnapshotSha),
-    "Caller or controller snapshot is not an immutable commit SHA.");
-  assert(workflow.repository === CONTROLLER_REPOSITORY && workflow.filePath === REUSABLE_WORKFLOW_PATH &&
-    SHA.test(workflow.sha) && workflow.ref === `${workflow.repository}/${workflow.filePath}@${workflow.sha}`,
-  "Called reusable workflow identity is not the exact trusted controller workflow.");
+  assert(
+    SHA.test(input.callerSha) && SHA.test(input.controllerSnapshotSha),
+    "Caller or controller snapshot is not an immutable commit SHA.",
+  );
+  assert(
+    workflow.repository === CONTROLLER_REPOSITORY &&
+      workflow.filePath === REUSABLE_WORKFLOW_PATH &&
+      SHA.test(workflow.sha) &&
+      workflow.ref === `${workflow.repository}/${workflow.filePath}@${workflow.sha}`,
+    "Called reusable workflow identity is not the exact trusted controller workflow.",
+  );
   if (input.policySchema !== undefined) {
     const validate = new Ajv2020({ allErrors: true, strict: true }).compile(input.policySchema);
-    assert(validate(input.policy), `Central Docs policy schema validation failed: ${(validate.errors ?? [])
-      .map(({ instancePath, message }) => `${instancePath || "/"} ${message}`).join("; ")}`);
+    assert(
+      validate(input.policy),
+      `Central Docs policy schema validation failed: ${(validate.errors ?? [])
+        .map(({ instancePath, message }) => `${instancePath || "/"} ${message}`)
+        .join("; ")}`,
+    );
   }
   if (input.exceptions !== undefined && input.exceptionsSchema !== undefined) {
     validateDocsProtocolExceptions(input.exceptions, input.exceptionsSchema, {
       asOf: input.asOf.slice(0, 10),
     });
   }
-  const lifecycle = validateDocsQualifiedCohorts(input.registry, input.registrySchema ?? {
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    type: "object",
-  }, { asOf: input.asOf });
-  const policyEntry = input.policy.repositories.find(({ repository_id: id }) => id === input.repository.id);
+  const lifecycle = validateDocsQualifiedCohorts(
+    input.registry,
+    input.registrySchema ?? {
+      $schema: "https://json-schema.org/draft/2020-12/schema",
+      type: "object",
+    },
+    { asOf: input.asOf },
+  );
+  const policyEntry = input.policy.repositories.find(
+    ({ repository_id: id }) => id === input.repository.id,
+  );
   assertRepositoryAuthority(policyEntry, input.repository);
   assertRepositoryTree(input.tree);
 
-  const managed = parseJsonStrict(input.files[MANAGED_PROJECTION_PATH], MANAGED_PROJECTION_PATH,
-    JSON_LIMITS[MANAGED_PROJECTION_PATH]);
-  const profile = parseJsonStrict(input.files[INTEGRATION_PROFILE_PATH], INTEGRATION_PROFILE_PATH,
-    JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
+  const managed = parseJsonStrict(
+    input.files[MANAGED_PROJECTION_PATH],
+    MANAGED_PROJECTION_PATH,
+    JSON_LIMITS[MANAGED_PROJECTION_PATH],
+  );
+  const profile = parseJsonStrict(
+    input.files[INTEGRATION_PROFILE_PATH],
+    INTEGRATION_PROFILE_PATH,
+    JSON_LIMITS[INTEGRATION_PROFILE_PATH],
+  );
   if ([2, 4].includes(profile.schemaVersion)) {
-    assert(typeof input.files[QUALIFICATION_CONTRACT_PATH] === "string", "Managed integration qualification contract is missing at the exact authorized path.");
-    const qualificationContract = parseJsonStrict(input.files[QUALIFICATION_CONTRACT_PATH], QUALIFICATION_CONTRACT_PATH, JSON_LIMITS[QUALIFICATION_CONTRACT_PATH]);
+    assert(
+      typeof input.files[QUALIFICATION_CONTRACT_PATH] === "string",
+      "Managed integration qualification contract is missing at the exact authorized path.",
+    );
+    const qualificationContract = parseJsonStrict(
+      input.files[QUALIFICATION_CONTRACT_PATH],
+      QUALIFICATION_CONTRACT_PATH,
+      JSON_LIMITS[QUALIFICATION_CONTRACT_PATH],
+    );
     validateQualificationContractV2Structure(profile, qualificationContract);
     if (policyEntry.classification_evidence?.decision === "adopted") {
       const coordinates = policyEntry.classification_evidence.v2_qualification_coordinates;
-      assert(coordinates?.schema_version === 2 && coordinates.integration_path === INTEGRATION_PROFILE_PATH && coordinates.contract_path === QUALIFICATION_CONTRACT_PATH && coordinates.gate_command === profile.qualification.gateCommand && coordinates.receipt_schema_version === 2 && coordinates.receipt_evidence_class === "released-cohort",
-        "Adopted v2 consumer policy lacks exact structural qualification coordinates.");
+      assert(
+        coordinates?.schema_version === 2 &&
+          coordinates.integration_path === INTEGRATION_PROFILE_PATH &&
+          coordinates.contract_path === QUALIFICATION_CONTRACT_PATH &&
+          coordinates.gate_command === profile.qualification.gateCommand &&
+          coordinates.receipt_schema_version === 2 &&
+          coordinates.receipt_evidence_class === "released-cohort",
+        "Adopted v2 consumer policy lacks exact structural qualification coordinates.",
+      );
     }
   }
-  const manifest = parseJsonStrict(input.files["package.json"], "package.json", JSON_LIMITS["package.json"]);
+  const manifest = parseJsonStrict(
+    input.files["package.json"],
+    "package.json",
+    JSON_LIMITS["package.json"],
+  );
   const lock = parseYamlStrict(input.files["pnpm-lock.yaml"], "pnpm-lock.yaml", LOCKFILE_LIMIT);
-  const workspace = input.files[PNPM_WORKSPACE_PATH] === undefined
-    ? undefined
-    : parseYamlStrict(input.files[PNPM_WORKSPACE_PATH], PNPM_WORKSPACE_PATH, WORKSPACE_LIMIT);
+  const workspace =
+    input.files[PNPM_WORKSPACE_PATH] === undefined
+      ? undefined
+      : parseYamlStrict(input.files[PNPM_WORKSPACE_PATH], PNPM_WORKSPACE_PATH, WORKSPACE_LIMIT);
   const callerSource = input.files[CALLER_WORKFLOW_PATH];
   const caller = parseYamlStrict(callerSource, CALLER_WORKFLOW_PATH, CALLER_LIMIT);
   const record = lifecycle.cohortById.get(managed.cohortId);
   assert(record !== undefined, "Managed projection selects an unknown central Cohort.");
   const originalRecordDigest = cohortRecordDigest(record);
-  assert(record.record_digest === originalRecordDigest,
-    "Selected Cohort record differs from its exact original canonical digest.");
-  const selectedGeneration = policyEntry.desired_cohort_id === record.cohort_id
-    ? policyEntry.desired_cohort_generation
-    : policyEntry.observed_cohort_id === record.cohort_id
-      ? policyEntry.observed_cohort_generation
-      : undefined;
-  assert(record.cohort_generation === undefined
-    ? selectedGeneration === undefined
-    : selectedGeneration === record.cohort_generation,
-  "Central consumer policy does not explicitly match the Cohort generation.");
+  assert(
+    record.record_digest === originalRecordDigest,
+    "Selected Cohort record differs from its exact original canonical digest.",
+  );
+  const selectedGeneration =
+    policyEntry.desired_cohort_id === record.cohort_id
+      ? policyEntry.desired_cohort_generation
+      : policyEntry.observed_cohort_id === record.cohort_id
+        ? policyEntry.observed_cohort_generation
+        : undefined;
+  assert(
+    record.cohort_generation === undefined
+      ? selectedGeneration === undefined
+      : selectedGeneration === record.cohort_generation,
+    "Central consumer policy does not explicitly match the Cohort generation.",
+  );
   const state = lifecycle.stateById.get(record.cohort_id);
   stateFor(lifecycle, policyEntry, record, input.repository.id, input.asOf);
   if (["QUALIFIED", "CANARY"].includes(state)) {
-    assert(record.canary_repositories.some(({ repository_id: id }) => id === input.repository.id),
-      "Pre-recommendation Cohort is restricted to its exact canary repository IDs.");
+    assert(
+      record.canary_repositories.some(({ repository_id: id }) => id === input.repository.id),
+      "Pre-recommendation Cohort is restricted to its exact canary repository IDs.",
+    );
   }
-  assert(record.reusable_workflow.revision === workflow.sha && record.reusable_workflow.path === workflow.filePath &&
-    record.reusable_workflow.repository === workflow.repository,
-  "Cohort reusable workflow authority differs from the executing job identity.");
-  assert(input.calledWorkflowBlobSha === record.reusable_workflow.blob_sha,
-    "Executing workflow blob differs from the Cohort authority.");
+  assert(
+    record.reusable_workflow.revision === workflow.sha &&
+      record.reusable_workflow.path === workflow.filePath &&
+      record.reusable_workflow.repository === workflow.repository,
+    "Cohort reusable workflow authority differs from the executing job identity.",
+  );
+  assert(
+    input.calledWorkflowBlobSha === record.reusable_workflow.blob_sha,
+    "Executing workflow blob differs from the Cohort authority.",
+  );
 
   const qualification = lifecycle.qualificationEventById.get(record.cohort_id);
   assert(qualification !== undefined, "Requested Cohort never reached QUALIFIED.");
   const packageByName = new Map(record.packages.map((entry) => [entry.name, entry]));
   if (policyEntry.observed_cohort_id === record.cohort_id) {
-    assert(policyEntry.observed_cohort_record_digest === undefined ||
-      policyEntry.observed_cohort_record_digest === record.record_digest,
-    "Central observed repository state has the wrong Cohort record digest.");
-    assert(policyEntry.observed_cohort_event_digest === undefined ||
-      policyEntry.observed_cohort_event_digest === qualification.event_digest,
-    "Central observed repository state has the wrong QUALIFIED event digest.");
-    assert(policyEntry.exact_package_version === undefined ||
-      policyEntry.exact_package_version === packageByName.get("@agent-teams/docs-protocol")?.version,
-    "Central observed repository state has the wrong Docs Protocol version.");
-    assert(policyEntry.exact_foundation_version === undefined ||
-      policyEntry.exact_foundation_version === packageByName.get("@agent-teams/engineering-foundation")?.version,
-    "Central observed repository state has the wrong Foundation version.");
-    assert(policyEntry.reusable_workflow_revision === undefined ||
-      policyEntry.reusable_workflow_revision === record.reusable_workflow.revision,
-    "Central observed repository state has the wrong reusable workflow revision.");
+    assert(
+      policyEntry.observed_cohort_record_digest === undefined ||
+        policyEntry.observed_cohort_record_digest === record.record_digest,
+      "Central observed repository state has the wrong Cohort record digest.",
+    );
+    assert(
+      policyEntry.observed_cohort_event_digest === undefined ||
+        policyEntry.observed_cohort_event_digest === qualification.event_digest,
+      "Central observed repository state has the wrong QUALIFIED event digest.",
+    );
+    assert(
+      policyEntry.exact_package_version === undefined ||
+        policyEntry.exact_package_version ===
+          packageByName.get("@agent-teams/docs-protocol")?.version,
+      "Central observed repository state has the wrong Docs Protocol version.",
+    );
+    assert(
+      policyEntry.exact_foundation_version === undefined ||
+        policyEntry.exact_foundation_version ===
+          packageByName.get("@agent-teams/engineering-foundation")?.version,
+      "Central observed repository state has the wrong Foundation version.",
+    );
+    assert(
+      policyEntry.reusable_workflow_revision === undefined ||
+        policyEntry.reusable_workflow_revision === record.reusable_workflow.revision,
+      "Central observed repository state has the wrong reusable workflow revision.",
+    );
   }
   const v2 = record.cohort_generation === 2;
   const v3 = record.cohort_generation === 3;
-  assert((v3 && profile.schemaVersion === 4) ||
-    (v2 && profile.schemaVersion === 3) ||
-    (!v2 && !v3 && [1, 2].includes(profile.schemaVersion)),
-    "Consumer profile generation does not explicitly match the selected Cohort generation.");
-  if (v2) {
-    assert(canonicalJson(policyEntry.v3_qualification_coordinates) === canonicalJson({
-      profile_schema_version: 3,
-      cohort_schema_version: 2,
-      managed_state_schema_version: 2,
-      receipt_schema_version: 3,
-      execution_envelope_schema_version: 1,
-      evidence_class: "cohort-v2-supporting-canary",
-    }), "Central consumer policy lacks exact Cohort v2 qualification coordinates.");
-  } else if (v3) {
-    assert(canonicalJson(policyEntry.v3_qualification_coordinates) === canonicalJson({
-      profile_schema_version: 4,
-      cohort_schema_version: 3,
-      managed_state_schema_version: 3,
-      receipt_schema_version: 1,
-      execution_envelope_schema_version: 1,
-      evidence_class: "cohort-v3-supporting-canary",
-    }), "Central consumer policy lacks exact generation3 qualification coordinates.");
+  assert(
+    (v3 && profile.schemaVersion === 4) ||
+      (v2 && profile.schemaVersion === 3) ||
+      (!v2 && !v3 && [1, 2].includes(profile.schemaVersion)),
+    "Consumer profile generation does not explicitly match the selected Cohort generation.",
+  );
+  // Policy coordinates describe the desired target; checkout and receipt contracts
+  // below always describe the exact selected source or target record independently.
+  const desiredRecord = lifecycle.cohortById.get(policyEntry.desired_cohort_id);
+  assert(
+    desiredRecord !== undefined &&
+      policyEntry.desired_cohort_generation === desiredRecord.cohort_generation,
+    "Central desired Cohort generation is not explicit and exact.",
+  );
+  if (desiredRecord.cohort_generation === 2) {
+    assert(
+      canonicalJson(policyEntry.v3_qualification_coordinates) ===
+        canonicalJson({
+          profile_schema_version: 3,
+          cohort_schema_version: 2,
+          managed_state_schema_version: 2,
+          receipt_schema_version: 3,
+          execution_envelope_schema_version: 1,
+          evidence_class: "cohort-v2-supporting-canary",
+        }),
+      "Central consumer policy lacks exact Cohort v2 qualification coordinates.",
+    );
+  } else if (desiredRecord.cohort_generation === 3) {
+    assert(
+      canonicalJson(policyEntry.v3_qualification_coordinates) ===
+        canonicalJson({
+          profile_schema_version: 4,
+          cohort_schema_version: 3,
+          managed_state_schema_version: 3,
+          receipt_schema_version: 1,
+          execution_envelope_schema_version: 1,
+          evidence_class: "cohort-v3-supporting-canary",
+        }),
+      "Central consumer policy lacks exact generation3 qualification coordinates.",
+    );
   }
-  const packageProjection = Object.fromEntries(COORDINATE_PACKAGE_KEYS.map(([key, name]) => [key, {
-    version: packageByName.get(name)?.version,
-    integrity: packageByName.get(name)?.integrity,
-  }]));
+  const packageProjection = Object.fromEntries(
+    COORDINATE_PACKAGE_KEYS.map(([key, name]) => [
+      key,
+      {
+        version: packageByName.get(name)?.version,
+        integrity: packageByName.get(name)?.integrity,
+      },
+    ]),
+  );
   const cohortProjection = {
     schemaVersion: v3 ? 3 : v2 ? 2 : 1,
     cohortId: record.cohort_id,
@@ -949,16 +1379,19 @@ export function authorizeConsumerGate(input) {
     eligibleAfter: record.eligible_after,
     upgradeFrom: record.upgrade_from,
     rollbackTo: record.rollback_to,
-    packages: v2 || v3 ? packageProjection : {
-      docsProtocol: {
-        version: packageByName.get("@agent-teams/docs-protocol")?.version,
-        integrity: packageByName.get("@agent-teams/docs-protocol")?.integrity,
-      },
-      engineeringFoundation: {
-        version: packageByName.get("@agent-teams/engineering-foundation")?.version,
-        integrity: packageByName.get("@agent-teams/engineering-foundation")?.integrity,
-      },
-    },
+    packages:
+      v2 || v3
+        ? packageProjection
+        : {
+            docsProtocol: {
+              version: packageByName.get("@agent-teams/docs-protocol")?.version,
+              integrity: packageByName.get("@agent-teams/docs-protocol")?.integrity,
+            },
+            engineeringFoundation: {
+              version: packageByName.get("@agent-teams/engineering-foundation")?.version,
+              integrity: packageByName.get("@agent-teams/engineering-foundation")?.integrity,
+            },
+          },
     workflow: {
       repository: record.reusable_workflow.repository,
       path: record.reusable_workflow.path,
@@ -971,66 +1404,82 @@ export function authorizeConsumerGate(input) {
       assetCatalogDigest: record.assets.asset_catalog.digest,
       transitionCatalogDigest: record.assets.transition_catalog.digest,
     },
-    schemas: v3 ? {
-      consumerIntegration: record.schemas.consumer_integration,
-      managedState: record.schemas.managed_state,
-      qualificationReceipt: record.schemas.qualification_receipt,
-      docsProtocol: record.schemas.docs_protocol,
-    } : {
-      consumerIntegration: record.schemas.consumer_integration,
-      managedState: record.schemas.managed_state,
-      docsProtocol: record.schemas.docs_protocol,
-    },
-    runtime: v3 ? {
-      policy: { ...record.policy_identity },
-      selectedLane: record.runtime.selected_lane,
-      node: record.runtime.node,
-      pnpm: record.runtime.pnpm,
-      qualificationRuntime: {
-        nodeVersion: record.runtime.qualification_runtime.node_version,
-        pnpmVersion: record.runtime.qualification_runtime.pnpm_version,
-        platform: record.runtime.qualification_runtime.platform,
-        architecture: record.runtime.qualification_runtime.architecture,
-      },
-      runtimeClosure: {
-        domain: record.runtime_closure.domain,
-        digest: record.runtime_closure.digest,
-      },
-    } : {
-        node: record.runtime.node,
-        pnpm: record.runtime.pnpm,
-        runtimeClosureDigest: record.runtime_closure.digest,
-      },
+    schemas: v3
+      ? {
+          consumerIntegration: record.schemas.consumer_integration,
+          managedState: record.schemas.managed_state,
+          qualificationReceipt: record.schemas.qualification_receipt,
+          docsProtocol: record.schemas.docs_protocol,
+        }
+      : {
+          consumerIntegration: record.schemas.consumer_integration,
+          managedState: record.schemas.managed_state,
+          docsProtocol: record.schemas.docs_protocol,
+        },
+    runtime: v3
+      ? {
+          policy: { ...record.policy_identity },
+          selectedLane: record.runtime.selected_lane,
+          node: record.runtime.node,
+          pnpm: record.runtime.pnpm,
+          qualificationRuntime: {
+            nodeVersion: record.runtime.qualification_runtime.node_version,
+            pnpmVersion: record.runtime.qualification_runtime.pnpm_version,
+            platform: record.runtime.qualification_runtime.platform,
+            architecture: record.runtime.qualification_runtime.architecture,
+          },
+          runtimeClosure: {
+            domain: record.runtime_closure.domain,
+            digest: record.runtime_closure.digest,
+          },
+        }
+      : {
+          node: record.runtime.node,
+          pnpm: record.runtime.pnpm,
+          runtimeClosureDigest: record.runtime_closure.digest,
+        },
   };
   const expectedPackages = packagesFor(record);
-  const qualificationProfile = v3 ? "cohort-v3"
-    : v2 ? "cohort-v2"
-      : profile.schemaVersion === 2 ? "legacy" : "none";
+  const qualificationProfile = v3
+    ? "cohort-v3"
+    : v2
+      ? "cohort-v2"
+      : profile.schemaVersion === 2
+        ? "legacy"
+        : "none";
   const expected = {
     cohort: cohortProjection,
     callerWorkflowDigest: cohortProjection.assets.callerWorkflowDigest,
     workflow: cohortProjection.workflow,
   };
   assertProjection(managed, profile, expected, input.repository);
-  assert(policyEntry.profile_path === profile.profilePath &&
-    policyEntry.caller_workflow_path === profile.callerWorkflowPath,
-  "Consumer profile/caller paths differ from central repository authority.");
+  assert(
+    policyEntry.profile_path === profile.profilePath &&
+      policyEntry.caller_workflow_path === profile.callerWorkflowPath,
+    "Consumer profile/caller paths differ from central repository authority.",
+  );
   assertCallerWorkflow(caller, callerSource, expected);
-  const runtimeClosureSource = input.runtimeClosureSources?.[record.runtime_closure.projection_path];
-  assert(typeof runtimeClosureSource === "string" &&
-    sha256(runtimeClosureSource) === record.runtime_closure.digest,
-  "Qualified runtime closure evidence is missing or has the wrong content digest.");
+  const runtimeClosureSource =
+    input.runtimeClosureSources?.[record.runtime_closure.projection_path];
+  assert(
+    typeof runtimeClosureSource === "string" &&
+      sha256(runtimeClosureSource) === record.runtime_closure.digest,
+    "Qualified runtime closure evidence is missing or has the wrong content digest.",
+  );
   const runtimeClosureEvidence = parseJsonStrict(
     runtimeClosureSource,
     record.runtime_closure.projection_path,
     2 * 1024 * 1024,
   );
-  const regeneratedRuntimeClosure = v2 || v3
-    ? docsRuntimeClosureV2Evidence(runtimeClosureEvidence.pnpmLock, expectedPackages)
-    : docsRuntimeClosureEvidence(runtimeClosureEvidence.pnpmLock, expectedPackages);
-  assert(regeneratedRuntimeClosure.source === runtimeClosureSource &&
-    canonicalJson(regeneratedRuntimeClosure.authority) === canonicalJson(record.runtime_closure),
-  "Qualified runtime closure evidence is not the canonical exact Cohort projection.");
+  const regeneratedRuntimeClosure =
+    v2 || v3
+      ? docsRuntimeClosureV2Evidence(runtimeClosureEvidence.pnpmLock, expectedPackages)
+      : docsRuntimeClosureEvidence(runtimeClosureEvidence.pnpmLock, expectedPackages);
+  assert(
+    regeneratedRuntimeClosure.source === runtimeClosureSource &&
+      canonicalJson(regeneratedRuntimeClosure.authority) === canonicalJson(record.runtime_closure),
+    "Qualified runtime closure evidence is not the canonical exact Cohort projection.",
+  );
   validateExactPnpmLock(manifest, lock, expectedPackages, {
     qualificationProfile: v2 || v3 ? qualificationProfile : "legacy",
     workspace,
@@ -1048,34 +1497,53 @@ export function authorizeConsumerGate(input) {
     qualificationProfile,
     qualificationPackageManager: v3
       ? `pnpm@${record.runtime.qualification_runtime.pnpm_version}`
-      : qualificationProfile === "cohort-v2" ? "pnpm@11.20.0" : "pnpm@11.18.0",
-    ...(v2 || v3 ? { qualificationAuthority: {
-      cohortGeneration: record.cohort_generation,
-      cohortId: record.cohort_id,
-      ...(v3 ? { candidateDigest: record.candidate_digest } : {}),
-      registryRecord: record,
-      recordDigest: originalRecordDigest,
-      qualificationEvent: qualification,
-      canaryRepositories: record.canary_repositories,
-      reusableWorkflow: record.reusable_workflow,
-      schemas: record.schemas,
-      ...(v3 ? {
-        policyIdentity: record.policy_identity,
-        runtime: record.runtime,
-        qualificationReceipt: GENERATION3_QUALIFICATION_RECEIPT,
-      } : {}),
-    } } : {}),
+      : qualificationProfile === "cohort-v2"
+        ? "pnpm@11.20.0"
+        : "pnpm@11.18.0",
+    ...(v2 || v3
+      ? {
+          qualificationAuthority: {
+            cohortGeneration: record.cohort_generation,
+            cohortId: record.cohort_id,
+            ...(v3 ? { candidateDigest: record.candidate_digest } : {}),
+            registryRecord: record,
+            recordDigest: originalRecordDigest,
+            qualificationEvent: qualification,
+            canaryRepositories: record.canary_repositories,
+            reusableWorkflow: record.reusable_workflow,
+            schemas: record.schemas,
+            ...(v3
+              ? {
+                  policyIdentity: record.policy_identity,
+                  runtime: record.runtime,
+                  qualificationReceipt: GENERATION3_QUALIFICATION_RECEIPT,
+                }
+              : {}),
+          },
+        }
+      : {}),
     expectedPackages,
     expectedRuntimeClosure: record.runtime_closure,
     expectedRuntimeClosureLock: runtimeClosureEvidence.pnpmLock,
-    controllerDataDigests: Object.fromEntries(Object.entries(input.controllerDataSources ?? {})
-      .map(([path, source]) => [path, sha256(source)])),
-    fileDigests: Object.fromEntries(Object.entries(input.files).map(([path, source]) => [path, sha256(source)])),
+    controllerDataDigests: Object.fromEntries(
+      Object.entries(input.controllerDataSources ?? {}).map(([path, source]) => [
+        path,
+        sha256(source),
+      ]),
+    ),
+    fileDigests: Object.fromEntries(
+      Object.entries(input.files).map(([path, source]) => [path, sha256(source)]),
+    ),
   });
 }
 
 function authorizationDigest(authorization) {
-  return sha256(canonicalJson({ domain: "agent-teams.docs-consumer-gate-authorization/v1", body: authorization }));
+  return sha256(
+    canonicalJson({
+      domain: "agent-teams.docs-consumer-gate-authorization/v1",
+      body: authorization,
+    }),
+  );
 }
 
 async function githubJson(path, token) {
@@ -1093,7 +1561,10 @@ async function githubJson(path, token) {
     throw new GateInfrastructureError(`GitHub API ${path} could not be reached.`, { cause: error });
   }
   if (!response.ok) {
-    const transient = response.status === 408 || response.status === 429 || response.status >= 500 ||
+    const transient =
+      response.status === 408 ||
+      response.status === 429 ||
+      response.status >= 500 ||
       (response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0");
     const ErrorType = transient ? GateInfrastructureError : GatePolicyError;
     throw new ErrorType(`GitHub API ${path} failed with ${response.status}.`);
@@ -1101,13 +1572,18 @@ async function githubJson(path, token) {
   try {
     return await response.json();
   } catch (error) {
-    throw new GateInfrastructureError(`GitHub API ${path} returned invalid JSON.`, { cause: error });
+    throw new GateInfrastructureError(`GitHub API ${path} returned invalid JSON.`, {
+      cause: error,
+    });
   }
 }
 
 async function fetchBlob(repository, sha, token, limit, label) {
   const blob = await githubJson(`/repos/${repository}/git/blobs/${sha}`, token);
-  assert(blob.encoding === "base64" && typeof blob.content === "string", `${label} is not a base64 Git blob.`);
+  assert(
+    blob.encoding === "base64" && typeof blob.content === "string",
+    `${label} is not a base64 Git blob.`,
+  );
   const bytes = Buffer.from(blob.content.replaceAll("\n", ""), "base64");
   assert(bytes.length <= limit, `${label} exceeds its ${limit}-byte safety bound.`);
   try {
@@ -1119,9 +1595,14 @@ async function fetchBlob(repository, sha, token, limit, label) {
 
 async function fetchRepositoryText(repository, path, ref, token, limit, label) {
   const response = await githubJson(`/repos/${repository}/contents/${path}?ref=${ref}`, token);
-  assert(!Array.isArray(response) && response.type === "file" && response.encoding === "base64" &&
-    typeof response.content === "string" && SHA.test(response.sha ?? ""),
-  `${label} is not one immutable base64 repository file.`);
+  assert(
+    !Array.isArray(response) &&
+      response.type === "file" &&
+      response.encoding === "base64" &&
+      typeof response.content === "string" &&
+      SHA.test(response.sha ?? ""),
+    `${label} is not one immutable base64 repository file.`,
+  );
   const bytes = Buffer.from(response.content.replaceAll("\n", ""), "base64");
   assert(bytes.length <= limit, `${label} exceeds its ${limit}-byte safety bound.`);
   try {
@@ -1136,12 +1617,20 @@ async function authorizeCommand() {
   const token = process.env.GITHUB_TOKEN;
   const repository = process.env.GITHUB_REPOSITORY;
   const callerSha = process.env.GITHUB_SHA;
-  assert(root && token && repository && SHA.test(callerSha ?? ""), "Gate authorization environment is incomplete.");
+  assert(
+    root && token && repository && SHA.test(callerSha ?? ""),
+    "Gate authorization environment is incomplete.",
+  );
   const metadata = await githubJson(`/repos/${repository}`, token);
-  assert(metadata.id === Number(process.env.CALLER_REPOSITORY_ID) && metadata.full_name === repository,
-    "Live caller repository identity differs from the workflow context.");
+  assert(
+    metadata.id === Number(process.env.CALLER_REPOSITORY_ID) && metadata.full_name === repository,
+    "Live caller repository identity differs from the workflow context.",
+  );
   const tree = await githubJson(`/repos/${repository}/git/trees/${callerSha}?recursive=1`, token);
-  assert(tree.truncated === false && Array.isArray(tree.tree), "Caller Git tree response is truncated or invalid.");
+  assert(
+    tree.truncated === false && Array.isArray(tree.tree),
+    "Caller Git tree response is truncated or invalid.",
+  );
   const entryByPath = new Map(tree.tree.map((entry) => [entry.path, entry]));
   const limits = {
     ...JSON_LIMITS,
@@ -1154,8 +1643,10 @@ async function authorizeCommand() {
   const files = {};
   for (const [path, limit] of Object.entries(limits)) {
     const entry = entryByPath.get(path);
-    assert(entry?.type === "blob" && entry.mode !== "120000" && SHA.test(entry.sha),
-      `${path} is not one regular file at the caller SHA.`);
+    assert(
+      entry?.type === "blob" && entry.mode !== "120000" && SHA.test(entry.sha),
+      `${path} is not one regular file at the caller SHA.`,
+    );
     files[path] = await fetchBlob(repository, entry.sha, token, limit, path);
   }
   const workflowSource = await fetchRepositoryText(
@@ -1166,32 +1657,48 @@ async function authorizeCommand() {
     256 * 1024,
     "called reusable workflow",
   );
-  const controllerDataSources = Object.fromEntries(await Promise.all(
-    CURRENT_CONTROLLER_DATA_PATHS.map(async (path) => [path, await fetchRepositoryText(
-      CONTROLLER_REPOSITORY,
-      path,
-      process.env.CONTROLLER_SNAPSHOT_SHA,
-      token,
-      4 * 1024 * 1024,
-      `current controller data ${path}`,
-    )]),
-  ));
+  const controllerDataSources = Object.fromEntries(
+    await Promise.all(
+      CURRENT_CONTROLLER_DATA_PATHS.map(async (path) => [
+        path,
+        await fetchRepositoryText(
+          CONTROLLER_REPOSITORY,
+          path,
+          process.env.CONTROLLER_SNAPSHOT_SHA,
+          token,
+          4 * 1024 * 1024,
+          `current controller data ${path}`,
+        ),
+      ]),
+    ),
+  );
   const [registrySchemaSource, policyV2SchemaSource, exceptionsSchemaSource] = await Promise.all([
     readFile(join(root, "governance/docs-qualified-cohorts.schema.json"), "utf8"),
     readFile(join(root, "governance/docs-protocol-policy-v2.schema.json"), "utf8"),
     readFile(join(root, "governance/docs-protocol-exceptions.schema.json"), "utf8"),
   ]);
-  const registry = parseJsonStrict(controllerDataSources["governance/docs-qualified-cohorts.json"],
-    "central Cohort registry", 4 * 1024 * 1024);
-  const managedProjection = parseJsonStrict(files[MANAGED_PROJECTION_PATH],
-    MANAGED_PROJECTION_PATH, JSON_LIMITS[MANAGED_PROJECTION_PATH]);
-  parseJsonStrict(files[INTEGRATION_PROFILE_PATH],
-    INTEGRATION_PROFILE_PATH, JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
+  const registry = parseJsonStrict(
+    controllerDataSources["governance/docs-qualified-cohorts.json"],
+    "central Cohort registry",
+    4 * 1024 * 1024,
+  );
+  const managedProjection = parseJsonStrict(
+    files[MANAGED_PROJECTION_PATH],
+    MANAGED_PROJECTION_PATH,
+    JSON_LIMITS[MANAGED_PROJECTION_PATH],
+  );
+  parseJsonStrict(
+    files[INTEGRATION_PROFILE_PATH],
+    INTEGRATION_PROFILE_PATH,
+    JSON_LIMITS[INTEGRATION_PROFILE_PATH],
+  );
   const runtimeClosurePath = registry.cohorts.find(
     ({ cohort_id: cohortId }) => cohortId === managedProjection.cohortId,
   )?.runtime_closure?.projection_path;
-  assert(typeof runtimeClosurePath === "string",
-    "Managed Cohort has no central runtime closure evidence path.");
+  assert(
+    typeof runtimeClosurePath === "string",
+    "Managed Cohort has no central runtime closure evidence path.",
+  );
   const runtimeClosureSource = await fetchRepositoryText(
     CONTROLLER_REPOSITORY,
     runtimeClosurePath,
@@ -1203,14 +1710,26 @@ async function authorizeCommand() {
   const authorization = authorizeConsumerGate({
     registry,
     registrySchema: parseJsonStrict(registrySchemaSource, "central Cohort schema", 4 * 1024 * 1024),
-    policy: parseJsonStrict(currentDocsAdmissionPolicySource(controllerDataSources),
-      "central Docs policy", 4 * 1024 * 1024),
-    policySchema: parseJsonStrict(policyV2SchemaSource,
-      "central Docs policy schema", 4 * 1024 * 1024),
-    exceptions: parseJsonStrict(controllerDataSources["governance/docs-protocol-exceptions.json"],
-      "central Docs exceptions", 4 * 1024 * 1024),
-    exceptionsSchema: parseJsonStrict(exceptionsSchemaSource,
-      "central Docs exceptions schema", 4 * 1024 * 1024),
+    policy: parseJsonStrict(
+      currentDocsAdmissionPolicySource(controllerDataSources),
+      "central Docs policy",
+      4 * 1024 * 1024,
+    ),
+    policySchema: parseJsonStrict(
+      policyV2SchemaSource,
+      "central Docs policy schema",
+      4 * 1024 * 1024,
+    ),
+    exceptions: parseJsonStrict(
+      controllerDataSources["governance/docs-protocol-exceptions.json"],
+      "central Docs exceptions",
+      4 * 1024 * 1024,
+    ),
+    exceptionsSchema: parseJsonStrict(
+      exceptionsSchemaSource,
+      "central Docs exceptions schema",
+      4 * 1024 * 1024,
+    ),
     controllerDataSources,
     runtimeClosureSources: { [runtimeClosurePath]: runtimeClosureSource },
     repository: {
@@ -1234,17 +1753,24 @@ async function authorizeCommand() {
   const envelope = { authorization, authorizationDigest: authorizationDigest(authorization) };
   await writeFile(process.env.AUTHORIZATION_PATH, `${canonicalJson(envelope)}\n`, { mode: 0o600 });
   if (process.env.GITHUB_OUTPUT) {
-    await writeFile(process.env.GITHUB_OUTPUT,
-      `qualification-profile=${authorization.qualificationProfile}\n`, { flag: "a" });
+    await writeFile(
+      process.env.GITHUB_OUTPUT,
+      `qualification-profile=${authorization.qualificationProfile}\n`,
+      { flag: "a" },
+    );
   }
-  console.log(`Authorized ${authorization.repository} at ${authorization.callerSha} for ${authorization.cohortId}.`);
+  console.log(
+    `Authorized ${authorization.repository} at ${authorization.callerSha} for ${authorization.cohortId}.`,
+  );
 }
 
 async function readAuthorization() {
   const source = await readFile(process.env.AUTHORIZATION_PATH, "utf8");
   const envelope = parseJsonStrict(source, "gate authorization", 4 * 1024 * 1024);
-  assert(envelope.authorizationDigest === authorizationDigest(envelope.authorization),
-    "Gate authorization digest is invalid.");
+  assert(
+    envelope.authorizationDigest === authorizationDigest(envelope.authorization),
+    "Gate authorization digest is invalid.",
+  );
   return envelope.authorization;
 }
 
@@ -1252,181 +1778,325 @@ async function qualificationInstalledPackageRoot(installRoot, expected) {
   const direct = join(installRoot, "node_modules", expected.name);
   try {
     const root = await realpath(direct);
-    const manifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
-      `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-    if (manifest.name === expected.name && manifest.version === expected.version) {return root;}
+    const manifest = parseJsonStrict(
+      await readFile(join(root, "package.json"), "utf8"),
+      `${expected.name} installed package.json`,
+      JSON_LIMITS["package.json"],
+    );
+    if (manifest.name === expected.name && manifest.version === expected.version) {
+      return root;
+    }
   } catch (error) {
-    if (error?.code !== "ENOENT") {throw error;}
+    if (error?.code !== "ENOENT") {
+      throw error;
+    }
   }
   const matches = [];
   const virtualStore = join(installRoot, "node_modules", ".pnpm");
   const handle = await opendir(virtualStore);
   for await (const entry of handle) {
-    if (!entry.isDirectory()) {continue;}
+    if (!entry.isDirectory()) {
+      continue;
+    }
     try {
       const root = await realpath(join(virtualStore, entry.name, "node_modules", expected.name));
-      const installedManifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
-        `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-      if (installedManifest.name === expected.name && installedManifest.version === expected.version) {matches.push(root);}
+      const installedManifest = parseJsonStrict(
+        await readFile(join(root, "package.json"), "utf8"),
+        `${expected.name} installed package.json`,
+        JSON_LIMITS["package.json"],
+      );
+      if (
+        installedManifest.name === expected.name &&
+        installedManifest.version === expected.version
+      ) {
+        matches.push(root);
+      }
     } catch (error) {
-      if (error?.code !== "ENOENT") {throw error;}
+      if (error?.code !== "ENOENT") {
+        throw error;
+      }
     }
   }
-  assert(new Set(matches).size === 1, `${expected.name} does not have one exact installed package root.`);
+  assert(
+    new Set(matches).size === 1,
+    `${expected.name} does not have one exact installed package root.`,
+  );
   return matches[0];
 }
 
 function assertQualifiedRuntimeLockExact(lock, authorization) {
-  if (!["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile)) {return;}
-  assert(canonicalJson(lock) === canonicalJson(authorization.expectedRuntimeClosureLock),
-    "Trusted install lock differs from the exact authorized runtime closure lock.");
+  if (!["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile)) {
+    return;
+  }
+  assert(
+    canonicalJson(lock) === canonicalJson(authorization.expectedRuntimeClosureLock),
+    "Trusted install lock differs from the exact authorized runtime closure lock.",
+  );
 }
 
 export async function runQualificationV3Command(options = {}) {
   const authorization = await readAuthorization();
-  assert(["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile) &&
-    authorization.qualificationPackageManager === "pnpm@11.20.0" &&
-    authorization.schemaVersion === (authorization.qualificationProfile === "cohort-v3" ? 3 : 2),
-  "Managed qualification requires one explicit Cohort v2 or generation3 authorization.");
+  assert(
+    ["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile) &&
+      authorization.qualificationPackageManager === "pnpm@11.20.0" &&
+      authorization.schemaVersion === (authorization.qualificationProfile === "cohort-v3" ? 3 : 2),
+    "Managed qualification requires one explicit Cohort v2 or generation3 authorization.",
+  );
   const consumerRoot = resolve(process.env.CONSUMER_CHECKOUT);
   const profilePath = resolve(consumerRoot, INTEGRATION_PROFILE_PATH);
   const lockPath = resolve(consumerRoot, "pnpm-lock.yaml");
-  for (const [path, absolute] of [[INTEGRATION_PROFILE_PATH, profilePath], ["pnpm-lock.yaml", lockPath]]) {
+  for (const [path, absolute] of [
+    [INTEGRATION_PROFILE_PATH, profilePath],
+    ["pnpm-lock.yaml", lockPath],
+  ]) {
     assert(absolute.startsWith(`${consumerRoot}${sep}`), `${path} escapes the consumer checkout.`);
     const metadata = await lstat(absolute);
-    assert(metadata.isFile() && !metadata.isSymbolicLink(), `${path} is not a regular authorized file.`);
+    assert(
+      metadata.isFile() && !metadata.isSymbolicLink(),
+      `${path} is not a regular authorized file.`,
+    );
   }
   const [profileBytes, lockBytes, installEvidenceSource] = await Promise.all([
-    readFile(profilePath), readFile(lockPath), readFile(process.env.INSTALL_EVIDENCE_PATH, "utf8"),
+    readFile(profilePath),
+    readFile(lockPath),
+    readFile(process.env.INSTALL_EVIDENCE_PATH, "utf8"),
   ]);
-  assert(sha256(profileBytes) === authorization.fileDigests[INTEGRATION_PROFILE_PATH],
-    "Authorized Cohort profile changed before qualification execution.");
-  assert(sha256(lockBytes) === authorization.fileDigests["pnpm-lock.yaml"],
-    "Authorized Cohort lockfile changed before qualification execution.");
-  const profile = parseJsonStrict(profileBytes.toString("utf8"), INTEGRATION_PROFILE_PATH,
-    JSON_LIMITS[INTEGRATION_PROFILE_PATH]);
-  assert(profile.schemaVersion === (authorization.qualificationProfile === "cohort-v3" ? 4 : 3),
-    "Managed qualification profile schema is invalid.");
-  const installEvidence = parseJsonStrict(installEvidenceSource, "trusted install evidence", 4 * 1024 * 1024);
-  assert(installEvidence.schemaVersion === 1 &&
-    installEvidence.authorizationDigest === authorizationDigest(authorization) &&
-    Array.isArray(installEvidence.packages) && installEvidence.packages.length === 5,
-  "Qualification v3 install evidence is not bound to the authorization.");
-  const expectedByName = new Map(authorization.expectedPackages.map((entry) => [entry.name, entry]));
+  assert(
+    sha256(profileBytes) === authorization.fileDigests[INTEGRATION_PROFILE_PATH],
+    "Authorized Cohort profile changed before qualification execution.",
+  );
+  assert(
+    sha256(lockBytes) === authorization.fileDigests["pnpm-lock.yaml"],
+    "Authorized Cohort lockfile changed before qualification execution.",
+  );
+  const profile = parseJsonStrict(
+    profileBytes.toString("utf8"),
+    INTEGRATION_PROFILE_PATH,
+    JSON_LIMITS[INTEGRATION_PROFILE_PATH],
+  );
+  assert(
+    profile.schemaVersion === (authorization.qualificationProfile === "cohort-v3" ? 4 : 3),
+    "Managed qualification profile schema is invalid.",
+  );
+  const installEvidence = parseJsonStrict(
+    installEvidenceSource,
+    "trusted install evidence",
+    4 * 1024 * 1024,
+  );
+  assert(
+    installEvidence.schemaVersion === 1 &&
+      installEvidence.authorizationDigest === authorizationDigest(authorization) &&
+      Array.isArray(installEvidence.packages) &&
+      installEvidence.packages.length === 5,
+    "Qualification v3 install evidence is not bound to the authorization.",
+  );
+  const expectedByName = new Map(
+    authorization.expectedPackages.map((entry) => [entry.name, entry]),
+  );
   const installedByName = new Map(installEvidence.packages.map((entry) => [entry.name, entry]));
-  assert(expectedByName.size === 5 && installedByName.size === 5,
-    "Qualification v3 requires five unique authorized installed coordinates.");
+  assert(
+    expectedByName.size === 5 && installedByName.size === 5,
+    "Qualification v3 requires five unique authorized installed coordinates.",
+  );
   for (const [name, expected] of expectedByName) {
     const installed = installedByName.get(name);
-    assert(installed !== undefined && canonicalJson({ name: installed.name, role: installed.role,
-      version: installed.version, integrity: installed.integrity }) === canonicalJson(expected) &&
-      DIGEST.test(installed.treeDigest ?? ""),
-    `Qualification v3 installed evidence differs for ${name}.`);
+    assert(
+      installed !== undefined &&
+        canonicalJson({
+          name: installed.name,
+          role: installed.role,
+          version: installed.version,
+          integrity: installed.integrity,
+        }) === canonicalJson(expected) &&
+        DIGEST.test(installed.treeDigest ?? ""),
+      `Qualification v3 installed evidence differs for ${name}.`,
+    );
   }
   const adapter = expectedByName.get("@agent-teams/docs-protocol-agent-teams");
   assert(adapter?.role === "direct", "Qualification v3 adapter is not one authorized direct root.");
-  assert(typeof process.env.TRUSTED_INSTALL_ROOT === "string",
-    "Qualification v3 trusted install root is required.");
+  assert(
+    typeof process.env.TRUSTED_INSTALL_ROOT === "string",
+    "Qualification v3 trusted install root is required.",
+  );
   const trustedLockPath = join(resolve(process.env.TRUSTED_INSTALL_ROOT), "pnpm-lock.yaml");
   const trustedLockMetadata = await lstat(trustedLockPath);
-  assert(trustedLockMetadata.isFile() && !trustedLockMetadata.isSymbolicLink(),
-    "Qualification v3 trusted lockfile is not a regular file.");
+  assert(
+    trustedLockMetadata.isFile() && !trustedLockMetadata.isSymbolicLink(),
+    "Qualification v3 trusted lockfile is not a regular file.",
+  );
   const trustedLockBytes = await readFile(trustedLockPath);
-  const trustedLock = parseYamlStrict(trustedLockBytes.toString("utf8"),
-    "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
+  const trustedLock = parseYamlStrict(
+    trustedLockBytes.toString("utf8"),
+    "trusted install pnpm-lock.yaml",
+    LOCKFILE_LIMIT,
+  );
   assertQualifiedRuntimeLockExact(trustedLock, authorization);
-  assert(canonicalJson(docsRuntimeClosureV2Authority(trustedLock, authorization.expectedPackages)) ===
-    canonicalJson(authorization.expectedRuntimeClosure),
-  "Trusted install runtime closure differs from the qualified Cohort authority.");
+  assert(
+    canonicalJson(docsRuntimeClosureV2Authority(trustedLock, authorization.expectedPackages)) ===
+      canonicalJson(authorization.expectedRuntimeClosure),
+    "Trusted install runtime closure differs from the qualified Cohort authority.",
+  );
   const installedRoots = new Map();
   for (const expected of authorization.expectedPackages) {
-    const root = await qualificationInstalledPackageRoot(process.env.TRUSTED_INSTALL_ROOT, expected);
-    assert(await installedPackageTreeDigest(root, expected.name) === installedByName.get(expected.name).treeDigest,
-      `${expected.name} installed bytes changed before qualification execution.`);
+    const root = await qualificationInstalledPackageRoot(
+      process.env.TRUSTED_INSTALL_ROOT,
+      expected,
+    );
+    assert(
+      (await installedPackageTreeDigest(root, expected.name)) ===
+        installedByName.get(expected.name).treeDigest,
+      `${expected.name} installed bytes changed before qualification execution.`,
+    );
     installedRoots.set(expected.name, root);
   }
   const adapterRoot = installedRoots.get(adapter.name);
-  const adapterManifest = parseJsonStrict(await readFile(join(adapterRoot, "package.json"), "utf8"),
-    "installed adapter package.json", JSON_LIMITS["package.json"]);
-  assert(adapterManifest.name === adapter.name && adapterManifest.version === adapter.version &&
-    adapterManifest.exports?.["./qualification"]?.import === "./dist/qualification/index.js",
-  "Installed adapter does not expose the exact qualification entrypoint.");
+  const adapterManifest = parseJsonStrict(
+    await readFile(join(adapterRoot, "package.json"), "utf8"),
+    "installed adapter package.json",
+    JSON_LIMITS["package.json"],
+  );
+  assert(
+    adapterManifest.name === adapter.name &&
+      adapterManifest.version === adapter.version &&
+      adapterManifest.exports?.["./qualification"]?.import === "./dist/qualification/index.js",
+    "Installed adapter does not expose the exact qualification entrypoint.",
+  );
   const entrypoint = await realpath(join(adapterRoot, "dist", "qualification", "index.js"));
-  assert(entrypoint.startsWith(`${adapterRoot}${sep}`) && (await lstat(entrypoint)).isFile(),
-    "Qualification v3 entrypoint escapes the exact installed adapter.");
-  const packages = Object.fromEntries(COORDINATE_PACKAGE_KEYS.map(([key, name]) => [key, {
-    version: expectedByName.get(name).version,
-    integrity: expectedByName.get(name).integrity,
-  }]));
-  const evidence = authorization.qualificationProfile === "cohort-v3" ? {
-    cohort: {
-      cohortId: profile.cohort.cohortId,
-      recordDigest: profile.cohort.recordDigest,
-      qualificationEventDigest: profile.cohort.qualificationEventDigest,
-      candidateDigest: profile.cohort.candidateDigest,
-    },
-    packages,
-    schemas: {
-      consumerIntegration: 4,
-      managedState: 3,
-      qualificationReceipt: 1,
-      docsProtocol: 1,
-    },
-    policy: {
-      id: profile.cohort.runtime.policy.id,
-      version: profile.cohort.runtime.policy.version,
-      sourceDigest: profile.cohort.runtime.policy.digest,
-    },
-    runtime: {
-      selectedLane: profile.cohort.runtime.selectedLane,
-      node: profile.cohort.runtime.node,
-      pnpm: profile.cohort.runtime.pnpm,
-      qualificationRuntime: { ...profile.cohort.runtime.qualificationRuntime },
-      runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
-    },
-  } : {
-    packages,
-    schemas: { ...profile.cohort.schemas },
-    runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
-  };
+  assert(
+    entrypoint.startsWith(`${adapterRoot}${sep}`) && (await lstat(entrypoint)).isFile(),
+    "Qualification v3 entrypoint escapes the exact installed adapter.",
+  );
+  const packages = Object.fromEntries(
+    COORDINATE_PACKAGE_KEYS.map(([key, name]) => [
+      key,
+      {
+        version: expectedByName.get(name).version,
+        integrity: expectedByName.get(name).integrity,
+      },
+    ]),
+  );
+  const evidence =
+    authorization.qualificationProfile === "cohort-v3"
+      ? {
+          cohort: {
+            cohortId: profile.cohort.cohortId,
+            recordDigest: profile.cohort.recordDigest,
+            qualificationEventDigest: profile.cohort.qualificationEventDigest,
+            candidateDigest: profile.cohort.candidateDigest,
+          },
+          packages,
+          schemas: {
+            consumerIntegration: 4,
+            managedState: 3,
+            qualificationReceipt: 1,
+            docsProtocol: 1,
+          },
+          policy: {
+            id: profile.cohort.runtime.policy.id,
+            version: profile.cohort.runtime.policy.version,
+            sourceDigest: profile.cohort.runtime.policy.digest,
+          },
+          runtime: {
+            selectedLane: profile.cohort.runtime.selectedLane,
+            node: profile.cohort.runtime.node,
+            pnpm: profile.cohort.runtime.pnpm,
+            qualificationRuntime: { ...profile.cohort.runtime.qualificationRuntime },
+            runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
+          },
+        }
+      : {
+          packages,
+          schemas: { ...profile.cohort.schemas },
+          runtimeClosureDigest: authorization.expectedRuntimeClosure.digest,
+        };
   const host = options.host ?? productPolicyHost;
-  const observedHostRuntime = authorization.qualificationProfile === "cohort-v3"
-    ? qualificationRuntimeTuple(await host.readQualificationRuntime(), "Host qualification runtime")
-    : undefined;
+  const observedHostRuntime =
+    authorization.qualificationProfile === "cohort-v3"
+      ? qualificationRuntimeTuple(
+          await host.readQualificationRuntime(),
+          "Host qualification runtime",
+        )
+      : undefined;
   if (observedHostRuntime !== undefined) {
-    assert(exactKeys(evidence.runtime, ["selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosureDigest"]) &&
-      canonicalJson(qualificationRuntimeTuple(evidence.runtime.qualificationRuntime,
-        "evidence.runtime.qualificationRuntime")) === canonicalJson(observedHostRuntime),
-    "Observed host differs from evidence.runtime.qualificationRuntime.");
+    assert(
+      exactKeys(evidence.runtime, [
+        "selectedLane",
+        "node",
+        "pnpm",
+        "qualificationRuntime",
+        "runtimeClosureDigest",
+      ]) &&
+        canonicalJson(
+          qualificationRuntimeTuple(
+            evidence.runtime.qualificationRuntime,
+            "evidence.runtime.qualificationRuntime",
+          ),
+        ) === canonicalJson(observedHostRuntime),
+      "Observed host differs from evidence.runtime.qualificationRuntime.",
+    );
   }
   const importModule = options.importModule ?? ((path) => import(pathToFileURL(path).href));
   const module = await importModule(entrypoint);
-  assert(typeof module.runDocsProtocolQualificationV3 === "function",
-    "Installed adapter qualification entrypoint lacks runDocsProtocolQualificationV3.");
-  const receipt = await module.runDocsProtocolQualificationV3({ profile, evidence, lockfileBytes: trustedLockBytes });
+  assert(
+    typeof module.runDocsProtocolQualificationV3 === "function",
+    "Installed adapter qualification entrypoint lacks runDocsProtocolQualificationV3.",
+  );
+  const receipt = await module.runDocsProtocolQualificationV3({
+    profile,
+    evidence,
+    lockfileBytes: trustedLockBytes,
+  });
   if (observedHostRuntime !== undefined) {
-    assert(exactKeys(receipt?.runtime, ["selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosure"]) &&
-      canonicalJson(qualificationRuntimeTuple(receipt.runtime.qualificationRuntime,
-        "receipt.runtime.qualificationRuntime")) === canonicalJson(observedHostRuntime),
-    "Package receipt differs from the observed runtime qualification tuple.");
+    assert(
+      exactKeys(receipt?.runtime, [
+        "selectedLane",
+        "node",
+        "pnpm",
+        "qualificationRuntime",
+        "runtimeClosure",
+      ]) &&
+        canonicalJson(
+          qualificationRuntimeTuple(
+            receipt.runtime.qualificationRuntime,
+            "receipt.runtime.qualificationRuntime",
+          ),
+        ) === canonicalJson(observedHostRuntime),
+      "Package receipt differs from the observed runtime qualification tuple.",
+    );
   }
-  assert(typeof process.env.QUALIFICATION_RECEIPT === "string", "Qualification receipt path is required.");
-  await writeFile(process.env.QUALIFICATION_RECEIPT, `${canonicalJson(receipt)}\n`, { mode: 0o600 });
-  console.log(`Trusted base-owned runner wrote the ${authorization.qualificationProfile} qualification receipt.`);
+  assert(
+    typeof process.env.QUALIFICATION_RECEIPT === "string",
+    "Qualification receipt path is required.",
+  );
+  await writeFile(process.env.QUALIFICATION_RECEIPT, `${canonicalJson(receipt)}\n`, {
+    mode: 0o600,
+  });
+  console.log(
+    `Trusted base-owned runner wrote the ${authorization.qualificationProfile} qualification receipt.`,
+  );
 }
 
 async function verifyCheckoutCommand() {
   const authorization = await readAuthorization();
   const checkout = resolve(process.env.CONSUMER_CHECKOUT);
-  assert(authorization.repositoryId === Number(process.env.CALLER_REPOSITORY_ID) &&
-    authorization.repository === process.env.GITHUB_REPOSITORY && authorization.callerSha === process.env.GITHUB_SHA,
-  "Checkout verification context differs from the authorization.");
+  assert(
+    authorization.repositoryId === Number(process.env.CALLER_REPOSITORY_ID) &&
+      authorization.repository === process.env.GITHUB_REPOSITORY &&
+      authorization.callerSha === process.env.GITHUB_SHA,
+    "Checkout verification context differs from the authorization.",
+  );
   for (const [path, digest] of Object.entries(authorization.fileDigests)) {
     const absolute = resolve(checkout, path);
-    assert(absolute.startsWith(`${checkout}${sep}`), `Authorized path ${path} escapes the checkout.`);
+    assert(
+      absolute.startsWith(`${checkout}${sep}`),
+      `Authorized path ${path} escapes the checkout.`,
+    );
     const stat = await lstat(absolute);
     assert(stat.isFile() && !stat.isSymbolicLink(), `${path} is not a regular checkout file.`);
-    assert(sha256(await readFile(absolute)) === digest, `${path} changed after central authorization.`);
+    assert(
+      sha256(await readFile(absolute)) === digest,
+      `${path} changed after central authorization.`,
+    );
   }
   console.log("Consumer checkout matches the centrally authorized immutable caller snapshot.");
 }
@@ -1434,19 +2104,25 @@ async function verifyCheckoutCommand() {
 async function verifyControllerSnapshotCommand() {
   const authorization = await readAuthorization();
   const token = process.env.GITHUB_TOKEN;
-  assert(typeof token === "string" && token.length > 0,
-    "Controller stability verification lacks a GitHub token.");
+  assert(
+    typeof token === "string" && token.length > 0,
+    "Controller stability verification lacks a GitHub token.",
+  );
   const controller = await githubJson(`/repos/${CONTROLLER_REPOSITORY}`, token);
-  assert(controller.id === 1316243981 && controller.full_name === CONTROLLER_REPOSITORY &&
-    !controller.archived && !controller.disabled,
-  "Live controller repository identity changed after authorization.");
+  assert(
+    controller.id === 1316243981 &&
+      controller.full_name === CONTROLLER_REPOSITORY &&
+      !controller.archived &&
+      !controller.disabled,
+    "Live controller repository identity changed after authorization.",
+  );
   const branch = await githubJson(
     `/repos/${CONTROLLER_REPOSITORY}/branches/${encodeURIComponent(controller.default_branch)}`,
     token,
   );
   if (branch.commit?.sha !== authorization.controllerSnapshotSha) {
     throw new GateInfrastructureError(
-      "Current controller authority moved during this run; retry against one fresh snapshot."
+      "Current controller authority moved during this run; retry against one fresh snapshot.",
     );
   }
   console.log("Current controller data authority remained on the authorized exact snapshot.");
@@ -1456,113 +2132,196 @@ async function prepareInstallCommand() {
   const authorization = await readAuthorization();
   const directory = resolve(process.env.TRUSTED_INSTALL_ROOT);
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  assert(["legacy", "cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile),
-    "Central authorization lacks an explicit qualification profile.");
-  assert(authorization.qualificationPackageManager ===
-    (authorization.qualificationProfile === "legacy" ? "pnpm@11.18.0" : "pnpm@11.20.0"),
-  "Central authorization qualification pnpm does not match its explicit profile.");
+  assert(
+    ["legacy", "cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile),
+    "Central authorization lacks an explicit qualification profile.",
+  );
+  assert(
+    authorization.qualificationPackageManager ===
+      (authorization.qualificationProfile === "legacy" ? "pnpm@11.18.0" : "pnpm@11.20.0"),
+    "Central authorization qualification pnpm does not match its explicit profile.",
+  );
   const fivePackage = ["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile);
   const rootPackages = fivePackage
     ? authorization.expectedPackages.filter(({ role }) => role === "direct")
     : authorization.expectedPackages;
-  assert(rootPackages.length === (fivePackage ? 3 : 2),
-    "Trusted install has the wrong explicit root package set.");
-  const devDependencies = Object.fromEntries(rootPackages.map(({ name, version }) => [name, version]));
+  assert(
+    rootPackages.length === (fivePackage ? 3 : 2),
+    "Trusted install has the wrong explicit root package set.",
+  );
+  const devDependencies = Object.fromEntries(
+    rootPackages.map(({ name, version }) => [name, version]),
+  );
   await Promise.all([
-    writeFile(join(directory, "package.json"), `${JSON.stringify({
-      name: "agent-teams-docs-trusted-gate",
-      version: "0.0.0",
-      private: true,
-      packageManager: authorization.qualificationPackageManager,
-      devDependencies,
-    }, null, 2)}\n`, { mode: 0o600 }),
-    writeFile(join(directory, ".npmrc"), [
-      "registry=https://registry.npmjs.org/",
-      "@agent-teams:registry=https://registry.npmjs.org/",
-      "ignore-scripts=true",
-      "verify-store-integrity=true",
-      "strict-peer-dependencies=true",
-      "",
-    ].join("\n"), { mode: 0o600 }),
-    writeFile(join(directory, "pnpm-workspace.yaml"),
-      trustedInstallWorkspaceConfig(authorization.expectedPackages, authorization.qualificationProfile), { mode: 0o600 }),
-    writeFile(join(directory, "pnpm-lock.yaml"),
-      `${canonicalJson(authorization.expectedRuntimeClosureLock)}\n`, { mode: 0o600 }),
+    writeFile(
+      join(directory, "package.json"),
+      `${JSON.stringify(
+        {
+          name: "agent-teams-docs-trusted-gate",
+          version: "0.0.0",
+          private: true,
+          packageManager: authorization.qualificationPackageManager,
+          devDependencies,
+        },
+        null,
+        2,
+      )}\n`,
+      { mode: 0o600 },
+    ),
+    writeFile(
+      join(directory, ".npmrc"),
+      [
+        "registry=https://registry.npmjs.org/",
+        "@agent-teams:registry=https://registry.npmjs.org/",
+        "ignore-scripts=true",
+        "verify-store-integrity=true",
+        "strict-peer-dependencies=true",
+        "",
+      ].join("\n"),
+      { mode: 0o600 },
+    ),
+    writeFile(
+      join(directory, "pnpm-workspace.yaml"),
+      trustedInstallWorkspaceConfig(
+        authorization.expectedPackages,
+        authorization.qualificationProfile,
+      ),
+      { mode: 0o600 },
+    ),
+    writeFile(
+      join(directory, "pnpm-lock.yaml"),
+      `${canonicalJson(authorization.expectedRuntimeClosureLock)}\n`,
+      { mode: 0o600 },
+    ),
   ]);
 }
 
 async function verifyInstallCommand() {
   const authorization = await readAuthorization();
   const directory = resolve(process.env.TRUSTED_INSTALL_ROOT);
-  const manifest = parseJsonStrict(await readFile(join(directory, "package.json"), "utf8"),
-    "trusted install package.json", JSON_LIMITS["package.json"]);
-  const lock = parseYamlStrict(await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
-    "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
+  const manifest = parseJsonStrict(
+    await readFile(join(directory, "package.json"), "utf8"),
+    "trusted install package.json",
+    JSON_LIMITS["package.json"],
+  );
+  const lock = parseYamlStrict(
+    await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
+    "trusted install pnpm-lock.yaml",
+    LOCKFILE_LIMIT,
+  );
   validateExactPnpmLock(manifest, lock, authorization.expectedPackages, {
     qualificationProfile: authorization.qualificationProfile,
   });
-  const runtimeClosureAuthority = ["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile)
+  const runtimeClosureAuthority = ["cohort-v2", "cohort-v3"].includes(
+    authorization.qualificationProfile,
+  )
     ? docsRuntimeClosureV2Authority
     : docsRuntimeClosureAuthority;
-  assert(canonicalJson(runtimeClosureAuthority(lock, authorization.expectedPackages)) ===
-    canonicalJson(authorization.expectedRuntimeClosure),
-  "Trusted install runtime closure differs from the qualified Cohort authority.");
+  assert(
+    canonicalJson(runtimeClosureAuthority(lock, authorization.expectedPackages)) ===
+      canonicalJson(authorization.expectedRuntimeClosure),
+    "Trusted install runtime closure differs from the qualified Cohort authority.",
+  );
   async function installedPackageRoot(expected) {
     const direct = join(directory, "node_modules", expected.name);
     try {
       const root = await realpath(direct);
-      const installedManifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
-        `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-      if (installedManifest.name === expected.name && installedManifest.version === expected.version) {return root;}
+      const installedManifest = parseJsonStrict(
+        await readFile(join(root, "package.json"), "utf8"),
+        `${expected.name} installed package.json`,
+        JSON_LIMITS["package.json"],
+      );
+      if (
+        installedManifest.name === expected.name &&
+        installedManifest.version === expected.version
+      ) {
+        return root;
+      }
     } catch (error) {
-      if (error?.code !== "ENOENT") {throw error;}
+      if (error?.code !== "ENOENT") {
+        throw error;
+      }
     }
     const virtualStore = join(directory, "node_modules", ".pnpm");
     const matches = [];
     const handle = await opendir(virtualStore);
     for await (const entry of handle) {
-      if (!entry.isDirectory()) {continue;}
+      if (!entry.isDirectory()) {
+        continue;
+      }
       const candidate = join(virtualStore, entry.name, "node_modules", expected.name);
       try {
         const root = await realpath(candidate);
-        const installedManifest = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
-          `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-        if (installedManifest.name === expected.name && installedManifest.version === expected.version) {matches.push(root);}
+        const installedManifest = parseJsonStrict(
+          await readFile(join(root, "package.json"), "utf8"),
+          `${expected.name} installed package.json`,
+          JSON_LIMITS["package.json"],
+        );
+        if (
+          installedManifest.name === expected.name &&
+          installedManifest.version === expected.version
+        ) {
+          matches.push(root);
+        }
       } catch (error) {
-        if (error?.code !== "ENOENT") {throw error;}
+        if (error?.code !== "ENOENT") {
+          throw error;
+        }
       }
     }
-    assert(new Set(matches).size === 1, `${expected.name} does not have one exact installed package root.`);
+    assert(
+      new Set(matches).size === 1,
+      `${expected.name} does not have one exact installed package root.`,
+    );
     return matches[0];
   }
   const installedRoots = new Map();
   for (const expected of authorization.expectedPackages) {
     const root = await installedPackageRoot(expected);
     installedRoots.set(expected.name, root);
-    const installed = parseJsonStrict(await readFile(join(root, "package.json"), "utf8"),
-      `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
-    assert(installed.name === expected.name && installed.version === expected.version,
-      `${expected.name} installed identity differs from the authorized Cohort.`);
+    const installed = parseJsonStrict(
+      await readFile(join(root, "package.json"), "utf8"),
+      `${expected.name} installed package.json`,
+      JSON_LIMITS["package.json"],
+    );
+    assert(
+      installed.name === expected.name && installed.version === expected.version,
+      `${expected.name} installed identity differs from the authorized Cohort.`,
+    );
   }
-  const docs = authorization.expectedPackages.find(({ name }) => name === "@agent-teams/docs-protocol");
-  const docsManifest = parseJsonStrict(await readFile(join(installedRoots.get(docs.name), "package.json"), "utf8"),
-    "installed Docs Protocol package.json", JSON_LIMITS["package.json"]);
+  const docs = authorization.expectedPackages.find(
+    ({ name }) => name === "@agent-teams/docs-protocol",
+  );
+  const docsManifest = parseJsonStrict(
+    await readFile(join(installedRoots.get(docs.name), "package.json"), "utf8"),
+    "installed Docs Protocol package.json",
+    JSON_LIMITS["package.json"],
+  );
   if (["cohort-v2", "cohort-v3"].includes(authorization.qualificationProfile)) {
     const byName = new Map(authorization.expectedPackages.map((entry) => [entry.name, entry]));
     const installedEdges = [];
     for (const expected of authorization.expectedPackages) {
-      const installed = parseJsonStrict(await readFile(join(installedRoots.get(expected.name), "package.json"), "utf8"),
-        `${expected.name} installed package.json`, JSON_LIMITS["package.json"]);
+      const installed = parseJsonStrict(
+        await readFile(join(installedRoots.get(expected.name), "package.json"), "utf8"),
+        `${expected.name} installed package.json`,
+        JSON_LIMITS["package.json"],
+      );
       for (const section of ["dependencies", "optionalDependencies"]) {
         for (const [name, version] of Object.entries(installed[section] ?? {})) {
-          if (!byName.has(name)) {continue;}
-          assert(version === byName.get(name).version,
-            `${expected.name} -> ${name} installed dependency is not exact.`);
+          if (!byName.has(name)) {
+            continue;
+          }
+          assert(
+            version === byName.get(name).version,
+            `${expected.name} -> ${name} installed dependency is not exact.`,
+          );
           installedEdges.push({ from: expected.name, to: name });
         }
       }
     }
-    installedEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
+    installedEdges.sort(({ from: a, to: b }, { from: c, to: d }) =>
+      a === c ? b.localeCompare(d) : a.localeCompare(c),
+    );
     const expectedEdges = [
       ["@agent-teams/document-authoring", "@agent-teams/repository-mutation"],
       ["@agent-teams/docs-protocol", "@agent-teams/document-authoring"],
@@ -1572,29 +2331,57 @@ async function verifyInstallCommand() {
       ["@agent-teams/engineering-foundation", "@agent-teams/document-authoring"],
       ["@agent-teams/engineering-foundation", "@agent-teams/repository-mutation"],
     ].map(([from, to]) => ({ from, to }));
-    expectedEdges.sort(({ from: a, to: b }, { from: c, to: d }) => a === c ? b.localeCompare(d) : a.localeCompare(c));
-    assert(canonicalJson(installedEdges) === canonicalJson(expectedEdges),
-      "Installed Cohort managed dependency edges are not exactly closed.");
+    expectedEdges.sort(({ from: a, to: b }, { from: c, to: d }) =>
+      a === c ? b.localeCompare(d) : a.localeCompare(c),
+    );
+    assert(
+      canonicalJson(installedEdges) === canonicalJson(expectedEdges),
+      "Installed Cohort managed dependency edges are not exactly closed.",
+    );
   } else {
-    const foundation = authorization.expectedPackages.find(({ name }) => name === "@agent-teams/engineering-foundation");
-    assert(docsManifest.dependencies?.[foundation.name] === foundation.version,
-      "Installed Docs Protocol has the wrong exact Foundation dependency.");
+    const foundation = authorization.expectedPackages.find(
+      ({ name }) => name === "@agent-teams/engineering-foundation",
+    );
+    assert(
+      docsManifest.dependencies?.[foundation.name] === foundation.version,
+      "Installed Docs Protocol has the wrong exact Foundation dependency.",
+    );
   }
   const cli = await realpath(join(installedRoots.get(docs.name), "dist", "cli.js"));
   const packageRoot = installedRoots.get(docs.name);
-  assert(cli.startsWith(`${packageRoot}${sep}`) && (await lstat(cli)).isFile(),
-    "Trusted Docs CLI does not resolve to a regular file inside the exact package.");
+  assert(
+    cli.startsWith(`${packageRoot}${sep}`) && (await lstat(cli)).isFile(),
+    "Trusted Docs CLI does not resolve to a regular file inside the exact package.",
+  );
   const installedPackages = [];
   for (const expected of authorization.expectedPackages) {
-    installedPackages.push({ ...expected,
-      treeDigest: await installedPackageTreeDigest(installedRoots.get(expected.name), expected.name) });
+    installedPackages.push({
+      ...expected,
+      treeDigest: await installedPackageTreeDigest(
+        installedRoots.get(expected.name),
+        expected.name,
+      ),
+    });
   }
-  assert(typeof process.env.INSTALL_EVIDENCE_PATH === "string", "Trusted install evidence path is required.");
-  await writeFile(process.env.INSTALL_EVIDENCE_PATH, `${canonicalJson({ schemaVersion: 1,
-    authorizationDigest: authorizationDigest(authorization), packages: installedPackages })}\n`, { mode: 0o600 });
+  assert(
+    typeof process.env.INSTALL_EVIDENCE_PATH === "string",
+    "Trusted install evidence path is required.",
+  );
+  await writeFile(
+    process.env.INSTALL_EVIDENCE_PATH,
+    `${canonicalJson({
+      schemaVersion: 1,
+      authorizationDigest: authorizationDigest(authorization),
+      packages: installedPackages,
+    })}\n`,
+    { mode: 0o600 },
+  );
   if (process.env.GITHUB_OUTPUT) {
-    await writeFile(process.env.GITHUB_OUTPUT,
-      `cli=${cli}\nprofile_path=${authorization.profilePath}\n`, { flag: "a" });
+    await writeFile(
+      process.env.GITHUB_OUTPUT,
+      `cli=${cli}\nprofile_path=${authorization.profilePath}\n`,
+      { flag: "a" },
+    );
   }
   console.log("Trusted isolated Docs Protocol installation matches the Cohort.");
 }
@@ -1602,18 +2389,26 @@ async function verifyInstallCommand() {
 async function verifyInstallLockCommand() {
   const authorization = await readAuthorization();
   const directory = resolve(process.env.TRUSTED_INSTALL_ROOT);
-  const manifest = parseJsonStrict(await readFile(join(directory, "package.json"), "utf8"),
-    "trusted install package.json", JSON_LIMITS["package.json"]);
-  const lock = parseYamlStrict(await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
-    "trusted install pnpm-lock.yaml", LOCKFILE_LIMIT);
+  const manifest = parseJsonStrict(
+    await readFile(join(directory, "package.json"), "utf8"),
+    "trusted install package.json",
+    JSON_LIMITS["package.json"],
+  );
+  const lock = parseYamlStrict(
+    await readFile(join(directory, "pnpm-lock.yaml"), "utf8"),
+    "trusted install pnpm-lock.yaml",
+    LOCKFILE_LIMIT,
+  );
   assertQualifiedRuntimeLockExact(lock, authorization);
-  validateExactPnpmLock(manifest, lock, authorization.expectedPackages,
-    { qualificationProfile: authorization.qualificationProfile,
-      qualifiedRuntimeClosureLock: authorization.expectedRuntimeClosureLock });
+  validateExactPnpmLock(manifest, lock, authorization.expectedPackages, {
+    qualificationProfile: authorization.qualificationProfile,
+    qualifiedRuntimeClosureLock: authorization.expectedRuntimeClosureLock,
+  });
   console.log("Trusted isolated install lock matches the exact Cohort before package execution.");
 }
 
-const isEntrypoint = process.argv[1] !== undefined &&
+const isEntrypoint =
+  process.argv[1] !== undefined &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 if (isEntrypoint) {
   const commands = new Map([
@@ -1627,13 +2422,17 @@ if (isEntrypoint) {
   ]);
   const command = commands.get(process.argv[2]);
   if (command === undefined) {
-    console.error("Usage: verify-docs-consumer-gate.mjs <authorize|verify-checkout|verify-controller-snapshot|prepare-install|verify-install-lock|verify-install|run-qualification-v3>");
+    console.error(
+      "Usage: verify-docs-consumer-gate.mjs <authorize|verify-checkout|verify-controller-snapshot|prepare-install|verify-install-lock|verify-install|run-qualification-v3>",
+    );
     process.exitCode = 2;
   } else {
     try {
       await command();
     } catch (error) {
-      console.error(`${gateErrorCode(error)}: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `${gateErrorCode(error)}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       process.exitCode = 1;
     }
   }

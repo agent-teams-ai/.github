@@ -20,6 +20,7 @@ boundaries:
         - "@agent-teams/ci-input-proof"
         - ajv
         - node-or-bun
+        - stack-toolchain
         - yaml
       builtins:
         - node:assert/strict
@@ -27,6 +28,7 @@ boundaries:
         - node:crypto
         - node:fs
         - node:fs/promises
+        - node:module
         - node:os
         - node:path
         - node:test
