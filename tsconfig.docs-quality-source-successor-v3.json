@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "include": [
+    "scripts/docs-quality-source-successor-v3.ts",
+    "scripts/docs-quality-source-successor-v3-target.ts",
+    "scripts/docs-quality-source-successor-v3.test.ts"
+  ]
+}
