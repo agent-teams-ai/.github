@@ -7,7 +7,10 @@ const testPath = "scripts/docs-governance-authority-evolution-v12.test.mjs";
 const workflow = await readFile(workflowPath, "utf8");
 const scriptBlock = /\n          script: \|\n(?<source>[\s\S]+)$/u.exec(workflow)?.groups?.source;
 assert.notEqual(scriptBlock, undefined);
-const source = scriptBlock.split("\n").map((line) => line.slice(12)).join("\n");
+const source = scriptBlock
+  .split("\n")
+  .map((line) => line.slice(12))
+  .join("\n");
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 const execute = new AsyncFunction("context", "github", "core", source);
 const repository = "agent-teams-ai/.github";
@@ -24,14 +27,20 @@ async function classify(options = {}) {
   const outputs = new Map();
   const context = {
     repo: { owner: "agent-teams-ai", repo: ".github" },
-    payload: { pull_request: {
-      number: 276,
-      changed_files: options.changedFiles ?? files.length,
-      head: { repo: options.missingHeadRepo ? null : {
-        full_name: options.headRepo ?? repository,
-      } },
-      base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
-    } },
+    payload: {
+      pull_request: {
+        number: 276,
+        changed_files: options.changedFiles ?? files.length,
+        head: {
+          repo: options.missingHeadRepo
+            ? null
+            : {
+                full_name: options.headRepo ?? repository,
+              },
+        },
+        base: { ref: options.baseRef ?? "main", sha: options.baseSha ?? baseSha },
+      },
+    },
   };
   const github = {
     paginate: async () => paginated,
@@ -61,15 +70,15 @@ test("fails closed for partial, wrong-identity, renamed, extra, and incomplete s
   for (const [index, exact] of canonical.entries()) {
     for (const files of [
       canonical.filter((_, candidateIndex) => candidateIndex !== index),
-      canonical.map((file, candidateIndex) => candidateIndex === index
-        ? { ...exact, status: "added" }
-        : file),
-      canonical.map((file, candidateIndex) => candidateIndex === index
-        ? { ...exact, sha: "f".repeat(40) }
-        : file),
-      canonical.map((file, candidateIndex) => candidateIndex === index
-        ? { ...exact, previous_filename: `old/${exact.filename}` }
-        : file),
+      canonical.map((file, candidateIndex) =>
+        candidateIndex === index ? { ...exact, status: "added" } : file,
+      ),
+      canonical.map((file, candidateIndex) =>
+        candidateIndex === index ? { ...exact, sha: "f".repeat(40) } : file,
+      ),
+      canonical.map((file, candidateIndex) =>
+        candidateIndex === index ? { ...exact, previous_filename: `old/${exact.filename}` } : file,
+      ),
     ]) {
       assert.notEqual((await classify({ files })).failures.length, 0, JSON.stringify(files));
     }

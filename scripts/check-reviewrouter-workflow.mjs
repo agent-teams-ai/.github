@@ -8,16 +8,13 @@ const interactionPath = ".github/workflows/reviewrouter-interaction.yml";
 const reviewCommit = "75cbecab131d74021677fcd1fb21962994d306b8";
 const reviewSecret =
   "REVIEWROUTER_CODEX_AUTH_JSON_R1316243981_P2e7c56bda356e46d_E4_c00bdf94aa1684657780cad55cd4159a";
-const interactionSourceSha256 =
-  "10bbf435f6b604ab5a959995ab717b8dde186591586f6af8970cd3067a9c74ee";
-const reviewSecretMatch =
-  /_E([1-9][0-9]*)_([a-f0-9]{32})$/.exec(reviewSecret);
+const interactionSourceSha256 = "10bbf435f6b604ab5a959995ab717b8dde186591586f6af8970cd3067a9c74ee";
+const reviewSecretMatch = /_E([1-9][0-9]*)_([a-f0-9]{32})$/.exec(reviewSecret);
 if (!reviewSecretMatch) {
   throw new Error("reviewSecret must use the versioned namespace format.");
 }
 const [, reviewEpoch, reviewNamespace] = reviewSecretMatch;
-const expectedReviewUses =
-  `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${reviewCommit}`;
+const expectedReviewUses = `777genius/review-router/.github/workflows/reviewrouter-t0-reusable.yml@${reviewCommit}`;
 
 function assert(condition, message) {
   if (!condition) {
@@ -27,8 +24,16 @@ function assert(condition, message) {
 
 function samePermissions(actual, expected) {
   return (
-    JSON.stringify(Object.entries(actual ?? {}).toSorted()) ===
-    JSON.stringify(Object.entries(expected).toSorted())
+    JSON.stringify(
+      Object.entries(actual ?? {}).toSorted((left, right) =>
+        String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+      ),
+    ) ===
+    JSON.stringify(
+      Object.entries(expected).toSorted((left, right) =>
+        String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+      ),
+    )
   );
 }
 
@@ -87,8 +92,7 @@ assert(
   "codex-review must bind the .github repository provider identity.",
 );
 assert(
-  reviewJob.secrets?.CODEX_AUTH_JSON ===
-    `\${{ secrets.${reviewSecret} }}`,
+  reviewJob.secrets?.CODEX_AUTH_JSON === `\${{ secrets.${reviewSecret} }}`,
   "codex-review must use the exact versioned rotating provider secret.",
 );
 
@@ -121,7 +125,7 @@ assert(
 );
 assert(
   JSON.stringify(interaction.workflow.on?.pull_request_review_comment?.types) ===
-      JSON.stringify(["created", "edited"]) &&
+    JSON.stringify(["created", "edited"]) &&
     JSON.stringify(interaction.workflow.on?.issue_comment?.types) ===
       JSON.stringify(["created", "edited"]) &&
     interaction.workflow.on?.workflow_dispatch !== undefined,
@@ -134,8 +138,7 @@ assert(
   "interaction must preserve the PR-only and non-bot event filter.",
 );
 assert(
-  createHash("sha256").update(interaction.source).digest("hex") ===
-    interactionSourceSha256,
+  createHash("sha256").update(interaction.source).digest("hex") === interactionSourceSha256,
   `${interactionPath} must match the exact canonical explicit interaction V2 source.`,
 );
 
@@ -149,4 +152,6 @@ for (const legacyMarker of [
   );
 }
 
-console.log("ReviewRouter workflows verified: pinned canonical sources with least-privilege tokens.");
+console.log(
+  "ReviewRouter workflows verified: pinned canonical sources with least-privilege tokens.",
+);

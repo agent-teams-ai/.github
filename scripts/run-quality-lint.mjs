@@ -1,14 +1,28 @@
 import assert from "node:assert/strict";
-import { fileURLToPath } from "node:url";
-import { assertQualityAdoption, deriveLintPaths, readQualityAdoption } from "./check-quality-scope.mjs";
-import { getQualityCommandOutput, runQualityCommand } from "./quality-process.ts";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
+import { runCommand } from "stack-toolchain";
+import {
+  assertQualityAdoption,
+  deriveLintPaths,
+  readQualityAdoption,
+} from "./check-quality-scope.mjs";
+import {
+  getQualityCommandOutput,
+  runQualityCommand,
+  QUALITY_COMMAND_TIMEOUT_MS,
+} from "./quality-process.ts";
 
 const root = new URL("../", import.meta.url);
-const oxlintEntrypoint = fileURLToPath(new URL("node_modules/oxlint/bin/oxlint", root));
+const stackRequire = createRequire(import.meta.resolve("stack-toolchain/package.json"));
+const oxlintEntrypoint = fileURLToPath(
+  new URL("bin/oxlint", pathToFileURL(stackRequire.resolve("oxlint/package.json"))),
+);
 const cwd = fileURLToPath(root);
 
-const commonArguments = paths => [
-  "--config", "oxlint.json",
+const commonArguments = (paths) => [
+  "--config",
+  "oxlint.json",
   "--no-ignore",
   "--disable-nested-config",
   ...paths,
@@ -16,9 +30,12 @@ const commonArguments = paths => [
 
 function writeOutput(stream, output) {
   return new Promise((resolve, reject) => {
-    stream.write(output, error => {
-      if (error) {reject(error);}
-      else {resolve();}
+    stream.write(output, (error) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
     });
   });
 }
@@ -34,7 +51,11 @@ export async function selectOxlintFiles(paths) {
     cwd,
   });
   const selected = parseOxlintDebugFiles(stdout);
-  assert.deepEqual(selected, paths.toSorted(), "Oxlint selected files differ from derived tooling paths");
+  assert.deepEqual(
+    selected,
+    paths.toSorted(),
+    "Oxlint selected files differ from derived tooling paths",
+  );
   return selected;
 }
 
@@ -43,12 +64,24 @@ export async function runQualityLint() {
   const census = assertQualityAdoption(adoption);
   const paths = deriveLintPaths(census, adoption.profile);
   await selectOxlintFiles(paths);
-  const { stdout, stderr } = await runQualityCommand({
-    command: process.execPath,
-    args: [oxlintEntrypoint, "--deny-warnings", ...commonArguments(paths)],
+  const report = await runCommand({
+    command: "lint",
     cwd,
+    signal: new AbortController().signal,
+    budgetMs: QUALITY_COMMAND_TIMEOUT_MS,
   });
-  await Promise.all([writeOutput(process.stdout, stdout), writeOutput(process.stderr, stderr)]);
+  if (typeof report.details?.stdout === "string") {
+    await writeOutput(process.stdout, report.details.stdout);
+  }
+  if (typeof report.details?.stderr === "string") {
+    await writeOutput(process.stderr, report.details.stderr);
+  }
+  assert.equal(report.exitCode, 0, `Stack lint failed: ${report.status}`);
+  assert.match(
+    report.details.stdout,
+    /^Found 0 warnings and 0 errors\.$/mu,
+    "lint must retain the consumer's zero-warning policy",
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

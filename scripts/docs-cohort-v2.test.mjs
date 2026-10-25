@@ -24,9 +24,13 @@ import {
 } from "./verify-docs-cohort-v2-receipt.mjs";
 
 const schema = JSON.parse(await readFile("governance/docs-qualified-cohorts.schema.json", "utf8"));
-const consumerPolicySchema = JSON.parse(await readFile("governance/docs-protocol-policy-v2.schema.json", "utf8"));
+const consumerPolicySchema = JSON.parse(
+  await readFile("governance/docs-protocol-policy-v2.schema.json", "utf8"),
+);
 const current = JSON.parse(await readFile("governance/docs-qualified-cohorts.json", "utf8"));
-const currentConsumerPolicy = JSON.parse(await readFile("governance/docs-protocol-policy-v2.json", "utf8"));
+const currentConsumerPolicy = JSON.parse(
+  await readFile("governance/docs-protocol-policy-v2.json", "utf8"),
+);
 const INTEGRITY = `sha512-${"A".repeat(86)}==`;
 const VERSION = "1.0.0-rc.1";
 const HISTORICAL_V1_COHORT_ID = "docs-2026-08-17-rc1";
@@ -48,11 +52,15 @@ function historicalV1QualifiedPrefix(source) {
   assert.ok(record, "the named historical v1 cohort must exist");
   assert.equal(source.cohorts[0], record);
   assert.equal(record.cohort_generation, undefined);
-  const qualificationIndex = source.events.findIndex(({ cohort_id, state }) =>
-    cohort_id === HISTORICAL_V1_COHORT_ID && state === "QUALIFIED");
+  const qualificationIndex = source.events.findIndex(
+    ({ cohort_id, state }) => cohort_id === HISTORICAL_V1_COHORT_ID && state === "QUALIFIED",
+  );
   assert.ok(qualificationIndex >= 0, "the named cohort must have an explicit QUALIFIED event");
   const events = source.events.slice(0, qualificationIndex + 1);
-  assert.deepEqual(events.map(({ sequence }) => sequence), [1, 2, 3, 4]);
+  assert.deepEqual(
+    events.map(({ sequence }) => sequence),
+    [1, 2, 3, 4],
+  );
   assert.ok(events.every(({ cohort_id }) => cohort_id === HISTORICAL_V1_COHORT_ID));
   assert.equal(events.at(-1).state, "QUALIFIED");
   assert.equal(events.at(-1).effective_at, "2026-08-17T10:46:59Z");
@@ -63,17 +71,37 @@ const historicalV1 = historicalV1QualifiedPrefix(current);
 
 function lock() {
   const locator = (name) => `${name}@${VERSION}`;
-  const dependencyMap = (from) => Object.fromEntries(DOCS_COHORT_V2_DEPENDENCY_EDGES
-    .filter((edge) => edge.from === from).map((edge) => [edge.to, VERSION]));
+  const dependencyMap = (from) =>
+    Object.fromEntries(
+      DOCS_COHORT_V2_DEPENDENCY_EDGES.filter((edge) => edge.from === from).map((edge) => [
+        edge.to,
+        VERSION,
+      ]),
+    );
   return {
     lockfileVersion: "9.0",
-    importers: { ".": { devDependencies: Object.fromEntries(DOCS_COHORT_V2_PACKAGES
-      .filter(({ role }) => role === "direct")
-      .map(({ name }) => [name, { specifier: VERSION, version: VERSION }])) } },
-    packages: Object.fromEntries(DOCS_COHORT_V2_PACKAGES.map(({ name }) =>
-      [locator(name), { resolution: { integrity: INTEGRITY } }])),
-    snapshots: Object.fromEntries(DOCS_COHORT_V2_PACKAGES.map(({ name }) =>
-      [locator(name), { dependencies: dependencyMap(name) }])),
+    importers: {
+      ".": {
+        devDependencies: Object.fromEntries(
+          DOCS_COHORT_V2_PACKAGES.filter(({ role }) => role === "direct").map(({ name }) => [
+            name,
+            { specifier: VERSION, version: VERSION },
+          ]),
+        ),
+      },
+    },
+    packages: Object.fromEntries(
+      DOCS_COHORT_V2_PACKAGES.map(({ name }) => [
+        locator(name),
+        { resolution: { integrity: INTEGRITY } },
+      ]),
+    ),
+    snapshots: Object.fromEntries(
+      DOCS_COHORT_V2_PACKAGES.map(({ name }) => [
+        locator(name),
+        { dependencies: dependencyMap(name) },
+      ]),
+    ),
   };
 }
 
@@ -94,11 +122,14 @@ function provenance(name) {
 function fixture() {
   const registry = structuredClone(historicalV1);
   const predecessor = HISTORICAL_V1_COHORT_ID;
-  const closure = docsRuntimeClosureV2Evidence(lock(), DOCS_COHORT_V2_PACKAGES.map((entry) => ({
-    ...entry,
-    version: VERSION,
-    integrity: INTEGRITY,
-  })));
+  const closure = docsRuntimeClosureV2Evidence(
+    lock(),
+    DOCS_COHORT_V2_PACKAGES.map((entry) => ({
+      ...entry,
+      version: VERSION,
+      integrity: INTEGRITY,
+    })),
+  );
   const record = {
     cohort_generation: 2,
     cohort_id: "docs-2026-09-04-v2-rc1",
@@ -130,15 +161,24 @@ function fixture() {
       foundation_receipt: 1,
       foundation_envelope: 5,
     },
-    assets: Object.fromEntries(["skill", "caller_workflow", "asset_catalog", "transition_catalog"]
-      .map((key, index) => [key, {
-        package: "@agent-teams/docs-protocol-agent-teams",
-        path: key === "skill" ? "skills/docs/SKILL.md" :
-          key === "caller_workflow" ? "assets/docs-protocol.yml" :
-            key === "asset_catalog" ? "assets/catalog.json" : "assets/transition-catalog.json",
-        digest: `sha256:${String(index + 1).repeat(64)}`,
-        ...(key === "caller_workflow" ? { rendered_digest: `sha256:${"9".repeat(64)}` } : {}),
-      }])),
+    assets: Object.fromEntries(
+      ["skill", "caller_workflow", "asset_catalog", "transition_catalog"].map((key, index) => [
+        key,
+        {
+          package: "@agent-teams/docs-protocol-agent-teams",
+          path:
+            key === "skill"
+              ? "skills/docs/SKILL.md"
+              : key === "caller_workflow"
+                ? "assets/docs-protocol.yml"
+                : key === "asset_catalog"
+                  ? "assets/catalog.json"
+                  : "assets/transition-catalog.json",
+          digest: `sha256:${String(index + 1).repeat(64)}`,
+          ...(key === "caller_workflow" ? { rendered_digest: `sha256:${"9".repeat(64)}` } : {}),
+        },
+      ]),
+    ),
     runtime: {
       node: ">=24.18.0 <25",
       pnpm: ">=11.17.0 <12",
@@ -149,10 +189,12 @@ function fixture() {
     eligible_after: "2026-09-04T00:00:00Z",
     upgrade_from: [predecessor],
     rollback_to: [predecessor],
-    canary_repositories: [{
-      repository_id: 1336577313,
-      repository: "agent-teams-ai/docs-protocol-canary-20260817",
-    }],
+    canary_repositories: [
+      {
+        repository_id: 1336577313,
+        repository: "agent-teams-ai/docs-protocol-canary-20260817",
+      },
+    ],
     evidence_references: ["test:cohort-v2"],
     record_digest: `sha256:${"f".repeat(64)}`,
   };
@@ -247,9 +289,11 @@ function acceptsConsumerPolicy(value) {
 
 test("coexists with byte-immutable v1 and dispatches only on the explicit v2 discriminator", () => {
   const { registry, record } = fixture();
-  assert.doesNotThrow(() => validateDocsQualifiedCohorts(registry, schema, {
-    asOf: FIXTURE_AS_OF,
-  }));
+  assert.doesNotThrow(() =>
+    validateDocsQualifiedCohorts(registry, schema, {
+      asOf: FIXTURE_AS_OF,
+    }),
+  );
   assert.deepEqual(registry.cohorts.slice(0, historicalV1.cohorts.length), historicalV1.cohorts);
   assert.deepEqual(registry.events.slice(0, historicalV1.events.length), historicalV1.events);
   const disguised = structuredClone(record);
@@ -257,28 +301,34 @@ test("coexists with byte-immutable v1 and dispatches only on the explicit v2 dis
   disguised.record_digest = cohortRecordDigest(disguised);
   const invalid = structuredClone(registry);
   invalid.cohorts.splice(-1, 1, disguised);
-  assert.throws(() => validateDocsQualifiedCohorts(invalid, schema, {
-    asOf: FIXTURE_AS_OF,
-  }), /JSON Schema/u);
+  assert.throws(
+    () =>
+      validateDocsQualifiedCohorts(invalid, schema, {
+        asOf: FIXTURE_AS_OF,
+      }),
+    /JSON Schema/u,
+  );
   assert.notEqual(cohortRecordDigest(record), cohortRecordDigest(disguised));
 });
 
 test("preserves exact legacy projection digest and output bytes", () => {
-  const source = JSON.stringify(qualifiedCohortProjection(
-    historicalV1,
-    HISTORICAL_V1_COHORT_ID,
-    { asOf: FIXTURE_AS_OF },
-  ));
+  const source = JSON.stringify(
+    qualifiedCohortProjection(historicalV1, HISTORICAL_V1_COHORT_ID, { asOf: FIXTURE_AS_OF }),
+  );
   assert.equal(Buffer.byteLength(source, "utf8"), 1477);
-  assert.equal(createHash("sha256").update(source).digest("hex"),
-    "9fe0f1fd1e2ef8b27fde46da51f40256295922f128c750be4af876f76626202c");
+  assert.equal(
+    createHash("sha256").update(source).digest("hex"),
+    "9fe0f1fd1e2ef8b27fde46da51f40256295922f128c750be4af876f76626202c",
+  );
 });
 
 test("projects an inert generation3 fixture into the exact unselected nominal shape", () => {
   const { registry, record } = gen3Fixture();
-  assert.doesNotThrow(() => validateDocsQualifiedCohorts(registry, schema, {
-    asOf: FIXTURE_AS_OF,
-  }));
+  assert.doesNotThrow(() =>
+    validateDocsQualifiedCohorts(registry, schema, {
+      asOf: FIXTURE_AS_OF,
+    }),
+  );
   const projection = qualifiedCohortProjection(registry, record.cohort_id, {
     asOf: FIXTURE_AS_OF,
   });
@@ -287,14 +337,26 @@ test("projects an inert generation3 fixture into the exact unselected nominal sh
   assert.equal(projection.recordDigest, record.record_digest);
   assert.equal(projection.lifecycleState, "QUALIFIED");
   assert.deepEqual(projection.canaryRepositoryIds, ["1336577313"]);
-  assert.deepEqual(projection.schemas,
-    { consumerIntegration: 4, managedState: 3, qualificationReceipt: 1, docsProtocol: 1 });
+  assert.deepEqual(projection.schemas, {
+    consumerIntegration: 4,
+    managedState: 3,
+    qualificationReceipt: 1,
+    docsProtocol: 1,
+  });
   assert.deepEqual(Object.keys(projection.packages), [
-    "repositoryMutation", "documentAuthoring", "docsProtocol",
-    "docsProtocolAgentTeams", "engineeringFoundation",
+    "repositoryMutation",
+    "documentAuthoring",
+    "docsProtocol",
+    "docsProtocolAgentTeams",
+    "engineeringFoundation",
   ]);
   assert.deepEqual(Object.keys(projection.runtime), [
-    "policy", "selectedLane", "node", "pnpm", "qualificationRuntime", "runtimeClosure",
+    "policy",
+    "selectedLane",
+    "node",
+    "pnpm",
+    "qualificationRuntime",
+    "runtimeClosure",
   ]);
   assert.deepEqual(projection.runtime.policy, record.policy_identity);
   assert.equal(projection.runtime.selectedLane, "node-26-managed-qualified");
@@ -319,23 +381,33 @@ test("gen3 canaryRepositoryIds satisfy the exact existing nominal string schema 
   const { canaryRepositoryIds } = qualifiedCohortProjection(registry, record.cohort_id, {
     asOf: FIXTURE_AS_OF,
   });
-  const validateCanaryRepositoryIds = new Ajv2020({ allErrors: true, strict: true })
-    .compile(EXISTING_CANARY_REPOSITORY_IDS_SCHEMA_FRAGMENT);
+  const validateCanaryRepositoryIds = new Ajv2020({ allErrors: true, strict: true }).compile(
+    EXISTING_CANARY_REPOSITORY_IDS_SCHEMA_FRAGMENT,
+  );
   assert.equal(validateCanaryRepositoryIds(canaryRepositoryIds), true);
-  assert.equal(canaryRepositoryIds.every((id) => validateCanaryRepositoryIds([id])), true);
+  assert.equal(
+    canaryRepositoryIds.every((id) => validateCanaryRepositoryIds([id])),
+    true,
+  );
   assert.equal(validateCanaryRepositoryIds([1336577313]), false);
   assert.equal(validateCanaryRepositoryIds(["malformed"]), false);
 });
 
 test("rejects unknown and mixed generations instead of falling back to legacy", () => {
   const { registry, record } = gen3Fixture();
-  assert.throws(() => cohortRecordDigest({ ...record, cohort_generation: 4 }),
-    /closed digest domain/u);
+  assert.throws(
+    () => cohortRecordDigest({ ...record, cohort_generation: 4 }),
+    /closed digest domain/u,
+  );
   const mixed = structuredClone(registry);
   mixed.cohorts.at(-1).schemas.managed_state = 2;
-  assert.throws(() => validateDocsQualifiedCohorts(mixed, schema, {
-    asOf: FIXTURE_AS_OF,
-  }), /JSON Schema/u);
+  assert.throws(
+    () =>
+      validateDocsQualifiedCohorts(mixed, schema, {
+        asOf: FIXTURE_AS_OF,
+      }),
+    /JSON Schema/u,
+  );
   const disguisedV2 = structuredClone(record);
   disguisedV2.cohort_generation = 2;
   delete disguisedV2.candidate_digest;
@@ -349,45 +421,100 @@ test("rejects unknown and mixed generations instead of falling back to legacy", 
   disguisedV2.record_digest = cohortRecordDigest(disguisedV2);
   const invalid = structuredClone(registry);
   invalid.cohorts.splice(-1, 1, disguisedV2);
-  assert.throws(() => validateDocsQualifiedCohorts(invalid, schema, {
-    asOf: FIXTURE_AS_OF,
-  }), /JSON Schema/u);
+  assert.throws(
+    () =>
+      validateDocsQualifiedCohorts(invalid, schema, {
+        asOf: FIXTURE_AS_OF,
+      }),
+    /JSON Schema/u,
+  );
 });
 
 test("rejects wrong schema, policy, lane, qualification tuple, candidate, and digests", () => {
   const semanticCases = [
-    [(record) => { record.policy_identity.version = "3.0.1"; }, /policy identity/u],
-    [(record) => { record.runtime.selected_lane = "node-24-production-default"; }, /managed Node 26 lane/u],
-    [(record) => { record.runtime.qualification_runtime.node_version = "26.11.2"; }, /qualification tuple/u],
-    [(record) => { record.candidate_digest = `sha256:${"0".repeat(64)}`; }, /candidateDigest/u],
-    [(record) => { record.policy_identity.digest = `sha256:${"0".repeat(64)}`; }, /policy identity/u],
+    [
+      (record) => {
+        record.policy_identity.version = "3.0.1";
+      },
+      /policy identity/u,
+    ],
+    [
+      (record) => {
+        record.runtime.selected_lane = "node-24-production-default";
+      },
+      /managed Node 26 lane/u,
+    ],
+    [
+      (record) => {
+        record.runtime.qualification_runtime.node_version = "26.11.2";
+      },
+      /qualification tuple/u,
+    ],
+    [
+      (record) => {
+        record.candidate_digest = `sha256:${"0".repeat(64)}`;
+      },
+      /candidateDigest/u,
+    ],
+    [
+      (record) => {
+        record.policy_identity.digest = `sha256:${"0".repeat(64)}`;
+      },
+      /policy identity/u,
+    ],
   ];
   for (const [mutate, expected] of semanticCases) {
     const { registry, record } = gen3Fixture();
     mutate(record);
     record.record_digest = cohortRecordDigest(record);
-    assert.throws(() => validateDocsQualifiedCohorts(registry, {
-      $schema: "https://json-schema.org/draft/2020-12/schema",
-      type: "object",
-    }, { asOf: FIXTURE_AS_OF }), expected);
+    assert.throws(
+      () =>
+        validateDocsQualifiedCohorts(
+          registry,
+          {
+            $schema: "https://json-schema.org/draft/2020-12/schema",
+            type: "object",
+          },
+          { asOf: FIXTURE_AS_OF },
+        ),
+      expected,
+    );
   }
   const wrongRecordDigest = gen3Fixture();
   wrongRecordDigest.record.record_digest = `sha256:${"0".repeat(64)}`;
-  assert.throws(() => validateDocsQualifiedCohorts(wrongRecordDigest.registry, {
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    type: "object",
-  }, { asOf: FIXTURE_AS_OF }), /record digest/u);
+  assert.throws(
+    () =>
+      validateDocsQualifiedCohorts(
+        wrongRecordDigest.registry,
+        {
+          $schema: "https://json-schema.org/draft/2020-12/schema",
+          type: "object",
+        },
+        { asOf: FIXTURE_AS_OF },
+      ),
+    /record digest/u,
+  );
   for (const mutate of [
-    (record) => { record.schemas.qualification_receipt = 3; },
-    (record) => { record.candidate_digest = `sha256:${"0".repeat(64)}`; },
-    (record) => { record.policy_identity.digest = `sha256:${"0".repeat(64)}`; },
+    (record) => {
+      record.schemas.qualification_receipt = 3;
+    },
+    (record) => {
+      record.candidate_digest = `sha256:${"0".repeat(64)}`;
+    },
+    (record) => {
+      record.policy_identity.digest = `sha256:${"0".repeat(64)}`;
+    },
   ]) {
     const { registry, record } = gen3Fixture();
     mutate(record);
     record.record_digest = cohortRecordDigest(record);
-    assert.throws(() => validateDocsQualifiedCohorts(registry, schema, {
-      asOf: FIXTURE_AS_OF,
-    }), /JSON Schema/u);
+    assert.throws(
+      () =>
+        validateDocsQualifiedCohorts(registry, schema, {
+          asOf: FIXTURE_AS_OF,
+        }),
+      /JSON Schema/u,
+    );
   }
 });
 
@@ -397,12 +524,19 @@ test("shape alone does not select a candidate; missing qualification and canary 
     asOf: FIXTURE_AS_OF,
   });
   assert.equal("selected" in projection, false);
-  assert.equal(isDocsCohortSelectableForRepository(record, "PUBLISHED_UNQUALIFIED", 1336577313), false);
+  assert.equal(
+    isDocsCohortSelectableForRepository(record, "PUBLISHED_UNQUALIFIED", 1336577313),
+    false,
+  );
   assert.equal(isDocsCohortSelectableForRepository(record, "QUALIFIED", 999), false);
   assert.equal(isDocsCohortSelectableForRepository(record, "QUALIFIED", 1336577313), true);
-  assert.throws(() => qualifiedCohortProjection(registry, "missing-qualified-record", {
-    asOf: FIXTURE_AS_OF,
-  }), /no immutable QUALIFIED projection/u);
+  assert.throws(
+    () =>
+      qualifiedCohortProjection(registry, "missing-qualified-record", {
+        asOf: FIXTURE_AS_OF,
+      }),
+    /no immutable QUALIFIED projection/u,
+  );
 });
 
 test("consumer policy accepts one closed generation3 pair and rejects cross-generation pairs", () => {
@@ -462,9 +596,13 @@ test("v2 accepts optional closed publication reconciliation with fresh record di
   for (const field of Object.keys(valid)) {
     // Fractional values cannot be canonicalized; schema must reject them first.
     origin.reconciliation = { ...valid, [field]: 1.5 };
-    assert.throws(() => validateDocsQualifiedCohorts(registry, schema, {
-      asOf: FIXTURE_AS_OF,
-    }), /JSON Schema/u);
+    assert.throws(
+      () =>
+        validateDocsQualifiedCohorts(registry, schema, {
+          asOf: FIXTURE_AS_OF,
+        }),
+      /JSON Schema/u,
+    );
   }
   origin.reconciliation = valid;
   origin.unrelated = true;
@@ -500,9 +638,13 @@ test("rejects a final QUALIFIED event one millisecond after the fixed fixture cl
   assert.equal(qualification.state, "QUALIFIED");
   qualification.effective_at = new Date(Date.parse(FIXTURE_AS_OF) + 1).toISOString();
   qualification.event_digest = cohortEventDigest(qualification);
-  assert.throws(() => validateDocsQualifiedCohorts(registry, schema, {
-    asOf: FIXTURE_AS_OF,
-  }), /future/u);
+  assert.throws(
+    () =>
+      validateDocsQualifiedCohorts(registry, schema, {
+        asOf: FIXTURE_AS_OF,
+      }),
+    /future/u,
+  );
 });
 
 test("binds three roots, two transitives, seven exact internal edges, and runtime domain v2", () => {
@@ -514,13 +656,26 @@ test("binds three roots, two transitives, seven exact internal edges, and runtim
     "@agent-teams/docs-protocol-agent-teams",
     "@agent-teams/engineering-foundation",
   ]);
-  assert.deepEqual(new Set(closure.evidence.managedEdges.map(({ from, to }) => `${from}>${to}`)),
-    new Set(DOCS_COHORT_V2_DEPENDENCY_EDGES.map(({ from, to }) => `${from}>${to}`)));
+  assert.deepEqual(
+    new Set(closure.evidence.managedEdges.map(({ from, to }) => `${from}>${to}`)),
+    new Set(DOCS_COHORT_V2_DEPENDENCY_EDGES.map(({ from, to }) => `${from}>${to}`)),
+  );
   const bad = lock();
-  bad.snapshots[`@agent-teams/docs-protocol@${VERSION}`].dependencies["@agent-teams/engineering-foundation"] = VERSION;
-  assert.throws(() => docsRuntimeClosureV2Evidence(bad, DOCS_COHORT_V2_PACKAGES.map((entry) => ({
-    ...entry, version: VERSION, integrity: INTEGRITY,
-  }))), /dependency edges are not exactly closed/u);
+  bad.snapshots[`@agent-teams/docs-protocol@${VERSION}`].dependencies[
+    "@agent-teams/engineering-foundation"
+  ] = VERSION;
+  assert.throws(
+    () =>
+      docsRuntimeClosureV2Evidence(
+        bad,
+        DOCS_COHORT_V2_PACKAGES.map((entry) => ({
+          ...entry,
+          version: VERSION,
+          integrity: INTEGRITY,
+        })),
+      ),
+    /dependency edges are not exactly closed/u,
+  );
 });
 
 test("projects schema tuple 3/2/1 and docs-protocol-agent-teams-owned v2 assets", () => {
@@ -529,13 +684,23 @@ test("projects schema tuple 3/2/1 and docs-protocol-agent-teams-owned v2 assets"
     asOf: FIXTURE_AS_OF,
   });
   assert.equal(projection.schemaVersion, 2);
-  assert.deepEqual(projection.schemas, { consumerIntegration: 3, managedState: 2, docsProtocol: 1 });
+  assert.deepEqual(projection.schemas, {
+    consumerIntegration: 3,
+    managedState: 2,
+    docsProtocol: 1,
+  });
   assert.deepEqual(Object.keys(projection.packages), [
-    "repositoryMutation", "documentAuthoring", "docsProtocol",
-    "docsProtocolAgentTeams", "engineeringFoundation",
+    "repositoryMutation",
+    "documentAuthoring",
+    "docsProtocol",
+    "docsProtocolAgentTeams",
+    "engineeringFoundation",
   ]);
-  assert.ok(Object.values(record.assets).every(({ package: owner }) =>
-    owner === "@agent-teams/docs-protocol-agent-teams"));
+  assert.ok(
+    Object.values(record.assets).every(
+      ({ package: owner }) => owner === "@agent-teams/docs-protocol-agent-teams",
+    ),
+  );
 });
 
 test("binds migration edges to a qualified target and recognizes explicit upgrade/rollback", () => {
@@ -543,8 +708,11 @@ test("binds migration edges to a qualified target and recognizes explicit upgrad
   const predecessor = registry.cohorts.at(-2);
   assert.equal(docsCohortTransitionKind(predecessor, record), "upgrade");
   assert.equal(docsCohortTransitionKind(record, predecessor), "rollback");
-  assert.ok(registry.events.some(({ cohort_id, state }) =>
-    cohort_id === predecessor.cohort_id && state === "QUALIFIED"));
+  assert.ok(
+    registry.events.some(
+      ({ cohort_id, state }) => cohort_id === predecessor.cohort_id && state === "QUALIFIED",
+    ),
+  );
   const withoutEdge = structuredClone(record);
   withoutEdge.upgrade_from = [];
   withoutEdge.rollback_to = [];
@@ -561,8 +729,9 @@ test("locks every top-level metadata field while allowing only append-only recor
 
 test("accepts receipt v3 only with an immutable envelope and never substitutes central CANARY evidence", () => {
   const { registry, record } = fixture();
-  const qualification = registry.events.find(({ cohort_id, state }) =>
-    cohort_id === record.cohort_id && state === "QUALIFIED");
+  const qualification = registry.events.find(
+    ({ cohort_id, state }) => cohort_id === record.cohort_id && state === "QUALIFIED",
+  );
   const body = {
     schemaVersion: 3,
     cohortAdmissible: true,
@@ -574,24 +743,51 @@ test("accepts receipt v3 only with an immutable envelope and never substitutes c
       qualificationEventDigest: qualification.event_digest,
     },
     packages: record.packages.map(({ name, version, integrity }, index) => ({
-      key: ["repositoryMutation", "documentAuthoring", "docsProtocol",
-        "docsProtocolAgentTeams", "engineeringFoundation"][index],
-      name, version, integrity,
+      key: [
+        "repositoryMutation",
+        "documentAuthoring",
+        "docsProtocol",
+        "docsProtocolAgentTeams",
+        "engineeringFoundation",
+      ][index],
+      name,
+      version,
+      integrity,
     })),
     schemas: { consumerIntegration: 3, managedState: 2, docsProtocol: 1 },
     runtime: { runtimeClosureDigest: record.runtime_closure.digest },
-    checks: ["profile-v3", "cohort-v2", "five-package-closure", "exact-package-versions",
-      "exact-package-integrities", "schema-bindings-3-2-1", "runtime-closure-digest"],
+    checks: [
+      "profile-v3",
+      "cohort-v2",
+      "five-package-closure",
+      "exact-package-versions",
+      "exact-package-integrities",
+      "schema-bindings-3-2-1",
+      "runtime-closure-digest",
+    ],
   };
-  const canonical = (value) => Array.isArray(value) ? `[${value.map(canonical).join(",")}]` :
-    value !== null && typeof value === "object" ? `{${Object.entries(value).sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)))
-      .map(([key, entry]) => `${JSON.stringify(key)}:${canonical(entry)}`).join(",")}}` : JSON.stringify(value);
-  const receipt = { ...body, receiptDigest: `sha256:${createHash("sha256").update(canonical(body)).digest("hex")}` };
+  const canonical = (value) =>
+    Array.isArray(value)
+      ? `[${value.map(canonical).join(",")}]`
+      : value !== null && typeof value === "object"
+        ? `{${Object.entries(value)
+            .sort(([a], [b]) => Buffer.compare(Buffer.from(a), Buffer.from(b)))
+            .map(([key, entry]) => `${JSON.stringify(key)}:${canonical(entry)}`)
+            .join(",")}}`
+        : JSON.stringify(value);
+  const receipt = {
+    ...body,
+    receiptDigest: `sha256:${createHash("sha256").update(canonical(body)).digest("hex")}`,
+  };
   const envelopeBody = {
     schemaVersion: 1,
     domain: "agent-teams.docs-cohort-v2-execution-envelope/v1",
     callerSha: "d".repeat(40),
-    checkout: { repository: "agent-teams-ai/docs-protocol-canary-20260817", repositoryId: 1336577313, revision: "d".repeat(40) },
+    checkout: {
+      repository: "agent-teams-ai/docs-protocol-canary-20260817",
+      repositoryId: 1336577313,
+      revision: "d".repeat(40),
+    },
     workflow: {
       repository: record.reusable_workflow.repository,
       path: record.reusable_workflow.path,
@@ -609,7 +805,10 @@ test("accepts receipt v3 only with an immutable envelope and never substitutes c
     envelopeDigest: docsCohortV2ExecutionEnvelopeDigest(envelopeBody),
   };
   const verified = verifyDocsCohortV2SupportingEvidence({
-    receipt, executionEnvelope, record, qualificationEvent: qualification,
+    receipt,
+    executionEnvelope,
+    record,
+    qualificationEvent: qualification,
   });
   assert.equal(verified.centralCanaryEvidenceSatisfied, false);
   assert.equal(verified.evidenceClass, "cohort-v2-supporting-canary");
@@ -620,30 +819,59 @@ test("accepts receipt v3 only with an immutable envelope and never substitutes c
   const wrongReceiptEnvelope = structuredClone(executionEnvelope);
   wrongReceiptEnvelope.receiptDigest = wrongReceiptEvent.receiptDigest;
   const { envelopeDigest: _oldEnvelopeDigest, ...wrongReceiptEnvelopeBody } = wrongReceiptEnvelope;
-  wrongReceiptEnvelope.envelopeDigest = docsCohortV2ExecutionEnvelopeDigest(wrongReceiptEnvelopeBody);
-  assert.throws(() => verifyDocsCohortV2SupportingEvidence({
-    receipt: wrongReceiptEvent, executionEnvelope: wrongReceiptEnvelope, record,
-    qualificationEvent: qualification,
-  }), /exact Cohort v2 authority/u);
+  wrongReceiptEnvelope.envelopeDigest =
+    docsCohortV2ExecutionEnvelopeDigest(wrongReceiptEnvelopeBody);
+  assert.throws(
+    () =>
+      verifyDocsCohortV2SupportingEvidence({
+        receipt: wrongReceiptEvent,
+        executionEnvelope: wrongReceiptEnvelope,
+        record,
+        qualificationEvent: qualification,
+      }),
+    /exact Cohort v2 authority/u,
+  );
   const forgedQualification = structuredClone(qualification);
   forgedQualification.event_digest = `sha256:${"8".repeat(64)}`;
-  assert.throws(() => verifyDocsCohortV2SupportingEvidence({
-    receipt, executionEnvelope, record, qualificationEvent: forgedQualification,
-  }), /exact immutable QUALIFIED event/u);
+  assert.throws(
+    () =>
+      verifyDocsCohortV2SupportingEvidence({
+        receipt,
+        executionEnvelope,
+        record,
+        qualificationEvent: forgedQualification,
+      }),
+    /exact immutable QUALIFIED event/u,
+  );
   const undeclaredCheckout = structuredClone(executionEnvelope);
   undeclaredCheckout.checkout = {
-    repository: "agent-teams-ai/not-a-canary", repositoryId: 999, revision: undeclaredCheckout.callerSha,
+    repository: "agent-teams-ai/not-a-canary",
+    repositoryId: 999,
+    revision: undeclaredCheckout.callerSha,
   };
   const { envelopeDigest: _priorDigest, ...undeclaredBody } = undeclaredCheckout;
   undeclaredCheckout.envelopeDigest = docsCohortV2ExecutionEnvelopeDigest(undeclaredBody);
-  assert.throws(() => verifyDocsCohortV2SupportingEvidence({
-    receipt, executionEnvelope: undeclaredCheckout, record, qualificationEvent: qualification,
-  }), /declared canary repository/u);
+  assert.throws(
+    () =>
+      verifyDocsCohortV2SupportingEvidence({
+        receipt,
+        executionEnvelope: undeclaredCheckout,
+        record,
+        qualificationEvent: qualification,
+      }),
+    /declared canary repository/u,
+  );
   executionEnvelope.callerSha = "e".repeat(40);
-  assert.throws(() => verifyDocsCohortV2SupportingEvidence({
-    receipt, executionEnvelope, record, qualificationEvent: qualification,
-  }),
-    /envelope digest binding/u);
+  assert.throws(
+    () =>
+      verifyDocsCohortV2SupportingEvidence({
+        receipt,
+        executionEnvelope,
+        record,
+        qualificationEvent: qualification,
+      }),
+    /envelope digest binding/u,
+  );
 });
 
 // OFFLINE conformance fixture ONLY, not a hosted receipt or trusted execution proof.
@@ -715,69 +943,106 @@ const publicV3ReceiptSource = `{
 `;
 
 test("published adapter 0.2.3 receipt bytes conform independently of key insertion order and receipt locale sorting", (t) => {
-  assert.equal(createHash("sha256").update(publicV3ReceiptSource).digest("hex"),
-    "86a458768f19d050221bb4555c2a6451d9ec7f064c660c40aea677db2eba24c8");
+  assert.equal(
+    createHash("sha256").update(publicV3ReceiptSource).digest("hex"),
+    "86a458768f19d050221bb4555c2a6451d9ec7f064c660c40aea677db2eba24c8",
+  );
   const receipt = JSON.parse(publicV3ReceiptSource);
   const record = current.cohorts.find(({ cohort_id }) => cohort_id === receipt.cohort.cohortId);
-  const qualificationEvent = current.events.find(({ event_digest }) =>
-    event_digest === receipt.cohort.qualificationEventDigest);
+  const qualificationEvent = current.events.find(
+    ({ event_digest }) => event_digest === receipt.cohort.qualificationEventDigest,
+  );
   // Test-only execution coordinates, as in the existing supporting-evidence fixture.
   // This unchanged envelope digest also pins the existing central digest domain.
   const executionEnvelope = {
-    "schemaVersion": 1,
-    "domain": "agent-teams.docs-cohort-v2-execution-envelope/v1",
-    "callerSha": "dddddddddddddddddddddddddddddddddddddddd",
-    "checkout": {
-      "repository": "agent-teams-ai/docs-protocol-canary-20260817",
-      "repositoryId": 1336577313,
-      "revision": "dddddddddddddddddddddddddddddddddddddddd"
+    schemaVersion: 1,
+    domain: "agent-teams.docs-cohort-v2-execution-envelope/v1",
+    callerSha: "dddddddddddddddddddddddddddddddddddddddd",
+    checkout: {
+      repository: "agent-teams-ai/docs-protocol-canary-20260817",
+      repositoryId: 1336577313,
+      revision: "dddddddddddddddddddddddddddddddddddddddd",
     },
-    "workflow": {
-      "repository": "agent-teams-ai/.github",
-      "path": ".github/workflows/docs-protocol-check.yml",
-      "revision": "b4b90d89a1ba3429d01e670c9d0a4c7210cd82cf",
-      "blobSha": "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
-      "runId": 456,
-      "runAttempt": 1
+    workflow: {
+      repository: "agent-teams-ai/.github",
+      path: ".github/workflows/docs-protocol-check.yml",
+      revision: "b4b90d89a1ba3429d01e670c9d0a4c7210cd82cf",
+      blobSha: "9bcbe54dfec6280045ac596e55c1f14ce5f176e1",
+      runId: 456,
+      runAttempt: 1,
     },
-    "authorizationDigest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
-    "installEvidenceDigest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
-    "receiptDigest": "sha256:484bf81c618827f3bbab556e500f6d22ddaed21be7659f726aa5747a0628d20e",
-    "envelopeDigest": "sha256:88efea2961b84bf6f4d5a3438b75ef6333b276877bd94bc11a5690e7af3a4a25"
+    authorizationDigest: "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    installEvidenceDigest:
+      "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    receiptDigest: "sha256:484bf81c618827f3bbab556e500f6d22ddaed21be7659f726aa5747a0628d20e",
+    envelopeDigest: "sha256:88efea2961b84bf6f4d5a3438b75ef6333b276877bd94bc11a5690e7af3a4a25",
   };
-  const verify = (value = receipt, bindings = {}) => verifyDocsCohortV2SupportingEvidence({
-    receipt: value, record, qualificationEvent, executionEnvelope, ...bindings,
-  });
+  const verify = (value = receipt, bindings = {}) =>
+    verifyDocsCohortV2SupportingEvidence({
+      receipt: value,
+      record,
+      qualificationEvent,
+      executionEnvelope,
+      ...bindings,
+    });
   assert.equal(verify().centralCanaryEvidenceSatisfied, false);
-  const reverseKeys = (value) => Array.isArray(value) ? value.map(reverseKeys) :
-    value !== null && typeof value === "object" ? Object.fromEntries(Object.entries(value)
-      .reverse().map(([key, entry]) => [key, reverseKeys(entry)])) : value;
+  const reverseKeys = (value) =>
+    Array.isArray(value)
+      ? value.map(reverseKeys)
+      : value !== null && typeof value === "object"
+        ? Object.fromEntries(
+            Object.entries(value)
+              .reverse()
+              .map(([key, entry]) => [key, reverseKeys(entry)]),
+          )
+        : value;
   assert.deepEqual(verify(reverseKeys(receipt)), verify());
 
   // Changing locale collation of these receipt keys cannot affect its digest.
   // Delegate every other comparison so central event/envelope domains stay intact.
   const localeCompare = String.prototype.localeCompare;
   t.mock.method(String.prototype, "localeCompare", function (right, ...options) {
-    if (["schemas", "schemaVersion"].includes(String(this)) &&
-      ["schemas", "schemaVersion"].includes(String(right))) {
+    if (
+      ["schemas", "schemaVersion"].includes(String(this)) &&
+      ["schemas", "schemaVersion"].includes(String(right))
+    ) {
       throw new Error("Receipt digest must not use locale collation.");
     }
     return localeCompare.call(this, right, ...options);
   });
   assert.deepEqual(verify(reverseKeys(receipt)), verify());
   const legacyDigest = structuredClone(receipt);
-  legacyDigest.receiptDigest = "sha256:6d129e2ed02fd9a1897a68cb333a6362e316db2f4f93aafd256296e93aac1d19";
+  legacyDigest.receiptDigest =
+    "sha256:6d129e2ed02fd9a1897a68cb333a6362e316db2f4f93aafd256296e93aac1d19";
   assert.throws(() => verify(legacyDigest), /Qualification receipt v3 digest is invalid/u);
   for (const mutate of [
-    (value) => {value.packages[0].version = "0.2.1";},
-    (value) => {value.packages[0].integrity = INTEGRITY;},
-    (value) => {value.cohort.recordDigest = `sha256:${"a".repeat(64)}`;},
-    (value) => {value.cohort.qualificationEventDigest = `sha256:${"b".repeat(64)}`;},
-    (value) => {value.schemas.managedState = 1;},
-    (value) => {value.runtime.runtimeClosureDigest = `sha256:${"c".repeat(64)}`;},
-    (value) => {value.checks.reverse();},
-    (value) => {value.packages.reverse();},
-    (value) => {value.receiptDigest = "sha256:invalid";},
+    (value) => {
+      value.packages[0].version = "0.2.1";
+    },
+    (value) => {
+      value.packages[0].integrity = INTEGRITY;
+    },
+    (value) => {
+      value.cohort.recordDigest = `sha256:${"a".repeat(64)}`;
+    },
+    (value) => {
+      value.cohort.qualificationEventDigest = `sha256:${"b".repeat(64)}`;
+    },
+    (value) => {
+      value.schemas.managedState = 1;
+    },
+    (value) => {
+      value.runtime.runtimeClosureDigest = `sha256:${"c".repeat(64)}`;
+    },
+    (value) => {
+      value.checks.reverse();
+    },
+    (value) => {
+      value.packages.reverse();
+    },
+    (value) => {
+      value.receiptDigest = "sha256:invalid";
+    },
   ]) {
     const tampered = structuredClone(receipt);
     mutate(tampered);
@@ -791,5 +1056,8 @@ test("published adapter 0.2.3 receipt bytes conform independently of key inserti
   assert.throws(() => verify(receipt, { record: wrongRuntime }), /schema\/runtime checks differ/u);
   const wrongEnvelope = structuredClone(executionEnvelope);
   wrongEnvelope.installEvidenceDigest = `sha256:${"c".repeat(64)}`;
-  assert.throws(() => verify(receipt, { executionEnvelope: wrongEnvelope }), /envelope digest binding/u);
+  assert.throws(
+    () => verify(receipt, { executionEnvelope: wrongEnvelope }),
+    /envelope digest binding/u,
+  );
 });

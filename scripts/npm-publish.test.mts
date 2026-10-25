@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { spawnSync, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, copyFileSync, readdirSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+  copyFileSync,
+  readdirSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -20,38 +28,96 @@ interface Release {
   source: string;
   packages: ReleasePackage[];
 }
-const workflow = readFileSync(new URL("../.github/workflows/npm-publish.yml", import.meta.url), "utf8");
+const workflow = readFileSync(
+  new URL("../.github/workflows/npm-publish.yml", import.meta.url),
+  "utf8",
+);
 const marker = "        run: |\n          set -euo pipefail\n          fail()";
-const block = workflow.slice(workflow.indexOf(marker) + "        run: |\n".length).split("\n      - name: Preserve")[0];
+const block = workflow
+  .slice(workflow.indexOf(marker) + "        run: |\n".length)
+  .split("\n      - name: Preserve")[0];
 assert.ok(block, "production shell block must be selected");
-assert.ok(block.includes("verify_archive()"), "production shell block must contain archive validation");
+assert.ok(
+  block.includes("verify_archive()"),
+  "production shell block must contain archive validation",
+);
 const applyMarker = "      - name: Apply reconciled registry effects";
-const applyBlock = workflow.slice(workflow.indexOf(applyMarker)).split("        run: |\n")[1]?.split("\n      - name: Preserve")[0];
+const applyBlock = workflow
+  .slice(workflow.indexOf(applyMarker))
+  .split("        run: |\n")[1]
+  ?.split("\n      - name: Preserve")[0];
 assert.ok(applyBlock, "production apply block must be selected");
-const preflightShell = block.split("\n").map(line => line.slice(10)).join("\n");
-const applyShell = applyBlock.split("\n").map(line => line.slice(10)).join("\n");
+const preflightShell = block
+  .split("\n")
+  .map((line) => line.slice(10))
+  .join("\n");
+const applyShell = applyBlock
+  .split("\n")
+  .map((line) => line.slice(10))
+  .join("\n");
 // This local adapter stands in for the successful immutable artifact upload.
-const persistIntent = "export CURRENT_INTENT_ID=''; if test -f intent/intent.json; then cp intent/intent.json state/durable-intent.json; export CURRENT_INTENT_ID=777; fi";
-const cleanupBlock = workflow.slice(workflow.indexOf("      - name: Retire only resolved upload intents")).split("        run: |\n")[1];
+const persistIntent =
+  "export CURRENT_INTENT_ID=''; if test -f intent/intent.json; then cp intent/intent.json state/durable-intent.json; export CURRENT_INTENT_ID=777; fi";
+const cleanupBlock = workflow
+  .slice(workflow.indexOf("      - name: Retire only resolved upload intents"))
+  .split("        run: |\n")[1];
 assert.ok(cleanupBlock, "production cleanup must be selected");
-const cleanupShell = cleanupBlock.split("\n").map(line => line.slice(10)).join("\n");
-const shell = [preflightShell, persistIntent, applyShell, "test -f evidence/receipt.json", "if [[ $PHASE = publish ]]; then", cleanupShell, "fi"].join("\n");
+const cleanupShell = cleanupBlock
+  .split("\n")
+  .map((line) => line.slice(10))
+  .join("\n");
+const shell = [
+  preflightShell,
+  persistIntent,
+  applyShell,
+  "test -f evidence/receipt.json",
+  "if [[ $PHASE = publish ]]; then",
+  cleanupShell,
+  "fi",
+].join("\n");
 const source = "a".repeat(40);
 
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), "TEST-npm-publisher-"));
-  for (const directory of ["release", "bin", "state", "source/package", "temp"]) { mkdirSync(path.join(root, directory), { recursive: true }); }
-  writeFileSync(path.join(root, "source/package/package.json"), JSON.stringify({
-    name: "@agent-teams/test-publisher", version: "1.2.3", repository: { url: "git+https://github.com/agent-teams-ai/TEST-publisher.git" },
-    scripts: { prepublishOnly: "exit 97" },
-  }));
-  execFileSync("tar", ["-czf", path.join(root, "release/test.tgz"), "-C", path.join(root, "source"), "package"]);
+  for (const directory of ["release", "bin", "state", "source/package", "temp"]) {
+    mkdirSync(path.join(root, directory), { recursive: true });
+  }
+  writeFileSync(
+    path.join(root, "source/package/package.json"),
+    JSON.stringify({
+      name: "@agent-teams/test-publisher",
+      version: "1.2.3",
+      repository: { url: "git+https://github.com/agent-teams-ai/TEST-publisher.git" },
+      scripts: { prepublishOnly: "exit 97" },
+    }),
+  );
+  execFileSync("tar", [
+    "-czf",
+    path.join(root, "release/test.tgz"),
+    "-C",
+    path.join(root, "source"),
+    "package",
+  ]);
   const archive = readFileSync(path.join(root, "release/test.tgz"));
-  const entry: ReleasePackage = { name: "@agent-teams/test-publisher", version: "1.2.3", file: "test.tgz", sha256: createHash("sha256").update(archive).digest("hex"), integrity: `sha512-${createHash("sha512").update(archive).digest("base64")}` };
-  const manifest: Release = { schemaVersion: 1, repository: "agent-teams-ai/TEST-publisher", source, packages: [entry] };
-  const save = () => writeFileSync(path.join(root, "release/release.json"), JSON.stringify(manifest));
+  const entry: ReleasePackage = {
+    name: "@agent-teams/test-publisher",
+    version: "1.2.3",
+    file: "test.tgz",
+    sha256: createHash("sha256").update(archive).digest("hex"),
+    integrity: `sha512-${createHash("sha512").update(archive).digest("base64")}`,
+  };
+  const manifest: Release = {
+    schemaVersion: 1,
+    repository: "agent-teams-ai/TEST-publisher",
+    source,
+    packages: [entry],
+  };
+  const save = () =>
+    writeFileSync(path.join(root, "release/release.json"), JSON.stringify(manifest));
   save();
-  writeFileSync(path.join(root, "bin/curl"), `#!/bin/bash
+  writeFileSync(
+    path.join(root, "bin/curl"),
+    `#!/bin/bash
 set -euo pipefail
 output=''
 url=''
@@ -90,8 +156,12 @@ elif [[ -f state/metadata.json ]]; then
   else cp state/metadata.json "$output"; fi
   printf 200
 else printf '{}' > "$output"; printf 404; fi
-` , { mode: 0o755 });
-  writeFileSync(path.join(root, "bin/npm"), `#!/bin/bash
+`,
+    { mode: 0o755 },
+  );
+  writeFileSync(
+    path.join(root, "bin/npm"),
+    `#!/bin/bash
 set -euo pipefail
 [[ "$*" = *--ignore-scripts* && "$npm_config_fetch_retries" = 0 ]]
 if [[ "$1" = dist-tag && "$2" = ls ]]; then
@@ -128,23 +198,71 @@ else
   printf 1.2.3 > state/latest
   [[ "\${FAKE_TAG_DELAY:-}" != yes ]] || touch state/alias-pending
 fi
-`, { mode: 0o755 });
+`,
+    { mode: 0o755 },
+  );
   writeFileSync(path.join(root, "bin/sleep"), "#!/bin/bash\nexit 0\n", { mode: 0o755 });
-  const run = (phase = "publish", extras: NodeJS.ProcessEnv = {}, script = shell) => spawnSync("bash", ["-euo", "pipefail", "-c", script], {
-    cwd: root, encoding: "utf8", timeout: 15_000,
-    env: { ...process.env, PATH: `${path.join(root, "bin")}:${process.env.PATH}`, PHASE: phase, RELEASE_REPOSITORY: manifest.repository,
-      RELEASE_SOURCE: source, RELEASE_RUN_ID: "123", RELEASE_RUN_ATTEMPT: "1", RELEASE_REF: "refs/heads/main", RELEASE_EVENT: "push", RELEASE_OWNER: "agent-teams-ai", npm_config_fetch_retries: "0", GITHUB_ACTIONS: "true", ACTIONS_ID_TOKEN_REQUEST_URL: "https://test.invalid/oidc", ACTIONS_ID_TOKEN_REQUEST_TOKEN: "synthetic-test-authority", RUNNER_TEMP: path.join(root, "temp"), GH_TOKEN: "test-nonsecret", GITHUB_OUTPUT: path.join(root, "outputs"), ...extras },
-  });
+  const run = (phase = "publish", extras: NodeJS.ProcessEnv = {}, script = shell) =>
+    spawnSync("bash", ["-euo", "pipefail", "-c", script], {
+      cwd: root,
+      encoding: "utf8",
+      timeout: 15_000,
+      env: {
+        ...process.env,
+        PATH: `${path.join(root, "bin")}:${process.env.PATH}`,
+        PHASE: phase,
+        RELEASE_REPOSITORY: manifest.repository,
+        RELEASE_SOURCE: source,
+        RELEASE_RUN_ID: "123",
+        RELEASE_RUN_ATTEMPT: "1",
+        RELEASE_REF: "refs/heads/main",
+        RELEASE_EVENT: "push",
+        RELEASE_OWNER: "agent-teams-ai",
+        npm_config_fetch_retries: "0",
+        GITHUB_ACTIONS: "true",
+        ACTIONS_ID_TOKEN_REQUEST_URL: "https://test.invalid/oidc",
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: "synthetic-test-authority",
+        RUNNER_TEMP: path.join(root, "temp"),
+        GH_TOKEN: "test-nonsecret",
+        GITHUB_OUTPUT: path.join(root, "outputs"),
+        ...extras,
+      },
+    });
   const seed = (different = false) => {
-    writeFileSync(path.join(root, "state/metadata.json"), JSON.stringify({ name: entry.name, version: entry.version, dist: { integrity: entry.integrity, tarball: "https://registry.npmjs.org/test.tgz" } }));
-    if (different) { writeFileSync(path.join(root, "state/archive.tgz"), "different immutable bytes"); }
-    else { copyFileSync(path.join(root, "release/test.tgz"), path.join(root, "state/archive.tgz")); }
+    writeFileSync(
+      path.join(root, "state/metadata.json"),
+      JSON.stringify({
+        name: entry.name,
+        version: entry.version,
+        dist: { integrity: entry.integrity, tarball: "https://registry.npmjs.org/test.tgz" },
+      }),
+    );
+    if (different) {
+      writeFileSync(path.join(root, "state/archive.tgz"), "different immutable bytes");
+    } else {
+      copyFileSync(path.join(root, "release/test.tgz"), path.join(root, "state/archive.tgz"));
+    }
   };
-  const writes = () => { try { return readFileSync(path.join(root, "state/writes"), "utf8").trim().split("\n"); } catch { return []; } };
-  return { root, manifest, entry, save, run, seed, writes, close: () => rmSync(root, { recursive: true, force: true }) };
+  const writes = () => {
+    try {
+      return readFileSync(path.join(root, "state/writes"), "utf8").trim().split("\n");
+    } catch {
+      return [];
+    }
+  };
+  return {
+    root,
+    manifest,
+    entry,
+    save,
+    run,
+    seed,
+    writes,
+    close: () => rmSync(root, { recursive: true, force: true }),
+  };
 }
 
-test("publishes once, waits through registry archive processing, and returns exact complete bytes", () => {
+void test("publishes once, waits through registry archive processing, and returns exact complete bytes", () => {
   const f = fixture();
   try {
     const result = f.run("publish", { FAKE_DELAY: "yes" });
@@ -152,48 +270,88 @@ test("publishes once, waits through registry archive processing, and returns exa
     assert.equal(f.writes().length, 1);
     assert.equal(readFileSync(path.join(f.root, "state/deletes"), "utf8").trim(), "777");
     assert.match(f.writes()[0] ?? "", /--tag candidate-run-123/);
-    assert.deepEqual(readFileSync(path.join(f.root, "evidence/test.tgz")), readFileSync(path.join(f.root, "release/test.tgz")));
-    const receipt: unknown = JSON.parse(readFileSync(path.join(f.root, "evidence/receipt.json"), "utf8"));
-    assert.deepEqual(receipt, { ...f.manifest, complete: true, runId: "123", candidateTag: "candidate-run-123" });
-  } finally { f.close(); }
+    assert.deepEqual(
+      readFileSync(path.join(f.root, "evidence/test.tgz")),
+      readFileSync(path.join(f.root, "release/test.tgz")),
+    );
+    const receipt: unknown = JSON.parse(
+      readFileSync(path.join(f.root, "evidence/receipt.json"), "utf8"),
+    );
+    assert.deepEqual(receipt, {
+      ...f.manifest,
+      complete: true,
+      runId: "123",
+      candidateTag: "candidate-run-123",
+    });
+  } finally {
+    f.close();
+  }
 });
 
-test("existing identical versions reconcile without a write; changed immutable bytes reject", () => {
+void test("existing identical versions reconcile without a write; changed immutable bytes reject", () => {
   for (const different of [false, true]) {
     const f = fixture();
     try {
       f.seed(different);
       const result = f.run();
       assert.equal(result.status, different ? 1 : 0, result.stderr);
-      if (different) { assert.match(result.stderr, /SHA256 mismatch/); }
+      if (different) {
+        assert.match(result.stderr, /SHA256 mismatch/);
+      }
       assert.deepEqual(f.writes(), []);
-    } finally { f.close(); }
+    } finally {
+      f.close();
+    }
   }
 });
 
-test("rejects traversal, source, name, version, hash and duplicate entries before any write", () => {
+void test("rejects traversal, source, name, version, hash and duplicate entries before any write", () => {
   const changes: Array<(release: Release) => void> = [
-    release => { release.packages[0]!.file = "../escape.tgz"; },
-    release => { release.source = "b".repeat(40); },
-    release => { release.packages[0]!.name = "@agent-teams/other"; },
-    release => { release.packages[0]!.version = "1.2.4"; },
-    release => { release.packages[0]!.sha256 = "0".repeat(64); },
-    release => { release.packages.push({ ...release.packages[0]! }); },
-    release => { release.packages.push({ ...release.packages[0]!, name: "@agent-teams/second", file: "missing.tgz" }); },
+    (release) => {
+      release.packages[0]!.file = "../escape.tgz";
+    },
+    (release) => {
+      release.source = "b".repeat(40);
+    },
+    (release) => {
+      release.packages[0]!.name = "@agent-teams/other";
+    },
+    (release) => {
+      release.packages[0]!.version = "1.2.4";
+    },
+    (release) => {
+      release.packages[0]!.sha256 = "0".repeat(64);
+    },
+    (release) => {
+      release.packages.push({ ...release.packages[0]! });
+    },
+    (release) => {
+      release.packages.push({
+        ...release.packages[0]!,
+        name: "@agent-teams/second",
+        file: "missing.tgz",
+      });
+    },
   ];
   for (const change of changes) {
     const f = fixture();
     try {
-      change(f.manifest); f.save();
+      change(f.manifest);
+      f.save();
       const result = f.run();
       assert.equal(result.status, 1, result.stderr);
-      assert.match(result.stderr, /invalid manifest|identity mismatch|SHA256 mismatch|not a regular file/);
+      assert.match(
+        result.stderr,
+        /invalid manifest|identity mismatch|SHA256 mismatch|not a regular file/,
+      );
       assert.deepEqual(f.writes(), []);
-    } finally { f.close(); }
+    } finally {
+      f.close();
+    }
   }
 });
 
-test("an uncertain upload is not retried and its attempt evidence survives", () => {
+void test("an uncertain upload is not retried and its attempt evidence survives", () => {
   const f = fixture();
   try {
     const result = f.run("publish", { FAKE_WRITE_FAILURE: "yes" });
@@ -204,16 +362,20 @@ test("an uncertain upload is not retried and its attempt evidence survives", () 
     const reconciliation = f.run();
     assert.equal(reconciliation.status, 0, reconciliation.stderr);
     assert.equal(f.writes().length, 1);
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });
 
-test("promotion requires matching complete same-run readback; repeated target is idempotent", () => {
+void test("promotion requires matching complete same-run readback; repeated target is idempotent", () => {
   const f = fixture();
   try {
     f.seed();
     assert.equal(f.run().status, 0);
     mkdirSync(path.join(f.root, "registry"));
-    for (const file of ["release.json", "receipt.json", "test.tgz"]) { copyFileSync(path.join(f.root, "evidence", file), path.join(f.root, "registry", file)); }
+    for (const file of ["release.json", "receipt.json", "test.tgz"]) {
+      copyFileSync(path.join(f.root, "evidence", file), path.join(f.root, "registry", file));
+    }
     const receiptFile = path.join(f.root, "registry/receipt.json");
     const receipt: Record<string, unknown> = JSON.parse(readFileSync(receiptFile, "utf8"));
     writeFileSync(receiptFile, JSON.stringify({ ...receipt, runId: "999" }));
@@ -222,26 +384,35 @@ test("promotion requires matching complete same-run readback; repeated target is
     writeFileSync(receiptFile, JSON.stringify(receipt));
     const promoted = f.run("promote");
     assert.equal(promoted.status, 0, promoted.stderr);
-    assert.deepEqual(f.writes(), ["dist-tag add @agent-teams/test-publisher@1.2.3 latest --ignore-scripts --registry=https://registry.npmjs.org"]);
+    assert.deepEqual(f.writes(), [
+      "dist-tag add @agent-teams/test-publisher@1.2.3 latest --ignore-scripts --registry=https://registry.npmjs.org",
+    ]);
     assert.equal(f.run("promote").status, 0);
     assert.equal(f.writes().length, 1);
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });
 
-test("inadmissible events and refs cannot execute a registry mutation", () => {
+void test("inadmissible events and refs cannot execute a registry mutation", () => {
   const f = fixture();
   try {
-    for (const env of [{ RELEASE_EVENT: "pull_request" }, { RELEASE_REF: "refs/heads/feature" }, { RELEASE_OWNER: "other" }]) {
+    for (const env of [
+      { RELEASE_EVENT: "pull_request" },
+      { RELEASE_REF: "refs/heads/feature" },
+      { RELEASE_OWNER: "other" },
+    ]) {
       const result = f.run("publish", env);
       assert.equal(result.status, 1);
       assert.match(result.stderr, /inadmissible/);
       assert.deepEqual(f.writes(), []);
     }
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });
 
-
-test("source advancement stops an absent upload and latest promotion", () => {
+void test("source advancement stops an absent upload and latest promotion", () => {
   const f = fixture();
   try {
     const upload = f.run("publish", { FAKE_MAIN: "b".repeat(40) });
@@ -251,29 +422,48 @@ test("source advancement stops an absent upload and latest promotion", () => {
     f.seed();
     assert.equal(f.run().status, 0);
     mkdirSync(path.join(f.root, "registry"));
-    for (const file of ["release.json", "receipt.json", "test.tgz"]) { copyFileSync(path.join(f.root, "evidence", file), path.join(f.root, "registry", file)); }
+    for (const file of ["release.json", "receipt.json", "test.tgz"]) {
+      copyFileSync(path.join(f.root, "evidence", file), path.join(f.root, "registry", file));
+    }
     const promotion = f.run("promote", { FAKE_MAIN: "b".repeat(40) });
     assert.equal(promotion.status, 1);
     assert.match(promotion.stderr, /no longer current main/);
     assert.deepEqual(f.writes(), []);
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });
 
-
-test("completed workflow admission binds success, push, source and repository", () => {
-  const valid = { RELEASE_EVENT: "workflow_run", TRIGGER_CONCLUSION: "success", TRIGGER_EVENT: "push", TRIGGER_BRANCH: "main", TRIGGER_SOURCE: source, TRIGGER_REPOSITORY: "agent-teams-ai/TEST-publisher" };
-  const overrides = [{}, { TRIGGER_CONCLUSION: "failure" }, { TRIGGER_EVENT: "pull_request" }, { TRIGGER_BRANCH: "topic" }, { TRIGGER_SOURCE: "b".repeat(40) }, { TRIGGER_REPOSITORY: "other/repository" }];
+void test("completed workflow admission binds success, push, source and repository", () => {
+  const valid = {
+    RELEASE_EVENT: "workflow_run",
+    TRIGGER_CONCLUSION: "success",
+    TRIGGER_EVENT: "push",
+    TRIGGER_BRANCH: "main",
+    TRIGGER_SOURCE: source,
+    TRIGGER_REPOSITORY: "agent-teams-ai/TEST-publisher",
+  };
+  const overrides = [
+    {},
+    { TRIGGER_CONCLUSION: "failure" },
+    { TRIGGER_EVENT: "pull_request" },
+    { TRIGGER_BRANCH: "topic" },
+    { TRIGGER_SOURCE: "b".repeat(40) },
+    { TRIGGER_REPOSITORY: "other/repository" },
+  ];
   for (const [index, override] of overrides.entries()) {
     const f = fixture();
     try {
       const result = f.run("publish", { ...valid, ...override });
       assert.equal(result.status, index === 0 ? 0 : 1, result.stderr);
       assert.equal(f.writes().length, index === 0 ? 1 : 0);
-    } finally { f.close(); }
+    } finally {
+      f.close();
+    }
   }
 });
 
-test("an existing metadata record may precede blob visibility, and reruns only reconcile", () => {
+void test("an existing metadata record may precede blob visibility, and reruns only reconcile", () => {
   const f = fixture();
   try {
     const absent = f.run("publish", { RELEASE_RUN_ATTEMPT: "2" });
@@ -285,36 +475,65 @@ test("an existing metadata record may precede blob visibility, and reruns only r
     const present = f.run("publish", { RELEASE_RUN_ATTEMPT: "2" });
     assert.equal(present.status, 0, present.stderr);
     assert.deepEqual(f.writes(), []);
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });
 
-
-test("a prior durable intent blocks a fresh run from replaying a still-absent upload", () => {
+void test("a prior durable intent blocks a fresh run from replaying a still-absent upload", () => {
   for (const priorVersion of ["1.2.3", "1.2.2"]) {
     const f = fixture();
     try {
       mkdirSync(path.join(f.root, "old-intent"));
-      writeFileSync(path.join(f.root, "old-intent/intent.json"), JSON.stringify({ ...f.manifest, runId: "99", runAttempt: "1", absent: [{ name: f.entry.name, version: priorVersion }] }));
-      execFileSync("zip", ["-q", path.join(f.root, "state/prior-intent.zip"), "intent.json"], { cwd: path.join(f.root, "old-intent") });
-      writeFileSync(path.join(f.root, "state/intents.json"), JSON.stringify({ total_count: 1, artifacts: [{ id: 999, expired: false, workflow_run: { id: 99, head_sha: source } }] }));
+      writeFileSync(
+        path.join(f.root, "old-intent/intent.json"),
+        JSON.stringify({
+          ...f.manifest,
+          runId: "99",
+          runAttempt: "1",
+          absent: [{ name: f.entry.name, version: priorVersion }],
+        }),
+      );
+      execFileSync("zip", ["-q", path.join(f.root, "state/prior-intent.zip"), "intent.json"], {
+        cwd: path.join(f.root, "old-intent"),
+      });
+      writeFileSync(
+        path.join(f.root, "state/intents.json"),
+        JSON.stringify({
+          total_count: 1,
+          artifacts: [{ id: 999, expired: false, workflow_run: { id: 99, head_sha: source } }],
+        }),
+      );
       const result = f.run();
       assert.equal(result.status, priorVersion === "1.2.3" ? 1 : 0, result.stderr);
       assert.equal(f.writes().length, priorVersion === "1.2.3" ? 0 : 1);
-      if (priorVersion === "1.2.3") { assert.match(result.stderr, /prior upload intent for still-absent/); }
-      else {
-        const intent: unknown = JSON.parse(readFileSync(path.join(f.root, "intent/intent.json"), "utf8"));
-        assert.deepEqual(intent, { ...f.manifest, runId: "123", runAttempt: "1", absent: [{ name: f.entry.name, version: "1.2.3" }] });
+      if (priorVersion === "1.2.3") {
+        assert.match(result.stderr, /prior upload intent for still-absent/);
+      } else {
+        const intent: unknown = JSON.parse(
+          readFileSync(path.join(f.root, "intent/intent.json"), "utf8"),
+        );
+        assert.deepEqual(intent, {
+          ...f.manifest,
+          runId: "123",
+          runAttempt: "1",
+          absent: [{ name: f.entry.name, version: "1.2.3" }],
+        });
       }
-    } finally { f.close(); }
+    } finally {
+      f.close();
+    }
   }
 });
 
-
-test("expired or truncated durable intent history refuses fresh uploads", () => {
+void test("expired or truncated durable intent history refuses fresh uploads", () => {
   for (const history of [
     { total_count: 101, artifacts: [] },
     { total_count: 1, artifacts: [] },
-    { total_count: 1, artifacts: [{ id: 999, expired: true, workflow_run: { id: 99, head_sha: source } }] },
+    {
+      total_count: 1,
+      artifacts: [{ id: 999, expired: true, workflow_run: { id: 99, head_sha: source } }],
+    },
   ]) {
     const f = fixture();
     try {
@@ -323,112 +542,192 @@ test("expired or truncated durable intent history refuses fresh uploads", () => 
       assert.equal(result.status, 1, result.stderr);
       assert.match(result.stderr, /bounded audit|malformed intent history|prior intent expired/);
       assert.deepEqual(f.writes(), []);
-    } finally { f.close(); }
+    } finally {
+      f.close();
+    }
   }
 });
 
-
-test("workflow persists intent successfully before its unconditional effect step", () => {
+void test("workflow persists intent successfully before its unconditional effect step", () => {
   const parsed = parseDocument(workflow);
   assert.deepEqual(parsed.errors, []);
   assert.equal(parsed.getIn(["jobs", "registry", "permissions", "actions"]), "write");
-  const cleanupStep = workflow.slice(workflow.indexOf("      - name: Retire only resolved upload intents"));
-  assert.match(cleanupStep, /steps\.effects\.outcome == 'success' && steps\.evidence\.outcome == 'success'/);
-  const intentIndex = workflow.indexOf("      - name: Preserve durable intent before the first upload");
+  const cleanupStep = workflow.slice(
+    workflow.indexOf("      - name: Retire only resolved upload intents"),
+  );
+  assert.match(
+    cleanupStep,
+    /steps\.effects\.outcome == 'success' && steps\.evidence\.outcome == 'success'/,
+  );
+  const intentIndex = workflow.indexOf(
+    "      - name: Preserve durable intent before the first upload",
+  );
   const applyIndex = workflow.indexOf(applyMarker);
   assert.ok(intentIndex > workflow.indexOf("        id: preflight") && intentIndex < applyIndex);
   const intentStep = workflow.slice(intentIndex, applyIndex);
   assert.match(intentStep, /uses: actions\/upload-artifact@[a-f0-9]{40}/);
   assert.match(intentStep, /name: npm-upload-intent/);
   assert.match(intentStep, /if-no-files-found: error/);
-  assert.doesNotMatch(workflow.slice(intentIndex, workflow.indexOf("        run: |", applyIndex)), /continue-on-error|always\(\)/);
+  assert.doesNotMatch(
+    workflow.slice(intentIndex, workflow.indexOf("        run: |", applyIndex)),
+    /continue-on-error|always\(\)/,
+  );
 });
 
-
-test("cleanup refuses an unrelated artifact and resumes only the exact reconciled prior intent", () => {
+void test("cleanup refuses an unrelated artifact and resumes only the exact reconciled prior intent", () => {
   const rejected = fixture();
   try {
     const result = rejected.run("publish", { FAKE_RETIRE_NAME: "unrelated" });
     assert.equal(result.status, 1);
     assert.equal(rejected.writes().length, 1);
     assert.throws(() => readFileSync(path.join(rejected.root, "state/deletes")));
-  } finally { rejected.close(); }
+  } finally {
+    rejected.close();
+  }
   const recovered = fixture();
   try {
     recovered.seed();
     mkdirSync(path.join(recovered.root, "old-intent"));
-    writeFileSync(path.join(recovered.root, "old-intent/intent.json"), JSON.stringify({ ...recovered.manifest, runId: "99", runAttempt: "1", absent: [{ name: recovered.entry.name, version: recovered.entry.version }] }));
-    execFileSync("zip", ["-q", path.join(recovered.root, "state/prior-intent.zip"), "intent.json"], { cwd: path.join(recovered.root, "old-intent") });
-    writeFileSync(path.join(recovered.root, "state/intents.json"), JSON.stringify({ total_count: 1, artifacts: [{ id: 999, expired: false, workflow_run: { id: 99, head_sha: source } }] }));
+    writeFileSync(
+      path.join(recovered.root, "old-intent/intent.json"),
+      JSON.stringify({
+        ...recovered.manifest,
+        runId: "99",
+        runAttempt: "1",
+        absent: [{ name: recovered.entry.name, version: recovered.entry.version }],
+      }),
+    );
+    execFileSync(
+      "zip",
+      ["-q", path.join(recovered.root, "state/prior-intent.zip"), "intent.json"],
+      { cwd: path.join(recovered.root, "old-intent") },
+    );
+    writeFileSync(
+      path.join(recovered.root, "state/intents.json"),
+      JSON.stringify({
+        total_count: 1,
+        artifacts: [{ id: 999, expired: false, workflow_run: { id: 99, head_sha: source } }],
+      }),
+    );
     const result = recovered.run("publish", { RELEASE_RUN_ATTEMPT: "2" });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(recovered.writes(), []);
     assert.equal(readFileSync(path.join(recovered.root, "state/deletes"), "utf8").trim(), "999");
-    assert.deepEqual(readFileSync(path.join(recovered.root, "evidence/intents/999.json")), readFileSync(path.join(recovered.root, "old-intent/intent.json")));
-  } finally { recovered.close(); }
+    assert.deepEqual(
+      readFileSync(path.join(recovered.root, "evidence/intents/999.json")),
+      readFileSync(path.join(recovered.root, "old-intent/intent.json")),
+    );
+  } finally {
+    recovered.close();
+  }
 });
 
-
-test("promotion refuses newer or unexpected latest and waits for a lagging alias without repeating the write", () => {
+void test("promotion refuses newer or unexpected latest and waits for a lagging alias without repeating the write", () => {
   for (const latest of ["1.2.4", "2.0.0", "1.2.4-rc.0", "unknown", "1.2.2"]) {
     const f = fixture();
     try {
       f.seed();
       assert.equal(f.run().status, 0);
       mkdirSync(path.join(f.root, "registry"));
-      for (const file of ["release.json", "receipt.json", "test.tgz"]) { copyFileSync(path.join(f.root, "evidence", file), path.join(f.root, "registry", file)); }
+      for (const file of ["release.json", "receipt.json", "test.tgz"]) {
+        copyFileSync(path.join(f.root, "evidence", file), path.join(f.root, "registry", file));
+      }
       writeFileSync(path.join(f.root, "state/latest"), latest);
       const result = f.run("promote", { FAKE_TAG_DELAY: "yes" });
       const admitted = latest === "1.2.2";
       assert.equal(result.status, admitted ? 0 : 1, result.stderr);
       assert.equal(f.writes().length, admitted ? 1 : 0);
       if (admitted) {
-        assert.equal(readFileSync(path.join(f.root, "state/latest-reads"), "utf8").trim().split("\n").length, 2);
-      } else { assert.match(result.stderr, /unexpected or newer latest/); }
-    } finally { f.close(); }
+        assert.equal(
+          readFileSync(path.join(f.root, "state/latest-reads"), "utf8").trim().split("\n").length,
+          2,
+        );
+      } else {
+        assert.match(result.stderr, /unexpected or newer latest/);
+      }
+    } finally {
+      f.close();
+    }
   }
 });
 
-
-test("a same-run retry retires its prior-attempt intent only after exact registry reconciliation", () => {
+void test("a same-run retry retires its prior-attempt intent only after exact registry reconciliation", () => {
   const f = fixture();
   try {
     f.seed();
     mkdirSync(path.join(f.root, "old-intent"));
-    const intent = { ...f.manifest, runId: "123", runAttempt: "1", absent: [{ name: f.entry.name, version: f.entry.version }] };
+    const intent = {
+      ...f.manifest,
+      runId: "123",
+      runAttempt: "1",
+      absent: [{ name: f.entry.name, version: f.entry.version }],
+    };
     writeFileSync(path.join(f.root, "old-intent/intent.json"), JSON.stringify(intent));
-    execFileSync("zip", ["-q", path.join(f.root, "state/prior-intent.zip"), "intent.json"], { cwd: path.join(f.root, "old-intent") });
-    writeFileSync(path.join(f.root, "state/intents.json"), JSON.stringify({ total_count: 1, artifacts: [{ id: 999, expired: false, workflow_run: { id: 123, head_sha: source } }] }));
+    execFileSync("zip", ["-q", path.join(f.root, "state/prior-intent.zip"), "intent.json"], {
+      cwd: path.join(f.root, "old-intent"),
+    });
+    writeFileSync(
+      path.join(f.root, "state/intents.json"),
+      JSON.stringify({
+        total_count: 1,
+        artifacts: [{ id: 999, expired: false, workflow_run: { id: 123, head_sha: source } }],
+      }),
+    );
     const result = f.run("publish", { RELEASE_RUN_ATTEMPT: "2", FAKE_PRIOR_RUN: "123" });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(f.writes(), []);
     assert.equal(readFileSync(path.join(f.root, "state/deletes"), "utf8").trim(), "999");
-    assert.deepEqual(JSON.parse(readFileSync(path.join(f.root, "evidence/intents/999.json"), "utf8")), intent);
-  } finally { f.close(); }
+    assert.deepEqual(
+      JSON.parse(readFileSync(path.join(f.root, "evidence/intents/999.json"), "utf8")),
+      intent,
+    );
+  } finally {
+    f.close();
+  }
 });
 
-
-test("read-only reconciliation requires actual OIDC exchange and never retains private npm logs", () => {
+void test("read-only reconciliation requires actual OIDC exchange and never retains private npm logs", () => {
   for (const mode of ["success", "reject", "anonymous", "missing-authority", "spoofed-marker"]) {
     const f = fixture();
     try {
       f.seed();
-      const result = f.run("publish", mode === "missing-authority" ? { ACTIONS_ID_TOKEN_REQUEST_TOKEN: "" } : { FAKE_OIDC: mode });
+      const result = f.run(
+        "publish",
+        mode === "missing-authority" ? { ACTIONS_ID_TOKEN_REQUEST_TOKEN: "" } : { FAKE_OIDC: mode },
+      );
       assert.equal(result.status, mode === "success" ? 0 : 1, result.stderr);
       assert.deepEqual(f.writes(), []);
       assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_OIDC_SENSITIVE/);
       assert.deepEqual(readdirSync(path.join(f.root, "temp")), []);
       if (mode === "success") {
-        assert.equal(readFileSync(path.join(f.root, "evidence/authority.tsv"), "utf8"), "oidc-exchange-verified\t@agent-teams/test-publisher\t1.2.3\n");
-      } else { assert.match(result.stderr, /OIDC exchange preflight failed|OIDC exchange reported failure|OIDC exchange was not established|OIDC request authority is unavailable/); }
-      for (const file of readdirSync(path.join(f.root, "evidence"), { recursive: true, withFileTypes: true })) {
-        if (file.isFile()) { assert.doesNotMatch(readFileSync(path.join(file.parentPath, file.name), "utf8"), /SYNTHETIC_OIDC_SENSITIVE/); }
+        assert.equal(
+          readFileSync(path.join(f.root, "evidence/authority.tsv"), "utf8"),
+          "oidc-exchange-verified\t@agent-teams/test-publisher\t1.2.3\n",
+        );
+      } else {
+        assert.match(
+          result.stderr,
+          /OIDC exchange preflight failed|OIDC exchange reported failure|OIDC exchange was not established|OIDC request authority is unavailable/,
+        );
       }
-    } finally { f.close(); }
+      for (const file of readdirSync(path.join(f.root, "evidence"), {
+        recursive: true,
+        withFileTypes: true,
+      })) {
+        if (file.isFile()) {
+          assert.doesNotMatch(
+            readFileSync(path.join(file.parentPath, file.name), "utf8"),
+            /SYNTHETIC_OIDC_SENSITIVE/,
+          );
+        }
+      }
+    } finally {
+      f.close();
+    }
   }
 });
 
-test("a second package's failed OIDC exchange prevents the first absent package upload", () => {
+void test("a second package's failed OIDC exchange prevents the first absent package upload", () => {
   const f = fixture();
   try {
     const secondName = "@agent-teams/second-publisher";
@@ -438,26 +737,42 @@ test("a second package's failed OIDC exchange prevents the first absent package 
     const archive = path.join(f.root, "release/second.tgz");
     execFileSync("tar", ["-czf", archive, "-C", path.join(f.root, "source"), "package"]);
     const bytes = readFileSync(archive);
-    f.manifest.packages.push({ name: secondName, version: "1.2.3", file: "second.tgz", sha256: createHash("sha256").update(bytes).digest("hex"), integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}` });
+    f.manifest.packages.push({
+      name: secondName,
+      version: "1.2.3",
+      file: "second.tgz",
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
+    });
     f.save();
     const result = f.run("publish", { FAKE_OIDC_FAIL_NAME: secondName });
     assert.equal(result.status, 1, result.stderr);
-    assert.match(result.stderr, /OIDC exchange preflight failed for @agent-teams\/second-publisher/);
+    assert.match(
+      result.stderr,
+      /OIDC exchange preflight failed for @agent-teams\/second-publisher/,
+    );
     assert.deepEqual(f.writes(), []);
-    assert.deepEqual(readFileSync(path.join(f.root, "state/authority-probes"), "utf8").trim().split("\n"), [f.entry.name, secondName]);
+    assert.deepEqual(
+      readFileSync(path.join(f.root, "state/authority-probes"), "utf8").trim().split("\n"),
+      [f.entry.name, secondName],
+    );
     assert.deepEqual(readdirSync(path.join(f.root, "temp")), []);
     assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_OIDC_SENSITIVE/);
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });
 
-
-test("the whole OIDC probe process is bounded and a TERM-resistant child is killed", () => {
+void test("the whole OIDC probe process is bounded and a TERM-resistant child is killed", () => {
   const f = fixture();
   try {
     // Execute the actual production timeout command with a compressed test deadline.
     const productionDeadline = "timeout --signal=TERM --kill-after=5s 90s npm dist-tag ls";
     assert.ok(shell.includes(productionDeadline));
-    const bounded = shell.replace(productionDeadline, "timeout --signal=TERM --kill-after=0.1s 0.1s npm dist-tag ls");
+    const bounded = shell.replace(
+      productionDeadline,
+      "timeout --signal=TERM --kill-after=0.1s 0.1s npm dist-tag ls",
+    );
     const started = performance.now();
     const result = f.run("publish", { FAKE_OIDC: "hang" }, bounded);
     assert.equal(result.status, 1, result.stderr);
@@ -466,5 +781,7 @@ test("the whole OIDC probe process is bounded and a TERM-resistant child is kill
     assert.deepEqual(f.writes(), []);
     assert.deepEqual(readdirSync(path.join(f.root, "temp")), []);
     assert.doesNotMatch(result.stdout + result.stderr, /SYNTHETIC_OIDC_SENSITIVE/);
-  } finally { f.close(); }
+  } finally {
+    f.close();
+  }
 });

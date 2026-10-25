@@ -325,6 +325,16 @@ jobs:
         run: node "$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs" verify-controller-snapshot
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Retain verified nonsecret generation3 qualification evidence
+        if: success() && needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: docs-cohort-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.QUALIFICATION_RECEIPT }}
+            ${{ env.INSTALL_EVIDENCE_PATH }}
+          if-no-files-found: error
+          retention-days: 1
 
   docs-protocol-check:
     name: docs-protocol-check

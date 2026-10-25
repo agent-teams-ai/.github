@@ -4,26 +4,65 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import YAML from "yaml";
-import { verifyDocsAdmissionChange, verifyAdmissionController, readAdmissionBaseFile,
-  reconcileLegacyPending } from "./verify-docs-admission-change.mjs";
-import { currentAdmissionScope, verifyDocsAdmissionEvidence, requirePlatformPending } from "./verify-docs-cohort-evidence.mjs";
+import {
+  verifyDocsAdmissionChange,
+  verifyAdmissionController,
+  readAdmissionBaseFile,
+  reconcileLegacyPending,
+} from "./verify-docs-admission-change.mjs";
+import {
+  currentAdmissionScope,
+  verifyDocsAdmissionEvidence,
+  requirePlatformPending,
+} from "./verify-docs-cohort-evidence.mjs";
 import { PLATFORM_RECOVERY } from "./docs-platform-admission-recovery.mjs";
 import { validateDocsProtocolPolicy } from "./governance-policy.mjs";
 import { validateDocsGovernanceReferences } from "./docs-cohort-policy.mjs";
-import { assertDocsCohortAppendOnly, cohortRecordDigest, cohortEventDigest, validateDocsQualifiedCohorts, qualifiedCohortProjection } from "./docs-cohort-policy.mjs";
-import { POLICY_PATH, REGISTRY_PATH, EXCEPTIONS_PATH, RECOVERY_AUTHORITY_PATH,
-  recoveryBlob, recoveryDigest, recoveryTarget, reproduceLegacyParserErrors } from "./docs-legacy-admission-recovery.mjs";
+import {
+  assertDocsCohortAppendOnly,
+  cohortRecordDigest,
+  cohortEventDigest,
+  validateDocsQualifiedCohorts,
+  qualifiedCohortProjection,
+} from "./docs-cohort-policy.mjs";
+import {
+  POLICY_PATH,
+  REGISTRY_PATH,
+  EXCEPTIONS_PATH,
+  RECOVERY_AUTHORITY_PATH,
+  recoveryBlob,
+  recoveryDigest,
+  recoveryTarget,
+  reproduceLegacyParserErrors,
+} from "./docs-legacy-admission-recovery.mjs";
 
 const base = "72e1a4c2c0845655153a0b757aa7c87c34ec8f7e";
 const head = "c".repeat(40); // Synthetic central PR, never published.
 const encode = (value) => Buffer.from(JSON.stringify(value));
 test("legacy reconciliation retains complete mixed legacy and Platform pending report", () => {
-  const legacy = { repository_id: 1314012020, source_head: "a".repeat(40), status: "recovery_pending" };
-  const platform = { repository_id: PLATFORM_RECOVERY.repository_id,
-    source_head: PLATFORM_RECOVERY.source_head, status: "recovery_pending",
-    semantics: "unverified", qualification: "unverified" };
-  const report = { recovery_pending: [legacy, platform], recovery: { recovery_pending: [{
-    repository_id: legacy.repository_id, source_head: legacy.source_head }] } };
+  const legacy = {
+    repository_id: 1314012020,
+    source_head: "a".repeat(40),
+    status: "recovery_pending",
+  };
+  const platform = {
+    repository_id: PLATFORM_RECOVERY.repository_id,
+    source_head: PLATFORM_RECOVERY.source_head,
+    status: "recovery_pending",
+    semantics: "unverified",
+    qualification: "unverified",
+  };
+  const report = {
+    recovery_pending: [legacy, platform],
+    recovery: {
+      recovery_pending: [
+        {
+          repository_id: legacy.repository_id,
+          source_head: legacy.source_head,
+        },
+      ],
+    },
+  };
   assert.equal(reconcileLegacyPending(report), report);
   assert.deepEqual(report.recovery_pending, [legacy, platform]);
   report.recovery.recovery_pending[0].source_head = "b".repeat(40);
@@ -33,30 +72,71 @@ test("candidate-only evidence and forged current status cannot become current_ve
   const entry = { repository_id: PLATFORM_RECOVERY.repository_id };
   const head = PLATFORM_RECOVERY.source_head;
   for (const status of ["candidate_evidence_only", "current_verified", undefined]) {
-    assert.throws(() => requirePlatformPending({ repository_id: entry.repository_id, source_head: head,
-      status, semantics: "unverified", qualification: "unverified" }, entry, head), /remain recovery_pending/u);
+    assert.throws(
+      () =>
+        requirePlatformPending(
+          {
+            repository_id: entry.repository_id,
+            source_head: head,
+            status,
+            semantics: "unverified",
+            qualification: "unverified",
+          },
+          entry,
+          head,
+        ),
+      /remain recovery_pending/u,
+    );
   }
-  assert.throws(() => requirePlatformPending({ repository_id: entry.repository_id,
-    source_head: "f".repeat(40), status: "recovery_pending", semantics: "unverified",
-    qualification: "unverified" }, entry, head), /remain recovery_pending/u);
-  assert.deepEqual(requirePlatformPending({ repository_id: entry.repository_id, source_head: head,
-    status: "recovery_pending", semantics: "unverified", qualification: "unverified" }, entry, head).status,
-  "recovery_pending");
+  assert.throws(
+    () =>
+      requirePlatformPending(
+        {
+          repository_id: entry.repository_id,
+          source_head: "f".repeat(40),
+          status: "recovery_pending",
+          semantics: "unverified",
+          qualification: "unverified",
+        },
+        entry,
+        head,
+      ),
+    /remain recovery_pending/u,
+  );
+  assert.deepEqual(
+    requirePlatformPending(
+      {
+        repository_id: entry.repository_id,
+        source_head: head,
+        status: "recovery_pending",
+        semantics: "unverified",
+        qualification: "unverified",
+      },
+      entry,
+      head,
+    ).status,
+    "recovery_pending",
+  );
 });
-const caller = (record) => Buffer.from(`name: Documentation Protocol\n\non:\n  pull_request:\n  merge_group:\n  push:\n\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n  docs-protocol:\n    uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`);
+const caller = (record) =>
+  Buffer.from(
+    `name: Documentation Protocol\n\non:\n  pull_request:\n  merge_group:\n  push:\n\npermissions:\n  contents: read\n  id-token: write\n\njobs:\n  docs-protocol:\n    uses: ${record.reusable_workflow.repository}/${record.reusable_workflow.path}@${record.reusable_workflow.revision}\n`,
+  );
 
 // Historical runners expose only the legacy CLI. Current v2 runners also
 // expose the skipped legacy alternative; schema 1 executes neither qualifier.
 const legacyQualification = "Run only the exact installed agent-teams-docs qualify CLI";
 const v2Qualification = "Run Cohort v2 qualification through the trusted base-owned runner";
-const currentWorkflowQualification = "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
+const currentWorkflowQualification =
+  "Run Cohort v2 or v3 qualification through the trusted base-owned runner";
 function successfulSteps(role, generation, schemaVersion = generation === 2 ? 3 : 2) {
   const step = (name, conclusion = "success") => ({ name, status: "completed", conclusion });
-  if (role === "trusted-qualification") return [
-    step(legacyQualification, schemaVersion === 2 ? "success" : "skipped"),
-    ...(generation === 2 ? [step(v2Qualification)] : []),
-    step("Confirm current controller authority stayed stable through qualification"),
-  ];
+  if (role === "trusted-qualification")
+    return [
+      step(legacyQualification, schemaVersion === 2 ? "success" : "skipped"),
+      ...(generation === 2 ? [step(v2Qualification)] : []),
+      step("Confirm current controller authority stayed stable through qualification"),
+    ];
   if (role === "docs-protocol-check") return [step("Run repository semantic documentation gate")];
   return [];
 }
@@ -66,24 +146,36 @@ test("admission execution fixtures retain legacy, old v2, and current generation
   const steps = workflow.jobs["trusted-qualification"].steps;
   for (const [name, condition] of [
     [legacyQualification, "needs.trusted-authorize.outputs.qualification-profile == 'legacy'"],
-    [currentWorkflowQualification, "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' || needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'"],
+    [
+      currentWorkflowQualification,
+      "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2' || needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3'",
+    ],
   ]) {
     const matching = steps.filter((step) => step.name === name);
     assert.equal(matching.length, 1);
     assert.equal(matching[0].if, condition);
   }
   assert.match(
-    steps.find((step) => step.name === "Set up Node for trusted qualification tooling").with["node-version"],
+    steps.find((step) => step.name === "Set up Node for trusted qualification tooling").with[
+      "node-version"
+    ],
     /cohort-v3.*26\.11\.1.*24\.21\.0/u,
   );
   const registry = JSON.parse(await readFile(REGISTRY_PATH));
   const pinnedV2 = registry.cohorts.find((row) => row.cohort_id === "docs-2026-09-08-stable15");
-  const pinnedSteps = YAML.parse((await readAdmissionBaseFile(
-    pinnedV2.reusable_workflow.path, pinnedV2.reusable_workflow.revision,
-  )).toString()).jobs["trusted-qualification"].steps;
+  const pinnedSteps = YAML.parse(
+    (
+      await readAdmissionBaseFile(
+        pinnedV2.reusable_workflow.path,
+        pinnedV2.reusable_workflow.revision,
+      )
+    ).toString(),
+  ).jobs["trusted-qualification"].steps;
   assert.equal(pinnedSteps.filter((step) => step.name === v2Qualification).length, 1);
-  assert.equal(pinnedSteps.find((step) => step.name === v2Qualification).if,
-    "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'");
+  assert.equal(
+    pinnedSteps.find((step) => step.name === v2Qualification).if,
+    "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'",
+  );
 });
 
 async function fixture(t) {
@@ -91,7 +183,10 @@ async function fixture(t) {
   t.after(() => rm(directory, { recursive: true, force: true }));
   const token = process.env.GH_TOKEN;
   process.env.GH_TOKEN = "synthetic-job-token";
-  t.after(() => { if (token === undefined) delete process.env.GH_TOKEN; else process.env.GH_TOKEN = token; });
+  t.after(() => {
+    if (token === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = token;
+  });
   const baseBytes = await readAdmissionBaseFile(POLICY_PATH, base);
   const policy = JSON.parse(baseBytes);
   // Keep checkout authority and proof coordinates on the same historical snapshot.
@@ -102,126 +197,340 @@ async function fixture(t) {
   const validFrom = new Date(asOfDate.getTime() - 60_000).toISOString().replace(/\.000Z$/u, "Z");
   const expiresAt = new Date(asOfDate.getTime() + 60_000).toISOString().replace(/\.000Z$/u, "Z");
   const exceptions = await readAdmissionBaseFile(EXCEPTIONS_PATH, base);
-  const candidates = policy.repositories.filter((row) => ["bound", "rollout_pending"].includes(row.cohort_binding_status));
-  const selected = policy.repositories.find((row) => row.repository === "agent-teams-ai/docs-protocol-canary-20260817");
-  const collateral = policy.repositories.find((row) => row.repository === "agent-teams-ai/agent-teams-token");
+  const candidates = policy.repositories.filter((row) =>
+    ["bound", "rollout_pending"].includes(row.cohort_binding_status),
+  );
+  const selected = policy.repositories.find(
+    (row) => row.repository === "agent-teams-ai/docs-protocol-canary-20260817",
+  );
+  const collateral = policy.repositories.find(
+    (row) => row.repository === "agent-teams-ai/agent-teams-token",
+  );
   const originalCollateral = structuredClone(collateral);
   selected.desired_cohort_id = "docs-2026-09-08-stable15";
   const source = registry.cohorts.find((row) => row.cohort_id === collateral.observed_cohort_id);
   const sourceHead = "d".repeat(40);
-  const recordFor = (entry) => registry.cohorts.find((row) => row.cohort_id === entry.observed_cohort_id);
+  const recordFor = (entry) =>
+    registry.cohorts.find((row) => row.cohort_id === entry.observed_cohort_id);
   const entryFor = (repository) => candidates.find((entry) => entry.repository === repository);
   const projectionFor = (entry, id = entry.observed_cohort_id) => {
     const p = qualifiedCohortProjection(registry, id, { asOf });
-    return encode({ ...p, repository: { provider: "github", id: String(entry.repository_id), nameWithOwner: entry.repository },
-      cohortAuthority: { channel: p.channel, recordDigest: p.recordDigest, qualificationEventDigest: p.qualificationEventDigest,
-        eligibleAfter: p.eligibleAfter, upgradeFrom: p.upgradeFrom, rollbackTo: p.rollbackTo } });
+    return encode({
+      ...p,
+      repository: {
+        provider: "github",
+        id: String(entry.repository_id),
+        nameWithOwner: entry.repository,
+      },
+      cohortAuthority: {
+        channel: p.channel,
+        recordDigest: p.recordDigest,
+        qualificationEventDigest: p.qualificationEventDigest,
+        eligibleAfter: p.eligibleAfter,
+        upgradeFrom: p.upgradeFrom,
+        rollbackTo: p.rollbackTo,
+      },
+    });
   };
   const runner = source.reusable_workflow.revision;
   const historicalPolicy = await readAdmissionBaseFile(POLICY_PATH, runner);
   const historicalRegistry = await readAdmissionBaseFile(REGISTRY_PATH, runner);
-  const schemaPolicy = await readAdmissionBaseFile(POLICY_PATH.replace(".json", ".schema.json"), runner);
-  const schemaRegistry = await readAdmissionBaseFile(REGISTRY_PATH.replace(".json", ".schema.json"), runner);
-  const parserErrors = await reproduceLegacyParserErrors(JSON.parse(baseBytes), registry,
+  const schemaPolicy = await readAdmissionBaseFile(
+    POLICY_PATH.replace(".json", ".schema.json"),
+    runner,
+  );
+  const schemaRegistry = await readAdmissionBaseFile(
+    REGISTRY_PATH.replace(".json", ".schema.json"),
+    runner,
+  );
+  const parserErrors = await reproduceLegacyParserErrors(
+    JSON.parse(baseBytes),
+    registry,
     { policy: JSON.parse(schemaPolicy), registry: JSON.parse(schemaRegistry) },
-    { policy: JSON.parse(historicalPolicy), registry: JSON.parse(historicalRegistry) });
+    { policy: JSON.parse(historicalPolicy), registry: JSON.parse(historicalRegistry) },
+  );
   const coord = (path, revision, content) => ({ path, revision, blob: recoveryBlob(content) });
   const diagnostic = `Central Docs policy schema validation failed: ${parserErrors.policy.map(({ instancePath, message }) => `${instancePath || "/"} ${message}`).join("; ")}`;
-  const log = Buffer.from(`CONTROLLER_SNAPSHOT_SHA: ${base}\nJOB_WORKFLOW_SHA: ${runner}\nGITHUB_SHA: ${sourceHead}\n${diagnostic}\n`);
-  const historicalLog = Buffer.from(`CONTROLLER_SNAPSHOT_SHA: ${runner}\nJOB_WORKFLOW_SHA: ${runner}\nGITHUB_SHA: ${collateral.observed_default_branch_evidence.revision}\n`);
-  const failureStep = ["Authorize exact consumer snapshot without executing consumer code", null,
-    "Require successful trusted structural authorization", "Require successful trusted qualification"];
-  const jobs = ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"].map((role, i) => ({
-    id: 71 + i, run_id: 800, run_attempt: 1, head_sha: sourceHead, name: `docs-protocol / ${role}`,
-    html_url: `https://github.com/${collateral.repository}/actions/runs/800/job/${71 + i}`, status: "completed",
-    conclusion: i === 1 ? "skipped" : "failure", steps: failureStep[i] === null ? [] :
-      [{ number: 1, name: failureStep[i], status: "completed", conclusion: "failure" }],
+  const log = Buffer.from(
+    `CONTROLLER_SNAPSHOT_SHA: ${base}\nJOB_WORKFLOW_SHA: ${runner}\nGITHUB_SHA: ${sourceHead}\n${diagnostic}\n`,
+  );
+  const historicalLog = Buffer.from(
+    `CONTROLLER_SNAPSHOT_SHA: ${runner}\nJOB_WORKFLOW_SHA: ${runner}\nGITHUB_SHA: ${collateral.observed_default_branch_evidence.revision}\n`,
+  );
+  const failureStep = [
+    "Authorize exact consumer snapshot without executing consumer code",
+    null,
+    "Require successful trusted structural authorization",
+    "Require successful trusted qualification",
+  ];
+  const jobs = [
+    "trusted-authorize",
+    "trusted-structural",
+    "trusted-qualification",
+    "docs-protocol-check",
+  ].map((role, i) => ({
+    id: 71 + i,
+    run_id: 800,
+    run_attempt: 1,
+    head_sha: sourceHead,
+    name: `docs-protocol / ${role}`,
+    html_url: `https://github.com/${collateral.repository}/actions/runs/800/job/${71 + i}`,
+    status: "completed",
+    conclusion: i === 1 ? "skipped" : "failure",
+    steps:
+      failureStep[i] === null
+        ? []
+        : [{ number: 1, name: failureStep[i], status: "completed", conclusion: "failure" }],
   }));
-  const proof = { schema_version: 1, source_target: recoveryTarget(registry, source.cohort_id),
-    historical_inputs: { policy: coord(POLICY_PATH, runner, historicalPolicy), registry: coord(REGISTRY_PATH, runner, historicalRegistry) },
-    historical_run: { attempt: 1, authorize_job_id: 171, log_digest: recoveryDigest(historicalLog) },
-    current_inputs: { policy: coord(POLICY_PATH, base, baseBytes), registry: coord(REGISTRY_PATH, base, registryBytes) },
-    schemas: { policy: coord(POLICY_PATH.replace(".json", ".schema.json"), runner, schemaPolicy),
-      registry: coord(REGISTRY_PATH.replace(".json", ".schema.json"), runner, schemaRegistry) },
-    caller_blob: recoveryBlob(caller(source)), projection_blob: recoveryBlob(projectionFor(collateral)), parser_errors: parserErrors,
-    run: { id: 800, attempt: 1, workflow_id: collateral.observed_default_branch_evidence.workflow_id,
-      head: sourceHead, branch: "main", path: collateral.caller_workflow_path }, jobs, parser_job_id: 71, parser_log_digest: recoveryDigest(log) };
-  const execution = { controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 },
-    pull_number: 999, pull_id: 1999, head_ref: "synthetic-selection", run_id: 3117, run_attempt: 1,
-    base, head, execution_base: base, changed_files: [POLICY_PATH] };
-  const operation = { kind: "selection", repository_id: selected.repository_id, before_policy_blob: recoveryBlob(baseBytes),
-    after_policy_blob: recoveryBlob(encode(policy)), registry_blob: recoveryBlob(registryBytes), exceptions_blob: recoveryBlob(exceptions),
-    target: recoveryTarget(registry, selected.desired_cohort_id) };
-  const proofCoordinate = coord("governance/evidence/docs-admission-recovery/synthetic-integration.json", base, encode(proof));
+  const proof = {
+    schema_version: 1,
+    source_target: recoveryTarget(registry, source.cohort_id),
+    historical_inputs: {
+      policy: coord(POLICY_PATH, runner, historicalPolicy),
+      registry: coord(REGISTRY_PATH, runner, historicalRegistry),
+    },
+    historical_run: {
+      attempt: 1,
+      authorize_job_id: 171,
+      log_digest: recoveryDigest(historicalLog),
+    },
+    current_inputs: {
+      policy: coord(POLICY_PATH, base, baseBytes),
+      registry: coord(REGISTRY_PATH, base, registryBytes),
+    },
+    schemas: {
+      policy: coord(POLICY_PATH.replace(".json", ".schema.json"), runner, schemaPolicy),
+      registry: coord(REGISTRY_PATH.replace(".json", ".schema.json"), runner, schemaRegistry),
+    },
+    caller_blob: recoveryBlob(caller(source)),
+    projection_blob: recoveryBlob(projectionFor(collateral)),
+    parser_errors: parserErrors,
+    run: {
+      id: 800,
+      attempt: 1,
+      workflow_id: collateral.observed_default_branch_evidence.workflow_id,
+      head: sourceHead,
+      branch: "main",
+      path: collateral.caller_workflow_path,
+    },
+    jobs,
+    parser_job_id: 71,
+    parser_log_digest: recoveryDigest(log),
+  };
+  const execution = {
+    controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 },
+    pull_number: 999,
+    pull_id: 1999,
+    head_ref: "synthetic-selection",
+    run_id: 3117,
+    run_attempt: 1,
+    base,
+    head,
+    execution_base: base,
+    changed_files: [POLICY_PATH],
+  };
+  const operation = {
+    kind: "selection",
+    repository_id: selected.repository_id,
+    before_policy_blob: recoveryBlob(baseBytes),
+    after_policy_blob: recoveryBlob(encode(policy)),
+    registry_blob: recoveryBlob(registryBytes),
+    exceptions_blob: recoveryBlob(exceptions),
+    target: recoveryTarget(registry, selected.desired_cohort_id),
+  };
+  const proofCoordinate = coord(
+    "governance/evidence/docs-admission-recovery/synthetic-integration.json",
+    base,
+    encode(proof),
+  );
   let decisionText = `Authorize central admission recovery synthetic-integration\nRepository: agent-teams-ai/.github (1316243981)\nPR: 999\nPolicy: ${operation.before_policy_blob} -> ${operation.after_policy_blob}\nProof: ${base}:${proofCoordinate.path}@${proofCoordinate.blob}\nExpires: ${expiresAt}\n`;
-  const authorization = { id: "synthetic-integration", state: "active", valid_from: validFrom, expires_at: expiresAt,
-    controller: execution.controller, pull_number: 999, operation,
-    incidents: [{ source_entry: originalCollateral, source_head: sourceHead, proof: proofCoordinate,
-      owner_decision: { comment_id: 7, actor_id: 8, actor_login: "synthetic-owner", body_digest: recoveryDigest(Buffer.from(decisionText)) } }] };
+  const authorization = {
+    id: "synthetic-integration",
+    state: "active",
+    valid_from: validFrom,
+    expires_at: expiresAt,
+    controller: execution.controller,
+    pull_number: 999,
+    operation,
+    incidents: [
+      {
+        source_entry: originalCollateral,
+        source_head: sourceHead,
+        proof: proofCoordinate,
+        owner_decision: {
+          comment_id: 7,
+          actor_id: 8,
+          actor_login: "synthetic-owner",
+          body_digest: recoveryDigest(Buffer.from(decisionText)),
+        },
+      },
+    ],
+  };
   const authority = { schema_version: 1, authorizations: [authorization] };
-  const controller = { id: 1316243981, full_name: "agent-teams-ai/.github", default_branch: "main", archived: false, disabled: false };
-  const centralPull = { id: 1999, number: 999, state: "open", merged: false, changed_files: 1,
+  const controller = {
+    id: 1316243981,
+    full_name: "agent-teams-ai/.github",
+    default_branch: "main",
+    archived: false,
+    disabled: false,
+  };
+  const centralPull = {
+    id: 1999,
+    number: 999,
+    state: "open",
+    merged: false,
+    changed_files: 1,
     base: { sha: base, ref: "main", repo: controller },
-    head: { sha: head, ref: "synthetic-selection", repo: controller } };
+    head: { sha: head, ref: "synthetic-selection", repo: controller },
+  };
   let controllerCalls = 0;
   const options = {
     // Imported incident/recovery cases retain complete-fleet semantics.
     fullFleetCurrent: true,
-    clock: () => asOf, asOf, execution, basePolicyBytes: baseBytes,
+    clock: () => asOf,
+    asOf,
+    execution,
+    basePolicyBytes: baseBytes,
     verifyController: async (value) => {
       controllerCalls++;
-      return verifyAdmissionController(value, async (path) => path.endsWith("/pulls/999") ? centralPull
-        : path.endsWith("/branches/main") ? { commit: { sha: base } } : controller);
+      return verifyAdmissionController(value, async (path) =>
+        path.endsWith("/pulls/999")
+          ? centralPull
+          : path.endsWith("/branches/main")
+            ? { commit: { sha: base } }
+            : controller,
+      );
     },
-    readBaseFile: async (path, revision) => path === RECOVERY_AUTHORITY_PATH ? encode(authority) : readAdmissionBaseFile(path, revision),
-    getRepository: async (repository) => ({ id: entryFor(repository).repository_id, full_name: repository,
-      default_branch: "main", private: false, archived: false, disabled: false }),
+    readBaseFile: async (path, revision) =>
+      path === RECOVERY_AUTHORITY_PATH ? encode(authority) : readAdmissionBaseFile(path, revision),
+    getRepository: async (repository) => ({
+      id: entryFor(repository).repository_id,
+      full_name: repository,
+      default_branch: "main",
+      private: false,
+      archived: false,
+      disabled: false,
+    }),
     isCommitAncestor: async () => true,
-    getDefaultBranchHead: async (repository) => repository === collateral.repository ? sourceHead : entryFor(repository).observed_default_branch_evidence.revision,
+    getDefaultBranchHead: async (repository) =>
+      repository === collateral.repository
+        ? sourceHead
+        : entryFor(repository).observed_default_branch_evidence.revision,
     getCheckRuns: async (repository, revision) => {
       const evidence = entryFor(repository).observed_default_branch_evidence;
-      return [{ id: revision === sourceHead ? 74 : evidence.check_run_id, head_sha: revision, name: evidence.required_context,
-        app: { id: evidence.integration_id }, conclusion: revision === sourceHead ? "failure" : "success",
-        html_url: revision === sourceHead ? jobs[3].html_url : evidence.check_run_url }];
+      return [
+        {
+          id: revision === sourceHead ? 74 : evidence.check_run_id,
+          head_sha: revision,
+          name: evidence.required_context,
+          app: { id: evidence.integration_id },
+          conclusion: revision === sourceHead ? "failure" : "success",
+          html_url: revision === sourceHead ? jobs[3].html_url : evidence.check_run_url,
+        },
+      ];
     },
     getWorkflowRun: async (repository, id) => {
-      const entry = entryFor(repository), evidence = entry.observed_default_branch_evidence, workflow = recordFor(entry).reusable_workflow;
-      return { id, workflow_id: evidence.workflow_id, run_attempt: 1, head_sha: id === 800 ? sourceHead : evidence.revision,
-        head_branch: "main", path: evidence.caller_workflow_path, event: "push", status: "completed", conclusion: id === 800 ? "failure" : "success",
+      const entry = entryFor(repository),
+        evidence = entry.observed_default_branch_evidence,
+        workflow = recordFor(entry).reusable_workflow;
+      return {
+        id,
+        workflow_id: evidence.workflow_id,
+        run_attempt: 1,
+        head_sha: id === 800 ? sourceHead : evidence.revision,
+        head_branch: "main",
+        path: evidence.caller_workflow_path,
+        event: "push",
+        status: "completed",
+        conclusion: id === 800 ? "failure" : "success",
         repository: { id: entry.repository_id, full_name: repository },
-        referenced_workflows: [{ sha: workflow.revision, path: `${workflow.repository}/${workflow.path}@${workflow.revision}` }] };
+        referenced_workflows: [
+          {
+            sha: workflow.revision,
+            path: `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+          },
+        ],
+      };
     },
-    getWorkflowJobs: async (repository, id) => id === 800 ? structuredClone(jobs) : [{ id: 171, run_id: id, run_attempt: 1,
-      head_sha: collateral.observed_default_branch_evidence.revision, name: "docs-protocol / trusted-authorize", status: "completed", conclusion: "success",
-      html_url: `https://github.com/${repository}/actions/runs/${id}/job/171`,
-      steps: [{ name: failureStep[0], status: "completed", conclusion: "success" }] }],
-    readRepositoryFile: async (repository, path) => path === "architecture/foundation/docs-consumer-integration.json" ? encode({ schemaVersion: recordFor(entryFor(repository)).cohort_generation === 2 ? 3 : 2 }) : path.endsWith("managed-state.json") ? projectionFor(entryFor(repository)) : caller(recordFor(entryFor(repository))),
-    readGitFile: async (repository, path, revision) => repository === execution.controller.repository
-      ? path === proofCoordinate.path ? encode(proof) : readAdmissionBaseFile(path, revision)
-      : options.readRepositoryFile(repository, path, revision),
-    getDecisionComment: async () => ({ id: 7, user: { id: 8, login: "synthetic-owner", type: "User" }, body: decisionText,
-      issue_url: "https://api.github.com/repos/agent-teams-ai/.github/issues/999" }),
-    getCollaboratorPermission: async () => ({ permission: "admin", user: { id: 8, login: "synthetic-owner" } }),
-    getJobLog: async (_repository, id) => id === 171 ? historicalLog : log,
+    getWorkflowJobs: async (repository, id) =>
+      id === 800
+        ? structuredClone(jobs)
+        : [
+            {
+              id: 171,
+              run_id: id,
+              run_attempt: 1,
+              head_sha: collateral.observed_default_branch_evidence.revision,
+              name: "docs-protocol / trusted-authorize",
+              status: "completed",
+              conclusion: "success",
+              html_url: `https://github.com/${repository}/actions/runs/${id}/job/171`,
+              steps: [{ name: failureStep[0], status: "completed", conclusion: "success" }],
+            },
+          ],
+    readRepositoryFile: async (repository, path) =>
+      path === "architecture/foundation/docs-consumer-integration.json"
+        ? encode({ schemaVersion: recordFor(entryFor(repository)).cohort_generation === 2 ? 3 : 2 })
+        : path.endsWith("managed-state.json")
+          ? projectionFor(entryFor(repository))
+          : caller(recordFor(entryFor(repository))),
+    readGitFile: async (repository, path, revision) =>
+      repository === execution.controller.repository
+        ? path === proofCoordinate.path
+          ? encode(proof)
+          : readAdmissionBaseFile(path, revision)
+        : options.readRepositoryFile(repository, path, revision),
+    getDecisionComment: async () => ({
+      id: 7,
+      user: { id: 8, login: "synthetic-owner", type: "User" },
+      body: decisionText,
+      issue_url: "https://api.github.com/repos/agent-teams-ai/.github/issues/999",
+    }),
+    getCollaboratorPermission: async () => ({
+      permission: "admin",
+      user: { id: 8, login: "synthetic-owner" },
+    }),
+    getJobLog: async (_repository, id) => (id === 171 ? historicalLog : log),
   };
-  const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
+  const paths = {
+    policy: join(directory, "policy.json"),
+    exceptions: join(directory, "exceptions.json"),
+  };
   await writeFile(paths.exceptions, exceptions);
   // The real verifier reads checkout authority relative to cwd. Materialize its
   // pinned inputs without modifying the shared worktree or bypassing base checks.
   await mkdir(join(directory, "governance"));
   await symlink(resolve(".git"), join(directory, ".git"), "dir");
-  for (const path of [REGISTRY_PATH, "governance/docs-protocol-policy-v2.schema.json",
-    "governance/docs-protocol-exceptions.schema.json", "governance/docs-qualified-cohorts.schema.json",
-    "governance/code-security-defaults.json"]) {
+  for (const path of [
+    REGISTRY_PATH,
+    "governance/docs-protocol-policy-v2.schema.json",
+    "governance/docs-protocol-exceptions.schema.json",
+    "governance/docs-qualified-cohorts.schema.json",
+    "governance/code-security-defaults.json",
+  ]) {
     await writeFile(join(directory, path), await readAdmissionBaseFile(path, base));
   }
-  return { policy, registry, selected, collateral, originalCollateral, authority, authorization, execution, options, centralPull,
-    projectionFor, checkoutRegistryPath: join(directory, REGISTRY_PATH),
+  return {
+    policy,
+    registry,
+    selected,
+    collateral,
+    originalCollateral,
+    authority,
+    authorization,
+    execution,
+    options,
+    centralPull,
+    projectionFor,
+    checkoutRegistryPath: join(directory, REGISTRY_PATH),
     bindOperation: (kind) => {
-      operation.kind = kind; operation.after_policy_blob = recoveryBlob(encode(policy));
+      operation.kind = kind;
+      operation.after_policy_blob = recoveryBlob(encode(policy));
       operation.target = recoveryTarget(registry, selected.desired_cohort_id);
       decisionText = `Authorize central admission recovery synthetic-integration\nRepository: agent-teams-ai/.github (1316243981)\nPR: 999\nPolicy: ${operation.before_policy_blob} -> ${operation.after_policy_blob}\nProof: ${base}:${proofCoordinate.path}@${proofCoordinate.blob}\nExpires: ${expiresAt}\n`;
-      authorization.incidents[0].owner_decision.body_digest = recoveryDigest(Buffer.from(decisionText));
+      authorization.incidents[0].owner_decision.body_digest = recoveryDigest(
+        Buffer.from(decisionText),
+      );
     },
     controllerCalls: () => controllerCalls,
     run: async () => {
@@ -229,20 +538,28 @@ async function fixture(t) {
       const cwd = process.cwd();
       // These tests run serially; always restore cwd, including on rejection.
       process.chdir(directory);
-      try { return await verifyDocsAdmissionChange(paths, options); }
-      finally { process.chdir(cwd); }
-    } };
+      try {
+        return await verifyDocsAdmissionChange(paths, options);
+      } finally {
+        process.chdir(cwd);
+      }
+    },
+  };
 }
 
 test("historical verifier selection uses the fixture clock after wall-clock support expiry", async (t) => {
   const f = await fixture(t);
-  const expiry = f.registry.events.find(event => event.cohort_id === f.selected.observed_cohort_id &&
-    event.state === "SUPERSEDED").support_until;
+  const expiry = f.registry.events.find(
+    (event) => event.cohort_id === f.selected.observed_cohort_id && event.state === "SUPERSEDED",
+  ).support_until;
   assert.ok(Date.parse(f.options.asOf) < Date.parse(expiry));
   t.mock.timers.enable({ apis: ["Date"], now: Date.parse(expiry) });
   f.options.fullFleetCurrent = false;
   const result = await f.run();
-  assert.deepEqual(result.current_verified.map(row => row.repository_id), [f.selected.repository_id]);
+  assert.deepEqual(
+    result.current_verified.map((row) => row.repository_id),
+    [f.selected.repository_id],
+  );
   assert.equal(result.current_not_evaluated.length, 5);
   assert.deepEqual(result.recovery_pending, []);
   assert.equal(f.controllerCalls(), 2);
@@ -250,52 +567,105 @@ test("historical verifier selection uses the fixture clock after wall-clock supp
 
 test("governance references accept before support expiry and reject the exact boundary", async (t) => {
   const f = await fixture(t);
-  const expiry = f.registry.events.find(event => event.cohort_id === f.selected.observed_cohort_id &&
-    event.state === "SUPERSEDED").support_until;
+  const expiry = f.registry.events.find(
+    (event) => event.cohort_id === f.selected.observed_cohort_id && event.state === "SUPERSEDED",
+  ).support_until;
   const exceptions = JSON.parse(await readAdmissionBaseFile(EXCEPTIONS_PATH, base));
-  const security = JSON.parse(await readAdmissionBaseFile("governance/code-security-defaults.json", base));
+  const security = JSON.parse(
+    await readAdmissionBaseFile("governance/code-security-defaults.json", base),
+  );
   const before = new Date(Date.parse(expiry) - 1_000).toISOString().replace(/\.000Z$/u, "Z");
   validateDocsGovernanceReferences(f.registry, exceptions, f.policy, security, { asOf: before });
-  assert.throws(() => validateDocsGovernanceReferences(f.registry, exceptions, f.policy, security, { asOf: expiry }),
-    /docs-protocol-canary-20260817 rollout source is no longer supported/u);
+  assert.throws(
+    () =>
+      validateDocsGovernanceReferences(f.registry, exceptions, f.policy, security, {
+        asOf: expiry,
+      }),
+    /docs-protocol-canary-20260817 rollout source is no longer supported/u,
+  );
 });
 
 test("default verifier clock follows wall-clock time even with a historical evidence asOf", async (t) => {
   const f = await fixture(t);
-  const expiry = f.registry.events.find(event => event.cohort_id === f.selected.observed_cohort_id &&
-    event.state === "SUPERSEDED").support_until;
+  const expiry = f.registry.events.find(
+    (event) => event.cohort_id === f.selected.observed_cohort_id && event.state === "SUPERSEDED",
+  ).support_until;
   delete f.options.clock;
   f.options.fullFleetCurrent = false;
   t.mock.timers.enable({ apis: ["Date"], now: Date.parse(f.options.asOf) });
-  assert.deepEqual((await f.run()).current_verified.map(row => row.repository_id), [f.selected.repository_id]);
+  assert.deepEqual(
+    (await f.run()).current_verified.map((row) => row.repository_id),
+    [f.selected.repository_id],
+  );
   t.mock.timers.setTime(Date.parse(expiry));
   await assert.rejects(f.run(), /platform-private-required-checks-github-free review is due/u);
   assert.equal(f.controllerCalls(), 2);
 });
 
 test("full imported verifier admits exact TEST selection with independently covered unchanged Token pending", async (t) => {
-  const f = await fixture(t); const result = await f.run();
-  assert.equal(result.historical_verified.length, 6); assert.equal(result.current_verified.length, 5);
-  assert.equal(result.recovery_pending.length, 1); assert.equal(result.recovery_pending[0].repository_id, f.collateral.repository_id);
+  const f = await fixture(t);
+  const result = await f.run();
+  assert.equal(result.historical_verified.length, 6);
+  assert.equal(result.current_verified.length, 5);
+  assert.equal(result.recovery_pending.length, 1);
+  assert.equal(result.recovery_pending[0].repository_id, f.collateral.repository_id);
   assert.deepEqual(f.collateral, f.originalCollateral);
   assert.equal(f.selected.desired_cohort_id, "docs-2026-09-08-stable15");
   assert.equal(f.collateral.desired_cohort_id, "docs-2026-08-28-stable8");
   assert.equal(f.controllerCalls(), 2);
   assert.deepEqual(result.execution, f.execution);
   assert.deepEqual(result.recovery.execution, {
-    controller: f.execution.controller, pull_number: f.execution.pull_number,
-    base: f.execution.base, head: f.execution.head, execution_base: f.execution.execution_base,
+    controller: f.execution.controller,
+    pull_number: f.execution.pull_number,
+    base: f.execution.base,
+    head: f.execution.head,
+    execution_base: f.execution.execution_base,
     changed_files: f.execution.changed_files,
   });
 });
 for (const [name, mutate] of [
-  ["wrong PR ID", (f) => { f.execution.pull_id++; }],
-  ["wrong head ref", (f) => { f.execution.head_ref = "other-branch"; }],
-  ["invalid run ID", (f) => { f.execution.run_id = 0; }],
-  ["invalid run attempt", (f) => { f.execution.run_attempt = 0; }],
-  ["extra execution field", (f) => { f.execution.unreviewed = true; }],
-  ["extra controller field", (f) => { f.execution.controller.unreviewed = true; }],
-  ["missing execution field", (f) => { delete f.execution.pull_id; }],
+  [
+    "wrong PR ID",
+    (f) => {
+      f.execution.pull_id++;
+    },
+  ],
+  [
+    "wrong head ref",
+    (f) => {
+      f.execution.head_ref = "other-branch";
+    },
+  ],
+  [
+    "invalid run ID",
+    (f) => {
+      f.execution.run_id = 0;
+    },
+  ],
+  [
+    "invalid run attempt",
+    (f) => {
+      f.execution.run_attempt = 0;
+    },
+  ],
+  [
+    "extra execution field",
+    (f) => {
+      f.execution.unreviewed = true;
+    },
+  ],
+  [
+    "extra controller field",
+    (f) => {
+      f.execution.controller.unreviewed = true;
+    },
+  ],
+  [
+    "missing execution field",
+    (f) => {
+      delete f.execution.pull_id;
+    },
+  ],
 ]) {
   test(`admission rejects ${name} before legacy authority is read`, async (t) => {
     const f = await fixture(t);
@@ -313,9 +683,13 @@ for (const [name, mutate] of [
 test("real legacy recovery report reconciles while a Platform pending row remains in the fleet", async (t) => {
   const f = await fixture(t);
   const report = await f.run();
-  const platform = { repository_id: PLATFORM_RECOVERY.repository_id,
-    source_head: PLATFORM_RECOVERY.source_head, status: "recovery_pending",
-    semantics: "unverified", qualification: "unverified" };
+  const platform = {
+    repository_id: PLATFORM_RECOVERY.repository_id,
+    source_head: PLATFORM_RECOVERY.source_head,
+    status: "recovery_pending",
+    semantics: "unverified",
+    qualification: "unverified",
+  };
   report.recovery_pending.push(platform);
   assert.equal(reconcileLegacyPending(report), report);
   assert.equal(report.recovery_pending.length, 2);
@@ -324,48 +698,82 @@ test("real legacy recovery report reconciles while a Platform pending row remain
 test("production fleet composition routes the latest failed Platform check and rejects a later success", async (t) => {
   const f = await fixture(t);
   f.options.fullFleetCurrent = false;
-  const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
+  const platform = f.policy.repositories.find(
+    (row) => row.repository_id === PLATFORM_RECOVERY.repository_id,
+  );
   const originalChecks = f.options.getCheckRuns;
   const originalGet = f.options.getDefaultBranchHead;
-  const sourceCheck = (id, run, conclusion) => ({ id, head_sha: PLATFORM_RECOVERY.source_head,
+  const sourceCheck = (id, run, conclusion) => ({
+    id,
+    head_sha: PLATFORM_RECOVERY.source_head,
     name: platform.observed_default_branch_evidence.required_context,
-    app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion,
-    html_url: `https://github.com/${platform.repository}/actions/runs/${run}/job/${id}` });
+    app: { id: platform.observed_default_branch_evidence.integration_id },
+    conclusion,
+    html_url: `https://github.com/${platform.repository}/actions/runs/${run}/job/${id}`,
+  });
   const checks = [sourceCheck(11, 101, "success"), sourceCheck(13, 103, "failure")];
-  f.options.getCheckRuns = async (repository, revision) => repository === platform.repository &&
-    revision === PLATFORM_RECOVERY.source_head ? structuredClone(checks) : originalChecks(repository, revision);
+  f.options.getCheckRuns = async (repository, revision) =>
+    repository === platform.repository && revision === PLATFORM_RECOVERY.source_head
+      ? structuredClone(checks)
+      : originalChecks(repository, revision);
   // The collateral legacy row remains successful here so this directly exercises
   // the production fleet adapter without a synthetic recovery capability.
-  f.options.getDefaultBranchHead = async (repository, branch) => repository === f.collateral.repository
-    ? f.collateral.observed_default_branch_evidence.revision :
-      (repository === platform.repository ? PLATFORM_RECOVERY.source_head : originalGet(repository, branch));
+  f.options.getDefaultBranchHead = async (repository, branch) =>
+    repository === f.collateral.repository
+      ? f.collateral.observed_default_branch_evidence.revision
+      : repository === platform.repository
+        ? PLATFORM_RECOVERY.source_head
+        : originalGet(repository, branch);
   let clockCalls = 0;
   let rejectRemainingFleet = false;
   let remainingFleetFailure = false;
   const collateralHead = "e".repeat(40);
   const successfulChecks = f.options.getCheckRuns;
   const successfulHead = f.options.getDefaultBranchHead;
-  f.options.getCheckRuns = async (repository, revision) => remainingFleetFailure &&
-    repository === f.collateral.repository && revision === collateralHead
-    ? [{ ...((await successfulChecks(repository, f.collateral.observed_default_branch_evidence.revision))[0]),
-      id: 999, head_sha: collateralHead, conclusion: "failure" }]
-    : successfulChecks(repository, revision);
-  f.options.getDefaultBranchHead = async (repository, branch) => remainingFleetFailure &&
-    repository === f.collateral.repository ? collateralHead : successfulHead(repository, branch);
-  const schema = JSON.parse(await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base));
+  f.options.getCheckRuns = async (repository, revision) =>
+    remainingFleetFailure && repository === f.collateral.repository && revision === collateralHead
+      ? [
+          {
+            ...(
+              await successfulChecks(
+                repository,
+                f.collateral.observed_default_branch_evidence.revision,
+              )
+            )[0],
+            id: 999,
+            head_sha: collateralHead,
+            conclusion: "failure",
+          },
+        ]
+      : successfulChecks(repository, revision);
+  f.options.getDefaultBranchHead = async (repository, branch) =>
+    remainingFleetFailure && repository === f.collateral.repository
+      ? collateralHead
+      : successfulHead(repository, branch);
+  const schema = JSON.parse(
+    await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base),
+  );
   const verifyPlatform = async (entry, sourceHead, adapters) => {
-      assert.equal(entry.repository_id, PLATFORM_RECOVERY.repository_id);
-      assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
-      assert.match(await adapters.currentTime(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u);
-      if (rejectRemainingFleet) remainingFleetFailure = true;
-      await adapters.evaluateRemainingFleet({ platform_repository_id: entry.repository_id,
-        changed_repository_id: f.selected.repository_id });
-      clockCalls++;
-      return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
-        semantics: "unverified", qualification: "unverified" };
+    assert.equal(entry.repository_id, PLATFORM_RECOVERY.repository_id);
+    assert.equal(sourceHead, PLATFORM_RECOVERY.source_head);
+    assert.match(await adapters.currentTime(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u);
+    if (rejectRemainingFleet) remainingFleetFailure = true;
+    await adapters.evaluateRemainingFleet({
+      platform_repository_id: entry.repository_id,
+      changed_repository_id: f.selected.repository_id,
+    });
+    clockCalls++;
+    return {
+      repository_id: entry.repository_id,
+      source_head: sourceHead,
+      status: "recovery_pending",
+      semantics: "unverified",
+      qualification: "unverified",
+    };
   };
   const report = await verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
-    ...f.options, platformRecovery: { verify: verifyPlatform },
+    ...f.options,
+    platformRecovery: { verify: verifyPlatform },
   });
   assert.equal(report.recovery_pending.length, 1);
   assert.equal(report.recovery_pending[0].repository_id, PLATFORM_RECOVERY.repository_id);
@@ -373,56 +781,110 @@ test("production fleet composition routes the latest failed Platform check and r
   assert.deepEqual(report.current_not_evaluated, []);
   assert.ok(clockCalls >= 2);
   rejectRemainingFleet = true;
-  await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
-    ...f.options, platformRecovery: { verify: verifyPlatform },
-  }), /current default-branch head requires every decisive admitted check to succeed/u);
+  await assert.rejects(
+    verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+      ...f.options,
+      platformRecovery: { verify: verifyPlatform },
+    }),
+    /current default-branch head requires every decisive admitted check to succeed/u,
+  );
   rejectRemainingFleet = false;
   remainingFleetFailure = false;
   checks.push(sourceCheck(15, 105, "success"));
-  await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
-    ...f.options, platformRecovery: { verify: async () => {
-      throw new Error("Platform recovery must not run after a later success.");
-    } },
-  }), /requires every decisive admitted check to succeed/u);
+  await assert.rejects(
+    verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+      ...f.options,
+      platformRecovery: {
+        verify: async () => {
+          throw new Error("Platform recovery must not run after a later success.");
+        },
+      },
+    }),
+    /requires every decisive admitted check to succeed/u,
+  );
 });
 
 function stagedSyntheticPlatformRecord(record) {
-  Object.assign(record, { schema_version: 1, id: "platform-a3-admission-cycle", state: "active",
-    central_pull: PLATFORM_RECOVERY.central_pull, before_policy_blob: PLATFORM_RECOVERY.before_policy_blob,
-    after_policy_blob: PLATFORM_RECOVERY.after_policy_blob, registry_blob: PLATFORM_RECOVERY.registry_blob,
+  Object.assign(record, {
+    schema_version: 1,
+    id: "platform-a3-admission-cycle",
+    state: "active",
+    central_pull: PLATFORM_RECOVERY.central_pull,
+    before_policy_blob: PLATFORM_RECOVERY.before_policy_blob,
+    after_policy_blob: PLATFORM_RECOVERY.after_policy_blob,
+    registry_blob: PLATFORM_RECOVERY.registry_blob,
     exceptions_blob: PLATFORM_RECOVERY.exceptions_blob,
-    proof: { revision: "a".repeat(40), path: "governance/evidence/docs-admission-recovery/platform-a3.json",
-      blob: "b".repeat(40) },
-    failure: { run_id: 71, attempt: 1, workflow_id: 72, authorize_job_id: 73, semantic_job_id: 74,
-      diagnostic_digest: recoveryDigest(Buffer.from("synthetic diagnostic")) } });
-  record.owner_decision = { comment_id: 11, actor_id: 8, actor_login: "synthetic-owner",
-    body_digest: recoveryDigest(Buffer.from("synthetic owner decision")) };
+    proof: {
+      revision: "a".repeat(40),
+      path: "governance/evidence/docs-admission-recovery/platform-a3.json",
+      blob: "b".repeat(40),
+    },
+    failure: {
+      run_id: 71,
+      attempt: 1,
+      workflow_id: 72,
+      authorize_job_id: 73,
+      semantic_job_id: 74,
+      diagnostic_digest: recoveryDigest(Buffer.from("synthetic diagnostic")),
+    },
+  });
+  record.owner_decision = {
+    comment_id: 11,
+    actor_id: 8,
+    actor_login: "synthetic-owner",
+    body_digest: recoveryDigest(Buffer.from("synthetic owner decision")),
+  };
   record.execution_decision_id = 12;
   return record;
 }
 
 function installSyntheticPlatform(f, record, accepted) {
-  const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
+  const platform = f.policy.repositories.find(
+    (row) => row.repository_id === PLATFORM_RECOVERY.repository_id,
+  );
   stagedSyntheticPlatformRecord(record);
   const state = {
-    ownerComment: { id: 11, user: { id: 8, login: "synthetic-owner", type: "User" }, body: "owner decision" },
-    executionComment: { id: 12, user: { id: 8, login: "synthetic-owner", type: "User" }, body: "execution decision" },
+    ownerComment: {
+      id: 11,
+      user: { id: 8, login: "synthetic-owner", type: "User" },
+      body: "owner decision",
+    },
+    executionComment: {
+      id: 12,
+      user: { id: 8, login: "synthetic-owner", type: "User" },
+      body: "execution decision",
+    },
     permission: { permission: "admin", user: { id: 8, login: "synthetic-owner" } },
-    verifierCalls: 0, commentReads: 0, permissionReads: 0,
+    verifierCalls: 0,
+    commentReads: 0,
+    permissionReads: 0,
   };
   const readBaseFile = f.options.readBaseFile;
-  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
-    ? encode(record) : readBaseFile(path, revision);
+  f.options.readBaseFile = (path, revision) =>
+    path === "governance/docs-platform-admission-recovery.json"
+      ? encode(record)
+      : readBaseFile(path, revision);
   const getChecks = f.options.getCheckRuns;
-  f.options.getCheckRuns = (repository, revision) => repository === platform.repository &&
-    revision === PLATFORM_RECOVERY.source_head ? [{ id: 71, head_sha: revision,
-      name: platform.observed_default_branch_evidence.required_context,
-      app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
-      html_url: `https://github.com/${repository}/actions/runs/71/job/71` }] : getChecks(repository, revision);
+  f.options.getCheckRuns = (repository, revision) =>
+    repository === platform.repository && revision === PLATFORM_RECOVERY.source_head
+      ? [
+          {
+            id: 71,
+            head_sha: revision,
+            name: platform.observed_default_branch_evidence.required_context,
+            app: { id: platform.observed_default_branch_evidence.integration_id },
+            conclusion: "failure",
+            html_url: `https://github.com/${repository}/actions/runs/71/job/71`,
+          },
+        ]
+      : getChecks(repository, revision);
   const getHead = f.options.getDefaultBranchHead;
-  f.options.getDefaultBranchHead = async (repository, branch) => repository === f.collateral.repository
-    ? f.collateral.observed_default_branch_evidence.revision
-    : repository === platform.repository ? PLATFORM_RECOVERY.source_head : getHead(repository, branch);
+  f.options.getDefaultBranchHead = async (repository, branch) =>
+    repository === f.collateral.repository
+      ? f.collateral.observed_default_branch_evidence.revision
+      : repository === platform.repository
+        ? PLATFORM_RECOVERY.source_head
+        : getHead(repository, branch);
   f.options.getDecisionComment = async (_repository, id) => {
     state.commentReads++;
     return id === 11 ? state.ownerComment : id === 12 ? state.executionComment : null;
@@ -439,8 +901,13 @@ function installSyntheticPlatform(f, record, accepted) {
     await adapters.getDecisionComment("agent-teams-ai/.github", 12);
     input.onVerifiedExecution(accepted);
     state.verifierCalls++;
-    return { repository_id: entry.repository_id, source_head: sourceHead, status: "recovery_pending",
-      semantics: "unverified", qualification: "unverified" };
+    return {
+      repository_id: entry.repository_id,
+      source_head: sourceHead,
+      status: "recovery_pending",
+      semantics: "unverified",
+      qualification: "unverified",
+    };
   };
   return { state, platform };
 }
@@ -448,10 +915,15 @@ function installSyntheticPlatform(f, record, accepted) {
 for (const crossing of ["final controller reread", "fleet head reread"]) {
   test(`outer admission rejects Platform expiry during ${crossing}`, async (t) => {
     const f = await fixture(t);
-    const platform = f.policy.repositories.find((row) => row.repository_id === PLATFORM_RECOVERY.repository_id);
+    const platform = f.policy.repositories.find(
+      (row) => row.repository_id === PLATFORM_RECOVERY.repository_id,
+    );
     const start = Date.parse(f.options.asOf);
     const stamp = (offset) => new Date(start + offset).toISOString().replace(/\.000Z$/u, "Z");
-    const record = { valid_from: stamp(-1_000), expires_at: stamp(crossing === "fleet head reread" ? 30_000 : 60_000) };
+    const record = {
+      valid_from: stamp(-1_000),
+      expires_at: stamp(crossing === "fleet head reread" ? 30_000 : 60_000),
+    };
     const accepted = { deadline: stamp(crossing === "final controller reread" ? 30_000 : 60_000) };
     let currentTime = f.options.asOf;
     f.options.clock = () => currentTime;
@@ -460,8 +932,14 @@ for (const crossing of ["final controller reread", "fleet head reread"]) {
     let finalPlatformReads = 0;
     f.options.getDefaultBranchHead = async (repository, branch) => {
       const result = await getHead(repository, branch);
-      if (repository === platform.repository && state.verifierCalls > 0 && ++finalPlatformReads === 2 &&
-        crossing === "fleet head reread") { currentTime = record.expires_at; }
+      if (
+        repository === platform.repository &&
+        state.verifierCalls > 0 &&
+        ++finalPlatformReads === 2 &&
+        crossing === "fleet head reread"
+      ) {
+        currentTime = record.expires_at;
+      }
       return result;
     };
     if (crossing === "final controller reread") {
@@ -469,23 +947,34 @@ for (const crossing of ["final controller reread", "fleet head reread"]) {
       let calls = 0;
       f.options.verifyController = async (...args) => {
         const result = await verify(...args);
-        if (++calls === 2) { currentTime = accepted.deadline; }
+        if (++calls === 2) {
+          currentTime = accepted.deadline;
+        }
         return result;
       };
     }
     await assert.rejects(f.run(), /Platform authority or execution expired/u);
     assert.equal(state.verifierCalls, 2);
-    if (crossing === "fleet head reread") { assert.ok(finalPlatformReads >= 2); }
+    if (crossing === "fleet head reread") {
+      assert.ok(finalPlatformReads >= 2);
+    }
   });
 }
 
 test("outer admission retains Platform recovery after final authorization rereads", async (t) => {
   const f = await fixture(t);
-  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
-  const { state } = installSyntheticPlatform(f,
-    { valid_from: stamp(-1_000), expires_at: stamp(60_000) }, { deadline: stamp(60_000) });
+  const stamp = (offset) =>
+    new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const { state } = installSyntheticPlatform(
+    f,
+    { valid_from: stamp(-1_000), expires_at: stamp(60_000) },
+    { deadline: stamp(60_000) },
+  );
   const report = await f.run();
-  assert.equal(report.recovery_pending.some((row) => row.repository_id === PLATFORM_RECOVERY.repository_id), true);
+  assert.equal(
+    report.recovery_pending.some((row) => row.repository_id === PLATFORM_RECOVERY.repository_id),
+    true,
+  );
   assert.equal(state.verifierCalls, 2);
   assert.equal(state.commentReads, 6);
   assert.equal(state.permissionReads, 2);
@@ -495,33 +984,52 @@ for (const crossing of ["fleet head reread", "final controller reread"]) {
   for (const revoked of ["owner comment", "execution comment", "admin permission"]) {
     test(`outer admission rejects ${revoked} revocation during ${crossing}`, async (t) => {
       const f = await fixture(t);
-      const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
-      const { state, platform } = installSyntheticPlatform(f,
-        { valid_from: stamp(-1_000), expires_at: stamp(60_000) }, { deadline: stamp(60_000) });
+      const stamp = (offset) =>
+        new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+      const { state, platform } = installSyntheticPlatform(
+        f,
+        { valid_from: stamp(-1_000), expires_at: stamp(60_000) },
+        { deadline: stamp(60_000) },
+      );
       let revokedDuringAwait = false;
       const revoke = () => {
         revokedDuringAwait = true;
-        if (revoked === "owner comment") state.ownerComment = { ...state.ownerComment, body: "revoked" };
-        if (revoked === "execution comment") state.executionComment = { ...state.executionComment, body: "revoked" };
-        if (revoked === "admin permission") state.permission = { ...state.permission, permission: "read" };
+        if (revoked === "owner comment")
+          state.ownerComment = { ...state.ownerComment, body: "revoked" };
+        if (revoked === "execution comment")
+          state.executionComment = { ...state.executionComment, body: "revoked" };
+        if (revoked === "admin permission")
+          state.permission = { ...state.permission, permission: "read" };
       };
       if (crossing === "fleet head reread") {
         const getHead = f.options.getDefaultBranchHead;
         f.options.getDefaultBranchHead = async (repository, branch) => {
           const result = await getHead(repository, branch);
-          if (repository === platform.repository && state.verifierCalls === 2 && !revokedDuringAwait) { revoke(); }
+          if (
+            repository === platform.repository &&
+            state.verifierCalls === 2 &&
+            !revokedDuringAwait
+          ) {
+            revoke();
+          }
           return result;
         };
       } else {
         const verify = f.options.verifyController;
         f.options.verifyController = async (...args) => {
           const result = await verify(...args);
-          if (f.controllerCalls() === 2) { revoke(); }
+          if (f.controllerCalls() === 2) {
+            revoke();
+          }
           return result;
         };
       }
-      await assert.rejects(f.run(), revoked === "admin permission"
-        ? /lost current admin authority after the fleet audit/u : /decision comments changed after the fleet audit/u);
+      await assert.rejects(
+        f.run(),
+        revoked === "admin permission"
+          ? /lost current admin authority after the fleet audit/u
+          : /decision comments changed after the fleet audit/u,
+      );
       assert.equal(state.verifierCalls, 2);
       assert.equal(revokedDuringAwait, true);
     });
@@ -541,20 +1049,29 @@ test("historical fixture stays pinned across unrelated checkout registry appends
   successor.rollback_to = [];
   successor.record_digest = cohortRecordDigest(successor);
   laterRegistry.cohorts.push(successor);
-  const publication = structuredClone(laterRegistry.events.find((event) =>
-    event.cohort_id === successor.upgrade_from[0] && event.state === "PUBLISHED_UNQUALIFIED"));
+  const publication = structuredClone(
+    laterRegistry.events.find(
+      (event) =>
+        event.cohort_id === successor.upgrade_from[0] && event.state === "PUBLISHED_UNQUALIFIED",
+    ),
+  );
   publication.cohort_id = successor.cohort_id;
   publication.sequence = laterRegistry.events.length + 1;
   publication.previous_event_digest = laterRegistry.events.at(-1).event_digest;
   publication.event_digest = cohortEventDigest(publication);
   laterRegistry.events.push(publication);
-  const schema = JSON.parse(await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base));
+  const schema = JSON.parse(
+    await readAdmissionBaseFile("governance/docs-qualified-cohorts.schema.json", base),
+  );
   validateDocsQualifiedCohorts(laterRegistry, schema, { asOf: f.options.asOf });
   assertDocsCohortAppendOnly(f.registry, laterRegistry);
   assert.ok(!f.registry.cohorts.some((row) => row.cohort_id === successor.cohort_id));
   assert.deepEqual(await readFile(f.checkoutRegistryPath), pinnedRegistryBytes);
   assert.equal(f.authorization.operation.registry_blob, recoveryBlob(pinnedRegistryBytes));
-  assert.equal(f.authorization.operation.exceptions_blob, recoveryBlob(await readAdmissionBaseFile(EXCEPTIONS_PATH, base)));
+  assert.equal(
+    f.authorization.operation.exceptions_blob,
+    recoveryBlob(await readAdmissionBaseFile(EXCEPTIONS_PATH, base)),
+  );
   await f.run();
   // Even a valid later registry must fail the real exact-base control if mixed in.
   await writeFile(f.checkoutRegistryPath, encode(laterRegistry));
@@ -566,85 +1083,199 @@ test("historical fixture stays pinned across unrelated checkout registry appends
 });
 
 const negatives = {
-  "PR-head incident proof": (f) => { f.options.readBaseFile = async (path, revision) => path === RECOVERY_AUTHORITY_PATH ? null : readAdmissionBaseFile(path, revision); },
-  "self-approved authority": (f) => { f.authorization.approved = true; },
-  "uncovered additional failed row": (f) => { const get = f.options.getCheckRuns;
-    f.options.getCheckRuns = async (repo, revision) => repo === "agent-teams-ai/agent-runtime" ? [] : get(repo, revision); },
-  "wrong current source head": (f) => { const get = f.options.getDefaultBranchHead;
-    f.options.getDefaultBranchHead = async (repo) => repo === f.collateral.repository ? "e".repeat(40) : get(repo); },
-  "wrong current target generation": (f) => { delete f.selected.desired_cohort_generation; },
-  "Token selection of TEST-only stable15": (f) => { Object.assign(f.collateral, { desired_cohort_id: f.selected.desired_cohort_id, desired_cohort_generation: 2, cohort_binding_status: "rollout_pending" }); },
-  "unknown full policy field": (f) => { f.policy.arbitrary = true; },
-  "revoked authority": (f) => { f.authorization.state = "revoked"; },
-  "cross-PR replay": (f) => { f.authorization.pull_number = 998; },
-  "late controller drift": (f) => { const verify = f.options.verifyController;
-    f.options.verifyController = async (execution) => { if (f.controllerCalls() === 1) f.centralPull.head.sha = "f".repeat(40); return verify(execution); }; },
+  "PR-head incident proof": (f) => {
+    f.options.readBaseFile = async (path, revision) =>
+      path === RECOVERY_AUTHORITY_PATH ? null : readAdmissionBaseFile(path, revision);
+  },
+  "self-approved authority": (f) => {
+    f.authorization.approved = true;
+  },
+  "uncovered additional failed row": (f) => {
+    const get = f.options.getCheckRuns;
+    f.options.getCheckRuns = async (repo, revision) =>
+      repo === "agent-teams-ai/agent-runtime" ? [] : get(repo, revision);
+  },
+  "wrong current source head": (f) => {
+    const get = f.options.getDefaultBranchHead;
+    f.options.getDefaultBranchHead = async (repo) =>
+      repo === f.collateral.repository ? "e".repeat(40) : get(repo);
+  },
+  "wrong current target generation": (f) => {
+    delete f.selected.desired_cohort_generation;
+  },
+  "Token selection of TEST-only stable15": (f) => {
+    Object.assign(f.collateral, {
+      desired_cohort_id: f.selected.desired_cohort_id,
+      desired_cohort_generation: 2,
+      cohort_binding_status: "rollout_pending",
+    });
+  },
+  "unknown full policy field": (f) => {
+    f.policy.arbitrary = true;
+  },
+  "revoked authority": (f) => {
+    f.authorization.state = "revoked";
+  },
+  "cross-PR replay": (f) => {
+    f.authorization.pull_number = 998;
+  },
+  "late controller drift": (f) => {
+    const verify = f.options.verifyController;
+    f.options.verifyController = async (execution) => {
+      if (f.controllerCalls() === 1) f.centralPull.head.sha = "f".repeat(40);
+      return verify(execution);
+    };
+  },
 };
 for (const [name, mutate] of Object.entries(negatives)) {
-  test(`full imported verifier rejects ${name}`, async (t) => { const f = await fixture(t); mutate(f); await assert.rejects(f.run()); });
+  test(`full imported verifier rejects ${name}`, async (t) => {
+    const f = await fixture(t);
+    mutate(f);
+    await assert.rejects(f.run());
+  });
 }
-
 
 function successfulTarget(f, advance = false) {
   const original = structuredClone(f.selected);
   const targetId = advance ? "docs-2026-09-08-stable14" : f.selected.desired_cohort_id;
   const record = f.registry.cohorts.find((row) => row.cohort_id === targetId);
   const targetHead = "e".repeat(40);
-  const evidence = { ...original.observed_default_branch_evidence, revision: targetHead, check_run_id: 904,
-    check_run_url: `https://github.com/${original.repository}/actions/runs/900/job/904`, workflow_run_id: 900,
-    caller_workflow_digest: record.assets.caller_workflow.rendered_digest, observed_at: "2026-09-08T18:00:00Z" };
+  const evidence = {
+    ...original.observed_default_branch_evidence,
+    revision: targetHead,
+    check_run_id: 904,
+    check_run_url: `https://github.com/${original.repository}/actions/runs/900/job/904`,
+    workflow_run_id: 900,
+    caller_workflow_digest: record.assets.caller_workflow.rendered_digest,
+    observed_at: "2026-09-08T18:00:00Z",
+  };
   if (advance) {
     const packageByName = new Map(record.packages.map((pkg) => [pkg.name, pkg.version]));
-    Object.assign(f.selected, { desired_cohort_id: targetId, observed_cohort_id: targetId, observed_cohort_generation: 2,
+    Object.assign(f.selected, {
+      desired_cohort_id: targetId,
+      observed_cohort_id: targetId,
+      observed_cohort_generation: 2,
       observed_cohort_record_digest: record.record_digest,
-      observed_cohort_event_digest: f.registry.events.find((event) => event.cohort_id === targetId && event.state === "QUALIFIED").event_digest,
-      cohort_binding_status: "bound", observed_default_branch_evidence: evidence,
+      observed_cohort_event_digest: f.registry.events.find(
+        (event) => event.cohort_id === targetId && event.state === "QUALIFIED",
+      ).event_digest,
+      cohort_binding_status: "bound",
+      observed_default_branch_evidence: evidence,
       exact_package_version: packageByName.get("@agent-teams/docs-protocol"),
-      exact_foundation_version: packageByName.get("@agent-teams/engineering-foundation"), reusable_workflow_revision: record.reusable_workflow.revision,
-      exact_cohort_v2_packages: Object.fromEntries(["repository-mutation", "document-authoring", "docs-protocol", "docs-protocol-agent-teams", "engineering-foundation"]
-        .map((name) => [name.replaceAll("-", "_"), packageByName.get(`@agent-teams/${name}`)])) });
+      exact_foundation_version: packageByName.get("@agent-teams/engineering-foundation"),
+      reusable_workflow_revision: record.reusable_workflow.revision,
+      exact_cohort_v2_packages: Object.fromEntries(
+        [
+          "repository-mutation",
+          "document-authoring",
+          "docs-protocol",
+          "docs-protocol-agent-teams",
+          "engineering-foundation",
+        ].map((name) => [name.replaceAll("-", "_"), packageByName.get(`@agent-teams/${name}`)]),
+      ),
+    });
     f.selected.qualification.observed_revision = targetHead;
     f.bindOperation("observation");
   }
   const priorOptions = { ...f.options };
-  f.options.getDefaultBranchHead = async (repo) => repo === original.repository ? targetHead : priorOptions.getDefaultBranchHead(repo);
-  f.options.getCheckRuns = async (repo, revision) => repo === original.repository ? [{ id: revision === targetHead ? 904 : original.observed_default_branch_evidence.check_run_id,
-    head_sha: revision, name: evidence.required_context, app: { id: evidence.integration_id }, conclusion: "success",
-    html_url: revision === targetHead ? evidence.check_run_url : original.observed_default_branch_evidence.check_run_url }] : priorOptions.getCheckRuns(repo, revision);
+  f.options.getDefaultBranchHead = async (repo) =>
+    repo === original.repository ? targetHead : priorOptions.getDefaultBranchHead(repo);
+  f.options.getCheckRuns = async (repo, revision) =>
+    repo === original.repository
+      ? [
+          {
+            id:
+              revision === targetHead
+                ? 904
+                : original.observed_default_branch_evidence.check_run_id,
+            head_sha: revision,
+            name: evidence.required_context,
+            app: { id: evidence.integration_id },
+            conclusion: "success",
+            html_url:
+              revision === targetHead
+                ? evidence.check_run_url
+                : original.observed_default_branch_evidence.check_run_url,
+          },
+        ]
+      : priorOptions.getCheckRuns(repo, revision);
   f.options.getWorkflowRun = async (repo, id) => {
     if (repo !== original.repository) return priorOptions.getWorkflowRun(repo, id);
-    const binding = id === 900 ? record : f.registry.cohorts.find((row) => row.cohort_id === original.observed_cohort_id);
+    const binding =
+      id === 900
+        ? record
+        : f.registry.cohorts.find((row) => row.cohort_id === original.observed_cohort_id);
     const workflow = binding.reusable_workflow;
-    return { id, workflow_id: evidence.workflow_id, run_attempt: 1, head_sha: id === 900 ? targetHead : original.observed_default_branch_evidence.revision,
-      head_branch: "main", path: original.caller_workflow_path, event: "push", status: "completed", conclusion: "success",
+    return {
+      id,
+      workflow_id: evidence.workflow_id,
+      run_attempt: 1,
+      head_sha: id === 900 ? targetHead : original.observed_default_branch_evidence.revision,
+      head_branch: "main",
+      path: original.caller_workflow_path,
+      event: "push",
+      status: "completed",
+      conclusion: "success",
       repository: { id: original.repository_id, full_name: repo },
-      referenced_workflows: [{ sha: workflow.revision, path: `${workflow.repository}/${workflow.path}@${workflow.revision}` }] };
+      referenced_workflows: [
+        {
+          sha: workflow.revision,
+          path: `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+        },
+      ],
+    };
   };
-  f.options.getWorkflowJobs = async (repo, id, attempt) => repo === original.repository ?
-    ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"].map((role, index) => ({ id: 901 + index,
-      run_id: 900, run_attempt: 1, head_sha: targetHead, name: `docs-protocol / ${role}`, status: "completed", conclusion: "success",
-      html_url: `https://github.com/${repo}/actions/runs/900/job/${901 + index}`,
-      steps: successfulSteps(role, record.cohort_generation) })) : priorOptions.getWorkflowJobs(repo, id, attempt);
+  f.options.getWorkflowJobs = async (repo, id, attempt) =>
+    repo === original.repository
+      ? [
+          "trusted-authorize",
+          "trusted-structural",
+          "trusted-qualification",
+          "docs-protocol-check",
+        ].map((role, index) => ({
+          id: 901 + index,
+          run_id: 900,
+          run_attempt: 1,
+          head_sha: targetHead,
+          name: `docs-protocol / ${role}`,
+          status: "completed",
+          conclusion: "success",
+          html_url: `https://github.com/${repo}/actions/runs/900/job/${901 + index}`,
+          steps: successfulSteps(role, record.cohort_generation),
+        }))
+      : priorOptions.getWorkflowJobs(repo, id, attempt);
   f.options.readRepositoryFile = async (repo, path, revision) => {
     if (repo !== original.repository) return priorOptions.readRepositoryFile(repo, path, revision);
     const id = revision === targetHead ? targetId : original.observed_cohort_id;
-    return path === "architecture/foundation/docs-consumer-integration.json" ? encode({ schemaVersion: record.cohort_generation === 2 ? 3 : 2 }) : path.endsWith("managed-state.json") ? f.projectionFor(original, id) : caller(f.registry.cohorts.find((row) => row.cohort_id === id));
+    return path === "architecture/foundation/docs-consumer-integration.json"
+      ? encode({ schemaVersion: record.cohort_generation === 2 ? 3 : 2 })
+      : path.endsWith("managed-state.json")
+        ? f.projectionFor(original, id)
+        : caller(f.registry.cohorts.find((row) => row.cohort_id === id));
   };
   return { original, targetHead, targetId };
 }
 
 test("full imported selected stable15 success remains separate from historical observed stable9.1", async (t) => {
-  const f = await fixture(t); const { original, targetId } = successfulTarget(f);
+  const f = await fixture(t);
+  const { original, targetId } = successfulTarget(f);
   const report = await f.run();
-  assert.equal(report.current_verified.find((row) => row.repository_id === f.selected.repository_id).cohort_id, targetId);
+  assert.equal(
+    report.current_verified.find((row) => row.repository_id === f.selected.repository_id).cohort_id,
+    targetId,
+  );
   assert.equal(f.selected.observed_cohort_id, original.observed_cohort_id);
   assert.equal(report.recovery_pending.length, 1);
 });
 
 test("full imported observation finalizes only the base-selected target while collateral remains pending", async (t) => {
-  const f = await fixture(t); const { targetId, targetHead } = successfulTarget(f, true);
+  const f = await fixture(t);
+  const { targetId, targetHead } = successfulTarget(f, true);
   const report = await f.run();
-  assert.equal(report.current_verified.find((row) => row.repository_id === f.selected.repository_id).revision, targetHead);
+  assert.equal(
+    report.current_verified.find((row) => row.repository_id === f.selected.repository_id).revision,
+    targetHead,
+  );
   assert.equal(f.selected.observed_cohort_id, targetId);
   assert.equal(report.recovery.authorization_id, "synthetic-integration");
   assert.equal(report.recovery_pending.length, 1);
@@ -652,10 +1283,15 @@ test("full imported observation finalizes only the base-selected target while co
 
 for (const conclusion of ["failure", "skipped"]) {
   test(`full imported observation rejects ${conclusion} target qualification`, async (t) => {
-    const f = await fixture(t); successfulTarget(f, true);
+    const f = await fixture(t);
+    successfulTarget(f, true);
     const get = f.options.getWorkflowJobs;
-    f.options.getWorkflowJobs = async (repo, id, attempt) => (await get(repo, id, attempt)).map((job) =>
-      repo === f.selected.repository && job.name.endsWith("trusted-qualification") ? { ...job, conclusion } : job);
+    f.options.getWorkflowJobs = async (repo, id, attempt) =>
+      (await get(repo, id, attempt)).map((job) =>
+        repo === f.selected.repository && job.name.endsWith("trusted-qualification")
+          ? { ...job, conclusion }
+          : job,
+      );
     await assert.rejects(f.run(), /target trusted\/semantic job/u);
   });
 }
@@ -666,13 +1302,26 @@ for (const advance of [false, true]) {
   for (const late of [false, true]) {
     for (const conclusion of ["success", "failure", "cancelled", null]) {
       test(`current repeated check: advance=${advance}, late=${late}, conclusion=${conclusion}`, async (t) => {
-        const f = await fixture(t); const { targetHead } = successfulTarget(f, advance);
-        const get = f.options.getCheckRuns; let reads = 0;
+        const f = await fixture(t);
+        const { targetHead } = successfulTarget(f, advance);
+        const get = f.options.getCheckRuns;
+        let reads = 0;
         f.options.getCheckRuns = async (repo, revision) => {
           const checks = await get(repo, revision);
-          if (repo === f.selected.repository && revision === targetHead && ++reads > (late ? (advance ? 2 : 1) : 0)) {
-            return [...checks, { ...checks[0], id: 903, conclusion,
-              html_url: `https://github.com/${repo}/actions/runs/899/job/903` }];
+          if (
+            repo === f.selected.repository &&
+            revision === targetHead &&
+            ++reads > (late ? (advance ? 2 : 1) : 0)
+          ) {
+            return [
+              ...checks,
+              {
+                ...checks[0],
+                id: 903,
+                conclusion,
+                html_url: `https://github.com/${repo}/actions/runs/899/job/903`,
+              },
+            ];
           }
           return checks;
         };
@@ -687,27 +1336,44 @@ for (const advance of [false, true]) {
 }
 
 test("skipped check on the same head is not competing admission evidence", async (t) => {
-  const f = await fixture(t); const { targetHead } = successfulTarget(f, true);
+  const f = await fixture(t);
+  const { targetHead } = successfulTarget(f, true);
   const get = f.options.getCheckRuns;
   f.options.getCheckRuns = async (repo, revision) => {
     const checks = await get(repo, revision);
     return repo === f.selected.repository && revision === targetHead
-      ? [...checks, { ...checks[0], id: 1904, conclusion: "skipped",
-        html_url: `https://github.com/${repo}/actions/runs/1900/job/1904` }] : checks;
+      ? [
+          ...checks,
+          {
+            ...checks[0],
+            id: 1904,
+            conclusion: "skipped",
+            html_url: `https://github.com/${repo}/actions/runs/1900/job/1904`,
+          },
+        ]
+      : checks;
   };
   const result = await f.run();
   assert.ok(result.current_verified.some((row) => row.revision === targetHead));
 });
 
 test("latest attempt replaces an earlier check from the same workflow run", async (t) => {
-  const f = await fixture(t); const { targetHead } = successfulTarget(f, true);
+  const f = await fixture(t);
+  const { targetHead } = successfulTarget(f, true);
   const get = f.options.getCheckRuns;
   f.options.getCheckRuns = async (repo, revision) => {
     const checks = await get(repo, revision);
     if (repo !== f.selected.repository || revision !== targetHead) return checks;
     const current = checks[0];
-    return [{ ...current, id: current.id - 1, conclusion: "failure",
-      html_url: current.html_url.replace(/\/job\/\d+$/u, `/job/${current.id - 1}`) }, current];
+    return [
+      {
+        ...current,
+        id: current.id - 1,
+        conclusion: "failure",
+        html_url: current.html_url.replace(/\/job\/\d+$/u, `/job/${current.id - 1}`),
+      },
+      current,
+    ];
   };
   const result = await f.run();
   assert.ok(result.current_verified.some((row) => row.revision === targetHead));
@@ -715,13 +1381,22 @@ test("latest attempt replaces an earlier check from the same workflow run", asyn
 
 for (const field of ["head_sha", "name", "app"]) {
   test(`different current check ${field} does not create context ambiguity`, async (t) => {
-    const f = await fixture(t); const { targetHead } = successfulTarget(f, true);
+    const f = await fixture(t);
+    const { targetHead } = successfulTarget(f, true);
     const get = f.options.getCheckRuns;
     f.options.getCheckRuns = async (repo, revision) => {
       const checks = await get(repo, revision);
       return repo === f.selected.repository && revision === targetHead
-        ? [...checks, { ...checks[0], id: 1904, conclusion: "failure",
-          [field]: field === "app" ? { id: 999 } : "unrelated" }] : checks;
+        ? [
+            ...checks,
+            {
+              ...checks[0],
+              id: 1904,
+              conclusion: "failure",
+              [field]: field === "app" ? { id: 999 } : "unrelated",
+            },
+          ]
+        : checks;
     };
     const result = await f.run();
     assert.ok(result.current_verified.some((row) => row.revision === targetHead));
@@ -729,12 +1404,15 @@ for (const field of ["head_sha", "name", "app"]) {
 }
 
 test("historical recorded success remains valid despite a later failed check at that historical revision", async (t) => {
-  const f = await fixture(t); const { original } = successfulTarget(f, true);
+  const f = await fixture(t);
+  const { original } = successfulTarget(f, true);
   const get = f.options.getCheckRuns;
   f.options.getCheckRuns = async (repo, revision) => {
     const checks = await get(repo, revision);
-    return repo === original.repository && revision === original.observed_default_branch_evidence.revision
-      ? [...checks, { ...checks[0], id: 1904, conclusion: "failure" }] : checks;
+    return repo === original.repository &&
+      revision === original.observed_default_branch_evidence.revision
+      ? [...checks, { ...checks[0], id: 1904, conclusion: "failure" }]
+      : checks;
   };
   assert.equal((await f.run()).recovery_pending.length, 1);
 });
@@ -752,25 +1430,40 @@ test("ordinary bootstrap_pending first admission accepts a valid null-observatio
   assert.ok(result.current_verified.some((r) => r.repository_id === initial.repository_id));
 });
 
-for (const kind of ["missing check", "failed check", "bound missing history", "partial bootstrap history", "wrong selected target", "moving target"]) {
+for (const kind of [
+  "missing check",
+  "failed check",
+  "bound missing history",
+  "partial bootstrap history",
+  "wrong selected target",
+  "moving target",
+]) {
   test(`first admission rejects ${kind}`, async (t) => {
     const { f, initial, run } = await bootstrapFixture(t);
-    if (kind === "bound missing history") { initial.admission_status = "admitted"; initial.cohort_binding_status = "bound"; }
-    if (kind === "partial bootstrap history") initial.observed_cohort_record_digest = "sha256:" + "0".repeat(64);
+    if (kind === "bound missing history") {
+      initial.admission_status = "admitted";
+      initial.cohort_binding_status = "bound";
+    }
+    if (kind === "partial bootstrap history")
+      initial.observed_cohort_record_digest = "sha256:" + "0".repeat(64);
     if (kind === "wrong selected target") initial.desired_cohort_id = "docs-2026-09-08-stable15";
     if (kind === "moving target") {
       const get = f.options.getDefaultBranchHead;
-      f.options.getDefaultBranchHead = async (repo) => repo === initial.repository ? "f".repeat(40) : get(repo);
+      f.options.getDefaultBranchHead = async (repo) =>
+        repo === initial.repository ? "f".repeat(40) : get(repo);
     }
     if (["missing check", "failed check"].includes(kind)) {
       const get = f.options.getCheckRuns;
-      f.options.getCheckRuns = async (repo, rev) => repo !== initial.repository ? get(repo, rev)
-        : kind === "missing check" ? [] : (await get(repo, rev)).map((c) => ({ ...c, conclusion: "failure" }));
+      f.options.getCheckRuns = async (repo, rev) =>
+        repo !== initial.repository
+          ? get(repo, rev)
+          : kind === "missing check"
+            ? []
+            : (await get(repo, rev)).map((c) => ({ ...c, conclusion: "failure" }));
     }
     await assert.rejects(run(), /check|success|history|historical|selected target|default head/i);
   });
 }
-
 
 test("bootstrap accepts an explicitly null observed generation allowed by the schema", async (t) => {
   const { initial, run } = await bootstrapFixture(t);
@@ -784,25 +1477,55 @@ test("bootstrap accepts an explicitly null observed generation allowed by the sc
 async function firstBinding(t, generation = 2, schemaVersion = generation === 2 ? 3 : 2) {
   const f = await fixture(t);
   if (generation === 2) successfulTarget(f, true);
-  const selected = generation === 2 ? f.selected : f.policy.repositories.find(r => r.repository.endsWith('/extension-foundation'));
+  const selected =
+    generation === 2
+      ? f.selected
+      : f.policy.repositories.find((r) => r.repository.endsWith("/extension-foundation"));
   const basePolicy = structuredClone(f.policy);
-  const prior = basePolicy.repositories.find(r => r.repository_id === selected.repository_id);
-  prior.admission_status = 'admission_candidate'; prior.cohort_binding_status = 'bootstrap_pending';
-  for (const key of ['observed_cohort_id', 'observed_cohort_record_digest', 'observed_cohort_event_digest',
-    'exact_package_version', 'exact_foundation_version', 'reusable_workflow_revision', 'observed_default_branch_evidence']) prior[key] = null;
-  delete prior.observed_cohort_generation; delete prior.exact_cohort_v2_packages;
-  prior.qualification = { status: 'not_qualified', observed_revision: null, evidence_paths: [] };
-  const read = async name => JSON.parse(await readAdmissionBaseFile(`governance/${name}.json`, base));
-  const [policySchema, schema, exceptions, security] = await Promise.all(['docs-protocol-policy-v2.schema',
-    'docs-qualified-cohorts.schema', 'docs-protocol-exceptions', 'code-security-defaults'].map(read));
-  const validate = () => { for (const p of [basePolicy, f.policy]) {
-    validateDocsProtocolPolicy(p, policySchema); validateDocsGovernanceReferences(f.registry, exceptions, p, security, { asOf: f.options.asOf });
-  } };
+  const prior = basePolicy.repositories.find((r) => r.repository_id === selected.repository_id);
+  prior.admission_status = "admission_candidate";
+  prior.cohort_binding_status = "bootstrap_pending";
+  for (const key of [
+    "observed_cohort_id",
+    "observed_cohort_record_digest",
+    "observed_cohort_event_digest",
+    "exact_package_version",
+    "exact_foundation_version",
+    "reusable_workflow_revision",
+    "observed_default_branch_evidence",
+  ])
+    prior[key] = null;
+  delete prior.observed_cohort_generation;
+  delete prior.exact_cohort_v2_packages;
+  prior.qualification = { status: "not_qualified", observed_revision: null, evidence_paths: [] };
+  const read = async (name) =>
+    JSON.parse(await readAdmissionBaseFile(`governance/${name}.json`, base));
+  const [policySchema, schema, exceptions, security] = await Promise.all(
+    [
+      "docs-protocol-policy-v2.schema",
+      "docs-qualified-cohorts.schema",
+      "docs-protocol-exceptions",
+      "code-security-defaults",
+    ].map(read),
+  );
+  const validate = () => {
+    for (const p of [basePolicy, f.policy]) {
+      validateDocsProtocolPolicy(p, policySchema);
+      validateDocsGovernanceReferences(f.registry, exceptions, p, security, {
+        asOf: f.options.asOf,
+      });
+    }
+  };
   validate();
-  f.options.getDefaultBranchHead = async repo => f.policy.repositories.find(r => r.repository === repo).observed_default_branch_evidence.revision;
+  f.options.getDefaultBranchHead = async (repo) =>
+    f.policy.repositories.find((r) => r.repository === repo).observed_default_branch_evidence
+      .revision;
   const readConsumer = f.options.readRepositoryFile;
   f.options.readRepositoryFile = async (repo, path, revision) => {
-    if (repo === selected.repository && path === "architecture/foundation/docs-consumer-integration.json") {
+    if (
+      repo === selected.repository &&
+      path === "architecture/foundation/docs-consumer-integration.json"
+    ) {
       assert.equal(revision, selected.observed_default_branch_evidence.revision);
       return encode({ schemaVersion });
     }
@@ -814,71 +1537,134 @@ async function firstBinding(t, generation = 2, schemaVersion = generation === 2 
     if (repo !== selected.repository) return jobs(repo, id, attempt);
     jobReads++;
     const evidence = selected.observed_default_branch_evidence;
-    return ['trusted-authorize', 'trusted-structural', 'trusted-qualification', 'docs-protocol-check'].map((role, index) => {
-      const jobId = role === 'docs-protocol-check' ? evidence.check_run_id : 901 + index;
-      return { id: jobId, run_id: evidence.workflow_run_id, run_attempt: 1, head_sha: evidence.revision,
-        name: `docs-protocol / ${role}`, status: 'completed', conclusion: 'success',
+    return [
+      "trusted-authorize",
+      "trusted-structural",
+      "trusted-qualification",
+      "docs-protocol-check",
+    ].map((role, index) => {
+      const jobId = role === "docs-protocol-check" ? evidence.check_run_id : 901 + index;
+      return {
+        id: jobId,
+        run_id: evidence.workflow_run_id,
+        run_attempt: 1,
+        head_sha: evidence.revision,
+        name: `docs-protocol / ${role}`,
+        status: "completed",
+        conclusion: "success",
         html_url: `https://github.com/${repo}/actions/runs/${evidence.workflow_run_id}/job/${jobId}`,
-        steps: successfulSteps(role, generation, schemaVersion) };
+        steps: successfulSteps(role, generation, schemaVersion),
+      };
     });
   };
-  return { f, selected, prior, basePolicy, validate, jobReads: () => jobReads,
-    run: (changed_files) => verifyDocsAdmissionEvidence(f.policy, f.registry, schema,
-      { ...f.options, basePolicy, ...(changed_files ? { recovery: { execution: { changed_files } } } : {}) }) };
+  return {
+    f,
+    selected,
+    prior,
+    basePolicy,
+    validate,
+    jobReads: () => jobReads,
+    run: (changed_files) =>
+      verifyDocsAdmissionEvidence(f.policy, f.registry, schema, {
+        ...f.options,
+        basePolicy,
+        ...(changed_files ? { recovery: { execution: { changed_files } } } : {}),
+      }),
+  };
 }
 
-test("policy admission checks changed consumer while direct fleet audit still catches collateral failure", async t => {
+test("policy admission checks changed consumer while direct fleet audit still catches collateral failure", async (t) => {
   const b = await firstBinding(t);
   b.f.options.fullFleetCurrent = false;
-  const collateral = b.f.policy.repositories.find(row => row.repository === "agent-teams-ai/agent-teams-platform");
+  const collateral = b.f.policy.repositories.find(
+    (row) => row.repository === "agent-teams-ai/agent-teams-platform",
+  );
   const newHead = "e".repeat(40);
   const getHead = b.f.options.getDefaultBranchHead;
   const getChecks = b.f.options.getCheckRuns;
-  b.f.options.getDefaultBranchHead = async repo => repo === collateral.repository ? newHead : getHead(repo);
-  b.f.options.getCheckRuns = async (repo, revision) => repo === collateral.repository && revision === newHead
-    ? [{ id: 999, head_sha: newHead, name: collateral.required_check_context,
-      app: { id: collateral.observed_default_branch_evidence.integration_id }, conclusion: "failure",
-      html_url: `https://github.com/${repo}/actions/runs/999/job/999` }]
-    : getChecks(repo, revision);
+  b.f.options.getDefaultBranchHead = async (repo) =>
+    repo === collateral.repository ? newHead : getHead(repo);
+  b.f.options.getCheckRuns = async (repo, revision) =>
+    repo === collateral.repository && revision === newHead
+      ? [
+          {
+            id: 999,
+            head_sha: newHead,
+            name: collateral.required_check_context,
+            app: { id: collateral.observed_default_branch_evidence.integration_id },
+            conclusion: "failure",
+            html_url: `https://github.com/${repo}/actions/runs/999/job/999`,
+          },
+        ]
+      : getChecks(repo, revision);
   const result = await b.run([POLICY_PATH]);
-  assert.deepEqual(result.current_verified.map(row => row.repository_id), [b.selected.repository_id]);
-  assert.ok(result.current_not_evaluated.some(row => row.repository_id === collateral.repository_id));
-  await assert.rejects(b.run(), /current default-branch head requires every decisive admitted check to succeed/u);
+  assert.deepEqual(
+    result.current_verified.map((row) => row.repository_id),
+    [b.selected.repository_id],
+  );
+  assert.ok(
+    result.current_not_evaluated.some((row) => row.repository_id === collateral.repository_id),
+  );
+  await assert.rejects(
+    b.run(),
+    /current default-branch head requires every decisive admitted check to succeed/u,
+  );
 });
 
-test("trusted policy-only PR scopes current checks after live controller validation", async t => {
+test("trusted policy-only PR scopes current checks after live controller validation", async (t) => {
   const f = await fixture(t);
   f.options.fullFleetCurrent = false;
   const result = await f.run();
-  assert.deepEqual(result.current_verified.map(row => row.repository_id), [f.selected.repository_id]);
+  assert.deepEqual(
+    result.current_verified.map((row) => row.repository_id),
+    [f.selected.repository_id],
+  );
   assert.equal(result.current_not_evaluated.length, 5);
   assert.deepEqual(result.recovery_pending, []);
   assert.equal(f.controllerCalls(), 2);
 });
 
-test("checked-in unbound Platform authority leaves an unrelated policy-only PR scoped", async t => {
+test("checked-in unbound Platform authority leaves an unrelated policy-only PR scoped", async (t) => {
   const f = await fixture(t);
   f.options.fullFleetCurrent = false;
   const template = await readFile("governance/docs-platform-admission-recovery.json");
   assert.equal(JSON.parse(template).state, "unbound");
   let authorityBytes = template;
   const readBase = f.options.readBaseFile;
-  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
-    ? authorityBytes : readBase(path, revision);
-  const platform = f.policy.repositories.find(row => row.repository_id === PLATFORM_RECOVERY.repository_id);
+  f.options.readBaseFile = (path, revision) =>
+    path === "governance/docs-platform-admission-recovery.json"
+      ? authorityBytes
+      : readBase(path, revision);
+  const platform = f.policy.repositories.find(
+    (row) => row.repository_id === PLATFORM_RECOVERY.repository_id,
+  );
   const getHead = f.options.getDefaultBranchHead;
   const getChecks = f.options.getCheckRuns;
-  f.options.getDefaultBranchHead = (repository, branch) => repository === platform.repository
-    ? PLATFORM_RECOVERY.source_head : getHead(repository, branch);
-  f.options.getCheckRuns = (repository, revision) => repository === platform.repository &&
-    revision === PLATFORM_RECOVERY.source_head
-    ? [{ id: 71, head_sha: revision, name: platform.observed_default_branch_evidence.required_context,
-      app: { id: platform.observed_default_branch_evidence.integration_id }, conclusion: "failure",
-      html_url: `https://github.com/${repository}/actions/runs/71/job/71` }]
-    : getChecks(repository, revision);
+  f.options.getDefaultBranchHead = (repository, branch) =>
+    repository === platform.repository
+      ? PLATFORM_RECOVERY.source_head
+      : getHead(repository, branch);
+  f.options.getCheckRuns = (repository, revision) =>
+    repository === platform.repository && revision === PLATFORM_RECOVERY.source_head
+      ? [
+          {
+            id: 71,
+            head_sha: revision,
+            name: platform.observed_default_branch_evidence.required_context,
+            app: { id: platform.observed_default_branch_evidence.integration_id },
+            conclusion: "failure",
+            html_url: `https://github.com/${repository}/actions/runs/71/job/71`,
+          },
+        ]
+      : getChecks(repository, revision);
   const report = await f.run();
-  assert.deepEqual(report.current_verified.map(row => row.repository_id), [f.selected.repository_id]);
-  assert.ok(report.current_not_evaluated.some(row => row.repository_id === platform.repository_id));
+  assert.deepEqual(
+    report.current_verified.map((row) => row.repository_id),
+    [f.selected.repository_id],
+  );
+  assert.ok(
+    report.current_not_evaluated.some((row) => row.repository_id === platform.repository_id),
+  );
   assert.deepEqual(report.recovery_pending, []);
   assert.equal(f.controllerCalls(), 2);
   authorityBytes = encode({ ...JSON.parse(template), proof: { revision: "f".repeat(40) } });
@@ -893,28 +1679,40 @@ test("checked-in unbound Platform authority leaves an unrelated policy-only PR s
   await assert.rejects(f.run(), /base-owned Platform recovery authority/u);
 });
 
-test("expired active Platform authority audits the full healthy fleet without consuming recovery", async t => {
+test("expired active Platform authority audits the full healthy fleet without consuming recovery", async (t) => {
   const f = await fixture(t);
   f.options.fullFleetCurrent = false;
-  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
-  const active = stagedSyntheticPlatformRecord({ valid_from: stamp(-60_000), expires_at: stamp(-1_000) });
+  const stamp = (offset) =>
+    new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const active = stagedSyntheticPlatformRecord({
+    valid_from: stamp(-60_000),
+    expires_at: stamp(-1_000),
+  });
   const readBase = f.options.readBaseFile;
-  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
-    ? encode(active) : readBase(path, revision);
+  f.options.readBaseFile = (path, revision) =>
+    path === "governance/docs-platform-admission-recovery.json"
+      ? encode(active)
+      : readBase(path, revision);
   const getHead = f.options.getDefaultBranchHead;
-  f.options.getDefaultBranchHead = (repository, branch) => repository === f.collateral.repository
-    ? f.collateral.observed_default_branch_evidence.revision : getHead(repository, branch);
+  f.options.getDefaultBranchHead = (repository, branch) =>
+    repository === f.collateral.repository
+      ? f.collateral.observed_default_branch_evidence.revision
+      : getHead(repository, branch);
   const report = await f.run();
   assert.equal(report.current_verified.length, 6);
   assert.deepEqual(report.current_not_evaluated, []);
   assert.deepEqual(report.recovery_pending, []);
 });
 
-test("expired active Platform authority refuses incident recovery", async t => {
+test("expired active Platform authority refuses incident recovery", async (t) => {
   const f = await fixture(t);
-  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
-  const { state, platform } = installSyntheticPlatform(f,
-    { valid_from: stamp(-60_000), expires_at: stamp(-1_000) }, { deadline: stamp(60_000) });
+  const stamp = (offset) =>
+    new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const { state, platform } = installSyntheticPlatform(
+    f,
+    { valid_from: stamp(-60_000), expires_at: stamp(-1_000) },
+    { deadline: stamp(60_000) },
+  );
   const getChecks = f.options.getCheckRuns;
   let platformCheckReads = 0;
   f.options.getCheckRuns = (repository, revision) => {
@@ -926,39 +1724,62 @@ test("expired active Platform authority refuses incident recovery", async t => {
   assert.equal(state.verifierCalls, 0);
 });
 
-test("active Platform authority still expands an unrelated policy-only PR to the remaining fleet", async t => {
+test("active Platform authority still expands an unrelated policy-only PR to the remaining fleet", async (t) => {
   const f = await fixture(t);
   f.options.fullFleetCurrent = false;
-  const stamp = (offset) => new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
-  const active = stagedSyntheticPlatformRecord({ valid_from: stamp(-1_000), expires_at: stamp(60_000) });
+  const stamp = (offset) =>
+    new Date(Date.parse(f.options.asOf) + offset).toISOString().replace(/\.000Z$/u, "Z");
+  const active = stagedSyntheticPlatformRecord({
+    valid_from: stamp(-1_000),
+    expires_at: stamp(60_000),
+  });
   const readBase = f.options.readBaseFile;
-  f.options.readBaseFile = (path, revision) => path === "governance/docs-platform-admission-recovery.json"
-    ? encode(active) : readBase(path, revision);
+  f.options.readBaseFile = (path, revision) =>
+    path === "governance/docs-platform-admission-recovery.json"
+      ? encode(active)
+      : readBase(path, revision);
   const getHead = f.options.getDefaultBranchHead;
-  f.options.getDefaultBranchHead = (repository, branch) => repository === f.collateral.repository
-    ? f.collateral.observed_default_branch_evidence.revision : getHead(repository, branch);
+  f.options.getDefaultBranchHead = (repository, branch) =>
+    repository === f.collateral.repository
+      ? f.collateral.observed_default_branch_evidence.revision
+      : getHead(repository, branch);
   const report = await f.run();
   assert.equal(report.current_verified.length, 6);
-  assert.ok(report.current_verified.some(row => row.repository_id === PLATFORM_RECOVERY.repository_id));
+  assert.ok(
+    report.current_verified.some((row) => row.repository_id === PLATFORM_RECOVERY.repository_id),
+  );
   assert.deepEqual(report.current_not_evaluated, []);
-  const unrelated = f.policy.repositories.find(row => row.repository === "agent-teams-ai/agent-runtime");
+  const unrelated = f.policy.repositories.find(
+    (row) => row.repository === "agent-teams-ai/agent-runtime",
+  );
   const failedHead = "f".repeat(40);
-  f.options.getDefaultBranchHead = (repository, branch) => repository === unrelated.repository
-    ? failedHead : getHead(repository, branch);
+  f.options.getDefaultBranchHead = (repository, branch) =>
+    repository === unrelated.repository ? failedHead : getHead(repository, branch);
   const getChecks = f.options.getCheckRuns;
-  f.options.getCheckRuns = async (repository, revision) => repository === unrelated.repository &&
-    revision === failedHead
-    ? [{ ...((await getChecks(repository, unrelated.observed_default_branch_evidence.revision))[0]),
-      head_sha: failedHead, conclusion: "failure" }]
-    : getChecks(repository, revision);
+  f.options.getCheckRuns = async (repository, revision) =>
+    repository === unrelated.repository && revision === failedHead
+      ? [
+          {
+            ...(
+              await getChecks(repository, unrelated.observed_default_branch_evidence.revision)
+            )[0],
+            head_sha: failedHead,
+            conclusion: "failure",
+          },
+        ]
+      : getChecks(repository, revision);
   await assert.rejects(f.run(), /Admission recovery: uncovered failure or changed source head/u);
 });
 
-test("affected-row scope fails closed on global, nonconsumer and incomplete changes", async t => {
+test("affected-row scope fails closed on global, nonconsumer and incomplete changes", async (t) => {
   const b = await firstBinding(t);
   const id = b.selected.repository_id;
   assert.deepEqual([...currentAdmissionScope(b.f.policy, b.basePolicy, [POLICY_PATH])], [id]);
-  for (const changed of [undefined, [], [POLICY_PATH, "governance/docs-protocol-exceptions.json"]]) {
+  for (const changed of [
+    undefined,
+    [],
+    [POLICY_PATH, "governance/docs-protocol-exceptions.json"],
+  ]) {
     assert.equal(currentAdmissionScope(b.f.policy, b.basePolicy, changed), null);
   }
   const global = structuredClone(b.f.policy);
@@ -970,52 +1791,81 @@ test("affected-row scope fails closed on global, nonconsumer and incomplete chan
 });
 
 for (const generation of [1, 2]) {
-  test(`bootstrap positive generation ${generation}: six current successes and zero recovery pending`, async t => {
-    const b = await firstBinding(t, generation); const result = await b.run();
-    assert.equal(result.current_verified.length, 6); assert.equal(result.recovery_pending.length, 0);
-    assert.ok(result.current_verified.some(r => r.repository_id === b.selected.repository_id));
+  test(`bootstrap positive generation ${generation}: six current successes and zero recovery pending`, async (t) => {
+    const b = await firstBinding(t, generation);
+    const result = await b.run();
+    assert.equal(result.current_verified.length, 6);
+    assert.equal(result.recovery_pending.length, 0);
+    assert.ok(result.current_verified.some((r) => r.repository_id === b.selected.repository_id));
     assert.ok(b.jobReads() > 0, "first admission must read target qualification and semantic jobs");
   });
 }
 
 const projectionNegatives = {
-  'wrong package integrity': p => { Object.values(p.packages)[0].integrity = 'sha512-forged'; },
-  'invented package version': p => { Object.values(p.packages)[0].version = '99.0.0'; },
-  'wrong generation': p => { p.schemaVersion = 1; },
-  'wrong repository': p => { p.repository.id = '999'; },
-  'forged asset digest': p => { p.assets.callerWorkflowDigest = 'sha256:' + 'f'.repeat(64); },
-  'wrong runtime': p => { p.runtime.node = '0.0.0'; },
+  "wrong package integrity": (p) => {
+    Object.values(p.packages)[0].integrity = "sha512-forged";
+  },
+  "invented package version": (p) => {
+    Object.values(p.packages)[0].version = "99.0.0";
+  },
+  "wrong generation": (p) => {
+    p.schemaVersion = 1;
+  },
+  "wrong repository": (p) => {
+    p.repository.id = "999";
+  },
+  "forged asset digest": (p) => {
+    p.assets.callerWorkflowDigest = "sha256:" + "f".repeat(64);
+  },
+  "wrong runtime": (p) => {
+    p.runtime.node = "0.0.0";
+  },
 };
 for (const [label, mutate] of Object.entries(projectionNegatives)) {
-  test(`REQUIRED bootstrap rejects ${label}`, async t => {
-    const b = await firstBinding(t); const read = b.f.options.readRepositoryFile;
+  test(`REQUIRED bootstrap rejects ${label}`, async (t) => {
+    const b = await firstBinding(t);
+    const read = b.f.options.readRepositoryFile;
     b.f.options.readRepositoryFile = async (repo, path, rev) => {
       const bytes = await read(repo, path, rev);
-      if (repo !== b.selected.repository || !path.endsWith('managed-state.json')) return bytes;
-      const p = JSON.parse(bytes); mutate(p); return Buffer.from(JSON.stringify(p));
+      if (repo !== b.selected.repository || !path.endsWith("managed-state.json")) return bytes;
+      const p = JSON.parse(bytes);
+      mutate(p);
+      return Buffer.from(JSON.stringify(p));
     };
     await assert.rejects(b.run(), /target|projection|Cohort|package|runtime/i);
   });
 }
-for (const mutation of ['missing jobs', 'failed qualification', 'skipped semantics', 'wrong runner', 'missing attempt']) {
-  test(`REQUIRED bootstrap rejects ${mutation}`, async t => {
+for (const mutation of [
+  "missing jobs",
+  "failed qualification",
+  "skipped semantics",
+  "wrong runner",
+  "missing attempt",
+]) {
+  test(`REQUIRED bootstrap rejects ${mutation}`, async (t) => {
     const b = await firstBinding(t);
-    if (['wrong runner','missing attempt'].includes(mutation)) {
+    if (["wrong runner", "missing attempt"].includes(mutation)) {
       const get = b.f.options.getWorkflowRun;
       b.f.options.getWorkflowRun = async (repo, id) => {
         const run = await get(repo, id);
         if (repo === b.selected.repository) {
-          if (mutation === 'wrong runner') run.referenced_workflows[0].sha = 'f'.repeat(40);
+          if (mutation === "wrong runner") run.referenced_workflows[0].sha = "f".repeat(40);
           else delete run.run_attempt;
-        } return run;
+        }
+        return run;
       };
     } else {
       const get = b.f.options.getWorkflowJobs;
       b.f.options.getWorkflowJobs = async (repo, id, attempt) => {
-        const jobs = await get(repo, id, attempt); if (repo !== b.selected.repository) return jobs;
-        if (mutation === 'missing jobs') return [];
-        if (mutation === 'failed qualification') jobs.find(j => j.name.endsWith('trusted-qualification')).conclusion = 'failure';
-        else jobs.find(j => j.name.endsWith('docs-protocol-check')).steps.forEach(s => s.conclusion = 'skipped');
+        const jobs = await get(repo, id, attempt);
+        if (repo !== b.selected.repository) return jobs;
+        if (mutation === "missing jobs") return [];
+        if (mutation === "failed qualification")
+          jobs.find((j) => j.name.endsWith("trusted-qualification")).conclusion = "failure";
+        else
+          jobs
+            .find((j) => j.name.endsWith("docs-protocol-check"))
+            .steps.forEach((s) => (s.conclusion = "skipped"));
         return jobs;
       };
     }
@@ -1023,8 +1873,22 @@ for (const mutation of ['missing jobs', 'failed qualification', 'skipped semanti
   });
 }
 
-for (const mode of ["selected-target", "final-observed", "first-binding-legacy", "first-binding-v2"]) {
-  for (const mutation of ["missing", "wrong-generation", "failure", "cancelled", "skipped", "in-progress", "duplicate", "duplicate-skipped"]) {
+for (const mode of [
+  "selected-target",
+  "final-observed",
+  "first-binding-legacy",
+  "first-binding-v2",
+]) {
+  for (const mutation of [
+    "missing",
+    "wrong-generation",
+    "failure",
+    "cancelled",
+    "skipped",
+    "in-progress",
+    "duplicate",
+    "duplicate-skipped",
+  ]) {
     test(`executed qualification rejects ${mutation}: ${mode}`, async (t) => {
       const generation = mode === "first-binding-legacy" ? 1 : 2;
       const b = mode.startsWith("first-binding") ? await firstBinding(t, generation) : null;
@@ -1041,277 +1905,980 @@ for (const mode of ["selected-target", "final-observed", "first-binding-legacy",
         if (mutation === "missing") job.steps = job.steps.filter((step) => step !== executed);
         else if (mutation === "wrong-generation") {
           executed.conclusion = "skipped";
-          job.steps = job.steps.filter((step) => step.name !== (generation === 2 ? legacyQualification : v2Qualification));
-          job.steps.push({ name: generation === 2 ? legacyQualification : v2Qualification, status: "completed", conclusion: "success" });
+          job.steps = job.steps.filter(
+            (step) => step.name !== (generation === 2 ? legacyQualification : v2Qualification),
+          );
+          job.steps.push({
+            name: generation === 2 ? legacyQualification : v2Qualification,
+            status: "completed",
+            conclusion: "success",
+          });
         } else if (mutation.startsWith("duplicate")) {
-          job.steps.push({ ...executed, conclusion: mutation === "duplicate" ? "success" : "skipped" });
+          job.steps.push({
+            ...executed,
+            conclusion: mutation === "duplicate" ? "success" : "skipped",
+          });
         } else if (mutation === "in-progress") executed.status = "in_progress";
         else executed.conclusion = mutation;
         return jobs;
       };
-      await assert.rejects(b ? b.run() : f.run(), /target qualification\/semantics did not actually execute successfully/u);
+      await assert.rejects(
+        b ? b.run() : f.run(),
+        /target qualification\/semantics did not actually execute successfully/u,
+      );
     });
   }
 }
 
-test("historical schema1 first binding accepts skipped qualification with successful controller and semantics", async t => {
+test("historical schema1 first binding accepts skipped qualification with successful controller and semantics", async (t) => {
   const b = await firstBinding(t, 1, 1);
   const result = await b.run();
   assert.equal(result.current_verified.length, 6);
   assert.equal(result.recovery_pending.length, 0);
 });
 
-
 test("supported pinned runners bind actual none, legacy, and cohort-v2 dispatch", async () => {
   const registry = JSON.parse(await readFile(REGISTRY_PATH));
-  for (const id of ["docs-2026-08-31-stable10", "docs-2026-09-08-stable14", "docs-2026-09-08-stable15"]) {
-    const record = registry.cohorts.find(row => row.cohort_id === id);
+  for (const id of [
+    "docs-2026-08-31-stable10",
+    "docs-2026-09-08-stable14",
+    "docs-2026-09-08-stable15",
+  ]) {
+    const record = registry.cohorts.find((row) => row.cohort_id === id);
     const { path, revision, blob_sha: blob } = record.reusable_workflow;
     const bytes = await readAdmissionBaseFile(path, revision);
     assert.equal(recoveryBlob(bytes), blob);
     const steps = YAML.parse(bytes.toString()).jobs["trusted-qualification"].steps;
-    const legacy = steps.filter(step => step.name === legacyQualification);
+    const legacy = steps.filter((step) => step.name === legacyQualification);
     assert.equal(legacy.length, 1);
     if (record.cohort_generation === 2) {
-      assert.equal(legacy[0].if, "needs.trusted-authorize.outputs.qualification-profile == 'legacy'");
-      assert.equal(steps.filter(step => step.name === v2Qualification).length, 1);
-      assert.equal(steps.find(step => step.name === v2Qualification).if,
-        "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'");
-      const authorization = (await readAdmissionBaseFile("scripts/verify-docs-consumer-gate.mjs", revision)).toString();
-      assert.ok(authorization.includes('const qualificationProfile = v2 ? "cohort-v2" : profile.schemaVersion === 2 ? "legacy" : "none";'));
+      assert.equal(
+        legacy[0].if,
+        "needs.trusted-authorize.outputs.qualification-profile == 'legacy'",
+      );
+      assert.equal(steps.filter((step) => step.name === v2Qualification).length, 1);
+      assert.equal(
+        steps.find((step) => step.name === v2Qualification).if,
+        "needs.trusted-authorize.outputs.qualification-profile == 'cohort-v2'",
+      );
+      const authorization = (
+        await readAdmissionBaseFile("scripts/verify-docs-consumer-gate.mjs", revision)
+      ).toString();
+      assert.ok(
+        authorization.includes(
+          'const qualificationProfile = v2 ? "cohort-v2" : profile.schemaVersion === 2 ? "legacy" : "none";',
+        ),
+      );
     } else {
-      assert.equal(steps.filter(step => step.name === v2Qualification).length, 0);
+      assert.equal(steps.filter((step) => step.name === v2Qualification).length, 0);
       assert.equal(legacy[0].if, "steps.qualification.outputs.enabled == 'true'");
-      const detector = steps.find(step => step.name === "Detect exact qualification contract version");
+      const detector = steps.find(
+        (step) => step.name === "Detect exact qualification contract version",
+      );
       assert.equal(detector.id, "qualification");
-      assert.ok(detector.run.includes('integration.schemaVersion !== 1 && integration.schemaVersion !== 2'));
+      assert.ok(
+        detector.run.includes("integration.schemaVersion !== 1 && integration.schemaVersion !== 2"),
+      );
       assert.ok(detector.run.includes('integration.schemaVersion === 2 ? "true" : "false"'));
-      assert.ok(detector.run.includes('/architecture/foundation/docs-consumer-integration.json'));
+      assert.ok(detector.run.includes("/architecture/foundation/docs-consumer-integration.json"));
     }
-    assert.equal(steps.filter(step => step.name === "Confirm current controller authority stayed stable through qualification").length, 1);
+    assert.equal(
+      steps.filter(
+        (step) =>
+          step.name === "Confirm current controller authority stayed stable through qualification",
+      ).length,
+      1,
+    );
   }
 });
 
 for (const field of ["qualification", "controller", "semantic"]) {
-  for (const mutation of ["missing", "failure", "cancelled", "in-progress", "duplicate", "wrong-branch"]) {
-    test(`historical schema1 rejects ${mutation} ${field}`, async t => {
+  for (const mutation of [
+    "missing",
+    "failure",
+    "cancelled",
+    "in-progress",
+    "duplicate",
+    "wrong-branch",
+  ]) {
+    test(`historical schema1 rejects ${mutation} ${field}`, async (t) => {
       const b = await firstBinding(t, 1, 1);
       const get = b.f.options.getWorkflowJobs;
       b.f.options.getWorkflowJobs = async (...args) => {
         const jobs = await get(...args);
         if (args[0] !== b.selected.repository) return jobs;
-        const job = jobs.find(job => job.name.endsWith(field === "semantic" ? " / docs-protocol-check" : " / trusted-qualification"));
-        const name = field === "qualification" ? legacyQualification : field === "controller"
-          ? "Confirm current controller authority stayed stable through qualification" : "Run repository semantic documentation gate";
-        const step = job.steps.find(step => step.name === name);
-        if (mutation === "missing") job.steps = job.steps.filter(item => item !== step);
+        const job = jobs.find((job) =>
+          job.name.endsWith(
+            field === "semantic" ? " / docs-protocol-check" : " / trusted-qualification",
+          ),
+        );
+        const name =
+          field === "qualification"
+            ? legacyQualification
+            : field === "controller"
+              ? "Confirm current controller authority stayed stable through qualification"
+              : "Run repository semantic documentation gate";
+        const step = job.steps.find((step) => step.name === name);
+        if (mutation === "missing") job.steps = job.steps.filter((item) => item !== step);
         else if (mutation === "duplicate") job.steps.push({ ...step });
         else if (mutation === "in-progress") step.status = "in_progress";
-        else step.conclusion = mutation === "wrong-branch" ? (field === "qualification" ? "success" : "skipped") : mutation;
+        else
+          step.conclusion =
+            mutation === "wrong-branch"
+              ? field === "qualification"
+                ? "success"
+                : "skipped"
+              : mutation;
         return jobs;
       };
-      await assert.rejects(b.run(), /target qualification\/semantics did not actually execute successfully/u);
+      await assert.rejects(
+        b.run(),
+        /target qualification\/semantics did not actually execute successfully/u,
+      );
     });
   }
 }
 
 for (const generation of [1, 2]) {
-  for (const contract of [null, {}, { schemaVersion: 0 }, { schemaVersion: "1" }, { schemaVersion: generation === 2 ? 1 : 3 }]) {
-    test(`immutable contract rejects invalid selector ${JSON.stringify(contract)} generation ${generation}`, async t => {
+  for (const contract of [
+    null,
+    {},
+    { schemaVersion: 0 },
+    { schemaVersion: "1" },
+    { schemaVersion: generation === 2 ? 1 : 3 },
+  ]) {
+    test(`immutable contract rejects invalid selector ${JSON.stringify(contract)} generation ${generation}`, async (t) => {
       const b = await firstBinding(t, generation);
       const read = b.f.options.readRepositoryFile;
-      b.f.options.readRepositoryFile = async (repo, path, revision) => repo === b.selected.repository &&
-        path === "architecture/foundation/docs-consumer-integration.json" ? encode(contract) : read(repo, path, revision);
+      b.f.options.readRepositoryFile = async (repo, path, revision) =>
+        repo === b.selected.repository &&
+        path === "architecture/foundation/docs-consumer-integration.json"
+          ? encode(contract)
+          : read(repo, path, revision);
       await assert.rejects(b.run());
     });
   }
 }
 
-for (const [generation, schemaVersion] of [[1, 1], [1, 2], [2, 3]]) {
+for (const [generation, schemaVersion] of [
+  [1, 1],
+  [1, 2],
+  [2, 3],
+]) {
   for (const mutation of ["success", "failure", "duplicate-skipped"]) {
-    test(`unselected qualification rejects ${mutation} schema ${schemaVersion}`, async t => {
+    test(`unselected qualification rejects ${mutation} schema ${schemaVersion}`, async (t) => {
       const b = await firstBinding(t, generation, schemaVersion);
       const get = b.f.options.getWorkflowJobs;
       b.f.options.getWorkflowJobs = async (...args) => {
         const jobs = await get(...args);
         if (args[0] !== b.selected.repository) return jobs;
-        const job = jobs.find(job => job.name.endsWith(" / trusted-qualification"));
+        const job = jobs.find((job) => job.name.endsWith(" / trusted-qualification"));
         const name = generation === 2 ? legacyQualification : v2Qualification;
-        job.steps = job.steps.filter(step => step.name !== name);
-        job.steps.push({ name, status: "completed", conclusion: mutation === "duplicate-skipped" ? "skipped" : mutation });
+        job.steps = job.steps.filter((step) => step.name !== name);
+        job.steps.push({
+          name,
+          status: "completed",
+          conclusion: mutation === "duplicate-skipped" ? "skipped" : mutation,
+        });
         if (mutation === "duplicate-skipped") job.steps.push({ ...job.steps.at(-1) });
         return jobs;
       };
-      await assert.rejects(b.run(), /target qualification\/semantics did not actually execute successfully/u);
+      await assert.rejects(
+        b.run(),
+        /target qualification\/semantics did not actually execute successfully/u,
+      );
     });
   }
 }
 
 const stable31Root = new URL("./fixtures/platform-stable31-pending-source/", import.meta.url);
 const { gunzipSync: stable31Gunzip } = await import("node:zlib");
-const stable31Bytes = async path => {
-  const zipped = path.endsWith(".mjs") || path.endsWith("docs-qualified-cohorts.json") || path.endsWith(".fixture.json") || path.endsWith("/package.json");
+const stable31Bytes = async (path) => {
+  const zipped =
+    path.endsWith(".mjs") ||
+    path.endsWith("docs-qualified-cohorts.json") ||
+    path.endsWith(".fixture.json") ||
+    path.endsWith("/package.json");
   const bytes = await readFile(new URL(path + (zipped ? ".gz" : ""), stable31Root));
   return zipped ? stable31Gunzip(bytes) : bytes;
 };
 const stable31Packet = JSON.parse(await stable31Bytes("packet.json"));
-const stable31Raw = new Map(await Promise.all(stable31Packet.manifest.map(async item => [item.path, await stable31Bytes(item.path)])));
-const stable31ReceiptPath = "governance/evidence/docs-admission/platform-stable31-pending-source.json";
+const stable31Raw = new Map(
+  await Promise.all(
+    stable31Packet.manifest.map(async (item) => [item.path, await stable31Bytes(item.path)]),
+  ),
+);
+const stable31ReceiptPath =
+  "governance/evidence/docs-admission/platform-stable31-pending-source.json";
 const stable31ReceiptBytes = await readFile(new URL(`../${stable31ReceiptPath}`, import.meta.url));
 const stable31Meta = JSON.parse(await stable31Bytes("selection-TEST.json"));
 async function stable31Change(t, inverse = false) {
-  const directory = await mkdtemp(join(tmpdir(), "platform-stable31-TEST-")); t.after(() => rm(directory, { recursive: true, force: true }));
-  const before = JSON.parse(await stable31Bytes("selection-policy.fixture.json")), policy = structuredClone(before);
-  const platform = policy.repositories.find(row => row.repository_id === 1319378484);
-  const pending = (inverse ? before : policy).repositories.find(row => row.repository_id === platform.repository_id);
-  pending.desired_cohort_id = "docs-2026-10-03-stable31"; pending.cohort_binding_status = "rollout_pending";
-  const registryBytes = await stable31Bytes("recommended-TEST.fixture.json"), registry = JSON.parse(registryBytes);
-  const execution = { controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 }, pull_number: 338,
-    pull_id: 3381, head_ref: "bounded-TEST", run_id: 3382, run_attempt: 1, base: "e".repeat(40), head: "f".repeat(40),
-    execution_base: "e".repeat(40), changed_files: [POLICY_PATH] };
-  const controller = { id: 1316243981, full_name: "agent-teams-ai/.github", default_branch: "main", archived: false, disabled: false };
-  const pull = { id: 3381, number: 338, state: "open", merged: false, changed_files: 1,
-    base: { sha: execution.base, ref: "main", repo: controller }, head: { sha: execution.head, ref: "bounded-TEST", repo: controller } };
-  const state = { head: stable31Packet.source, controllerCalls: 0, run: JSON.parse(stable31Raw.get("run.json")),
-    checks: JSON.parse(stable31Raw.get("checks.json")).check_runs, jobs: JSON.parse(stable31Raw.get("jobs.json")).jobs,
-    receipt: stable31ReceiptBytes, onController: () => {}, target: false, targetJobs: null };
-  const rowFor = repo => before.repositories.find(row => row.repository === repo);
-  const recordFor = (repo, revision) => registry.cohorts.find(record => record.cohort_id ===
-    (state.target && repo === platform.repository && revision === state.head ? "docs-2026-10-03-stable31" : rowFor(repo).observed_cohort_id));
-  const targetEvidence = () => ({ ...before.repositories.find(row => row.repository_id === 1319378484).observed_default_branch_evidence,
-    revision: state.head, check_run_id: 9004, workflow_run_id: 9000, check_run_url: `https://github.com/${platform.repository}/actions/runs/9000/job/9004`,
-    caller_workflow_digest: recordFor(platform.repository, state.head).assets.caller_workflow.rendered_digest, observed_at: "2026-10-03T06:00:00Z" });
-  const options = { execution, asOf: "2026-10-03T06:00:00Z", clock: () => "2026-10-03T06:00:00Z",
-    verifyController: async value => {
-      state.controllerCalls++; state.onController(state.controllerCalls);
-      return verifyAdmissionController(value, async endpoint => endpoint.endsWith("/pulls/338") ? pull
-        : endpoint.endsWith("/branches/main") ? { commit: { sha: state.staleController ? execution.head : execution.base } } : controller);
+  const directory = await mkdtemp(join(tmpdir(), "platform-stable31-TEST-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const before = JSON.parse(await stable31Bytes("selection-policy.fixture.json")),
+    policy = structuredClone(before);
+  const platform = policy.repositories.find((row) => row.repository_id === 1319378484);
+  const pending = (inverse ? before : policy).repositories.find(
+    (row) => row.repository_id === platform.repository_id,
+  );
+  pending.desired_cohort_id = "docs-2026-10-03-stable31";
+  pending.cohort_binding_status = "rollout_pending";
+  const registryBytes = await stable31Bytes("recommended-TEST.fixture.json"),
+    registry = JSON.parse(registryBytes);
+  const workflowSources = new Map(
+    await Promise.all(
+      registry.cohorts.map(async ({ reusable_workflow: workflow }) => [
+        `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+        await readAdmissionBaseFile(workflow.path, workflow.revision),
+      ]),
+    ),
+  );
+  const execution = {
+    controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 },
+    pull_number: 338,
+    pull_id: 3381,
+    head_ref: "bounded-TEST",
+    run_id: 3382,
+    run_attempt: 1,
+    base: "e".repeat(40),
+    head: "f".repeat(40),
+    execution_base: "e".repeat(40),
+    changed_files: [POLICY_PATH],
+  };
+  const controller = {
+    id: 1316243981,
+    full_name: "agent-teams-ai/.github",
+    default_branch: "main",
+    archived: false,
+    disabled: false,
+  };
+  const pull = {
+    id: 3381,
+    number: 338,
+    state: "open",
+    merged: false,
+    changed_files: 1,
+    base: { sha: execution.base, ref: "main", repo: controller },
+    head: { sha: execution.head, ref: "bounded-TEST", repo: controller },
+  };
+  const state = {
+    head: stable31Packet.source,
+    controllerCalls: 0,
+    run: JSON.parse(stable31Raw.get("run.json")),
+    checks: JSON.parse(stable31Raw.get("checks.json")).check_runs,
+    jobs: JSON.parse(stable31Raw.get("jobs.json")).jobs,
+    receipt: stable31ReceiptBytes,
+    onController: () => {},
+    target: false,
+    targetJobs: null,
+  };
+  const rowFor = (repo) => before.repositories.find((row) => row.repository === repo);
+  const recordFor = (repo, revision) =>
+    registry.cohorts.find(
+      (record) =>
+        record.cohort_id ===
+        (state.target && repo === platform.repository && revision === state.head
+          ? "docs-2026-10-03-stable31"
+          : rowFor(repo).observed_cohort_id),
+    );
+  const targetEvidence = () => ({
+    ...before.repositories.find((row) => row.repository_id === 1319378484)
+      .observed_default_branch_evidence,
+    revision: state.head,
+    check_run_id: 9004,
+    workflow_run_id: 9000,
+    check_run_url: `https://github.com/${platform.repository}/actions/runs/9000/job/9004`,
+    caller_workflow_digest: recordFor(platform.repository, state.head).assets.caller_workflow
+      .rendered_digest,
+    observed_at: "2026-10-03T06:00:00Z",
+  });
+  const options = {
+    execution,
+    asOf: "2026-10-03T06:00:00Z",
+    clock: () => "2026-10-03T06:00:00Z",
+    verifyController: async (value) => {
+      state.controllerCalls++;
+      state.onController(state.controllerCalls);
+      return verifyAdmissionController(value, async (endpoint) =>
+        endpoint.endsWith("/pulls/338")
+          ? pull
+          : endpoint.endsWith("/branches/main")
+            ? { commit: { sha: state.staleController ? execution.head : execution.base } }
+            : controller,
+      );
     },
     readBaseFile: async (path, revision) => {
       assert.equal(revision, execution.base, "only protected base can supply authority");
-      return path === POLICY_PATH ? encode(before) : path === REGISTRY_PATH ? registryBytes : path === stable31ReceiptPath ? state.receipt
-        : path === "governance/docs-platform-admission-recovery.json" ? readFile(new URL(`../${path}`, import.meta.url)) : null;
+      return path === POLICY_PATH
+        ? encode(before)
+        : path === REGISTRY_PATH
+          ? registryBytes
+          : path === stable31ReceiptPath
+            ? state.receipt
+            : path === "governance/docs-platform-admission-recovery.json"
+              ? readFile(new URL(`../${path}`, import.meta.url))
+              : null;
     },
-    getRepository: async repo => repo === platform.repository ? JSON.parse(stable31Raw.get("repository.json"))
-      : { id: rowFor(repo).repository_id, full_name: repo, default_branch: "main", private: false, archived: false, disabled: false },
-    getDefaultBranchHead: async repo => repo === platform.repository ? state.head : rowFor(repo).observed_default_branch_evidence.revision,
+    getRepository: async (repo) =>
+      repo === platform.repository
+        ? JSON.parse(stable31Raw.get("repository.json"))
+        : {
+            id: rowFor(repo).repository_id,
+            full_name: repo,
+            default_branch: "main",
+            private: false,
+            archived: false,
+            disabled: false,
+          },
+    getDefaultBranchHead: async (repo) =>
+      repo === platform.repository
+        ? state.head
+        : rowFor(repo).observed_default_branch_evidence.revision,
     isCommitAncestor: async () => true,
     getCheckRuns: async (repo, revision) => {
-      if (repo === platform.repository && revision === stable31Packet.source) return structuredClone(state.checks);
-      const evidence = state.target && repo === platform.repository && revision === state.head ? targetEvidence() : rowFor(repo).observed_default_branch_evidence;
-      return [{ id: evidence.check_run_id, head_sha: revision, name: evidence.required_context, app: { id: evidence.integration_id },
-        status: "completed", conclusion: "success", html_url: evidence.check_run_url }];
+      if (repo === platform.repository && revision === stable31Packet.source)
+        return structuredClone(state.checks);
+      const evidence =
+        state.target && repo === platform.repository && revision === state.head
+          ? targetEvidence()
+          : rowFor(repo).observed_default_branch_evidence;
+      return [
+        {
+          id: evidence.check_run_id,
+          head_sha: revision,
+          name: evidence.required_context,
+          app: { id: evidence.integration_id },
+          status: "completed",
+          conclusion: "success",
+          html_url: evidence.check_run_url,
+        },
+      ];
     },
     getWorkflowRun: async (repo, id) => {
-      if (repo === platform.repository && id === stable31Packet.run) return structuredClone(state.run);
-      const evidence = state.target && repo === platform.repository && id === 9000 ? targetEvidence() : rowFor(repo).observed_default_branch_evidence;
+      if (repo === platform.repository && id === stable31Packet.run)
+        return structuredClone(state.run);
+      const evidence =
+        state.target && repo === platform.repository && id === 9000
+          ? targetEvidence()
+          : rowFor(repo).observed_default_branch_evidence;
       const workflow = recordFor(repo, evidence.revision).reusable_workflow;
-      return { id, workflow_id: evidence.workflow_id, run_attempt: 1, head_sha: evidence.revision, head_branch: "main", event: "push",
-        path: evidence.caller_workflow_path, status: "completed", conclusion: "success", repository: { id: rowFor(repo).repository_id, full_name: repo },
-        referenced_workflows: [{ sha: workflow.revision, path: `${workflow.repository}/${workflow.path}@${workflow.revision}` }] };
+      return {
+        id,
+        workflow_id: evidence.workflow_id,
+        run_attempt: 1,
+        head_sha: evidence.revision,
+        head_branch: "main",
+        event: "push",
+        path: evidence.caller_workflow_path,
+        status: "completed",
+        conclusion: "success",
+        repository: { id: rowFor(repo).repository_id, full_name: repo },
+        referenced_workflows: [
+          {
+            sha: workflow.revision,
+            path: `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+          },
+        ],
+      };
     },
-    getWorkflowJobs: async (_repo, id) => id === stable31Packet.run ? structuredClone(state.jobs) : structuredClone(state.targetJobs),
+    getWorkflowJobs: async (_repo, id) =>
+      id === stable31Packet.run ? structuredClone(state.jobs) : structuredClone(state.targetJobs),
     getJobLog: async () => Buffer.from(stable31Raw.get("authorize.log")),
     readGitFile: async (repo, path, revision) => {
-      const coordinate = stable31Packet.manifest.find(item => item.repository === repo && item.repositoryPath === path && item.revision === revision);
-      assert.ok(coordinate); return Buffer.from(stable31Raw.get(coordinate.path));
+      const coordinate = stable31Packet.manifest.find(
+        (item) =>
+          item.repository === repo && item.repositoryPath === path && item.revision === revision,
+      );
+      if (coordinate) return Buffer.from(stable31Raw.get(coordinate.path));
+      const source = workflowSources.get(`${repo}/${path}@${revision}`);
+      assert.ok(source, "exact historical workflow source is retained before fixture chdir");
+      return source;
     },
     readRepositoryFile: async (repo, path, revision) => {
       if (path.endsWith("docs-consumer-integration.json")) return encode({ schemaVersion: 3 });
       const record = recordFor(repo, revision);
       if (!path.endsWith("managed-state.json")) return caller(record);
-      const projection = qualifiedCohortProjection(registry, record.cohort_id, { asOf: options.asOf });
-      return encode({ ...projection, repository: { provider: "github", id: String(rowFor(repo).repository_id), nameWithOwner: repo },
-        cohortAuthority: { channel: projection.channel, recordDigest: projection.recordDigest, qualificationEventDigest: projection.qualificationEventDigest,
-          eligibleAfter: projection.eligibleAfter, upgradeFrom: projection.upgradeFrom, rollbackTo: projection.rollbackTo } });
+      const projection = qualifiedCohortProjection(registry, record.cohort_id, {
+        asOf: options.asOf,
+      });
+      return encode({
+        ...projection,
+        repository: {
+          provider: "github",
+          id: String(rowFor(repo).repository_id),
+          nameWithOwner: repo,
+        },
+        cohortAuthority: {
+          channel: projection.channel,
+          recordDigest: projection.recordDigest,
+          qualificationEventDigest: projection.qualificationEventDigest,
+          eligibleAfter: projection.eligibleAfter,
+          upgradeFrom: projection.upgradeFrom,
+          rollbackTo: projection.rollbackTo,
+        },
+      });
     },
   };
   await mkdir(join(directory, "governance"));
-  for (const name of ["docs-protocol-policy-v2.schema.json", "docs-protocol-exceptions.schema.json", "docs-qualified-cohorts.schema.json", "code-security-defaults.json"])
-    await writeFile(join(directory, "governance", name), await readFile(new URL(`../governance/${name}`, import.meta.url)));
+  for (const name of [
+    "docs-protocol-policy-v2.schema.json",
+    "docs-protocol-exceptions.schema.json",
+    "docs-qualified-cohorts.schema.json",
+    "code-security-defaults.json",
+  ])
+    await writeFile(
+      join(directory, "governance", name),
+      await readFile(new URL(`../governance/${name}`, import.meta.url)),
+    );
   await writeFile(join(directory, REGISTRY_PATH), registryBytes);
-  const paths = { policy: join(directory, "policy.json"), exceptions: join(directory, "exceptions.json") };
+  const paths = {
+    policy: join(directory, "policy.json"),
+    exceptions: join(directory, "exceptions.json"),
+  };
   // This October 3 replay owns the packet's original exception and dates,
   // independently of later retirement in the current active-exception file.
   await writeFile(paths.exceptions, stable31Raw.get(`controller-snapshot/${EXCEPTIONS_PATH}`));
-  const saved = { GH_TOKEN: process.env.GH_TOKEN, DOCS_GOVERNANCE_READ_TOKEN: process.env.DOCS_GOVERNANCE_READ_TOKEN };
+  const saved = {
+    GH_TOKEN: process.env.GH_TOKEN,
+    DOCS_GOVERNANCE_READ_TOKEN: process.env.DOCS_GOVERNANCE_READ_TOKEN,
+  };
   for (const key of Object.keys(saved)) process.env[key] = "synthetic-TEST-only";
-  t.after(() => { for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
-  return { before, policy, platform, registry, state, options, execution, targetEvidence,
+  t.after(() => {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+  return {
+    before,
+    policy,
+    platform,
+    registry,
+    state,
+    options,
+    execution,
+    targetEvidence,
     run: async () => {
-      await writeFile(paths.policy, encode(policy)); const cwd = process.cwd(); process.chdir(directory);
-      try { return await verifyDocsAdmissionChange(paths, { ...options, basePolicyBytes: encode(before) }); }
-      finally { process.chdir(cwd); }
-    } };
+      await writeFile(paths.policy, encode(policy));
+      const cwd = process.cwd();
+      process.chdir(directory);
+      try {
+        return await verifyDocsAdmissionChange(paths, {
+          ...options,
+          basePolicyBytes: encode(before),
+        });
+      } finally {
+        process.chdir(cwd);
+      }
+    },
+  };
 }
-for (const inverse of [false, true]) test(`retired stable31 ${inverse ? "inverse" : "pending intent"} rejects the authentic failed source`, async t => {
-  const f = await stable31Change(t, inverse), original = structuredClone(f.policy);
-  await assert.rejects(f.run(), /Current source failed without trusted base incident authorization/u);
-  assert.deepEqual(f.policy, original); assert.equal(f.platform.exact_foundation_version, "1.2.0");
-});
+for (const inverse of [false, true])
+  test(`retired stable31 ${inverse ? "inverse" : "pending intent"} rejects the authentic failed source`, async (t) => {
+    const f = await stable31Change(t, inverse),
+      original = structuredClone(f.policy);
+    await assert.rejects(
+      f.run(),
+      /Current source failed without trusted base incident authorization/u,
+    );
+    assert.deepEqual(f.policy, original);
+    assert.equal(f.platform.exact_foundation_version, "1.2.0");
+  });
 for (const [label, mutate] of Object.entries({
-  "observed25 fabrication": f => { f.platform.observed_cohort_id = "docs-2026-09-16-stable25"; },
-  "bootstrap reset": f => { f.platform.cohort_binding_status = "bootstrap_pending"; },
-  "qualification edit": f => { f.platform.qualification.evidence_paths.push("fabricated"); },
-  "exception edit": f => { f.platform.required_check_exception_id = null; },
-  "second changed row": f => { f.policy.repositories.find(row => row.repository_id === 1333298097).desired_cohort_id = "docs-2026-09-21-stable26"; },
-})) test(`stable31 composition rejects ${label}`, async t => { const f = await stable31Change(t); mutate(f); await assert.rejects(f.run()); });
+  "observed25 fabrication": (f) => {
+    f.platform.observed_cohort_id = "docs-2026-09-16-stable25";
+  },
+  "bootstrap reset": (f) => {
+    f.platform.cohort_binding_status = "bootstrap_pending";
+  },
+  "qualification edit": (f) => {
+    f.platform.qualification.evidence_paths.push("fabricated");
+  },
+  "exception edit": (f) => {
+    f.platform.required_check_exception_id = null;
+  },
+  "second changed row": (f) => {
+    f.policy.repositories.find((row) => row.repository_id === 1333298097).desired_cohort_id =
+      "docs-2026-09-21-stable26";
+  },
+}))
+  test(`stable31 composition rejects ${label}`, async (t) => {
+    const f = await stable31Change(t);
+    mutate(f);
+    await assert.rejects(f.run());
+  });
 
-test("retired stable31 callback override cannot admit the failed source", async t => {
-  const f = await stable31Change(t); let calls = 0; f.state.receipt = null;
-  f.options.platformPendingSelection = { verify: async () => { calls++; return { status: "current_verified" }; } };
-  await assert.rejects(f.run(), /Current source failed without trusted base incident authorization/u); assert.equal(calls, 0);
+test("retired stable31 callback override cannot admit the failed source", async (t) => {
+  const f = await stable31Change(t);
+  let calls = 0;
+  f.state.receipt = null;
+  f.options.platformPendingSelection = {
+    verify: async () => {
+      calls++;
+      return { status: "current_verified" };
+    },
+  };
+  await assert.rejects(
+    f.run(),
+    /Current source failed without trusted base incident authorization/u,
+  );
+  assert.equal(calls, 0);
 });
-test("stable31 direct fleet and absence of exact policy operation keep the real failure strict", async t => {
-  const f = await stable31Change(t); const schema = JSON.parse(await readFile(new URL("../governance/docs-qualified-cohorts.schema.json", import.meta.url)));
-  f.options.platformPendingSelection = { verify: async () => { throw new Error("direct fleet improperly consumed a pending callback"); } };
+test("stable31 direct fleet and absence of exact policy operation keep the real failure strict", async (t) => {
+  const f = await stable31Change(t);
+  const schema = JSON.parse(
+    await readFile(new URL("../governance/docs-qualified-cohorts.schema.json", import.meta.url)),
+  );
+  f.options.platformPendingSelection = {
+    verify: async () => {
+      throw new Error("direct fleet improperly consumed a pending callback");
+    },
+  };
   for (const scope of [{}, { basePolicy: f.before, fullFleetCurrent: true }])
-    await assert.rejects(verifyDocsAdmissionEvidence(f.policy, f.registry, schema, { ...f.options, ...scope }), /every decisive admitted check to succeed/u);
+    await assert.rejects(
+      verifyDocsAdmissionEvidence(f.policy, f.registry, schema, { ...f.options, ...scope }),
+      /every decisive admitted check to succeed/u,
+    );
 });
 function stable31Success(f, finalBinding) {
-  f.state.target = true; f.state.head = "9".repeat(40);
-  const target = f.registry.cohorts.find(record => record.cohort_id === "docs-2026-10-03-stable31");
-  f.state.targetJobs = ["trusted-authorize", "trusted-structural", "trusted-qualification", "docs-protocol-check"].map((role, index) => ({
-    id: 9001 + index, run_id: 9000, run_attempt: 1, head_sha: f.state.head, name: `docs-protocol / ${role}`,
-    html_url: `https://github.com/${f.platform.repository}/actions/runs/9000/job/${9001 + index}`, status: "completed", conclusion: "success",
-    steps: successfulSteps(role, 2) }));
+  f.state.target = true;
+  f.state.head = "9".repeat(40);
+  const target = f.registry.cohorts.find(
+    (record) => record.cohort_id === "docs-2026-10-03-stable31",
+  );
+  f.state.targetJobs = [
+    "trusted-authorize",
+    "trusted-structural",
+    "trusted-qualification",
+    "docs-protocol-check",
+  ].map((role, index) => ({
+    id: 9001 + index,
+    run_id: 9000,
+    run_attempt: 1,
+    head_sha: f.state.head,
+    name: `docs-protocol / ${role}`,
+    html_url: `https://github.com/${f.platform.repository}/actions/runs/9000/job/${9001 + index}`,
+    status: "completed",
+    conclusion: "success",
+    steps: successfulSteps(role, 2),
+  }));
   if (finalBinding) {
-    const prior = f.before.repositories.find(row => row.repository_id === 1319378484);
-    prior.desired_cohort_id = target.cohort_id; prior.cohort_binding_status = "rollout_pending";
-    const packages = new Map(target.packages.map(pkg => [pkg.name, pkg.version]));
-    Object.assign(f.platform, { desired_cohort_id: target.cohort_id, cohort_binding_status: "bound", observed_cohort_id: target.cohort_id,
+    const prior = f.before.repositories.find((row) => row.repository_id === 1319378484);
+    prior.desired_cohort_id = target.cohort_id;
+    prior.cohort_binding_status = "rollout_pending";
+    const packages = new Map(target.packages.map((pkg) => [pkg.name, pkg.version]));
+    Object.assign(f.platform, {
+      desired_cohort_id: target.cohort_id,
+      cohort_binding_status: "bound",
+      observed_cohort_id: target.cohort_id,
       observed_cohort_record_digest: target.record_digest,
-      observed_cohort_event_digest: f.registry.events.find(event => event.cohort_id === target.cohort_id && event.state === "QUALIFIED").event_digest,
-      reusable_workflow_revision: target.reusable_workflow.revision, observed_default_branch_evidence: f.targetEvidence(),
-      exact_package_version: "0.6.2", exact_foundation_version: "1.7.2",
-      exact_cohort_v2_packages: Object.fromEntries(["repository-mutation", "document-authoring", "docs-protocol", "docs-protocol-agent-teams", "engineering-foundation"]
-        .map(name => [name.replaceAll("-", "_"), packages.get(`@agent-teams/${name}`)])) });
+      observed_cohort_event_digest: f.registry.events.find(
+        (event) => event.cohort_id === target.cohort_id && event.state === "QUALIFIED",
+      ).event_digest,
+      reusable_workflow_revision: target.reusable_workflow.revision,
+      observed_default_branch_evidence: f.targetEvidence(),
+      exact_package_version: "0.6.2",
+      exact_foundation_version: "1.7.2",
+      exact_cohort_v2_packages: Object.fromEntries(
+        [
+          "repository-mutation",
+          "document-authoring",
+          "docs-protocol",
+          "docs-protocol-agent-teams",
+          "engineering-foundation",
+        ].map((name) => [name.replaceAll("-", "_"), packages.get(`@agent-teams/${name}`)]),
+      ),
+    });
     f.platform.qualification.observed_revision = f.state.head;
   }
 }
-for (const finalBinding of [false, true]) test(`stable31 ${finalBinding ? "observed advancement" : "current success"} uses ordinary strict execution proof`, async t => {
-  const f = await stable31Change(t); stable31Success(f, finalBinding);
-  const report = await f.run(); assert.deepEqual(report.recovery_pending, []);
-  assert.equal(report.current_verified.find(row => row.repository_id === 1319378484).cohort_id, "docs-2026-10-03-stable31");
-  for (const role of ["trusted-qualification", "docs-protocol-check"]) {
-    const job = f.state.targetJobs.find(job => job.name.endsWith(` / ${role}`)); const step = job.steps.find(step => step.conclusion === "success");
-    step.conclusion = "skipped"; await assert.rejects(f.run(), /qualification\/semantics did not actually execute successfully/u); step.conclusion = "success";
-  }
-});
-test("retired stable31 inverse uses ordinary strict current-source proof", async t => {
+for (const finalBinding of [false, true])
+  test(`stable31 ${finalBinding ? "observed advancement" : "current success"} uses ordinary strict execution proof`, async (t) => {
+    const f = await stable31Change(t);
+    stable31Success(f, finalBinding);
+    const report = await f.run();
+    assert.deepEqual(report.recovery_pending, []);
+    assert.equal(
+      report.current_verified.find((row) => row.repository_id === 1319378484).cohort_id,
+      "docs-2026-10-03-stable31",
+    );
+    for (const role of ["trusted-qualification", "docs-protocol-check"]) {
+      const job = f.state.targetJobs.find((job) => job.name.endsWith(` / ${role}`));
+      const step = job.steps.find((step) => step.conclusion === "success");
+      step.conclusion = "skipped";
+      await assert.rejects(
+        f.run(),
+        /qualification\/semantics did not actually execute successfully/u,
+      );
+      step.conclusion = "success";
+    }
+  });
+test("retired stable31 inverse uses ordinary strict current-source proof", async (t) => {
   const f = await stable31Change(t, true);
   f.state.head = "9".repeat(40);
-  await assert.rejects(f.run(), /live workflow run does not bind the observed default-branch push/u);
+  await assert.rejects(
+    f.run(),
+    /live workflow run does not bind the observed default-branch push/u,
+  );
   f.state.head = f.platform.observed_default_branch_evidence.revision;
-  const report = await f.run(); assert.deepEqual(report.recovery_pending, []);
-  assert.equal(report.current_verified.find(row => row.repository_id === 1319378484).cohort_id, f.platform.observed_cohort_id);
+  const report = await f.run();
+  assert.deepEqual(report.recovery_pending, []);
+  assert.equal(
+    report.current_verified.find((row) => row.repository_id === 1319378484).cohort_id,
+    f.platform.observed_cohort_id,
+  );
 });
-test("unrelated exact policy operation retains ADR-0008 reporting for authentic failed source5d", async t => {
-  const f = await stable31Change(t); Object.assign(f.platform, structuredClone(f.before.repositories.find(row => row.repository_id === 1319378484)));
-  const extension = f.policy.repositories.find(row => row.repository_id === 1333298097);
-  extension.desired_cohort_id = extension.observed_cohort_id; extension.cohort_binding_status = "bound";
-  const report = await f.run(); assert.deepEqual(report.recovery_pending, []);
-  assert.deepEqual(report.current_verified.map(row => row.repository_id), [1333298097]);
-  assert.ok(report.current_not_evaluated.some(row => row.repository_id === 1319378484));
+test("unrelated exact policy operation retains ADR-0008 reporting for authentic failed source5d", async (t) => {
+  const f = await stable31Change(t);
+  Object.assign(
+    f.platform,
+    structuredClone(f.before.repositories.find((row) => row.repository_id === 1319378484)),
+  );
+  const extension = f.policy.repositories.find((row) => row.repository_id === 1333298097);
+  extension.desired_cohort_id = extension.observed_cohort_id;
+  extension.cohort_binding_status = "bound";
+  const report = await f.run();
+  assert.deepEqual(report.recovery_pending, []);
+  assert.deepEqual(
+    report.current_verified.map((row) => row.repository_id),
+    [1333298097],
+  );
+  assert.ok(report.current_not_evaluated.some((row) => row.repository_id === 1319378484));
   assert.deepEqual(report.historical_verified, stable31Meta.historical_repository_ids);
+});
+
+// In-memory successor of the genuine stable31 origin; never a registered Cohort.
+async function generation3AdmissionFixture() {
+  const registry = JSON.parse(await readFile(REGISTRY_PATH));
+  const origin = registry.cohorts.find((record) => record.cohort_id === "docs-2026-10-03-stable31");
+  const sourcePolicy = JSON.parse(await readFile(POLICY_PATH));
+  const row = structuredClone(
+    sourcePolicy.repositories.find((entry) => entry.repository === "agent-teams-ai/agent-runtime"),
+  );
+  assert.equal(row.observed_cohort_id, origin.cohort_id);
+  const {
+    DOCS_COHORT_V2_PACKAGES,
+    DOCS_COHORT_V2_DEPENDENCY_EDGES,
+    DOCS_COHORT_V3_CURRENT_RUNTIME,
+    docsRuntimeClosureV2Evidence,
+  } = await import("./docs-cohort-policy.mjs");
+  const versions = ["0.4.2", "0.3.6", "0.6.6", "0.5.5", "3.0.0"];
+  const packages = DOCS_COHORT_V2_PACKAGES.map(({ name, role }, index) => ({
+    ...structuredClone(origin.packages.find((entry) => entry.name === name)),
+    name,
+    role,
+    version: versions[index],
+    published_at: "2026-10-25T12:00:00Z",
+    provenance: {
+      ...structuredClone(origin.packages[index].provenance),
+      registry_attestation_url: `https://registry.npmjs.org/-/npm/v1/attestations/${name.replace("/", "%2f")}@${versions[index]}`,
+    },
+  }));
+  const dependencyMap = (from) =>
+    Object.fromEntries(
+      DOCS_COHORT_V2_DEPENDENCY_EDGES.filter((edge) => edge.from === from).map(({ to }) => [
+        to,
+        packages.find((entry) => entry.name === to).version,
+      ]),
+    );
+  const lock = {
+    lockfileVersion: "9.0",
+    importers: {
+      ".": {
+        devDependencies: Object.fromEntries(
+          packages
+            .filter((entry) => entry.role === "direct")
+            .map((entry) => [entry.name, { specifier: entry.version, version: entry.version }]),
+        ),
+      },
+    },
+    packages: Object.fromEntries(
+      packages.map((entry) => [
+        `${entry.name}@${entry.version}`,
+        { resolution: { integrity: entry.integrity } },
+      ]),
+    ),
+    snapshots: Object.fromEntries(
+      packages.map((entry) => [
+        `${entry.name}@${entry.version}`,
+        { dependencies: dependencyMap(entry.name) },
+      ]),
+    ),
+  };
+  const workflowSource = await readFile(".github/workflows/docs-protocol-check.yml");
+  const runtime = DOCS_COHORT_V3_CURRENT_RUNTIME;
+  const target = {
+    ...structuredClone(origin),
+    cohort_id: "docs-2026-10-25-work-a-v3-test",
+    cohort_generation: 3,
+    packages,
+    dependency_edges: DOCS_COHORT_V2_DEPENDENCY_EDGES,
+    candidate_digest: `sha256:${"a".repeat(64)}`,
+    policy_identity: {
+      id: "agent-teams.docs-protocol-current-policy",
+      version: "3.0.0",
+      digest: `sha256:${"b".repeat(64)}`,
+    },
+    schemas: {
+      consumer_integration: 4,
+      managed_state: 3,
+      qualification_receipt: 1,
+      docs_protocol: 1,
+      foundation_plan: 1,
+      foundation_journal: 1,
+      foundation_receipt: 1,
+      foundation_envelope: 5,
+    },
+    runtime: {
+      selected_lane: runtime.selectedLane,
+      node: runtime.node,
+      pnpm: runtime.pnpm,
+      qualification_runtime: {
+        node_version: runtime.qualificationRuntime.nodeVersion,
+        pnpm_version: runtime.qualificationRuntime.pnpmVersion,
+        platform: runtime.qualificationRuntime.platform,
+        architecture: runtime.qualificationRuntime.architecture,
+      },
+    },
+    runtime_closure: docsRuntimeClosureV2Evidence(lock, packages).authority,
+    upgrade_from: [origin.cohort_id],
+    rollback_to: [origin.cohort_id],
+    canary_repositories: [{ repository_id: row.repository_id, repository: row.repository }],
+    reusable_workflow: {
+      ...origin.reusable_workflow,
+      revision: "5".repeat(40),
+      blob_sha: recoveryBlob(workflowSource),
+    },
+  };
+  target.assets.caller_workflow.rendered_digest = recoveryDigest(caller(target));
+  target.record_digest = cohortRecordDigest(target);
+  registry.cohorts.push(target);
+  for (const [state, hour] of [
+    ["PUBLISHED_UNQUALIFIED", "12"],
+    ["VERIFIED", "13"],
+    ["QUALIFIED", "14"],
+  ]) {
+    const event = {
+      sequence: registry.events.length + 1,
+      cohort_id: target.cohort_id,
+      state,
+      effective_at: `2026-10-25T${hour}:00:00Z`,
+      support_until: null,
+      evidence_references: ["test:work-a-inert"],
+      canary_evidence: [],
+      previous_event_digest: registry.events.at(-1).event_digest,
+    };
+    event.event_digest = cohortEventDigest(event);
+    registry.events.push(event);
+  }
+  Object.assign(row, {
+    cohort_binding_status: "rollout_pending",
+    desired_cohort_id: target.cohort_id,
+    desired_cohort_generation: 3,
+    v3_qualification_coordinates: {
+      profile_schema_version: 4,
+      cohort_schema_version: 3,
+      managed_state_schema_version: 3,
+      receipt_schema_version: 1,
+      execution_envelope_schema_version: 1,
+      evidence_class: "cohort-v3-supporting-canary",
+    },
+  });
+  const policy = { repositories: [row] },
+    observed = structuredClone(row.observed_default_branch_evidence);
+  const state = {
+    selected: 3,
+    step: currentWorkflowQualification,
+    profile: 4,
+    candidate: null,
+    duplicate: false,
+    changedWorkflow: false,
+    lateDrift: false,
+    headReads: 0,
+  };
+  const currentHead = "9".repeat(40),
+    recordFor = (revision) =>
+      revision === observed.revision || state.selected === 2 ? origin : target;
+  const options = {
+    asOf: "2026-10-26T00:00:00Z",
+    getRepository: async () => ({
+      id: row.repository_id,
+      full_name: row.repository,
+      default_branch: "main",
+    }),
+    isCommitAncestor: async () => true,
+    getDefaultBranchHead: async () =>
+      state.lateDrift && ++state.headReads > 2 ? "8".repeat(40) : currentHead,
+    getCheckRuns: async (_repo, revision) => [
+      {
+        id: revision === observed.revision ? observed.check_run_id : 9004,
+        head_sha: revision,
+        name: row.required_check_context,
+        app: { id: 15368 },
+        conclusion: "success",
+        html_url:
+          revision === observed.revision
+            ? observed.check_run_url
+            : `https://github.com/${row.repository}/actions/runs/9000/job/9004`,
+      },
+    ],
+    getWorkflowRun: async (_repo, id) => {
+      const historical = id === observed.workflow_run_id,
+        revision = historical ? observed.revision : currentHead;
+      const workflow = recordFor(revision).reusable_workflow;
+      return {
+        id,
+        run_attempt: 1,
+        workflow_id: observed.workflow_id,
+        head_sha: revision,
+        head_branch: "main",
+        event: "push",
+        path: row.caller_workflow_path,
+        status: "completed",
+        conclusion: "success",
+        repository: { id: row.repository_id, full_name: row.repository },
+        referenced_workflows: [
+          {
+            sha: workflow.revision,
+            path: `${workflow.repository}/${workflow.path}@${workflow.revision}`,
+          },
+        ],
+      };
+    },
+    getWorkflowJobs: async (_repo, id) => {
+      const historical = id === observed.workflow_run_id,
+        revision = historical ? observed.revision : currentHead;
+      const roles = [
+        "trusted-authorize",
+        "trusted-structural",
+        "trusted-qualification",
+        "docs-protocol-check",
+      ];
+      const jobs = roles.map((role, index) => ({
+        id: 9001 + index,
+        run_id: id,
+        run_attempt: 1,
+        head_sha: revision,
+        name: `docs-protocol / ${role}`,
+        status: "completed",
+        conclusion: "success",
+        html_url: `https://github.com/${row.repository}/actions/runs/${id}/job/${9001 + index}`,
+        steps:
+          role === "trusted-qualification"
+            ? [
+                {
+                  name: state.selected === 2 ? v2Qualification : state.step,
+                  status: "completed",
+                  conclusion: "success",
+                },
+                {
+                  name: "Confirm current controller authority stayed stable through qualification",
+                  status: "completed",
+                  conclusion: "success",
+                },
+              ]
+            : successfulSteps(role, 3, 4),
+      }));
+      return state.duplicate ? [...jobs, { ...jobs[0], id: 9100 }] : jobs;
+    },
+    readGitFile: async (_repo, path, revision) =>
+      revision === target.reusable_workflow.revision
+        ? state.changedWorkflow
+          ? Buffer.from("changed source")
+          : workflowSource
+        : readAdmissionBaseFile(path, revision),
+    readRepositoryFile: async (_repo, path, revision) => {
+      const record = recordFor(revision);
+      if (path.endsWith("docs-consumer-integration.json"))
+        return encode({ schemaVersion: record === target ? state.profile : 3 });
+      if (!path.endsWith("managed-state.json")) return caller(record);
+      const projection = qualifiedCohortProjection(registry, record.cohort_id, {
+        asOf: options.asOf,
+      });
+      return encode({
+        ...projection,
+        repository: {
+          provider: "github",
+          id: String(row.repository_id),
+          nameWithOwner: row.repository,
+        },
+        cohortAuthority: {
+          channel: projection.channel,
+          recordDigest: projection.recordDigest,
+          qualificationEventDigest: projection.qualificationEventDigest,
+          eligibleAfter: projection.eligibleAfter,
+          upgradeFrom: projection.upgradeFrom,
+          rollbackTo: projection.rollbackTo,
+          ...(record === target
+            ? { candidateDigest: state.candidate ?? projection.candidateDigest }
+            : {}),
+        },
+      });
+    },
+  };
+  const schema = JSON.parse(await readFile("governance/docs-qualified-cohorts.schema.json"));
+  return {
+    row,
+    origin,
+    target,
+    registry,
+    state,
+    options,
+    run: () => verifyDocsAdmissionEvidence(policy, registry, schema, options),
+  };
+}
+
+test("generation3 admission proves both committed rollout legs from the actual stable31 origin", async () => {
+  const f = await generation3AdmissionFixture(),
+    prior = structuredClone(f.row);
+  assert.equal((await f.run()).current_verified[0].cohort_id, f.target.cohort_id);
+  assert.deepEqual(f.row, prior, "target success alone must not advance observed authority");
+  f.state.selected = 2;
+  assert.equal((await f.run()).current_verified[0].cohort_id, f.origin.cohort_id);
+  assert.deepEqual(f.row, prior);
+});
+
+test("generation3 admission rejects stale profiles, old dispatch, source bytes, candidates, ambiguity and drift", async () => {
+  for (const [mutate, expected] of [
+    [
+      (f) => {
+        f.state.profile = 3;
+      },
+      /integration contract/u,
+    ],
+    [
+      (f) => {
+        f.state.step = v2Qualification;
+      },
+      /did not actually execute/u,
+    ],
+    [
+      (f) => {
+        f.state.changedWorkflow = true;
+      },
+      /workflow source blob differs/u,
+    ],
+    [
+      (f) => {
+        f.state.candidate = `sha256:${"c".repeat(64)}`;
+      },
+      /candidateDigest differs/u,
+    ],
+    [
+      (f) => {
+        f.state.duplicate = true;
+      },
+      /incomplete\/ambiguous/u,
+    ],
+    [
+      (f) => {
+        f.state.lateDrift = true;
+      },
+      /head changed/u,
+    ],
+  ]) {
+    const f = await generation3AdmissionFixture();
+    mutate(f);
+    await assert.rejects(f.run(), expected);
+  }
 });
