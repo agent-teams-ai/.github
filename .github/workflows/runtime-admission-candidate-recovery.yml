@@ -3,7 +3,7 @@ on:
   push:
     branches: [chore/runtime-admission-recovery-probe]
     paths:
-      - recovery/runtime-admission-reconcile.py
+      - recovery/**
       - .github/workflows/runtime-admission-candidate-recovery.yml
 permissions:
   contents: read
@@ -69,6 +69,7 @@ jobs:
           console.log('Retained dependency versions, integrities and edges match current main.');
           NODE
           python "$RUNNER_TEMP/reconcile.py" finish "$PWD"
+          python "$GITHUB_WORKSPACE/recovery/runtime-admission-corrections.py" "$PWD"
           node scripts/compiler-floor.ts
           node --input-type=module <<'NODE'
           import { execFileSync } from 'node:child_process';
