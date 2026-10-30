@@ -18,5 +18,15 @@ new = '''  for (const expected of [
     assert.deepEqual(matches, [expected], "CI must retain exact isolated validator bootstrap");
   }'''
 assert text.count(old) == 1, 'Reconstructed CI contract changed; review before applying correction'
+text = text.replace(old, new)
+old = 'for (const entry of census.classified.filter(entry => entry.path.endsWith(".ts")))'
+new = 'for (const entry of census.classified.filter(candidate => candidate.path.endsWith(".ts")))'
+assert text.count(old) == 1
 path.write_text(text.replace(old, new))
-print('Bound exact CI bootstrap step names and commands; conditions and continue-on-error remain forbidden.')
+
+path = root / 'scripts/observe-org-repository-inventory.mjs'
+text = path.read_text()
+assert text.count('.toSorted()') == 2
+# Preserve JavaScript's string ordering, independent of host locale.
+path.write_text(text.replace('.toSorted()', '.toSorted((left, right) => String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0)'))
+print('Exact named CI contracts and current explicit inventory ordering retained; no quality rule disabled.')
