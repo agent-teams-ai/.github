@@ -103,6 +103,18 @@ const RETAINED_AUTHORITY_SOURCES = [
     path: "scripts/check-docs-verifier-authority.test.mts",
     gitBlob: "c34697abc079e0a161fb3872a8a9acb07e951ded",
   },
+  {
+    path: "scripts/docs-quality-source-successor-v2.ts",
+    gitBlob: "767e4c4b530fdfad8356e299709be08f3237fdb0",
+  },
+  {
+    path: "scripts/docs-quality-source-successor-v3.ts",
+    gitBlob: "bd0072b49306a78069be10bbe34bacff5ac457cc",
+  },
+  {
+    path: "scripts/docs-quality-source-successor-v3-target.ts",
+    gitBlob: "f0b15b0ec460171a7b9a7b39d005cd897888634e",
+  },
 ];
 
 const FORMAT_RETAINED_AUTHORITY_SOURCES = [
@@ -472,27 +484,15 @@ export function assertQualityAdoption({
           "scripts/validate-renovate.ts",
           "scripts/validate-renovate.test.ts",
           "scripts/validate-renovate-abi.probe.ts",
+          "scripts/runtime-admission-source-successor-v2.ts",
+          "scripts/runtime-admission-source-successor-v2.test.ts",
+          "scripts/docs-quality-source-successor-v2.ts",
+          "scripts/docs-quality-source-successor-v3.ts",
+          "scripts/docs-quality-source-successor-v3-target.ts",
         ],
         compilerManifest: "stack-toolchain/toolchain-manifest.json",
       },
-      retainedAuthoritySources: [
-        {
-          path: "scripts/check-docs-source-successor-v1.mts",
-          gitBlob: "36cb752a50b8a0d7f83c813ed17cec775cdd79bb",
-        },
-        {
-          path: "scripts/check-docs-source-successor-v1.test.mts",
-          gitBlob: "281032ebb0afecd5bb425f7f4018c99b20ee6635",
-        },
-        {
-          path: "scripts/check-docs-verifier-authority.mts",
-          gitBlob: "55c462acdc808bff8b032dce9819de48a02e5e3b",
-        },
-        {
-          path: "scripts/check-docs-verifier-authority.test.mts",
-          gitBlob: "c34697abc079e0a161fb3872a8a9acb07e951ded",
-        },
-      ],
+      retainedAuthoritySources: RETAINED_AUTHORITY_SOURCES,
       formatRetainedAuthoritySources: [
         {
           path: "scripts/verify-docs-admission-change.mjs",
@@ -540,6 +540,11 @@ export function assertQualityAdoption({
         "scripts/validate-renovate.ts",
         "scripts/validate-renovate.test.ts",
         "scripts/validate-renovate-abi.probe.ts",
+        "scripts/runtime-admission-source-successor-v2.ts",
+        "scripts/runtime-admission-source-successor-v2.test.ts",
+        "scripts/docs-quality-source-successor-v2.ts",
+        "scripts/docs-quality-source-successor-v3.ts",
+        "scripts/docs-quality-source-successor-v3-target.ts",
       ],
     },
     "strict compiler scope and settings must stay exact",

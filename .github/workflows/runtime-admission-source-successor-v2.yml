@@ -1,0 +1,190 @@
+# Unpublished candidate: no defining-source ref, source lock or hosted qualification is asserted.
+name: Qualified Runtime and Admission Source Successor V2
+
+on:
+  push:
+    branches:
+      - governance/runtime-admission-source-successor-v2
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-admission-source-successor-v2-${{ github.event.pull_request.number || 'qualification' }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    name: qualify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Fetch the exact reviewed target as historical test data
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { TARGET } from './scripts/runtime-admission-source-successor-v2.ts';
+          const fixtureRef = 'refs/fixtures/runtime-admission-source-successor-v2/target';
+          execFileSync('git', ['fetch', '--no-tags', '--no-recurse-submodules',
+            'https://github.com/agent-teams-ai/.github.git', `${TARGET.headSHA}:${fixtureRef}`],
+            { stdio: 'inherit', timeout: 120_000 });
+          const actual = execFileSync('git', ['rev-parse', `${fixtureRef}^{commit}`, `${fixtureRef}^{tree}`],
+            { encoding: 'utf8' }).trim().split('\n');
+          if (actual[0] !== TARGET.headSHA || actual[1] !== TARGET.headTreeSHA) {
+            throw new Error('Historical target commit or tree differs from the reviewed binding');
+          }
+          NODE
+      - name: Prove source and ambient hook inputs without starting a package manager
+        env:
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts preflight
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+          cache: false
+      - name: Prove immutable hook-free bootstrap inputs before package-manager execution
+        env:
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts bootstrap
+      - run: pnpm install --frozen-lockfile
+      - name: Install the isolated Node 24 Renovate tool without lifecycle scripts
+        run: pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+      - name: Build the allowed native validator dependency with managed Node 24
+        run: pnpm --dir tools/renovate-validation run build:native
+      - name: Check the dedicated strict TypeScript project
+        run: pnpm quality:typecheck
+      - name: Lint all new source and test files
+        run: pnpm quality:lint
+      - name: Exercise accepting and rejecting source successor cases
+        run: node --test scripts/runtime-admission-source-successor-v2.test.ts
+      - name: Run the full pinned central quality suite
+        run: pnpm check
+      - name: Bind the real defining source, target, run and protections
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts qualify
+
+  source:
+    name: source
+    needs: qualify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Fetch the exact reviewed target as historical test data
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { TARGET } from './scripts/runtime-admission-source-successor-v2.ts';
+          const fixtureRef = 'refs/fixtures/runtime-admission-source-successor-v2/target';
+          execFileSync('git', ['fetch', '--no-tags', '--no-recurse-submodules',
+            'https://github.com/agent-teams-ai/.github.git', `${TARGET.headSHA}:${fixtureRef}`],
+            { stdio: 'inherit', timeout: 120_000 });
+          const actual = execFileSync('git', ['rev-parse', `${fixtureRef}^{commit}`, `${fixtureRef}^{tree}`],
+            { encoding: 'utf8' }).trim().split('\n');
+          if (actual[0] !== TARGET.headSHA || actual[1] !== TARGET.headTreeSHA) {
+            throw new Error('Historical target commit or tree differs from the reviewed binding');
+          }
+          NODE
+      - name: Prove source and ambient hook inputs without starting a package manager
+        env:
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts preflight
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+          cache: false
+      - name: Prove immutable hook-free bootstrap inputs before package-manager execution
+        env:
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts bootstrap
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+      - name: Verify actual protected source semantics
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts source
+
+  publish:
+    name: publish
+    needs: [qualify, source]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Verify current jobs and reread authority before publishing the new context
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SOURCE_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SOURCE_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SOURCE_WORKFLOW_REPOSITORY: ${{ job.workflow_repository }}
+          SOURCE_WORKFLOW_PATH: ${{ job.workflow_file_path }}
+        run: node scripts/runtime-admission-source-successor-v2.ts publish

@@ -33,6 +33,11 @@
     "scripts/repository-bootstrap-observation.test.ts",
     "scripts/validate-renovate.ts",
     "scripts/validate-renovate.test.ts",
-    "scripts/validate-renovate-abi.probe.ts"
+    "scripts/validate-renovate-abi.probe.ts",
+    "scripts/runtime-admission-source-successor-v2.ts",
+    "scripts/runtime-admission-source-successor-v2.test.ts",
+    "scripts/docs-quality-source-successor-v2.ts",
+    "scripts/docs-quality-source-successor-v3.ts",
+    "scripts/docs-quality-source-successor-v3-target.ts"
   ]
 }
