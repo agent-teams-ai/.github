@@ -1,0 +1,64 @@
+name: Runtime admission recovery probe (read-only)
+
+on:
+  push:
+    branches:
+      - chore/runtime-admission-recovery-probe
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    name: Compare reviewed integration with current main
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c8f3e7ba220241f79292c84c72712653019aa1df
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Bind immutable inputs and prepare an offline review bundle
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        shell: bash
+        run: |
+          set -euo pipefail
+          main=c8f3e7ba220241f79292c84c72712653019aa1df
+          head=ec790f9e12c29c32c7dad1ad683a7d56476cacd3
+          source=d8f22cb27db9f348f30bbdfdea67d09faac8e3ab
+          installed=c364ab2b82ad6250500110345982c3f1fa82181f
+          test "$(git rev-parse HEAD)" = "$main"
+          git fetch --no-tags origin "$head" "$source" "$installed"
+          mkdir -p recovery-evidence
+          for pair in "main:$main" "integration:$head" "reviewed-source:$source" "installed-source:$installed"; do
+            name="${pair%%:*}"
+            sha="${pair#*:}"
+            test "$(git rev-parse "$sha^{commit}")" = "$sha"
+            git update-ref "refs/heads/recovery-$name" "$sha"
+            printf '%s %s %s\n' "$name" "$sha" "$(git rev-parse "$sha^{tree}")" >> recovery-evidence/identities.txt
+          done
+          git bundle create recovery-evidence/repository.bundle \
+            refs/heads/recovery-main refs/heads/recovery-integration \
+            refs/heads/recovery-reviewed-source refs/heads/recovery-installed-source
+          git bundle verify recovery-evidence/repository.bundle
+          set +e
+          git merge-tree --write-tree --messages "$main" "$head" > recovery-evidence/merge-preview.txt 2>&1
+          merge_status=$?
+          set -e
+          test "$merge_status" -eq 0 || test "$merge_status" -eq 1
+          printf 'merge_tree_exit=%s\n' "$merge_status" >> recovery-evidence/identities.txt
+          printf 'run=%s attempt=%s workflow_head=%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_SHA" >> recovery-evidence/identities.txt
+          sha256sum recovery-evidence/repository.bundle >> recovery-evidence/identities.txt
+          cat recovery-evidence/identities.txt
+          cat recovery-evidence/merge-preview.txt
+          test "$(git rev-parse HEAD)" = "$main"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Retain source-only evidence (no credentials or dependency install)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-admission-recovery-source
+          path: recovery-evidence/
+          if-no-files-found: error
+          retention-days: 7
