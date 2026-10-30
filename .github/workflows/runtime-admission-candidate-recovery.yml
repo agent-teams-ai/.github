@@ -1,0 +1,222 @@
+name: Runtime admission candidate recovery
+on:
+  push:
+    branches: [chore/runtime-admission-recovery-probe]
+    paths:
+      - recovery/runtime-admission-reconcile.py
+      - .github/workflows/runtime-admission-candidate-recovery.yml
+permissions:
+  contents: read
+concurrency:
+  group: runtime-admission-candidate-recovery
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      sha: ${{ steps.candidate.outputs.sha }}
+      tree: ${{ steps.candidate.outputs.tree }}
+      digest: ${{ steps.candidate.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Reconcile only the exact reviewed integration and current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp recovery/runtime-admission-reconcile.py "$RUNNER_TEMP/reconcile.py"
+          python -m py_compile "$RUNNER_TEMP/reconcile.py"
+          git config user.name 'Илия'
+          git config user.email 'iliyazelenkog@gmail.com'
+          git worktree add --detach "$RUNNER_TEMP/candidate" ec790f9e12c29c32c7dad1ad683a7d56476cacd3
+          cd "$RUNNER_TEMP/candidate"
+          set +e
+          git merge --no-commit --no-ff c8f3e7ba220241f79292c84c72712653019aa1df
+          result=$?
+          set -e
+          test "$result" -eq 1
+          python "$RUNNER_TEMP/reconcile.py" compose "$PWD"
+          pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts
+          pnpm install --frozen-lockfile
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync } from 'node:fs';
+          import YAML from 'yaml';
+          const before = YAML.parse(execFileSync('git', ['show', 'c8f3e7ba220241f79292c84c72712653019aa1df:pnpm-lock.yaml'], { encoding: 'utf8' }));
+          const after = YAML.parse(readFileSync('pnpm-lock.yaml', 'utf8'));
+          delete before.importers['.'].devDependencies.renovate;
+          assert.deepEqual(after.importers, before.importers);
+          assert.deepEqual(before.snapshots['tslib@2.8.1'], {});
+          assert.deepEqual(after.snapshots['tslib@2.8.1'], { optional: true });
+          before.snapshots['tslib@2.8.1'] = { optional: true };
+          for (const section of ['packages', 'snapshots']) {
+            for (const [name, value] of Object.entries(after[section])) {
+              assert.deepEqual(value, before[section][name], `${section}/${name}`);
+            }
+          }
+          console.log('Retained dependency versions, integrities and edges match current main.');
+          NODE
+          python "$RUNNER_TEMP/reconcile.py" finish "$PWD"
+          node scripts/compiler-floor.ts
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync } from 'node:fs';
+          import { createRequire } from 'node:module';
+          import { dirname, resolve } from 'node:path';
+          const require = createRequire(resolve('package.json'));
+          const owner = createRequire(require.resolve('stack-toolchain/package.json'));
+          const manifestPath = owner.resolve('oxfmt/package.json');
+          const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+          if (manifest.name !== 'oxfmt' || manifest.version !== '0.74.0') throw Error('Formatter owner mismatch');
+          const bin = typeof manifest.bin === 'string' ? manifest.bin : manifest.bin.oxfmt;
+          const paths = JSON.parse(readFileSync('toolchain.config.json', 'utf8')).format.paths;
+          execFileSync(process.execPath, [resolve(dirname(manifestPath), bin), '--write', ...paths], { stdio: 'inherit' });
+          NODE
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+          for name in ['check-docs-source-successor-v1.mts', 'check-docs-source-successor-v1.test.mts', 'check-docs-verifier-authority.mts', 'check-docs-verifier-authority.test.mts', 'quality-process.ts', 'quality-process.test.ts', 'run-governance-tests.ts', 'run-governance-tests.test.ts', 'verify-docs-admission-change.mjs']:
+              path = 'scripts/' + name
+              assert Path(path).read_bytes() == subprocess.check_output(['git', 'show', 'c8f3e7ba220241f79292c84c72712653019aa1df:' + path]), path
+          PY
+          git add --all
+          git diff --cached --check
+          node scripts/check-quality-scope.mjs
+          pnpm quality:typecheck
+          pnpm quality:lint
+          pnpm format:check
+          node --test scripts/compiler-floor.test.ts scripts/check-repository-admission.test.ts scripts/repository-registration.test.ts scripts/repository-bootstrap-observation.test.ts
+      - name: Seal one candidate for both independent test lanes
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/candidate"
+          git commit -m 'feat: reconcile runtime admission with installed Stack and v3'
+          sha="$(git rev-parse HEAD)"
+          tree="$(git rev-parse HEAD^{tree})"
+          test "$(git show -s --format=%P HEAD)" = 'ec790f9e12c29c32c7dad1ad683a7d56476cacd3 c8f3e7ba220241f79292c84c72712653019aa1df'
+          test -z "$(git status --porcelain)"
+          git update-ref refs/heads/recovery/runtime-admission-prepared "$sha"
+          mkdir -p "$GITHUB_WORKSPACE/candidate-evidence"
+          git bundle create "$GITHUB_WORKSPACE/candidate-evidence/candidate.bundle" --all
+          git diff c8f3e7ba220241f79292c84c72712653019aa1df HEAD --stat > "$GITHUB_WORKSPACE/candidate-evidence/diff-stat.txt"
+          git diff c8f3e7ba220241f79292c84c72712653019aa1df HEAD > "$GITHUB_WORKSPACE/candidate-evidence/candidate.patch"
+          printf 'sha=%s\ntree=%s\nmain=c8f3e7ba220241f79292c84c72712653019aa1df\nhead=ec790f9e12c29c32c7dad1ad683a7d56476cacd3\nrun=%s\n' "$sha" "$tree" "$GITHUB_RUN_ID" > "$GITHUB_WORKSPACE/candidate-evidence/identity.txt"
+          cd "$GITHUB_WORKSPACE/candidate-evidence"
+          sha256sum candidate.bundle > SHA256SUMS
+          digest="$(sha256sum candidate.bundle | cut -d' ' -f1)"
+          printf 'sha=%s\ntree=%s\ndigest=%s\n' "$sha" "$tree" "$digest" >> "$GITHUB_OUTPUT"
+          cat identity.txt diff-stat.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-admission-candidate
+          path: candidate-evidence/
+          if-no-files-found: error
+          retention-days: 14
+  check:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [26.11.1, 24.21.0]
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: runtime-admission-candidate
+          path: candidate-evidence
+      - name: Bind the same immutable candidate
+        env:
+          EXPECTED_SHA: ${{ needs.prepare.outputs.sha }}
+          EXPECTED_TREE: ${{ needs.prepare.outputs.tree }}
+          EXPECTED_DIGEST: ${{ needs.prepare.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum candidate-evidence/candidate.bundle | cut -d' ' -f1)" = "$EXPECTED_DIGEST"
+          git clone --no-checkout candidate-evidence/candidate.bundle candidate
+          git -C candidate checkout --detach "$EXPECTED_SHA"
+          test "$(git -C candidate rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          package_json_file: candidate/package.json
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Full fresh bootstrap, real native runtime, and complete check
+        working-directory: candidate
+        env:
+          EXPECTED_NODE: ${{ matrix.node }}
+          EXPECTED_SHA: ${{ needs.prepare.outputs.sha }}
+          EXPECTED_TREE: ${{ needs.prepare.outputs.tree }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p process.versions.node)" = "$EXPECTED_NODE"
+          pnpm install --frozen-lockfile
+          pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+          pnpm --dir tools/renovate-validation run build:native
+          pnpm check 2>&1 | tee "$RUNNER_TEMP/full-check.log"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+          test -z "$(git status --porcelain)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: runtime-admission-check-${{ matrix.node }}
+          path: ${{ runner.temp }}/full-check.log
+          if-no-files-found: ignore
+          retention-days: 14
+  publish:
+    needs: [prepare, check]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: runtime-admission-candidate
+          path: candidate-evidence
+      - name: Publish only the validated review branch, never main or authority refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ needs.prepare.outputs.sha }}
+          EXPECTED_TREE: ${{ needs.prepare.outputs.tree }}
+          EXPECTED_DIGEST: ${{ needs.prepare.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum candidate-evidence/candidate.bundle | cut -d' ' -f1)" = "$EXPECTED_DIGEST"
+          git clone --no-checkout candidate-evidence/candidate.bundle candidate
+          cd candidate
+          git checkout --detach "$EXPECTED_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+          test "$(git show -s --format=%P HEAD)" = 'ec790f9e12c29c32c7dad1ad683a7d56476cacd3 c8f3e7ba220241f79292c84c72712653019aa1df'
+          test "$(gh api repos/agent-teams-ai/.github/git/ref/heads/main --jq .object.sha)" = c8f3e7ba220241f79292c84c72712653019aa1df
+          gh auth setup-git
+          git remote add publish https://github.com/agent-teams-ai/.github.git
+          branch=refs/heads/recovery/runtime-admission-20261030
+          current="$(git ls-remote publish "$branch" | cut -f1)"
+          test -z "$current" || test "$current" = "$EXPECTED_SHA"
+          git push publish "$EXPECTED_SHA:$branch"
+          gh api "repos/agent-teams-ai/.github/commits/$EXPECTED_SHA" --jq '{sha,author:.author.login,committer:.committer.login,tree:.commit.tree.sha,parents:[.parents[].sha]}'
+          test "$(gh api "repos/agent-teams-ai/.github/commits/$EXPECTED_SHA" --jq .author.id)" = 13103045
+          test "$(gh api "repos/agent-teams-ai/.github/commits/$EXPECTED_SHA" --jq .committer.id)" = 13103045
