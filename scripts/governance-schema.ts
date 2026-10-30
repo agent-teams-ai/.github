@@ -3,18 +3,34 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import type { Schema } from "ajv/dist/2020.js";
 
 function synchronousSchema(value: unknown): Schema {
-  if (typeof value === "boolean") { return value; }
-  assert.ok(value !== null && typeof value === "object" && !Array.isArray(value), "Expected a JSON Schema mapping or boolean");
-  assert.ok(!("$async" in value) || value.$async === false, "Governance schemas must validate synchronously");
+  if (typeof value === "boolean") {
+    return value;
+  }
+  assert.ok(
+    value !== null && typeof value === "object" && !Array.isArray(value),
+    "Expected a JSON Schema mapping or boolean",
+  );
+  assert.ok(
+    !("$async" in value) || value.$async === false,
+    "Governance schemas must validate synchronously",
+  );
   return value;
 }
 
 // One strict validator for both the retained JavaScript entrypoint and typed
 // registration policy. The owned schema supplies the runtime type boundary.
-export function validateSchema<T = unknown>(value: unknown, schema: unknown, label: string,
-  relatedSchemas: readonly unknown[] = []): T {
+// The caller owns the schema/type pair; Ajv performs the narrowing, not a cast.
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+export function validateSchema<T = unknown>(
+  value: unknown,
+  schema: unknown,
+  label: string,
+  relatedSchemas: readonly unknown[] = [],
+): T {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
-  for (const related of relatedSchemas) { ajv.addSchema(synchronousSchema(related)); }
+  for (const related of relatedSchemas) {
+    ajv.addSchema(synchronousSchema(related));
+  }
   const validate = ajv.compile<T>(synchronousSchema(schema));
   if (!validate(value)) {
     const details = (validate.errors ?? [])

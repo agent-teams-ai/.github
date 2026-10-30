@@ -12,7 +12,7 @@ agents to the tool owner; it does not activate a package or certify a consumer.
 | Reusable repository validation, source boundaries, quality coverage, governance and quality-gate composition | [Engineering Foundation README](https://github.com/agent-teams-ai/engineering-foundation#readme) | Existing tooling; use the exact released version and capabilities adopted by the target repository |
 | New owned repository configuration and explicit FMS/Foundation/CI bootstrap | [New repository bootstrap](repository-admission.md#new-repository-bootstrap) | Central source checker and inputless reusable workflow; supported JS/TS pnpm/Bun configuration only, never qualification |
 | Node/Bun process execution as an explicit mechanism                                                          | [node-or-bun README](https://github.com/agent-teams-ai/node-or-bun#readme)                       | Published mechanism; verify its current support matrix and the consumer's exact pin                |
-| Versioned tools, technical presets and commands for JS/TS checking, linting, formatting and compilation      | [Stack Toolchain](#stack-toolchain)                                                              | Published supported `0.1.0`; consumer adoption remains explicit                                    |
+| Versioned tools, technical presets and commands for JS/TS checking, linting, formatting and compilation      | [Stack Toolchain](#stack-toolchain)                                                              | Published supported `0.1.1`; consumer adoption remains explicit                                    |
 
 Start with the target repository's AGENTS.md, README, scripts and accepted
 profiles. Follow the owning tool guide, verify its released version, and apply
@@ -22,20 +22,32 @@ until a replacement has a qualified supported release and is explicitly adopted.
 
 ## Stack Toolchain
 
-Status observed on 2026-10-23: `stack-toolchain@0.1.0` is a qualified supported
-public release on [npm](https://www.npmjs.com/package/stack-toolchain/v/0.1.0),
-with its [GitHub release](https://github.com/agent-teams-ai/engineering-foundation/releases/tag/stack-toolchain%400.1.0)
-bound to source `d815b1176c263f4d2e66421822b84b15db591dfc`.
-The [released package README](https://github.com/agent-teams-ai/engineering-foundation/blob/d815b1176c263f4d2e66421822b84b15db591dfc/packages/stack-toolchain/README.md)
+Status observed on 2026-10-25: `stack-toolchain@0.1.1` is a qualified supported
+public release on [npm](https://www.npmjs.com/package/stack-toolchain/v/0.1.1),
+with its [GitHub release](https://github.com/agent-teams-ai/engineering-foundation/releases/tag/stack-toolchain%400.1.1)
+bound to source `23b5a885ba46a2b43b5715ce82db28fcf04f2175`.
+The [released package README](https://github.com/agent-teams-ai/engineering-foundation/blob/23b5a885ba46a2b43b5715ce82db28fcf04f2175/packages/stack-toolchain/README.md)
 is the owning guide to exact installation, commands, presets, configuration and
 limits. Use it when projects repeat compiler/linter versions, technical presets
 and package scripts; upgrade the exact development dependency and lockfile
 through the consumer's adoption procedure.
 
+The same [published release run](https://github.com/agent-teams-ai/engineering-foundation/actions/runs/40187728694/attempts/1)
+produced `@agent-teams/engineering-foundation@3.0.0`,
+`@agent-teams/feature-module-standard@0.3.0` and `stack-toolchain@0.1.1`.
+Its companion releases are `@agent-teams/docs-protocol@0.6.6`,
+`@agent-teams/docs-protocol-agent-teams@0.5.5`,
+`@agent-teams/docs-protocol-mcp@0.2.9`, `@agent-teams/release-checks@0.1.0`,
+`@agent-teams/ci-input-proof@0.1.3`, `@agent-teams/repository-mutation@0.4.2`
+and `@agent-teams/document-authoring@0.3.6`. These are availability coordinates,
+not a requirement to install the entire set or a new Docs Cohort admission.
+
 The earlier `0.0.0-stage` and `0.0.0` artifacts are unsupported bootstrap versions;
 use the supported release rather than those artifacts. Publication does not
-qualify Foundation 3 migration, node-or-bun development-tool adoption, Get Modular
-adoption or the repository fleet rollout; those remain separate pending work.
+qualify a consumer's Foundation 3 migration, node-or-bun development-tool adoption,
+Get Modular adoption or the repository fleet rollout. Each remains subject to
+its own exact pins, reviewed migration and required gates; this catalog records
+no new consumer adoption.
 
 The released Node/Bun profiles provide read-only type checking, linting,
 format checking, explicit TypeScript compilation and diagnostic commands.
@@ -52,6 +64,9 @@ and reference-graph builds remain separate; consumers retain existing build and
 test gates. See the released README for exact supported behavior, rather
 than a second version table or command recipe here.
 
+Choose the standalone `stack-toolchain` package when only technical JS/TS
+checking, linting, formatting or compilation is needed; Foundation is appropriate
+when the consumer also explicitly adopts its conformance capabilities.
 The package is for ordinary independent projects and does not require Foundation,
 organization credentials, governance admission or a product-specific runtime.
 Consumers own source paths, tsconfig, ambient types, outputs, tests and product

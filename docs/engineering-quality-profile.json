@@ -1,10 +1,7 @@
 {
   "schemaVersion": "consumer-quality-profile-v1",
   "status": "active-foundation",
-  "languages": [
-    "javascript",
-    "typescript"
-  ],
+  "languages": ["javascript", "typescript"],
   "sourceRoots": {
     "tooling": [
       "scripts/**/*.mjs",
@@ -22,28 +19,24 @@
   "typedCoverage": false,
   "requiredRoute": "pnpm check",
   "foundation": {
-    "version": "1.10.0",
-    "publicPreset": "./node_modules/@agent-teams/engineering-foundation/presets/oxlint/node.json"
+    "version": "3.0.0",
+    "publicPreset": "./node_modules/stack-toolchain/presets/oxlint/node.json"
   },
   "lint": {
     "configPath": "oxlint.json",
-    "includedRoles": [
-      "tooling"
-    ],
-    "includedExtensions": [
-      ".mts",
-      ".ts"
-    ]
+    "includedRoles": ["tooling"],
+    "includedExtensions": [".mts", ".ts"]
   },
   "toolchain": {
     "node": "26.11.1",
     "pnpm": "11.18.0",
-    "oxlint": "1.85.0"
+    "package": "stack-toolchain",
+    "configPath": "toolchain.config.json",
+    "dependencyPath": "devDependencies.stack-toolchain"
   },
   "typedTooling": {
     "configPath": "tsconfig.tooling.json",
     "command": "pnpm quality:typecheck",
-    "compiler": "7.0.2",
     "nodeTypes": "24.19.1",
     "entryFiles": [
       "scripts/qualification-input-proof.mts",
@@ -67,6 +60,31 @@
       "scripts/validate-renovate.ts",
       "scripts/validate-renovate.test.ts",
       "scripts/validate-renovate-abi.probe.ts"
-    ]
-  }
+    ],
+    "compilerManifest": "stack-toolchain/toolchain-manifest.json"
+  },
+  "retainedAuthoritySources": [
+    {
+      "path": "scripts/check-docs-source-successor-v1.mts",
+      "gitBlob": "36cb752a50b8a0d7f83c813ed17cec775cdd79bb"
+    },
+    {
+      "path": "scripts/check-docs-source-successor-v1.test.mts",
+      "gitBlob": "281032ebb0afecd5bb425f7f4018c99b20ee6635"
+    },
+    {
+      "path": "scripts/check-docs-verifier-authority.mts",
+      "gitBlob": "55c462acdc808bff8b032dce9819de48a02e5e3b"
+    },
+    {
+      "path": "scripts/check-docs-verifier-authority.test.mts",
+      "gitBlob": "c34697abc079e0a161fb3872a8a9acb07e951ded"
+    }
+  ],
+  "formatRetainedAuthoritySources": [
+    {
+      "path": "scripts/verify-docs-admission-change.mjs",
+      "gitBlob": "f3db341a5d9fc5ec74c9c3379153940db99177c0"
+    }
+  ]
 }

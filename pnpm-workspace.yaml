@@ -5,6 +5,7 @@ strictPeerDependencies: true
 saveExact: true
 verifyDepsBeforeRun: error
 allowBuilds:
+  bun: false
   core-js-pure: false
   dtrace-provider: false
   re2: true

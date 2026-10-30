@@ -5,23 +5,39 @@ import { promisify } from "node:util";
 
 import { observeStableRepositoryInventory } from "./docs-cohort-policy.mjs";
 import { BOOTSTRAP_GUIDE } from "./check-repository-admission.ts";
-import { auditRepositoryBootstrapConfigurations, loadRemoteBootstrapSource } from "./repository-bootstrap-observation.ts";
+import {
+  auditRepositoryBootstrapConfigurations,
+  loadRemoteBootstrapSource,
+} from "./repository-bootstrap-observation.ts";
 import { projectRepositoryRegistrations } from "./repository-registration.ts";
-export { auditRepositoryBootstrapConfigurations, loadRemoteBootstrapSource } from "./repository-bootstrap-observation.ts";
+export {
+  auditRepositoryBootstrapConfigurations,
+  loadRemoteBootstrapSource,
+} from "./repository-bootstrap-observation.ts";
 import { loadRepositoryRegistrationScope } from "./governance-policy.mjs";
 
 const execFileAsync = promisify(execFile);
 
 export async function resolveForkParents(repositories, fetchRepositoryDetail) {
-  return Promise.all(repositories.map(async (repository) => {
-    if (!repository.fork) {return { ...repository, fork_parent: null };}
-    const detail = await fetchRepositoryDetail(repository.full_name);
-    if (detail.id !== repository.id || detail.full_name !== repository.full_name ||
-        detail.fork !== true || typeof detail.parent?.full_name !== "string") {
-      throw new Error(`${repository.full_name} individual fork metadata is incomplete or inconsistent.`);
-    }
-    return { ...repository, fork_parent: detail.parent.full_name };
-  }));
+  return Promise.all(
+    repositories.map(async (repository) => {
+      if (!repository.fork) {
+        return { ...repository, fork_parent: null };
+      }
+      const detail = await fetchRepositoryDetail(repository.full_name);
+      if (
+        detail.id !== repository.id ||
+        detail.full_name !== repository.full_name ||
+        detail.fork !== true ||
+        typeof detail.parent?.full_name !== "string"
+      ) {
+        throw new Error(
+          `${repository.full_name} individual fork metadata is incomplete or inconsistent.`,
+        );
+      }
+      return { ...repository, fork_parent: detail.parent.full_name };
+    }),
+  );
 }
 
 async function fetchRepository(repository) {
@@ -34,98 +50,202 @@ async function fetchRepository(repository) {
 }
 
 export async function fetchPage({ page, perPage }) {
-  const { stdout } = await execFileAsync("gh", [
-    "api",
-    `orgs/agent-teams-ai/repos?type=all&per_page=${perPage}&page=${page}`,
-    "--jq",
-    "map({id, name, full_name, created_at, archived, fork, owner: .owner.login, visibility, default_branch})",
-  ], {
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-    timeout: 30_000,
-  });
+  const { stdout } = await execFileAsync(
+    "gh",
+    [
+      "api",
+      `orgs/agent-teams-ai/repos?type=all&per_page=${perPage}&page=${page}`,
+      "--jq",
+      "map({id, name, full_name, created_at, archived, fork, owner: .owner.login, visibility, default_branch})",
+    ],
+    {
+      encoding: "utf8",
+      maxBuffer: 8 * 1024 * 1024,
+      timeout: 30_000,
+    },
+  );
   return resolveForkParents(JSON.parse(stdout), fetchRepository);
 }
 
 function liveProjection(repository) {
-  return { repository: repository.full_name, id: repository.id, created_at: repository.created_at,
-    archived: repository.archived, visibility: repository.visibility, default_branch: repository.default_branch,
-    is_fork: repository.fork, fork_parent: repository.fork_parent };
+  return {
+    repository: repository.full_name,
+    id: repository.id,
+    created_at: repository.created_at,
+    archived: repository.archived,
+    visibility: repository.visibility,
+    default_branch: repository.default_branch,
+    is_fork: repository.fork,
+    fork_parent: repository.fork_parent,
+  };
 }
 
 export function repositoryInventoryDrift(liveRepositories, inventory, policy, registrations) {
-  const live = new Map(liveRepositories.map((record) => [record.full_name, liveProjection(record)]));
-  const { inventoryRecords: declaredRecords, docsRecords: policyRecords } = projectRepositoryRegistrations(inventory, policy, registrations);
+  const live = new Map(
+    liveRepositories.map((record) => [record.full_name, liveProjection(record)]),
+  );
+  const { inventoryRecords: declaredRecords, docsRecords: policyRecords } =
+    projectRepositoryRegistrations(inventory, policy, registrations);
   const declared = new Map(declaredRecords.map((record) => [record.repository, record]));
-  const activePolicy = new Map(policyRecords.filter(({ repository_lifecycle }) => repository_lifecycle === "active").map((record) => [record.repository, record]));
-  const missingFromSnapshot = [...live.keys()].filter((repository) => !declared.has(repository)).toSorted();
-  const absentFromOrganization = [...declared.keys()].filter((repository) => !live.has(repository)).toSorted();
+  const activePolicy = new Map(
+    policyRecords
+      .filter(({ repository_lifecycle }) => repository_lifecycle === "active")
+      .map((record) => [record.repository, record]),
+  );
+  const missingFromSnapshot = [...live.keys()]
+    .filter((repository) => !declared.has(repository))
+    .toSorted((left, right) =>
+      String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+    );
+  const absentFromOrganization = [...declared.keys()]
+    .filter((repository) => !live.has(repository))
+    .toSorted((left, right) =>
+      String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+    );
   const structuralChanges = [];
   for (const [repository, observed] of live) {
     const expected = declared.get(repository);
-    if (!expected) {continue;}
-    for (const field of ["id", "created_at", "archived", "visibility", "default_branch", "is_fork", "fork_parent"]) {
-      if (expected[field] !== observed[field]) {structuralChanges.push({ repository, field, expected: expected[field], observed: observed[field] });}
+    if (!expected) {
+      continue;
+    }
+    for (const field of [
+      "id",
+      "created_at",
+      "archived",
+      "visibility",
+      "default_branch",
+      "is_fork",
+      "fork_parent",
+    ]) {
+      if (expected[field] !== observed[field]) {
+        structuralChanges.push({
+          repository,
+          field,
+          expected: expected[field],
+          observed: observed[field],
+        });
+      }
     }
   }
-  const missingClassification = [...live.values()].filter(({ repository, id }) => activePolicy.get(repository)?.repository_id !== id)
-    .map(({ repository, id }) => ({ repository, repository_id: id, required_status: "pending_classification" }))
+  const missingClassification = [...live.values()]
+    .filter(({ repository, id }) => activePolicy.get(repository)?.repository_id !== id)
+    .map(({ repository, id }) => ({
+      repository,
+      repository_id: id,
+      required_status: "pending_classification",
+    }))
     .toSorted((left, right) => left.repository.localeCompare(right.repository));
   return { missingFromSnapshot, absentFromOrganization, structuralChanges, missingClassification };
 }
 
-export function assertRepositoryInventoryCurrent(liveRepositories, inventory, policy, registrations) {
+export function assertRepositoryInventoryCurrent(
+  liveRepositories,
+  inventory,
+  policy,
+  registrations,
+) {
   const drift = repositoryInventoryDrift(liveRepositories, inventory, policy, registrations);
   if (Object.values(drift).some((entries) => entries.length > 0)) {
-    throw new Error(`Organization repository inventory drift detected. Add every new repository to the dated inventory and documentation policy as pending_classification before choosing adopted or N/A. Actionable diff:\n${JSON.stringify(drift, null, 2)}`);
+    throw new Error(
+      `Organization repository inventory drift detected. Add every new repository to the dated inventory and documentation policy as pending_classification before choosing adopted or N/A. Actionable diff:\n${JSON.stringify(drift, null, 2)}`,
+    );
   }
   return drift;
 }
 
 async function assertCompletePrivateRepositoryVisibility(liveRepositories) {
-  const { stdout } = await execFileAsync("gh", ["api", "orgs/agent-teams-ai", "--jq", "{login,total_private_repos}"], {
-    encoding: "utf8", maxBuffer: 1024 * 1024, timeout: 30_000,
-  });
+  const { stdout } = await execFileAsync(
+    "gh",
+    ["api", "orgs/agent-teams-ai", "--jq", "{login,total_private_repos}"],
+    {
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024,
+      timeout: 30_000,
+    },
+  );
   const organization = JSON.parse(stdout);
-  const visiblePrivate = liveRepositories.filter(({ visibility }) => visibility === "private").length;
-  if (organization.login !== "agent-teams-ai" || !Number.isInteger(organization.total_private_repos) ||
-      organization.total_private_repos !== visiblePrivate) {
-    throw new Error("ORG_INVENTORY_READ_TOKEN does not prove complete private-repository visibility for agent-teams-ai.");
+  const visiblePrivate = liveRepositories.filter(
+    ({ visibility }) => visibility === "private",
+  ).length;
+  if (
+    organization.login !== "agent-teams-ai" ||
+    !Number.isInteger(organization.total_private_repos) ||
+    organization.total_private_repos !== visiblePrivate
+  ) {
+    throw new Error(
+      "ORG_INVENTORY_READ_TOKEN does not prove complete private-repository visibility for agent-teams-ai.",
+    );
   }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (typeof process.env.GH_TOKEN !== "string" || process.env.GH_TOKEN.length === 0) {
-    throw new Error("ORG_INVENTORY_READ_TOKEN is required for the bounded organization inventory audit.");
+    throw new Error(
+      "ORG_INVENTORY_READ_TOKEN is required for the bounded organization inventory audit.",
+    );
   }
   const policy = JSON.parse(await readFile("governance/docs-protocol-policy-v2.json", "utf8"));
-  const inventory = JSON.parse(await readFile("governance/organization-repository-inventory.json", "utf8"));
-  const ledger = JSON.parse(await readFile("governance/executable-spec-qualification.json", "utf8"));
-  const registrations = await loadRepositoryRegistrationScope({ inventory, ledger, docsProtocol: policy });
-  const first = await observeStableRepositoryInventory(fetchPage, { maxPages: policy.admission.live_drift_audit.max_pages });
+  const inventory = JSON.parse(
+    await readFile("governance/organization-repository-inventory.json", "utf8"),
+  );
+  const ledger = JSON.parse(
+    await readFile("governance/executable-spec-qualification.json", "utf8"),
+  );
+  const registrations = await loadRepositoryRegistrationScope({
+    inventory,
+    ledger,
+    docsProtocol: policy,
+  });
+  const first = await observeStableRepositoryInventory(fetchPage, {
+    maxPages: policy.admission.live_drift_audit.max_pages,
+  });
   await assertCompletePrivateRepositoryVisibility(first);
   let driftError;
   let bootstrap = [];
   if (process.argv.includes("--audit")) {
-    try {assertRepositoryInventoryCurrent(first, inventory, policy, registrations);}
-    catch (error) {driftError = error;}
+    try {
+      assertRepositoryInventoryCurrent(first, inventory, policy, registrations);
+    } catch (error) {
+      driftError = error;
+    }
     // Run even when inventory drifts, so a wholly absent caller is actionable
     // alongside the pending-classification requirement for a new repository.
-    bootstrap = await auditRepositoryBootstrapConfigurations(first, loadRemoteBootstrapSource,
-      new Set(registrations.repositories.map(record => record.inventory.id)));
+    bootstrap = await auditRepositoryBootstrapConfigurations(
+      first,
+      loadRemoteBootstrapSource,
+      new Set(registrations.repositories.map((record) => record.inventory.id)),
+    );
   }
   const bootstrapFailed = bootstrap.some(({ status }) => status !== "configured_not_qualified");
-  process.stdout.write(`${JSON.stringify({
-    organization: "agent-teams-ai",
-    repository_count: first.length,
-    registration_scope: registrations.observation_scope,
-    registration_revision: registrations.registration_revision,
-    drift_status: process.argv.includes("--audit") ? driftError ? "drift_detected" : "current" : "not_evaluated",
-    bootstrap_status: process.argv.includes("--audit") ? bootstrapFailed ? "incomplete" : "configured_not_qualified" : "not_evaluated",
-    bootstrap_guide: BOOTSTRAP_GUIDE,
-    bootstrap,
-    repositories: first,
-  }, null, 2)}\n`);
-  if (driftError) {throw driftError;}
-  if (bootstrapFailed) {throw new Error(`Repository bootstrap configuration is incomplete. Follow ${BOOTSTRAP_GUIDE}`);}
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        organization: "agent-teams-ai",
+        repository_count: first.length,
+        registration_scope: registrations.observation_scope,
+        registration_revision: registrations.registration_revision,
+        drift_status: process.argv.includes("--audit")
+          ? driftError
+            ? "drift_detected"
+            : "current"
+          : "not_evaluated",
+        bootstrap_status: process.argv.includes("--audit")
+          ? bootstrapFailed
+            ? "incomplete"
+            : "configured_not_qualified"
+          : "not_evaluated",
+        bootstrap_guide: BOOTSTRAP_GUIDE,
+        bootstrap,
+        repositories: first,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  if (driftError) {
+    throw driftError;
+  }
+  if (bootstrapFailed) {
+    throw new Error(`Repository bootstrap configuration is incomplete. Follow ${BOOTSTRAP_GUIDE}`);
+  }
 }

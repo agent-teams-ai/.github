@@ -5,14 +5,9 @@
   "description": "Validation tooling for Agent Teams organization defaults.",
   "license": "Apache-2.0",
   "type": "module",
-  "packageManager": "pnpm@11.18.0",
-  "engines": {
-    "node": ">=24.18.0 <25 || >=26.10.0 <27",
-    "pnpm": ">=11.17.0 <12"
-  },
   "scripts": {
     "precheck": "node scripts/compiler-floor.ts && node scripts/check-quality-scope.mjs",
-    "check": "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
+    "check": "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm format:check && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
     "governance:cohorts:append-only": "node scripts/check-cohort-append-only.mjs",
     "governance:cohorts:verify": "node scripts/verify-docs-cohort-evidence.mjs",
     "governance:inventory:observe": "node scripts/observe-org-repository-inventory.mjs",
@@ -22,20 +17,26 @@
     "renovate:validate": "pnpm --dir tools/renovate-validation run validate",
     "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
     "quality:lint": "node scripts/run-quality-lint.mjs",
-    "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm test:input-proof && pnpm test:critical",
+    "quality:check": "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm format:check && pnpm test:input-proof && pnpm test:critical",
     "quality:boundaries": "node scripts/compiler-floor.ts && agent-teams-foundation check architecture.source-dependencies",
     "test:critical": "node scripts/compiler-floor.ts && agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
-    "quality:typecheck": "tsc --project tsconfig.tooling.json",
-    "test:input-proof": "node --test scripts/qualification-input-proof.test.mts"
+    "quality:typecheck": "stack-toolchain typecheck",
+    "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
+    "format:check": "stack-toolchain format:check",
+    "quality:doctor": "stack-toolchain doctor --json"
   },
   "devDependencies": {
     "@agent-teams/ci-input-proof": "0.1.0-rc.0",
-    "@agent-teams/engineering-foundation": "1.10.0",
+    "@agent-teams/engineering-foundation": "3.0.0",
     "@types/node": "24.19.1",
     "ajv": "8.20.0",
     "node-or-bun": "0.2.1",
-    "oxlint": "1.85.0",
-    "typescript": "7.0.2",
+    "stack-toolchain": "0.1.1",
     "yaml": "2.9.0"
-  }
+  },
+  "engines": {
+    "node": ">=24.18.0 <25 || >=26.10.0 <27",
+    "pnpm": ">=11.17.0 <12"
+  },
+  "packageManager": "pnpm@11.18.0"
 }

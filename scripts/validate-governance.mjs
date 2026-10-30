@@ -28,7 +28,10 @@ const actionsSchema = await loadJson("governance/actions-policy.schema.json");
 const docsProtocol = await loadJson("governance/docs-protocol-policy-v2.json");
 const docsProtocolSchema = await loadJson("governance/docs-protocol-policy-v2.schema.json");
 const stableDocsProtocolSource = await readFile("governance/docs-protocol-policy.json", "utf8");
-const stableDocsProtocolSchemaSource = await readFile("governance/docs-protocol-policy.schema.json", "utf8");
+const stableDocsProtocolSchemaSource = await readFile(
+  "governance/docs-protocol-policy.schema.json",
+  "utf8",
+);
 const docsCohorts = await loadJson("governance/docs-qualified-cohorts.json");
 const docsCohortsSchema = await loadJson("governance/docs-qualified-cohorts.schema.json");
 const docsExceptions = await loadJson("governance/docs-protocol-exceptions.json");
@@ -50,4 +53,6 @@ const registrations = await loadRepositoryRegistrationScope({ inventory, ledger,
 validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol, registrations);
 validateDocsGovernanceReferences(docsCohorts, docsExceptions, docsProtocol, security);
 
-console.log("Governance verified: inventory, ledgers, security defaults, Actions, Docs Cohorts, exceptions, and documentation protocol admission.");
+console.log(
+  "Governance verified: inventory, ledgers, security defaults, Actions, Docs Cohorts, exceptions, and documentation protocol admission.",
+);

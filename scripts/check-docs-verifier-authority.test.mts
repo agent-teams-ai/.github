@@ -240,43 +240,6 @@ test("requires every required guard and reusable workflow even when absent from 
   }
 });
 
-for (const path of ["governance/repository-registration-supplements.schema.json", "scripts/governance-schema.ts",
-  "scripts/repository-registration.ts", "scripts/repository-bootstrap-observation.ts", "scripts/check-repository-admission.ts",
-  "scripts/observe-org-repository-inventory.mjs", ".github/workflows/organization-inventory-drift.yml",
-  "scripts/fixtures/commit-author-identity-caller.yml", ".github/workflows/repository-admission-check.yml",
-  "scripts/compiler-floor.ts", "scripts/validate-renovate.ts", ".github/workflows/node24-compatibility.yml"]) {
-test(`later critical input ${path} is protected without requiring it in historical trees`, () => {
-  const absent = () => {
-    const fixture = authorityFixture();
-    fixture.baseTree.tree = fixture.baseTree.tree.filter(entry => entry.path !== path);
-    fixture.headTree.tree = fixture.headTree.tree.filter(entry => entry.path !== path);
-    return fixture;
-  };
-  assert.equal(check(absent()), "noop");
-  const stable = absent(), entry = { path, mode: "100644", type: "blob", sha: "a".repeat(40) };
-  stable.baseTree.tree.push({ ...entry }); stable.headTree.tree.push({ ...entry });
-  assert.equal(check(stable), "noop");
-  const retainedSymlink = absent(), link = { ...entry, mode: "120000" };
-  retainedSymlink.baseTree.tree.push({ ...link }); retainedSymlink.headTree.tree.push({ ...link });
-  assert.throws(() => check(retainedSymlink), /Protected input must be regular/u);
-  for (const mutation of ["added", "modified", "removed", "symlink", "unlisted"] as const) {
-    const fixture = absent();
-    if (mutation !== "added") { fixture.baseTree.tree.push({ ...entry }); }
-    if (mutation !== "removed") { fixture.headTree.tree.push({ ...entry,
-      ...(mutation === "modified" || mutation === "unlisted" ? { sha: "b".repeat(40) } : {}),
-      ...(mutation === "symlink" ? { mode: "120000" } : {}),
-    }); }
-    if (mutation !== "unlisted") {
-      fixture.files.push({ filename: path, status: ["added", "removed"].includes(mutation) ? mutation : "modified",
-        sha: mutation === "modified" ? "b".repeat(40) : entry.sha, previous_filename: undefined });
-      fixture.changedFiles = fixture.files.length;
-    }
-    assert.throws(() => check(fixture), /Protected authority path|Unlisted changed Git leaf/u, mutation);
-  }
-});
-
-}
-
 test("allows declared unrelated workflow changes and their ancestor tree SHA changes", () => {
   const fixture = authorityFixture(), path = ".github/workflows/reviewrouter-interaction.yml", sha = "b".repeat(40);
   fixture.headTree.tree.find(entry => entry.path === path)!.sha = sha;

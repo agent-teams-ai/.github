@@ -22,6 +22,7 @@ boundaries:
         - "@agent-teams/ci-input-proof"
         - ajv
         - node-or-bun
+        - stack-toolchain
         - yaml
       builtins:
         - node:assert/strict
