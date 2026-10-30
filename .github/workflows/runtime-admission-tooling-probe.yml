@@ -49,16 +49,32 @@ jobs:
           delete manifest.devDependencies.renovate;
           writeFileSync('package.json', JSON.stringify(manifest, null, 2) + '\n');
           NODE
-          pnpm install --lockfile-only --offline --ignore-scripts
+          pnpm install --lockfile-only --no-frozen-lockfile --ignore-scripts
           pnpm install --frozen-lockfile
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync } from 'node:fs';
+          import YAML from 'yaml';
+          const before = YAML.parse(execFileSync('git', ['show', 'c8f3e7ba220241f79292c84c72712653019aa1df:pnpm-lock.yaml'], { encoding: 'utf8' }));
+          const after = YAML.parse(readFileSync('pnpm-lock.yaml', 'utf8'));
+          assert.deepEqual(Object.keys(after.importers), ['.']);
+          delete before.importers['.'].devDependencies.renovate;
+          assert.deepEqual(after.importers, before.importers);
+          for (const section of ['packages', 'snapshots']) {
+            for (const [name, value] of Object.entries(after[section])) {
+              assert.deepEqual(value, before[section][name], `Unexpected dependency graph drift: ${section}/${name}`);
+            }
+          }
+          console.log(`Pruned root lock preserves every retained package/integrity and snapshot (${Object.keys(after.packages).length} packages).`);
+          NODE
           pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
           pnpm --dir tools/renovate-validation run build:native
-          pnpm --dir tools/renovate-validation exec node -e "if (process.versions.node !== '24.21.0') throw Error('Renovate runtime mismatch'); require('re2'); console.log('Managed Node 24 native RE2 loaded')"
+          pnpm --dir tools/renovate-validation exec node -e "if (process.versions.node !== '24.21.0') throw Error('Renovate runtime mismatch'); require('node:module').createRequire(require.resolve('renovate/package.json'))('re2'); console.log('Managed Node 24 native RE2 loaded')"
           mkdir -p recovery-tooling/runtime/bin recovery-tooling/runtime/pnpm recovery-tooling/root
           cp "$(command -v node)" recovery-tooling/runtime/bin/node
-          pnpm_package="$(dirname "$(dirname "$(readlink -f "$(command -v pnpm)")")")"
-          test -f "$pnpm_package/package.json"
-          cp -a "$pnpm_package/." recovery-tooling/runtime/pnpm/
+          npm pack pnpm@11.18.0 --ignore-scripts --pack-destination "$RUNNER_TEMP"
+          tar -xzf "$RUNNER_TEMP/pnpm-11.18.0.tgz" --strip-components=1 -C recovery-tooling/runtime/pnpm
           cp package.json pnpm-lock.yaml pnpm-workspace.yaml recovery-tooling/root/
           tar -I 'zstd -T0 -3' -cf recovery-tooling/dependencies.tar.zst node_modules tools/renovate-validation/node_modules
           git diff -- pnpm-lock.yaml > recovery-tooling/root-lock-diff.patch
