@@ -61,12 +61,17 @@ jobs:
           assert.deepEqual(Object.keys(after.importers), ['.']);
           delete before.importers['.'].devDependencies.renovate;
           assert.deepEqual(after.importers, before.importers);
+          // Removing Renovate removes tslib's non-optional path. No version,
+          // integrity or dependency edge changes: only this known classification.
+          assert.deepEqual(before.snapshots['tslib@2.8.1'], {});
+          assert.deepEqual(after.snapshots['tslib@2.8.1'], { optional: true });
+          before.snapshots['tslib@2.8.1'] = { optional: true };
           for (const section of ['packages', 'snapshots']) {
             for (const [name, value] of Object.entries(after[section])) {
               assert.deepEqual(value, before[section][name], `Unexpected dependency graph drift: ${section}/${name}`);
             }
           }
-          console.log(`Pruned root lock preserves every retained package/integrity and snapshot (${Object.keys(after.packages).length} packages).`);
+          console.log(`Pruned root lock preserves every retained package/integrity and dependency edge (${Object.keys(after.packages).length} packages; tslib optional classification reviewed).`);
           NODE
           pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
           pnpm --dir tools/renovate-validation run build:native
