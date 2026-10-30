@@ -136,8 +136,8 @@ jobs:
           set -euo pipefail
           test "$(node -p process.versions.node)" = "$EXPECTED_NODE"
           node --input-type=module -e 'import {qualifyBootstrap} from "./scripts/runtime-admission-source-successor-v2.ts"; await qualifyBootstrap(process.env.SOURCE_SHA);'
-          pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
-          pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+          pnpm install --frozen-lockfile
+          pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
           pnpm --dir tools/renovate-validation run build:native
           pnpm check 2>&1 | tee "$RUNNER_TEMP/full-source-check.log"
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
