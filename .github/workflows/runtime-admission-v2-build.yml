@@ -1,0 +1,191 @@
+name: Runtime admission v2 source bootstrap
+on:
+  push:
+    branches: [chore/runtime-admission-recovery-probe]
+    paths:
+      - recovery/runtime-admission-v2-build.py
+      - .github/workflows/runtime-admission-v2-build.yml
+permissions:
+  contents: read
+concurrency:
+  group: runtime-admission-v2-source-bootstrap
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      sha: ${{ steps.seal.outputs.sha }}
+      tree: ${{ steps.seal.outputs.tree }}
+      digest: ${{ steps.seal.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+      - name: Reconstruct the exact reviewed regular source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name iliya
+          git config user.email iliyazelenkog@gmail.com
+          for sha in e745027cb33dd7ce5f1b05589c7acf2c8801c8bc d8f22cb27db9f348f30bbdfdea67d09faac8e3ab c364ab2b82ad6250500110345982c3f1fa82181f; do
+            git fetch --no-tags origin "$sha"
+          done
+          git worktree add --detach "$RUNNER_TEMP/candidate" e745027cb33dd7ce5f1b05589c7acf2c8801c8bc
+          git worktree add --detach "$RUNNER_TEMP/old-source" d8f22cb27db9f348f30bbdfdea67d09faac8e3ab
+          git worktree add --detach "$RUNNER_TEMP/installed-v3" c364ab2b82ad6250500110345982c3f1fa82181f
+          python -m py_compile recovery/runtime-admission-v2-build.py
+          cd "$RUNNER_TEMP/candidate"
+          test "$(node -p process.versions.node)" = 26.11.1
+          test "$(pnpm --version)" = 11.18.0
+          pnpm install --frozen-lockfile
+          python "$GITHUB_WORKSPACE/recovery/runtime-admission-v2-build.py" "$PWD" "$RUNNER_TEMP/old-source" "$RUNNER_TEMP/installed-v3"
+          git add --all
+          git diff --cached --check
+          test "$(git diff --cached --name-only | wc -l)" -eq 13
+          node scripts/compiler-floor.ts
+          node scripts/check-quality-scope.mjs
+          pnpm quality:typecheck
+          pnpm quality:lint
+          pnpm format:check
+          node --test scripts/runtime-admission-source-successor-v2.test.ts
+      - name: Seal the single candidate used by both clean runners
+        id: seal
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/candidate"
+          git commit -m 'feat: qualify v3-compatible runtime admission successor v2'
+          sha="$(git rev-parse HEAD)"
+          tree="$(git rev-parse HEAD^{tree})"
+          test "$(git show -s --format=%P HEAD)" = e745027cb33dd7ce5f1b05589c7acf2c8801c8bc
+          test -z "$(git status --porcelain)"
+          git update-ref refs/heads/recovery/runtime-v2-source-prepared "$sha"
+          mkdir -p "$GITHUB_WORKSPACE/source-evidence"
+          git bundle create "$GITHUB_WORKSPACE/source-evidence/source.bundle" --all
+          git diff 680192aed6f7c377bb639c637e0f29f09a2e20ec HEAD > "$GITHUB_WORKSPACE/source-evidence/source.patch"
+          git diff --stat 680192aed6f7c377bb639c637e0f29f09a2e20ec HEAD > "$GITHUB_WORKSPACE/source-evidence/diff-stat.txt"
+          printf 'sha=%s\ntree=%s\nparent=e745027cb33dd7ce5f1b05589c7acf2c8801c8bc\ntarget=680192aed6f7c377bb639c637e0f29f09a2e20ec\nrun=%s\nattempt=%s\n' "$sha" "$tree" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > "$GITHUB_WORKSPACE/source-evidence/identity.txt"
+          cd "$GITHUB_WORKSPACE/source-evidence"
+          sha256sum source.bundle > SHA256SUMS
+          digest="$(sha256sum source.bundle | cut -d' ' -f1)"
+          printf 'sha=%s\ntree=%s\ndigest=%s\n' "$sha" "$tree" "$digest" >> "$GITHUB_OUTPUT"
+          cat identity.txt diff-stat.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-v2-reviewed-source
+          path: source-evidence/
+          if-no-files-found: error
+          retention-days: 14
+  check:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [26.11.1, 24.21.0]
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: runtime-v2-reviewed-source
+          path: source-evidence
+      - name: Bind the sealed source checkout
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
+          SOURCE_TREE: ${{ needs.prepare.outputs.tree }}
+          SOURCE_DIGEST: ${{ needs.prepare.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum source-evidence/source.bundle | cut -d' ' -f1)" = "$SOURCE_DIGEST"
+          git clone --no-checkout source-evidence/source.bundle source
+          git -C source checkout --detach "$SOURCE_SHA"
+          test "$(git -C source rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Builtin-only source preflight before package-manager setup
+        working-directory: source
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
+        run: node --input-type=module -e 'import {preflightBootstrap} from "./scripts/runtime-admission-source-successor-v2.ts"; await preflightBootstrap(process.env.SOURCE_SHA);'
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+          package_json_file: source/package.json
+      - name: Full fresh source bootstrap and complete checks
+        working-directory: source
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
+          SOURCE_TREE: ${{ needs.prepare.outputs.tree }}
+          EXPECTED_NODE: ${{ matrix.node }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p process.versions.node)" = "$EXPECTED_NODE"
+          node --input-type=module -e 'import {qualifyBootstrap} from "./scripts/runtime-admission-source-successor-v2.ts"; await qualifyBootstrap(process.env.SOURCE_SHA);'
+          pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+          pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+          pnpm --dir tools/renovate-validation run build:native
+          pnpm check 2>&1 | tee "$RUNNER_TEMP/full-source-check.log"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+          test -z "$(git status --porcelain)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: runtime-v2-source-check-${{ matrix.node }}
+          path: ${{ runner.temp }}/full-source-check.log
+          if-no-files-found: ignore
+          retention-days: 14
+  publish:
+    needs: [prepare, check]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: runtime-v2-reviewed-source
+          path: source-evidence
+      - name: Publish only the tested review branch with an exact-head lease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
+          SOURCE_TREE: ${{ needs.prepare.outputs.tree }}
+          SOURCE_DIGEST: ${{ needs.prepare.outputs.digest }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum source-evidence/source.bundle | cut -d' ' -f1)" = "$SOURCE_DIGEST"
+          git clone --no-checkout source-evidence/source.bundle source
+          cd source
+          git checkout --detach "$SOURCE_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+          test "$(git show -s --format=%P HEAD)" = e745027cb33dd7ce5f1b05589c7acf2c8801c8bc
+          test "$(gh api repos/agent-teams-ai/.github/git/ref/heads/main --jq .object.sha)" = c8f3e7ba220241f79292c84c72712653019aa1df
+          gh api repos/agent-teams-ai/.github/pulls/389 > "$RUNNER_TEMP/pull389.json"
+          jq -e '.state == "open" and .merged == false and .head.sha == "680192aed6f7c377bb639c637e0f29f09a2e20ec" and .base.sha == "c8f3e7ba220241f79292c84c72712653019aa1df"' "$RUNNER_TEMP/pull389.json"
+          branch=review/runtime-admission-source-successor-v2
+          test "$(gh api "repos/agent-teams-ai/.github/git/ref/heads/$branch" --jq .object.sha)" = e745027cb33dd7ce5f1b05589c7acf2c8801c8bc
+          gh auth setup-git
+          git remote add publish https://github.com/agent-teams-ai/.github.git
+          git push --force-with-lease="refs/heads/$branch:e745027cb33dd7ce5f1b05589c7acf2c8801c8bc" publish "$SOURCE_SHA:refs/heads/$branch"
+          gh api "repos/agent-teams-ai/.github/commits/$SOURCE_SHA" > "$RUNNER_TEMP/source-commit.json"
+          jq -e --arg sha "$SOURCE_SHA" --arg tree "$SOURCE_TREE" '.sha == $sha and .commit.tree.sha == $tree and .author.id == 13103045 and .committer.id == 13103045 and .commit.author.name == "iliya" and .commit.committer.name == "iliya" and .commit.author.email == "iliyazelenkog@gmail.com" and .commit.committer.email == "iliyazelenkog@gmail.com"' "$RUNNER_TEMP/source-commit.json"
+          test "$(gh api "repos/agent-teams-ai/.github/git/ref/heads/$branch" --jq .object.sha)" = "$SOURCE_SHA"
+          printf 'Review source published: %s, tree %s. No defining source ref, ruleset, admission status or main merge was changed.\n' "$SOURCE_SHA" "$SOURCE_TREE"
