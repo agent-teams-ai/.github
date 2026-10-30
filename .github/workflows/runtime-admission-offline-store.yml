@@ -1,0 +1,50 @@
+name: Runtime admission offline package store
+on:
+  push:
+    branches: [chore/runtime-admission-recovery-probe]
+    paths: [.github/workflows/runtime-admission-offline-store.yml]
+permissions:
+  contents: read
+jobs:
+  store:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c8f3e7ba220241f79292c84c72712653019aa1df
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Fetch only existing immutable public dependency graphs
+        shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = c8f3e7ba220241f79292c84c72712653019aa1df
+          pnpm install --frozen-lockfile --ignore-scripts
+          git fetch --no-tags origin ec790f9e12c29c32c7dad1ad683a7d56476cacd3
+          git archive ec790f9e12c29c32c7dad1ad683a7d56476cacd3 tools/renovate-validation | tar -x
+          pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+          pnpm --dir tools/renovate-validation exec node -e "if (process.versions.node !== '24.21.0') throw Error('Managed runtime mismatch')"
+          store="$(pnpm store path)"
+          test "$store" = "$(pnpm --dir tools/renovate-validation store path)"
+          mkdir -p offline-store
+          printf 'main=c8f3e7ba220241f79292c84c72712653019aa1df\nintegration=ec790f9e12c29c32c7dad1ad683a7d56476cacd3\nstore=%s\nrun=%s\nattempt=%s\n' "$store" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > offline-store/identity.txt
+          tar -C "$store" -I 'zstd -T0 -3' -cf offline-store/store-v11.tar.zst .
+          (cd offline-store && sha256sum store-v11.tar.zst > SHA256SUMS)
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-admission-offline-store
+          path: offline-store/
+          if-no-files-found: error
+          retention-days: 3
