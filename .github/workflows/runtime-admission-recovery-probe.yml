@@ -55,6 +55,51 @@ jobs:
           cat recovery-evidence/merge-preview.txt
           test "$(git rev-parse HEAD)" = "$main"
           test -z "$(git status --porcelain --untracked-files=no)"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Prove the old source refuses the current protection set
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_DIRECTORY: ${{ runner.temp }}/runtime-admission-reviewed-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/agent-teams-ai/.github/rulesets/19979783 > recovery-evidence/main-ruleset.json
+          gh api repos/agent-teams-ai/.github/rulesets/24363205 > recovery-evidence/identity-ruleset.json
+          gh api repos/agent-teams-ai/.github/git/ref/heads/main > recovery-evidence/current-main.json
+          git worktree add --detach "$SOURCE_DIRECTORY" d8f22cb27db9f348f30bbdfdea67d09faac8e3ab
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { pathToFileURL } from 'node:url';
+          import { join } from 'node:path';
+          const read = name => JSON.parse(readFileSync(`recovery-evidence/${name}.json`, 'utf8'));
+          const main = read('main-ruleset'), identity = read('identity-ruleset');
+          const currentMain = read('current-main').object.sha;
+          assert.equal(process.versions.node, '26.11.1');
+          assert.equal(currentMain, 'c8f3e7ba220241f79292c84c72712653019aa1df');
+          const source = await import(pathToFileURL(join(process.env.SOURCE_DIRECTORY, 'scripts/runtime-admission-source-successor-v1.ts')).href);
+          assert.equal(source.TARGET.baseSHA, 'e0f271740c13290b6bb729ffb79cb050253fc6b8');
+          assert.notEqual(currentMain, source.TARGET.baseSHA);
+          let reason;
+          try { source.assertMainProtection(main, identity, 'public_read'); }
+          catch (error) { reason = error.message; }
+          assert.equal(reason, 'Unapproved main required-context transition');
+          const observation = {
+            source: 'd8f22cb27db9f348f30bbdfdea67d09faac8e3ab',
+            sourceBase: source.TARGET.baseSHA, observedMain: currentMain,
+            node: process.versions.node, run: process.env.GITHUB_RUN_ID,
+            attempt: process.env.GITHUB_RUN_ATTEMPT,
+            expectedRejection: reason, protectionVisibility: 'public_read',
+            admissionQualification: false, administrativeWrites: false
+          };
+          writeFileSync('recovery-evidence/source-protection-drift.json', JSON.stringify(observation, null, 2) + '\n');
+          console.log(JSON.stringify(observation, null, 2));
+          NODE
+          test "$(git -C "$SOURCE_DIRECTORY" rev-parse HEAD)" = d8f22cb27db9f348f30bbdfdea67d09faac8e3ab
+          test -z "$(git -C "$SOURCE_DIRECTORY" status --porcelain)"
       - name: Retain source-only evidence (no credentials or dependency install)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
