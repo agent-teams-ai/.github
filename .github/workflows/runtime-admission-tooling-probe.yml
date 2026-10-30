@@ -1,0 +1,76 @@
+name: Runtime admission pinned tooling (read-only)
+
+on:
+  push:
+    branches:
+      - chore/runtime-admission-recovery-probe
+    paths:
+      - .github/workflows/runtime-admission-tooling-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  tooling:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: c8f3e7ba220241f79292c84c72712653019aa1df
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - name: Install the existing Stack graph and the reviewed isolated Renovate tool
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = c8f3e7ba220241f79292c84c72712653019aa1df
+          node -e "if (process.versions.node !== '26.11.1') throw Error('Node mismatch')"
+          test "$(pnpm --version)" = 11.18.0
+          git fetch --no-tags origin ec790f9e12c29c32c7dad1ad683a7d56476cacd3
+          git archive ec790f9e12c29c32c7dad1ad683a7d56476cacd3 tools/renovate-validation | tar -x
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
+          assert.equal(manifest.devDependencies.renovate, '44.24.2');
+          assert.equal(manifest.devDependencies['@agent-teams/engineering-foundation'], '3.0.0');
+          assert.equal(manifest.devDependencies['stack-toolchain'], '0.1.1');
+          delete manifest.devDependencies.renovate;
+          writeFileSync('package.json', JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+          pnpm install --lockfile-only --offline --ignore-scripts
+          pnpm install --frozen-lockfile
+          pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+          pnpm --dir tools/renovate-validation run build:native
+          pnpm --dir tools/renovate-validation exec node -e "if (process.versions.node !== '24.21.0') throw Error('Renovate runtime mismatch'); require('re2'); console.log('Managed Node 24 native RE2 loaded')"
+          mkdir -p recovery-tooling/runtime/bin recovery-tooling/runtime/pnpm recovery-tooling/root
+          cp "$(command -v node)" recovery-tooling/runtime/bin/node
+          pnpm_package="$(dirname "$(dirname "$(readlink -f "$(command -v pnpm)")")")"
+          test -f "$pnpm_package/package.json"
+          cp -a "$pnpm_package/." recovery-tooling/runtime/pnpm/
+          cp package.json pnpm-lock.yaml pnpm-workspace.yaml recovery-tooling/root/
+          tar -I 'zstd -T0 -3' -cf recovery-tooling/dependencies.tar.zst node_modules tools/renovate-validation/node_modules
+          git diff -- pnpm-lock.yaml > recovery-tooling/root-lock-diff.patch
+          printf 'main=%s\nintegration=%s\nnode=%s\npnpm=%s\nrun=%s\nattempt=%s\n' \
+            c8f3e7ba220241f79292c84c72712653019aa1df ec790f9e12c29c32c7dad1ad683a7d56476cacd3 \
+            "$(node --version)" "$(pnpm --version)" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > recovery-tooling/identity.txt
+          (cd recovery-tooling && sha256sum dependencies.tar.zst runtime/bin/node root/pnpm-lock.yaml > SHA256SUMS)
+          cat recovery-tooling/identity.txt
+          du -sh recovery-tooling
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: runtime-admission-pinned-tooling
+          path: recovery-tooling/
+          if-no-files-found: error
+          retention-days: 3
