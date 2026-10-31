@@ -84,3 +84,4 @@ and secret mappings without copying checkout, setup, or runtime steps.
 Organization-wide community health, repository policy, and dependency automation configuration.
 
 Runtime admission v2 negative qualification canary (do not merge).
+Negative canary final head.
