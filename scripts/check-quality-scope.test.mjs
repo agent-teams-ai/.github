@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import YAML from "yaml";
 import { pathToFileURL } from "node:url";
 import {
   assertQualityAdoption,
+  assertRuntimeToolAdoption,
   readStackInstallation,
   classifySourcePath,
   classifyTrackedPaths,
@@ -15,8 +16,37 @@ import {
   readQualityAdoption,
 } from "./check-quality-scope.mjs";
 import { selectOxlintFiles } from "./run-quality-lint.mjs";
+import { assertCompilerFloor } from "./compiler-floor.ts";
 
 const accepted = await readQualityAdoption();
+
+const acceptedRuntimeTool = JSON.parse(
+  await readFile(new URL("../tools/renovate-validation/package.json", import.meta.url), "utf8"),
+);
+
+test("complete quality scope accepts the exact isolated runtime contract", () => {
+  assertRuntimeToolAdoption(acceptedRuntimeTool);
+});
+test("complete quality scope rejects a missing isolated runtime contract", () => {
+  assert.throws(() => assertRuntimeToolAdoption(undefined), assert.AssertionError);
+});
+for (const [name, mutate] of Object.entries({
+  "ranged isolated Renovate pin": (value) => {
+    value.devDependencies.renovate = "^44.24.2";
+  },
+  "wrong isolated validator runtime": (value) => {
+    value.devEngines.runtime.version = "26.11.1";
+  },
+  "unbounded native validator build": (value) => {
+    value.scripts["build:native"] = "pnpm rebuild";
+  },
+})) {
+  test(`complete quality scope rejects ${name}`, () => {
+    const value = structuredClone(acceptedRuntimeTool);
+    mutate(value);
+    assert.throws(() => assertRuntimeToolAdoption(value), assert.AssertionError);
+  });
+}
 
 test("actual repository adopts the Foundation preset through the canonical route", () => {
   assertQualityAdoption(accepted);
@@ -42,7 +72,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 31);
+  assert.equal(paths.length, 43);
   assert.ok(paths.includes("scripts/verify-docs-admission-change.mjs"));
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
@@ -57,6 +87,18 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/run-governance-tests.test.ts"));
   assert.ok(!paths.includes("scripts/check-docs-source-successor-v1.mts"));
   assert.ok(!paths.includes("scripts/check-docs-source-successor-v1.test.mts"));
+  assert.ok(paths.includes("scripts/compiler-floor.ts"));
+  assert.ok(paths.includes("scripts/compiler-floor.test.ts"));
+  assert.ok(paths.includes("scripts/check-repository-admission.ts"));
+  assert.ok(paths.includes("scripts/check-repository-admission.test.ts"));
+  assert.ok(paths.includes("scripts/governance-schema.ts"));
+  assert.ok(paths.includes("scripts/repository-registration.ts"));
+  assert.ok(paths.includes("scripts/repository-registration.test.ts"));
+  assert.ok(paths.includes("scripts/repository-bootstrap-observation.ts"));
+  assert.ok(paths.includes("scripts/repository-bootstrap-observation.test.ts"));
+  assert.ok(paths.includes("scripts/validate-renovate.ts"));
+  assert.ok(paths.includes("scripts/validate-renovate.test.ts"));
+  assert.ok(paths.includes("scripts/validate-renovate-abi.probe.ts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
 });
 
@@ -166,6 +208,34 @@ test("Stack reader rejects an ancestor package and a borrowed whole node_modules
 });
 
 const mutations = {
+  "a changed TypeScript ESM package contract": (value) => {
+    value.manifest.type = "commonjs";
+  },
+  "an absorbed runtime-specific tool": (value) => {
+    value.workspacePolicy.packages.push("tools/renovate-validation");
+  },
+  "ineffective engine policy": (value) => {
+    value.workspacePolicy.engineStrict = false;
+  },
+  "ineffective peer policy": (value) => {
+    delete value.workspacePolicy.strictPeerDependencies;
+  },
+  "implicit check-time installation": (value) => {
+    value.workspacePolicy.verifyDepsBeforeRun = "install";
+  },
+  "missing isolated validator bootstrap": (value) => {
+    value.workflow = value.workflow.replace(
+      "pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts",
+      "true",
+    );
+  },
+  "an ordinary TypeScript helper outside the strict project": (value) => {
+    value.trackedPaths.push("scripts/unlisted-helper.ts");
+  },
+  "an ordinary TypeScript test outside the strict project": (value) => {
+    value.trackedPaths.push("scripts/unlisted.test.ts");
+  },
+
   "Bun build-script execution": (value) => {
     value.workspacePolicy.allowBuilds.bun = true;
   },
@@ -511,13 +581,15 @@ async function fixture(t) {
   return { root, put };
 }
 
-const runInstalled = (cli, args, root) =>
-  spawnSync(process.execPath, [cli, ...args], {
+const runInstalled = (cli, args, root) => {
+  assertCompilerFloor();
+  return spawnSync(process.execPath, [cli, ...args], {
     cwd: root,
     encoding: "utf8",
     timeout: 30000,
     maxBuffer: 2 * 1024 * 1024,
   });
+};
 const outputOf = (result) => result.stdout + result.stderr;
 
 test("installed source boundary rejects missing inputs and governed dist source", async (t) => {
@@ -535,6 +607,13 @@ test("installed source boundary rejects missing inputs and governed dist source"
     'import { value } from "../tools/feature-module-standard/check.mjs"; console.log(value);\n',
   );
   await put("tools/feature-module-standard/check.mjs", "export const value = 1;\n");
+  for (const path of [
+    "tools/renovate-validation/package.json",
+    "tools/renovate-validation/pnpm-workspace.yaml",
+    "tools/renovate-validation/pnpm-lock.yaml",
+  ]) {
+    await put(path, await readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+  }
   const run = () =>
     runInstalled(
       foundationCli,

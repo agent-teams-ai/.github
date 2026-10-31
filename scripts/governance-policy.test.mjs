@@ -30,6 +30,7 @@ const stableDocsProtocolSchemaSource = await readFile(
   "utf8",
 );
 const clone = (value) => structuredClone(value);
+
 const qualifyDocsConsumer = (policy, repository = "agent-teams-ai/agent-runtime") => {
   const record = policy.repositories.find((candidate) => candidate.repository === repository);
   const revision = "a".repeat(40);

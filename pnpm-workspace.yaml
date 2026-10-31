@@ -1,3 +1,9 @@
+packages:
+  - .
+engineStrict: true
+strictPeerDependencies: true
+saveExact: true
+verifyDepsBeforeRun: error
 allowBuilds:
   bun: false
   core-js-pure: false

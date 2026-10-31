@@ -291,3 +291,21 @@ The local nohooks installation and native-binary doctor are preparation evidence
 They do not qualify an ordinary full installation: existing approved re2 remains
 pending locally, and its normal build plus the complete frozen installation must
 pass actual required CI. No new build script is authorized by this change.
+
+## Runtime and admission integration recovery
+
+This integration retains Foundation 3.0.0 and Stack 0.1.1 ownership. Its strict
+program includes 21 entries and its maintained type-aware lint census includes
+43 files. Historical authority sources and the four process/test helpers remain
+byte-identical to the installed main basis.
+
+The metadata-only compiler preflight follows the real Stack and Foundation
+compiler owners before Foundation execution. It does not restore a root compiler,
+legacy extractor or an older Foundation toolchain. Renovate 44.24.2 is isolated
+in `tools/renovate-validation`, with managed Node 24.21.0 and a mandatory real
+native RE2 load. Root checks cannot silently install dependency drift.
+
+The old PR390 activation tuple is historical, not applicable to installed v3.
+New protected compiler/admission/toolchain inputs require a separately reviewed
+finite successor, fresh positive/negative qualification and an add-before-retire
+transition. This functional candidate does not activate its own authority.

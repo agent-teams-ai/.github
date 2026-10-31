@@ -21,6 +21,18 @@
     "scripts/quality-process.ts",
     "scripts/quality-process.test.ts",
     "scripts/run-governance-tests.ts",
-    "scripts/run-governance-tests.test.ts"
+    "scripts/run-governance-tests.test.ts",
+    "scripts/compiler-floor.ts",
+    "scripts/compiler-floor.test.ts",
+    "scripts/check-repository-admission.ts",
+    "scripts/check-repository-admission.test.ts",
+    "scripts/governance-schema.ts",
+    "scripts/repository-registration.ts",
+    "scripts/repository-registration.test.ts",
+    "scripts/repository-bootstrap-observation.ts",
+    "scripts/repository-bootstrap-observation.test.ts",
+    "scripts/validate-renovate.ts",
+    "scripts/validate-renovate.test.ts",
+    "scripts/validate-renovate-abi.probe.ts"
   ]
 }

@@ -14,21 +14,23 @@ const root = new URL("../", import.meta.url);
 const SOURCE_SUFFIXES = [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"];
 const FOUNDATION_PRESET = "./node_modules/stack-toolchain/presets/oxlint/node.json";
 const EXPECTED_SCRIPTS = {
-  precheck: "node scripts/check-quality-scope.mjs",
+  precheck: "node scripts/compiler-floor.ts && node scripts/check-quality-scope.mjs",
   check:
     "pnpm quality:lint && pnpm quality:boundaries && pnpm quality:typecheck && pnpm format:check && pnpm renovate:validate && pnpm governance:validate && pnpm governance:cohorts:append-only && node scripts/check-community-files.mjs && node scripts/check-reviewrouter-workflow.mjs && pnpm test:critical && pnpm test",
   "quality:scope": "node --test scripts/check-quality-scope.test.mjs",
   "quality:lint": "node scripts/run-quality-lint.mjs",
   "quality:check":
     "pnpm quality:scope && pnpm quality:boundaries && pnpm quality:lint && pnpm quality:typecheck && pnpm format:check && pnpm test:input-proof && pnpm test:critical",
-  "quality:boundaries": "agent-teams-foundation check architecture.source-dependencies",
+  "quality:boundaries":
+    "node scripts/compiler-floor.ts && agent-teams-foundation check architecture.source-dependencies",
   "test:critical":
-    "agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
+    "node scripts/compiler-floor.ts && agent-teams-node-test --contract docs/engineering-quality-required-tests.json -- scripts/check-quality-scope.test.mjs tools/feature-module-standard/check.test.mjs",
   "quality:typecheck": "stack-toolchain typecheck",
   "format:check": "stack-toolchain format:check",
   "quality:doctor": "stack-toolchain doctor --json",
   "test:input-proof": "node --test scripts/qualification-input-proof.test.mts",
   test: "node scripts/run-governance-tests.ts",
+  "renovate:validate": "pnpm --dir tools/renovate-validation run validate",
 };
 
 const isTrackedSource = (relativePath) =>
@@ -166,6 +168,19 @@ function assertWorkflow(workflowText) {
     1,
     "CI must select the owning Node test tooling pin",
   );
+  for (const expected of [
+    {
+      name: "Install the isolated Node 24 Renovate tool without lifecycle scripts",
+      run: "pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts",
+    },
+    {
+      name: "Build the allowed native validator dependency with managed Node 24",
+      run: "pnpm --dir tools/renovate-validation run build:native",
+    },
+  ]) {
+    const matches = steps.filter((step) => step?.run === expected.run);
+    assert.deepEqual(matches, [expected], "CI must retain exact isolated validator bootstrap");
+  }
   const requiredSteps = steps.filter((step) => step?.run === "pnpm check");
   assert.equal(requiredSteps.length, 1, "CI check job must contain exactly one pnpm check step");
   assert.deepEqual(
@@ -280,6 +295,39 @@ export async function readStackInstallation(base = root) {
   };
 }
 
+// Runtime tooling is a complete-scope gate, not a dependency of the lint CLI.
+// Keep this fail-closed check in the full gate without widening lint inputs.
+export function assertRuntimeToolAdoption(renovateTool) {
+  assert.deepEqual(
+    renovateTool,
+    {
+      name: "central-renovate-validation",
+      version: "0.0.0",
+      private: true,
+      packageManager: "pnpm@11.18.0",
+      engines: {
+        node: ">=24.18.0 <25",
+      },
+      devEngines: {
+        runtime: {
+          name: "node",
+          version: "24.21.0",
+          onFail: "download",
+        },
+      },
+      scripts: {
+        "build:native":
+          "node -e \"if (process.version !== 'v24.21.0') throw Error('Renovate runtime mismatch')\" && pnpm rebuild re2",
+        validate: "node ../../scripts/validate-renovate.ts",
+      },
+      devDependencies: {
+        renovate: "44.24.2",
+      },
+    },
+    "Isolated validator contract changed",
+  );
+}
+
 export function assertQualityAdoption({
   manifest,
   workspacePolicy,
@@ -306,6 +354,22 @@ export function assertQualityAdoption({
     "3.0.0",
     "Foundation dependency must use the exact released pin",
   );
+  assert.equal(manifest.type, "module", "TypeScript tooling must keep the ESM package contract");
+  assert.equal(manifest.devDependencies?.renovate, undefined, "Renovate must remain isolated");
+  assert.deepEqual(
+    workspacePolicy.packages,
+    ["."],
+    "Runtime-specific tools must remain separate workspaces",
+  );
+  assert.equal(workspacePolicy.engineStrict, true, "Engine enforcement must be effective");
+  assert.equal(workspacePolicy.strictPeerDependencies, true, "Peer enforcement must be effective");
+  assert.equal(workspacePolicy.saveExact, true, "Dependency declarations must be exact");
+  assert.equal(
+    workspacePolicy.verifyDepsBeforeRun,
+    "error",
+    "Checks must not install missing dependencies",
+  );
+
   assertStackBinding(manifest, stackInstallation, stackDoctor);
   assert.deepEqual(
     workspacePolicy.allowBuilds,
@@ -365,19 +429,26 @@ export function assertQualityAdoption({
         ],
       },
       typedCoverage: false,
-      retainedAuthoritySources: RETAINED_AUTHORITY_SOURCES,
-      formatRetainedAuthoritySources: FORMAT_RETAINED_AUTHORITY_SOURCES,
       requiredRoute: "pnpm check",
-      foundation: { version: "3.0.0", publicPreset: FOUNDATION_PRESET },
+      foundation: {
+        version: "3.0.0",
+        publicPreset: "./node_modules/stack-toolchain/presets/oxlint/node.json",
+      },
       lint: {
         configPath: "oxlint.json",
         includedRoles: ["tooling"],
         includedExtensions: [".mts", ".ts"],
       },
+      toolchain: {
+        node: "26.11.1",
+        pnpm: "11.18.0",
+        package: "stack-toolchain",
+        configPath: "toolchain.config.json",
+        dependencyPath: "devDependencies.stack-toolchain",
+      },
       typedTooling: {
         configPath: "tsconfig.tooling.json",
         command: "pnpm quality:typecheck",
-        compilerManifest: "stack-toolchain/toolchain-manifest.json",
         nodeTypes: "24.19.1",
         entryFiles: [
           "scripts/qualification-input-proof.mts",
@@ -389,15 +460,45 @@ export function assertQualityAdoption({
           "scripts/quality-process.test.ts",
           "scripts/run-governance-tests.ts",
           "scripts/run-governance-tests.test.ts",
+          "scripts/compiler-floor.ts",
+          "scripts/compiler-floor.test.ts",
+          "scripts/check-repository-admission.ts",
+          "scripts/check-repository-admission.test.ts",
+          "scripts/governance-schema.ts",
+          "scripts/repository-registration.ts",
+          "scripts/repository-registration.test.ts",
+          "scripts/repository-bootstrap-observation.ts",
+          "scripts/repository-bootstrap-observation.test.ts",
+          "scripts/validate-renovate.ts",
+          "scripts/validate-renovate.test.ts",
+          "scripts/validate-renovate-abi.probe.ts",
         ],
+        compilerManifest: "stack-toolchain/toolchain-manifest.json",
       },
-      toolchain: {
-        node: "26.11.1",
-        pnpm: "11.18.0",
-        package: "stack-toolchain",
-        dependencyPath: "devDependencies.stack-toolchain",
-        configPath: "toolchain.config.json",
-      },
+      retainedAuthoritySources: [
+        {
+          path: "scripts/check-docs-source-successor-v1.mts",
+          gitBlob: "36cb752a50b8a0d7f83c813ed17cec775cdd79bb",
+        },
+        {
+          path: "scripts/check-docs-source-successor-v1.test.mts",
+          gitBlob: "281032ebb0afecd5bb425f7f4018c99b20ee6635",
+        },
+        {
+          path: "scripts/check-docs-verifier-authority.mts",
+          gitBlob: "55c462acdc808bff8b032dce9819de48a02e5e3b",
+        },
+        {
+          path: "scripts/check-docs-verifier-authority.test.mts",
+          gitBlob: "c34697abc079e0a161fb3872a8a9acb07e951ded",
+        },
+      ],
+      formatRetainedAuthoritySources: [
+        {
+          path: "scripts/verify-docs-admission-change.mjs",
+          gitBlob: "f3db341a5d9fc5ec74c9c3379153940db99177c0",
+        },
+      ],
     },
     "quality profile changed",
   );
@@ -427,6 +528,18 @@ export function assertQualityAdoption({
         "scripts/quality-process.test.ts",
         "scripts/run-governance-tests.ts",
         "scripts/run-governance-tests.test.ts",
+        "scripts/compiler-floor.ts",
+        "scripts/compiler-floor.test.ts",
+        "scripts/check-repository-admission.ts",
+        "scripts/check-repository-admission.test.ts",
+        "scripts/governance-schema.ts",
+        "scripts/repository-registration.ts",
+        "scripts/repository-registration.test.ts",
+        "scripts/repository-bootstrap-observation.ts",
+        "scripts/repository-bootstrap-observation.test.ts",
+        "scripts/validate-renovate.ts",
+        "scripts/validate-renovate.test.ts",
+        "scripts/validate-renovate-abi.probe.ts",
       ],
     },
     "strict compiler scope and settings must stay exact",
@@ -492,8 +605,8 @@ export function assertQualityAdoption({
         manifest: "pnpm-workspace.yaml",
       },
       rootPackage: true,
-      packageRoots: [],
-      governedRoots: ["scripts", "tools/feature-module-standard"],
+      packageRoots: ["tools/renovate-validation"],
+      governedRoots: ["scripts", "tools/feature-module-standard", "tools/renovate-validation"],
       boundaries: [
         {
           id: "governance-tooling",
@@ -548,6 +661,18 @@ export function assertQualityAdoption({
               "node:url",
               "node:util",
             ],
+            runtimeReferences: [],
+          },
+        },
+        {
+          id: "renovate-validation",
+          dependencyMode: "development",
+          roots: ["tools/renovate-validation"],
+          entrypoints: [],
+          allow: {
+            boundaries: [],
+            packages: ["renovate"],
+            builtins: [],
             runtimeReferences: [],
           },
         },
@@ -637,6 +762,12 @@ export function assertQualityAdoption({
     },
     "Stack must retain the independent checked census and exact compiler project",
   );
+  for (const entry of census.classified.filter((candidate) => candidate.path.endsWith(".ts"))) {
+    assert.ok(
+      toolingTsconfig.include.includes(entry.path),
+      "Ordinary TypeScript must be in the strict project",
+    );
+  }
   return census;
 }
 
@@ -711,6 +842,9 @@ export async function readQualityAdoption(base = root) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const census = assertQualityAdoption(await readQualityAdoption());
+  assertRuntimeToolAdoption(
+    JSON.parse(await readFile(new URL("tools/renovate-validation/package.json", root), "utf8")),
+  );
   const counts = Object.fromEntries(
     ["tooling", "test"].map((role) => [
       role,

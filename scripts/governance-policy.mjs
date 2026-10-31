@@ -1,7 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-import Ajv2020 from "ajv/dist/2020.js";
+import { validateSchema } from "./governance-schema.ts";
+import {
+  createRepositoryRegistrationReader,
+  projectRepositoryRegistrations,
+} from "./repository-registration.ts";
+export { parseRepositoryRegistrationJson } from "./repository-registration.ts";
 
 function assert(condition, message) {
   if (!condition) {
@@ -12,17 +17,6 @@ function assert(condition, message) {
 function isControlCodePoint(character) {
   const codePoint = character.codePointAt(0);
   return codePoint <= 0x1f || codePoint === 0x7f;
-}
-
-function validateSchema(value, schema, label) {
-  const ajv = new Ajv2020({ allErrors: true, strict: true });
-  const validate = ajv.compile(schema);
-  if (!validate(value)) {
-    const details = validate.errors
-      .map(({ instancePath, message }) => `${instancePath || "/"} ${message}`)
-      .join("; ");
-    throw new Error(`${label} does not satisfy its JSON Schema: ${details}`);
-  }
 }
 
 function isCanonicalRepositoryPath(path) {
@@ -572,6 +566,15 @@ export function validateOrganizationRepositoryInventory(inventory, schema) {
   );
 }
 
+// Keep the existing public entrypoint while the new registration responsibility
+// and its schema validation are compiled as ordinary TypeScript.
+export const { validateRepositoryRegistrationSupplements, loadRepositoryRegistrationScope } =
+  createRepositoryRegistrationReader({
+    inventory: validateOrganizationRepositoryInventory,
+    ledger: validateExecutableSpecLedger,
+    docs: validateDocsProtocolPolicy,
+  });
+
 export function validateDocsProtocolPolicy(policy, schema) {
   validateSchema(policy, schema, "Documentation protocol policy");
   assert(
@@ -922,7 +925,14 @@ export function validateActionsPolicy(policy, schema) {
   assert(new Set(pending).size === pending.length, "Pending Actions repositories must be unique.");
 }
 
-export function validateGovernanceReferences(ledger, security, actions, inventory, docsProtocol) {
+export function validateGovernanceReferences(
+  ledger,
+  security,
+  actions,
+  inventory,
+  docsProtocol,
+  registrations,
+) {
   const organizationApi = `https://api.github.com/orgs/${inventory.organization}`;
   assert(
     security.organization === inventory.organization &&
@@ -939,11 +949,16 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       docsProtocol.observed_at === inventory.observed_at,
     "Documentation protocol policy must reference the exact organization inventory snapshot.",
   );
-  const inventoryByRepository = new Map(
-    inventory.repositories.map((record) => [record.repository, record]),
+  const { inventoryRecords, docsRecords } = projectRepositoryRegistrations(
+    inventory,
+    docsProtocol,
+    registrations,
   );
-  const activeInventory = inventory.repositories.filter(({ archived }) => !archived);
-  const archivedInventory = inventory.repositories.filter(({ archived }) => archived);
+  const inventoryByRepository = new Map(
+    inventoryRecords.map((record) => [record.repository, record]),
+  );
+  const activeInventory = inventoryRecords.filter(({ archived }) => !archived);
+  const archivedInventory = inventoryRecords.filter(({ archived }) => archived);
   const deletedProtocolById = new Map(
     docsProtocol.repositories
       .filter(({ repository_lifecycle: lifecycle }) => lifecycle === "deleted")
@@ -1002,7 +1017,7 @@ export function validateGovernanceReferences(ledger, security, actions, inventor
       ),
     "Ledger scope must exactly match repository identities created by its dated organization snapshot.",
   );
-  const activeDocsProtocol = docsProtocol.repositories.filter(
+  const activeDocsProtocol = docsRecords.filter(
     ({ repository_lifecycle: lifecycle }) => lifecycle === "active",
   );
   const docsProtocolById = new Map(

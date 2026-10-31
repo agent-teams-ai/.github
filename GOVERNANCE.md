@@ -34,6 +34,13 @@ and consumer-adoption processes. Linking a policy never certifies existing code.
 
 ## Feature Module Standard Ownership
 
+The [new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap)
+requires explicit full FMS adoption for new owned production repositories
+created from 2026-10-22 UTC and older owner opt-ins, including SDKs. This is a
+reviewed onboarding obligation, with a failing configuration gate and independent
+inventory backstop; it does not cause automatic GitHub inheritance, a fleet
+migration or semantic qualification.
+
 The organization owns the immutable language-neutral Feature Module Standard
 baseline and its append-only version registry. Adoption is never automatic.
 Each adopting product repository owns one local adoption profile that declares
@@ -76,16 +83,22 @@ positive and negative fixtures, and the exact deterministic gate or an explicit
 
 The machine-readable
 [`governance/executable-spec-qualification.json`](governance/executable-spec-qualification.json)
-ledger is authoritative for the active in-scope organization repositories.
+ledger is authoritative for the active repositories in its dated scope.
 It records specification maturity, implementation qualification, deployment qualification,
 owners, dated evidence coordinates, and exact deterministic commands as
 separate claims. JSON Schema validates the strict structure; generic cross-field
 checks prevent unverified snapshots from implying qualification. Repository
-values are owned by the ledger rather than mirrored in validator code.
+qualification values are owned by that ledger rather than mirrored in validator
+code; newer pending registrations use the bounded supplement below.
 
 Checked-in scope consistency is anchored separately by the dated,
 human-reviewed GitHub API snapshot in
 [`governance/organization-repository-inventory.json`](governance/organization-repository-inventory.json).
+Individually observed repositories awaiting a complete census use the
+[pending registration supplement](governance/repository-registration-supplements.json)
+and its [owning registration guide](docs/repository-registration.md). The one
+canonical reader reconciles their identities without redating the historical
+snapshot, inventing qualification or deciding Docs applicability automatically.
 Validation requires its exact repository names, IDs, archived split, and default
 branches to reconcile with the ledger. Its structural checksum detects
 inconsistent checked-in edits. A coordinated edit of the inventory and ledger,
@@ -104,8 +117,9 @@ and a one-approval rule would deadlock a single-member organization.
 The scope is the active, non-archived governance and product repositories.
 Archived one-shot security canaries are explicit exclusions in the ledger;
 they are not silently omitted. Do not copy repository applicability into another
-human table: the JSON ledger is the sole value authority. Evidence entries are
-dated, human-reviewed Git revision/path/blob coordinates.
+human table: the JSON ledger owns qualification values within its dated scope,
+and the bounded supplement owns only the newer pending observations described
+above. Evidence entries are dated, human-reviewed Git revision/path/blob coordinates.
 
 New repositories inherit the organization security and immutable Actions
 defaults, but they begin architecturally unqualified. A repository must receive
@@ -121,7 +135,10 @@ is an immutable compatibility snapshot for already-pinned consumers. The current
 is the sole evolving admission authority and must reconcile exactly with the dated active
 repository inventory. Validation locks the stable3 bytes and proves that its repository
 identities remain represented in v2, while lifecycle, admission, and Cohort fields evolve
-only in v2. The compatibility copy therefore cannot become a second mutable source of truth
+only in v2. New individually registered repositories remain pending in the
+bounded supplement until the coordinated historical handoff; those records
+cannot admit a Docs consumer or override an existing v2 decision.
+The compatibility copy therefore cannot become a second mutable source of truth
 or block a v2 migration. A consumer pinned to the stable3 schemaVersion 1 projection still
 uses v2 for every current lifecycle and admission decision: pending classification,
 revocation, suspension, ineligibility, or any other non-admitted v2 state fails closed even

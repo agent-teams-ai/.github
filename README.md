@@ -12,7 +12,11 @@ release procedures remain in the owning repository.
 
 ## Shared Files
 
-- [Engineering Quality Standard](docs/engineering-quality-standard.md) - common Clean Architecture, SOLID, DDD and DRY practices; repository agent files link here explicitly.
+- [Engineering Quality Standard](docs/engineering-quality-standard.md) - common
+  Clean Architecture, SOLID, DDD and DRY practices, including
+  [TypeScript for JavaScript runtimes](docs/engineering-quality-standard.md#typescript-for-javascript-runtimes).
+  Repository agent files link here explicitly.
+- [Node runtime compatibility](docs/node-runtime-compatibility.md) - the Node 26 tooling default and independent full Node 24 compatibility checks.
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
 - [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
 
@@ -44,7 +48,8 @@ release procedures remain in the owning repository.
 - `docs/organization-security-baseline.md` - live-default snapshot, transfer
   handling, and plan-tier exceptions.
 - [Repository admission](docs/repository-admission.md) - reviewed onboarding for new owned
-  repositories, including the [central commit identity route](docs/repository-admission.md#commit-identity-onboarding).
+  repositories, starting with [new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap)
+  and the [central commit identity route](docs/repository-admission.md#commit-identity-onboarding).
 - `SUPPORT.md` - support routing.
 - `CODE_OF_CONDUCT.md` - community conduct policy.
 - `.github/ISSUE_TEMPLATE/` - default issue forms.

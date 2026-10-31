@@ -3,10 +3,12 @@ workspace:
   kind: pnpm
   manifest: pnpm-workspace.yaml
 rootPackage: true
-packageRoots: []
+packageRoots:
+  - tools/renovate-validation
 governedRoots:
   - scripts
   - tools/feature-module-standard
+  - tools/renovate-validation
 boundaries:
   - id: governance-tooling
     dependencyMode: development
@@ -60,4 +62,15 @@ boundaries:
         - node:test
         - node:url
         - node:util
+      runtimeReferences: []
+  - id: renovate-validation
+    dependencyMode: development
+    roots:
+      - tools/renovate-validation
+    entrypoints: []
+    allow:
+      boundaries: []
+      packages:
+        - renovate
+      builtins: []
       runtimeReferences: []
