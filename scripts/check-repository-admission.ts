@@ -850,3 +850,5 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     );
   }
 }
+
+// Installed-main protected-input qualification canary; never merge.
