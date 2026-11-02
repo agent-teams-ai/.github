@@ -75,8 +75,13 @@ classification obligations.
    package pins. Source coverage includes the actual modules, SDKs and features.
    Production compiler projects inherit strict, noUncheckedIndexedAccess and
    exactOptionalPropertyTypes, through local configs or Foundation's named
-   base/node/bun strict presets. Weakening overrides remain failures. Other
-   external preset inheritance needs an explicitly supported adapter.
+   base/node/bun strict presets. The explicitly reviewed `stack-toolchain@0.1.1`
+   also supports its exact `presets/typescript/{base,node,bun}.json` inheritance
+   and `./node_modules/stack-toolchain/presets/oxlint/type-aware.json` lint preset
+   when the package is pinned only as a root development dependency. This is
+   configuration recognition, not verification of installed dependency bytes
+   or the execution of a native gate. Unknown releases and weakening overrides
+   remain failures; additional toolchains require a reviewed adapter.
 
 3. The profile identifies the immutable standard's ID, version, canonical path,
    content digest and nonzero source commit. Declare production, application and
@@ -113,8 +118,9 @@ classification obligations.
 
    Review its bytes and install them as
    `.github/workflows/repository-admission.yml`. The retained central revision
-   must contain the reusable workflow and its literal immutable implementation
-   checkout. Never use `main`, supply a command, pass secrets or add a condition.
+   must contain the reusable workflow and its defining-source implementation
+   checkout, bound to `job.workflow_sha`. Never use `main`, supply a command,
+   pass secrets or add a condition.
    The checker renders to stdout only; it does not write, commit, install or
    administer GitHub. Use a reviewed new destination if redirecting stdout.
    Also install the exact central identity caller through
@@ -173,21 +179,19 @@ and an independently observed protection installation. Preserve active
 requirements through their owning transition; do not substitute manual success
 statuses, bypass or consumer policy overrides.
 
-Admission runtime publication also has two stages: first publish the reviewed
-checker source, then explicitly update the reusable wrapper's literal central
-checkout to that published immutable revision and review the resulting wrapper.
-The wrapper now checks out the published and reviewed combined runtime
-`a33b2c4a43b6ef0d1fb6457c534575a82e80493e`, tree
-`011e2c1f96b487c631416f94be0851d3f36f97f3`. The exact regression witness binds
-that same literal checkout. This establishes the source-publication binding;
-it does not establish combined full-gate success, hosted execution, installed
-protection or consumer activation. Final combined full and hosted qualification,
-protected-source canaries and the owning protection transition remain pending.
-Keep the active requirements intact and do not activate consumers before those
-gates complete. Consumers then explicitly adopt the final wrapper revision and
-accepted identity caller together and obtain their own hosted and required-check
-evidence. Missing callers remain `incomplete` and fail closed; no pending-identity
-exception makes them pass.
+Admission runtime publication binds the reusable wrapper and checker in one
+reviewed immutable revision. The wrapper checks out `job.workflow_repository`
+at `job.workflow_sha`, so its central code and frozen dependency graph come from
+the exact defining workflow selected by the consumer's immutable pin. Consumer
+configuration remains inert. The regression witness checks this binding.
+Earlier wrappers, including the literal `a33b2c4` checkout, remain unchanged at
+their historical revisions and do not acquire this behavior automatically.
+Source publication is separate from full-gate success, hosted qualification,
+protected-source transition and consumer activation. Keep active requirements
+intact while qualifying the successor. Consumers explicitly adopt the reviewed
+wrapper revision and accepted identity caller and obtain their own hosted and
+required-check evidence. Missing callers remain `incomplete` and fail closed;
+no pending-identity exception makes them pass.
 
 ### Independent inventory backstop
 

@@ -67,8 +67,8 @@ void test("reusable workflow executes the exact published central implementation
     [
       { path: "consumer", "persist-credentials": false },
       {
-        repository: "agent-teams-ai/.github",
-        ref: "a33b2c4a43b6ef0d1fb6457c534575a82e80493e",
+        repository: "${{ job.workflow_repository }}",
+        ref: "${{ job.workflow_sha }}",
         path: "central",
         "persist-credentials": false,
       },
@@ -234,6 +234,80 @@ void test("complete explicit SDK bootstrap reports configuration only without ex
   assert.equal(result.status, "configured_not_qualified");
   assert.equal(result.guide, BOOTSTRAP_GUIDE);
   assert.ok(result.inspected_paths.includes("tsconfig.base.json"));
+});
+
+void test("qualified Stack 0.1.1 presets preserve strict admission; spoofed, unpinned or weakened variants fail", async () => {
+  const { files, source } = await fixture();
+  const manifest = data(JSON.parse(files.get("package.json") ?? "{}"));
+  const acceptedManifest = {
+    ...manifest,
+    devDependencies: { ...data(manifest.devDependencies), "stack-toolchain": "0.1.1" },
+  };
+  const lint = { extends: ["./node_modules/stack-toolchain/presets/oxlint/type-aware.json"] };
+  const compiler = { extends: "stack-toolchain/presets/typescript/node.json" };
+  files.set("package.json", json(acceptedManifest));
+  files.set("oxlint.json", json(lint));
+  files.set("tsconfig.base.json", json(compiler));
+  const accepted = await checkRepositoryAdmission(source);
+  assert.deepEqual(accepted.issues, []);
+  assert.equal(accepted.status, "configured_not_qualified");
+
+  for (const version of [undefined, "0.1.0", "^0.1.1", "0.1.2"]) {
+    files.set(
+      "package.json",
+      json({
+        ...acceptedManifest,
+        devDependencies: {
+          ...data(manifest.devDependencies),
+          ...(version === undefined ? {} : { "stack-toolchain": version }),
+        },
+      }),
+    );
+    const rejected = await checkRepositoryAdmission(source);
+    assert.equal(rejected.status, "incomplete");
+    assert.ok(rejected.issues.some((entry) => entry.path === "oxlint.json"));
+    assert.ok(rejected.issues.some((entry) => entry.path === "tsconfig.base.json"));
+  }
+  files.set("package.json", json(acceptedManifest));
+  for (const spoof of [
+    "./node_modules/stack-toolchain/presets/oxlint/type-aware.json/other",
+    "./node_modules/unreviewed-stack/presets/oxlint/type-aware.json",
+  ]) {
+    files.set("oxlint.json", json({ extends: [spoof] }));
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"),
+    );
+  }
+  files.set("oxlint.json", json(lint));
+  files.set(
+    "tsconfig.base.json",
+    json({ ...compiler, compilerOptions: { strictNullChecks: false } }),
+  );
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some(
+      (entry) => entry.path === "packages/sdk/tsconfig.json",
+    ),
+  );
+  files.set(
+    "tsconfig.base.json",
+    json({ extends: "stack-toolchain/presets/typescript/unreviewed.json" }),
+  );
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some(
+      (entry) => entry.path === "tsconfig.base.json",
+    ),
+  );
+  files.set("tsconfig.base.json", json(compiler));
+  for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
+    files.set(
+      "package.json",
+      json({ ...acceptedManifest, [field]: { "stack-toolchain": "0.1.2" } }),
+    );
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"),
+      `${field} cannot override a development-only approved Stack pin`,
+    );
+  }
 });
 
 void test("accepted alias policy requires its reviewed caller and rejects broader, predecessor or unreviewed identity pins", async () => {

@@ -505,17 +505,26 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
   }
   const lintPath = coverage.lintConfigPath;
   const lint = nonempty(lintPath) ? await document(lintPath) : {};
+  const devDependencies = data(manifest.devDependencies);
+  // The approved Stack release retains the strict TS and typed-lint preset contracts.
+  // This is bounded config recognition, not a claim that installed package bytes were checked.
+  const approvedStack =
+    devDependencies["stack-toolchain"] === "0.1.1" &&
+    ["dependencies", "optionalDependencies", "peerDependencies"].every(
+      (field) => data(manifest[field])["stack-toolchain"] === undefined,
+    );
   if (
-    !strings(lint.extends).some((path) =>
-      path.includes("@agent-teams/engineering-foundation/presets/oxlint/type-aware"),
+    !strings(lint.extends).some(
+      (path) =>
+        path.includes("@agent-teams/engineering-foundation/presets/oxlint/type-aware") ||
+        (approvedStack && path === "./node_modules/stack-toolchain/presets/oxlint/type-aware.json"),
     )
   ) {
     issue(
       typeof lintPath === "string" ? lintPath : "foundation.config.yaml",
-      "Use the adopted Foundation type-aware quality preset and governed suppressions.",
+      "Use the approved Foundation or pinned Stack type-aware quality preset.",
     );
   }
-  const devDependencies = data(manifest.devDependencies);
   for (const name of [
     "@agent-teams/engineering-foundation",
     "@agent-teams/feature-module-standard",
@@ -634,13 +643,18 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
       if (
         /^@agent-teams\/engineering-foundation\/presets\/typescript\/(?:base|node|bun)\.json$/u.test(
           config.extends,
-        )
+        ) ||
+        (approvedStack &&
+          /^stack-toolchain\/presets\/typescript\/(?:base|node|bun)\.json$/u.test(config.extends))
       ) {
         // Recognize the published Foundation strict preset contract. This is a
         // configuration binding, never installed-package integrity evidence.
         parent = { strict: true, noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true };
       } else if (!config.extends.startsWith(".")) {
-        issue(path, "v1 supports only local inheritance and the named Foundation strict presets.");
+        issue(
+          path,
+          "Only local inheritance or reviewed Foundation/Stack strict presets are supported.",
+        );
       } else if (!absolute.startsWith("/consumer/")) {
         issue(path, "Compiler inheritance must stay inside the repository.");
       } else {
