@@ -118,8 +118,9 @@ classification obligations.
 
    Review its bytes and install them as
    `.github/workflows/repository-admission.yml`. The retained central revision
-   must contain the reusable workflow and its literal immutable implementation
-   checkout. Never use `main`, supply a command, pass secrets or add a condition.
+   must contain the reusable workflow and its defining-source implementation
+   checkout, bound to `job.workflow_sha`. Never use `main`, supply a command,
+   pass secrets or add a condition.
    The checker renders to stdout only; it does not write, commit, install or
    administer GitHub. Use a reviewed new destination if redirecting stdout.
    Also install the exact central identity caller through
