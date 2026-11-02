@@ -347,6 +347,65 @@ same implementation and call that independent evidence.
   explicit authorization. Do not repeat a permission request already covered
   by the current task's authorization.
 
+## Owner-facing architecture decisions and estimates
+
+For a **substantive unresolved** choice affecting ownership, public APIs, feature
+and module boundaries, persistence, security, deployment, long-lived lifecycle or
+a cross-project dependency, check the current accepted ADRs, immutable standards,
+local adoption profiles and other affected products **before** calling it a new
+question. Record exact source revisions and conflicts. A choice already approved
+by the owner is **not** to be reopened merely because an older document is stale;
+propose a scoped reconciliation/successor instead.
+
+If a real owner-level choice remains, **surface it directly in the current
+conversation** before implementing, freezing a plan or treating a draft as
+approved. Do not bury the decision only in an issue, PR or research appendix.
+State its owner, decision deadline/stage and whether work on independent slices
+can continue. Architecture/design-only PRs remain **draft while consequential
+choices or design review are open**; an accepted choice still follows the
+repository's ordinary approval, source-identity and required-check rules.
+
+Use the following compact comparison for each decision (not for trivial edits):
+
+1. **Three best technically credible options**, including the existing accepted
+   choice when it remains viable. Give each a concrete description, the
+   semantic/deployment boundary it owns, advantages, principal failure modes,
+   compatibility/migration effect and a falsifiable test or spike. Rank options
+   and make one explicit, *conditional* recommendation. If fewer than three
+   defensible options exist, say so instead of manufacturing fake choices or
+   presenting prohibited ADR violations as equally valid.
+2. For **every option**, estimate incremental handwritten **production/integration
+   LOC (P)** and **tests/fixtures LOC (T)** as separate ranges, plus a
+   **range in engineer-days** (assume one experienced engineer, existing
+   prerequisites and focused review; not a delivery promise). State included
+   scope/excluded generated, vendored, docs, native, infrastructure or deployment
+   work; use zero P/T for genuinely docs-only changes. Avoid summing overlapping
+   alternatives or presenting a single precise unverified number.
+3. Score **confidence in fitness (U, 1-10, higher is better)**, **expected
+   reliability for its explicitly declared scope (N, 1-10, higher is better)**,
+   and **implementation/maintenance complexity (C, 1-10, higher is worse)**.
+   Separately indicate confidence in LOC/time estimates when low; these are
+   expert ordinal judgements, **not** empirical probability, SLA, certification
+   or benchmark. Do not call a narrowly scoped option generally more reliable
+   than one that promises a wider threat/failure envelope.
+4. Critique decisions from at least ownership/FMS/DDD, operational
+   safety/security/recovery, and integration/packaging perspectives as relevant.
+   Preserve both positive and negative industry evidence, identify the strongest
+   counterexample to the preferred option, and apply accepted reviewer findings
+   only after checking against owner constraints. Label self-review and actual
+   independent agents/models separately; never invent reviewers or claim a
+   failed/incomplete review approved the design.
+5. After owner acceptance, update the **owning** decision record and relevant
+   plan/feature/contract boundaries; do not rewrite frozen ADRs or copy
+   organization rules into each repository. Plans and drafts are not executed
+   E2E. For prose-only changes, use proportional documentation checks and
+   existing repository obligations rather than inventing runtime tests or
+   ignoring required status checks.
+
+This format is a decision aid, **not** a new general architecture committee,
+new mandatory AI inference gate, additional FMS version or a requirement to
+evaluate three options for every routine implementation detail.
+
 ## Change workflow and evidence
 
 1. Identify the changed behavior, semantic owner, relevant decisions, API and

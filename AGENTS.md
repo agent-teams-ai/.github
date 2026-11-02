@@ -52,6 +52,11 @@ including source coverage in the owning strict typecheck and the scoped
 JavaScript fixture/host cases. Existing JavaScript tooling is not an exemption
 for new helpers.
 
+For unresolved product or architecture choices, follow the
+[owner-facing three-option comparison and estimate rule](docs/engineering-quality-standard.md#owner-facing-architecture-decisions-and-estimates).
+This is a decision/review route, not permission to override accepted ADRs or
+repository-specific gates.
+
 <!-- agent-teams:quality-standard:start -->
 Before planning, implementing, or reviewing changes, read and follow the
 [organization Engineering Quality Standard](https://github.com/agent-teams-ai/.github/blob/main/docs/engineering-quality-standard.md).
