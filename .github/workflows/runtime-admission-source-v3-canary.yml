@@ -1,0 +1,15 @@
+name: Runtime and Admission Source Canary V3
+on:
+  push:
+    branches:
+      - qualification/runtime-admission-positive-v3
+      - qualification/runtime-admission-negative-v3
+permissions: &a1
+  actions: read
+  contents: read
+  pull-requests: read
+  statuses: write
+jobs:
+  source:
+    uses: agent-teams-ai/.github/.github/workflows/runtime-admission-source-successor-v3.yml@132e5b54218c6888f2fdaf671103aaba95d22f14
+    permissions: *a1
