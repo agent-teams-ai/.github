@@ -238,7 +238,7 @@ void test("complete explicit SDK bootstrap reports configuration only without ex
 
 void test("qualified Stack 0.1.1 presets preserve strict admission; spoofed, unpinned or weakened variants fail", async () => {
   const { files, source } = await fixture();
-  const manifest = manifestFrom(files);
+  const manifest = data(JSON.parse(files.get("package.json") ?? "{}"));
   const acceptedManifest = {
     ...manifest,
     devDependencies: { ...data(manifest.devDependencies), "stack-toolchain": "0.1.1" },
