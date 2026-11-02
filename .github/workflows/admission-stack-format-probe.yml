@@ -1,0 +1,43 @@
+name: Disposable admission Stack formatter proof
+on:
+  push:
+    branches: [automation/admission-stack-format-probe]
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 959e24925c120cab56d27c084f23a3ed17843a40
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 26.11.1
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9
+        with:
+          version: 11.18.0
+          run_install: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts --ignore-pnpmfile
+      - name: Emit exact pinned Oxfmt source diff without writing to repository
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { createRequire } from 'node:module';
+          import { dirname, resolve } from 'node:path';
+          import { spawnSync } from 'node:child_process';
+          const require = createRequire(import.meta.url);
+          const stack = createRequire(require.resolve('stack-toolchain/package.json'));
+          const file = stack.resolve('oxfmt/package.json');
+          const entry = stack(file).bin;
+          const executable = resolve(dirname(file), typeof entry === 'string' ? entry : entry.oxfmt);
+          const paths = ['scripts/check-repository-admission.ts', 'scripts/check-repository-admission.test.ts'];
+          const proc = spawnSync(process.execPath, [executable, '--write', ...paths], { stdio: 'inherit' });
+          if (proc.status !== 0) process.exit(proc.status ?? 1);
+          NODE
+          git diff --check
+          echo 'ADMISSION_FORMAT_DIFF_BEGIN'
+          git diff --no-ext-diff --no-color --unified=3 -- scripts/check-repository-admission.ts scripts/check-repository-admission.test.ts
+          echo 'ADMISSION_FORMAT_DIFF_END'
