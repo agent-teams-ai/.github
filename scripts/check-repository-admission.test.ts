@@ -298,13 +298,16 @@ void test("qualified Stack 0.1.1 presets preserve strict admission; spoofed, unp
     ),
   );
   files.set("tsconfig.base.json", json(compiler));
-  files.set(
-    "package.json",
-    json({ ...acceptedManifest, dependencies: { "stack-toolchain": "0.1.1" } }),
-  );
-  assert.ok(
-    (await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"),
-  );
+  for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
+    files.set(
+      "package.json",
+      json({ ...acceptedManifest, [field]: { "stack-toolchain": "0.1.2" } }),
+    );
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"),
+      `${field} cannot override a development-only approved Stack pin`,
+    );
+  }
 });
 
 void test("accepted alias policy requires its reviewed caller and rejects broader, predecessor or unreviewed identity pins", async () => {

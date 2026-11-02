@@ -510,7 +510,9 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
   // This is bounded config recognition, not a claim that installed package bytes were checked.
   const approvedStack =
     devDependencies["stack-toolchain"] === "0.1.1" &&
-    data(manifest.dependencies)["stack-toolchain"] === undefined;
+    ["dependencies", "optionalDependencies", "peerDependencies"].every(
+      (field) => data(manifest[field])["stack-toolchain"] === undefined,
+    );
   if (
     !strings(lint.extends).some(
       (path) =>
