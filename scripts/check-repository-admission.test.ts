@@ -67,8 +67,8 @@ void test("reusable workflow executes the exact published central implementation
     [
       { path: "consumer", "persist-credentials": false },
       {
-        repository: "agent-teams-ai/.github",
-        ref: "a33b2c4a43b6ef0d1fb6457c534575a82e80493e",
+        repository: "${{ job.workflow_repository }}",
+        ref: "${{ job.workflow_sha }}",
         path: "central",
         "persist-credentials": false,
       },
