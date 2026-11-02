@@ -59,3 +59,8 @@ Apply it with this repository's instructions, accepted decisions and local
 adoption profiles. This reference does not change pinned architecture contracts
 or certify existing code as conformant.
 <!-- agent-teams:quality-standard:end -->
+
+For owner PR merges, follow the [authorship policy](GOVERNANCE.md#commit-and-pull-request-authorship).
+ChatGPT agents without `gh` may use the connected GitHub plugin through the
+[plugin merge route](GOVERNANCE.md#github-plugin-merge-route); missing CLI or
+author-email input alone is not a blocker.

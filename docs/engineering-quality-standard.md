@@ -384,7 +384,7 @@ passive cooldowns, repeated full CI on unchanged inputs or an abstract platform
 for hypothetical use. Required gates and real external restrictions still apply.
 Prefer small reviewable changes with independent rollback over a large mixed PR.
 
-Owner-generated agent squash merges require the
+When authenticated `gh` is available, owner-generated agent squash merges use the
 [fresh owner PR actor guard](../scripts/merge-owner-pr.mjs): explicit repository,
 PR, reviewed exact head, ordinary Conventional Commit subject and complete
 body file with all issue references. Re-read the authenticated owner and live
@@ -393,6 +393,12 @@ merged PR and final commit identity/message afterward. A green SHA status alone
 cannot establish PR-specific UI merge safety. Never reopen or merge Bot staging
 PRs. External human contributions keep their existing PR and original
 authorship through their contributor-preserving flow, outside owner squash.
+ChatGPT agents may instead use the connected GitHub plugin under the
+[plugin merge route](../GOVERNANCE.md#github-plugin-merge-route), preserving
+the same live actor, exact-head, source identity, review and protection checks.
+Missing `gh` or an author-email input alone must not block this route or trigger
+a redundant permission request. Independently verify and report final attribution
+and post-merge CI; do not silently rewrite history after a discrepancy.
 The owner-only guard also inspects the complete head-bound source commit list;
 an owner-opened PR containing another contributor's commit cannot use this flow.
 
@@ -421,7 +427,7 @@ guidance must not silently migrate a consumer or certify it.
 
 GitHub does not automatically inject this policy into every agent session.
 Repository instruction files must explicitly require reading the link. Fetch it
-using the authorized GitHub access path (for Codex here, `gh` CLI). If it is
+using the authorized GitHub access path (`gh` CLI or the connected GitHub plugin). If it is
 unavailable, use an explicitly identified retained revision when available,
 report the access limitation, and continue only work whose applicable rules can
 be established. Never invent the missing policy or claim to have read it.

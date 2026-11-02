@@ -227,7 +227,7 @@ Aliases do not authorize alternate emails or name normalization.
 GitHub/web-flow is not an owner source committer exception. External human
 contributions retain their original author and committer, including GitHub's
 technical committer. The generated final squash after merge has the owner's
-GitHub committer/display-name exception and is verified separately with `gh`.
+GitHub committer/display-name exception and is verified separately through `gh` or the connected GitHub plugin.
 
 The trusted reusable identity workflow reads GitHub metadata and inert caller
 bytes, never PR code. It checks every commit (paginated, at most 250; split larger
@@ -286,7 +286,7 @@ this policy does not claim live enforcement or automatic inheritance on Free.
 Future owned repositories use the bounded [commit identity onboarding route](docs/repository-admission.md#commit-identity-onboarding)
 to prepare the caller, inspect a write-free plan and apply owner-reviewed additive settings.
 
-Owner-generated agent changes must use the fresh actor guard in
+When authenticated `gh` is available, owner-generated agent changes use the fresh actor guard in
 [`scripts/merge-owner-pr.mjs`](scripts/merge-owner-pr.mjs) for squash merges.
 Supply `--repository`, `--pr`, the reviewed exact `--expected-head`, an ordinary
 Conventional Commit `--subject`, and `--body-file` containing the complete
@@ -303,6 +303,36 @@ message/refs. GitHub's technical final committer and owner display name are
 allowed. A mismatch or transport failure is reported for inspection, never a
 history rewrite or automatic retry. The guard neither grants checks nor bypasses
 or changes protection; a queued or otherwise unconfirmed merge is not success.
+
+### GitHub plugin merge route
+
+Owner direction recorded on 2026-11-02: agents running in ChatGPT with the
+connected GitHub plugin may merge owner PRs through its `merge_pull_request`
+operation. An unavailable `gh` CLI, CLI guard or `authorEmail` parameter is not
+by itself a blocker and does not require another owner permission request.
+The CLI guard remains the preferred route when available.
+
+Before the plugin merge, independently read the authenticated User/777genius,
+the live open non-draft User/777genius PR, its exact reviewed head and base,
+and the complete head-bound source commit list. Apply the same owner-only
+source identity rules as the CLI guard; preserve external contributions through
+the contributor-preserving flow. Confirm successful required checks on that
+head and no unresolved blocking review findings. Never merge Bot staging PRs.
+
+Use squash with `expected_head_sha` set to the full reviewed head SHA and an
+explicit Conventional Commit title and complete body including issue references.
+Keep branch protection and required checks unchanged; never bypass them.
+The plugin may let GitHub select the final author email when it cannot set it.
+Prefer the canonical owner email, but this missing input does not prevent merge.
+
+Afterward independently read the merged PR and actual final commit. Verify
+merged state, author account, raw author/email, committer, exact message and
+issue references, then inspect CI on the resulting main commit. Report the
+observed attribution; if the author account or email differs from canonical
+owner policy, report that discrepancy without silently rewriting history.
+A missing response or timeout is not success: reconcile the PR before retrying
+any merge. Do not claim full verification while any required read is unavailable.
+This transport exception does not relax source commit identity requirements.
 
 The canonical `actions_workflow_permissions.can_approve_pull_request_reviews`
 target is explicitly `false` at the organization default and every current
@@ -328,7 +358,7 @@ PR may be selected/updated by Changesets. Never reopen or merge a Bot staging PR
 Only failed Release runs may be rerun; manual workflow approval requires
 inspection of the same owner-authored tuple. Required checks, ReviewRouter and
 release attestation must pass for that exact head, followed by the fresh owner
-merge guard.
+merge guard or the equivalent [plugin checks](#github-plugin-merge-route).
 
 The older owner-bootstrap Bot-author fields in
 [`governance/actions-policy.json`](governance/actions-policy.json) are historical
