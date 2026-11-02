@@ -179,21 +179,19 @@ and an independently observed protection installation. Preserve active
 requirements through their owning transition; do not substitute manual success
 statuses, bypass or consumer policy overrides.
 
-Admission runtime publication also has two stages: first publish the reviewed
-checker source, then explicitly update the reusable wrapper's literal central
-checkout to that published immutable revision and review the resulting wrapper.
-The wrapper now checks out the published and reviewed combined runtime
-`a33b2c4a43b6ef0d1fb6457c534575a82e80493e`, tree
-`011e2c1f96b487c631416f94be0851d3f36f97f3`. The exact regression witness binds
-that same literal checkout. This establishes the source-publication binding;
-it does not establish combined full-gate success, hosted execution, installed
-protection or consumer activation. Final combined full and hosted qualification,
-protected-source canaries and the owning protection transition remain pending.
-Keep the active requirements intact and do not activate consumers before those
-gates complete. Consumers then explicitly adopt the final wrapper revision and
-accepted identity caller together and obtain their own hosted and required-check
-evidence. Missing callers remain `incomplete` and fail closed; no pending-identity
-exception makes them pass.
+Admission runtime publication binds the reusable wrapper and checker in one
+reviewed immutable revision. The wrapper checks out `job.workflow_repository`
+at `job.workflow_sha`, so its central code and frozen dependency graph come from
+the exact defining workflow selected by the consumer's immutable pin. Consumer
+configuration remains inert. The regression witness checks this binding.
+Earlier wrappers, including the literal `a33b2c4` checkout, remain unchanged at
+their historical revisions and do not acquire this behavior automatically.
+Source publication is separate from full-gate success, hosted qualification,
+protected-source transition and consumer activation. Keep active requirements
+intact while qualifying the successor. Consumers explicitly adopt the reviewed
+wrapper revision and accepted identity caller and obtain their own hosted and
+required-check evidence. Missing callers remain `incomplete` and fail closed;
+no pending-identity exception makes them pass.
 
 ### Independent inventory backstop
 
