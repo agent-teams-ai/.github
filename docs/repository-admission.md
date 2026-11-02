@@ -75,8 +75,13 @@ classification obligations.
    package pins. Source coverage includes the actual modules, SDKs and features.
    Production compiler projects inherit strict, noUncheckedIndexedAccess and
    exactOptionalPropertyTypes, through local configs or Foundation's named
-   base/node/bun strict presets. Weakening overrides remain failures. Other
-   external preset inheritance needs an explicitly supported adapter.
+   base/node/bun strict presets. The explicitly reviewed `stack-toolchain@0.1.1`
+   also supports its exact `presets/typescript/{base,node,bun}.json` inheritance
+   and `./node_modules/stack-toolchain/presets/oxlint/type-aware.json` lint preset
+   when the package is pinned only as a root development dependency. This is
+   configuration recognition, not verification of installed dependency bytes
+   or the execution of a native gate. Unknown releases and weakening overrides
+   remain failures; additional toolchains require a reviewed adapter.
 
 3. The profile identifies the immutable standard's ID, version, canonical path,
    content digest and nonzero source commit. Declare production, application and
