@@ -515,8 +515,7 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     !strings(lint.extends).some(
       (path) =>
         path.includes("@agent-teams/engineering-foundation/presets/oxlint/type-aware") ||
-        (approvedStack &&
-          path === "./node_modules/stack-toolchain/presets/oxlint/type-aware.json"),
+        (approvedStack && path === "./node_modules/stack-toolchain/presets/oxlint/type-aware.json"),
     )
   ) {
     issue(
@@ -644,15 +643,16 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
           config.extends,
         ) ||
         (approvedStack &&
-          /^stack-toolchain\/presets\/typescript\/(?:base|node|bun)\.json$/u.test(
-            config.extends,
-          ))
+          /^stack-toolchain\/presets\/typescript\/(?:base|node|bun)\.json$/u.test(config.extends))
       ) {
         // Recognize the published Foundation strict preset contract. This is a
         // configuration binding, never installed-package integrity evidence.
         parent = { strict: true, noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true };
       } else if (!config.extends.startsWith(".")) {
-        issue(path, "Only local inheritance or reviewed Foundation/Stack strict presets are supported.");
+        issue(
+          path,
+          "Only local inheritance or reviewed Foundation/Stack strict presets are supported.",
+        );
       } else if (!absolute.startsWith("/consumer/")) {
         issue(path, "Compiler inheritance must stay inside the repository.");
       } else {

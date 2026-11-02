@@ -257,7 +257,10 @@ void test("qualified Stack 0.1.1 presets preserve strict admission; spoofed, unp
       "package.json",
       json({
         ...acceptedManifest,
-        devDependencies: { ...data(manifest.devDependencies), ...(version === undefined ? {} : { "stack-toolchain": version }) },
+        devDependencies: {
+          ...data(manifest.devDependencies),
+          ...(version === undefined ? {} : { "stack-toolchain": version }),
+        },
       }),
     );
     const rejected = await checkRepositoryAdmission(source);
@@ -271,19 +274,37 @@ void test("qualified Stack 0.1.1 presets preserve strict admission; spoofed, unp
     "./node_modules/unreviewed-stack/presets/oxlint/type-aware.json",
   ]) {
     files.set("oxlint.json", json({ extends: [spoof] }));
-    assert.ok((await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"));
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"),
+    );
   }
   files.set("oxlint.json", json(lint));
-  files.set("tsconfig.base.json", json({ ...compiler, compilerOptions: { strictNullChecks: false } }));
-  assert.ok((await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "packages/sdk/tsconfig.json"));
-  files.set("tsconfig.base.json", json({ extends: "stack-toolchain/presets/typescript/unreviewed.json" }));
-  assert.ok((await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "tsconfig.base.json"));
+  files.set(
+    "tsconfig.base.json",
+    json({ ...compiler, compilerOptions: { strictNullChecks: false } }),
+  );
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some(
+      (entry) => entry.path === "packages/sdk/tsconfig.json",
+    ),
+  );
+  files.set(
+    "tsconfig.base.json",
+    json({ extends: "stack-toolchain/presets/typescript/unreviewed.json" }),
+  );
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some(
+      (entry) => entry.path === "tsconfig.base.json",
+    ),
+  );
   files.set("tsconfig.base.json", json(compiler));
   files.set(
     "package.json",
     json({ ...acceptedManifest, dependencies: { "stack-toolchain": "0.1.1" } }),
   );
-  assert.ok((await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"));
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some((entry) => entry.path === "oxlint.json"),
+  );
 });
 
 void test("accepted alias policy requires its reviewed caller and rejects broader, predecessor or unreviewed identity pins", async () => {
