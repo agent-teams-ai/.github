@@ -18,6 +18,7 @@ release procedures remain in the owning repository.
   Repository agent files link here explicitly.
 - [Node runtime compatibility](docs/node-runtime-compatibility.md) - the Node 26 tooling default and independent full Node 24 compatibility checks.
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
+- [CI/CD practices](docs/ci-cd-practices.md) - reducing repeated PR/merge jobs safely, with fail-closed evidence and concrete antipatterns.
 - [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
 
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
