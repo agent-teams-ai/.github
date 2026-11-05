@@ -79,6 +79,16 @@ as active, non-archived records or named archived exclusions. Repository scope,
 maturity, and qualification values live only in the JSON ledger; the
 human governance document intentionally does not duplicate its matrix.
 
+## Product vision and shared research
+
+Agent Teams product deployment and execution-scale vision is owned by the
+[Orchestrator deployment profiles](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/architecture/deployment-profiles.md#concurrent-execution-target).
+Platform and Agent Runtime adopt their responsibilities in their own documents.
+The [engineering-research repository](https://github.com/agent-teams-ai/engineering-research)
+holds shared industry evidence and comparisons; product decisions and release
+qualification remain with their owners. These navigation links do not adopt a
+different architecture for a consumer or establish measured capacity.
+
 ## ReviewRouter
 
 This repository pins the externally owned ReviewRouter reusable workflow and
