@@ -1,6 +1,6 @@
-# Agent Teams
+# Agent Teams AI
 
-Agent Teams builds infrastructure for reliable teams of software agents:
+Agent Teams builds infrastructure for reliable teams of software agents to run 1-10000+ agents in parallel:
 portable runtimes, durable orchestration, typed contracts, and local or hosted
 operation.
 
