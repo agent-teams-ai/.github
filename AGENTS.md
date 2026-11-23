@@ -12,6 +12,10 @@ Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).
 
+For new product architecture and shared-library research, follow the
+[greenfield product scope and legacy-reference boundary](README.md#new-product-scope-and-legacy-references)
+before selecting the implementation repository or first consumer.
+
 Before choosing or duplicating reusable development tooling, read the
 [development tools catalog](docs/development-tools.md) and follow its link to
 the owning guide. Check availability and repository adoption before using a tool.
