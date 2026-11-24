@@ -25,8 +25,11 @@ Do not claim qualification from the configuration checker alone.
    the target repository's documented authority.
 3. If the repository adopts the organization Feature Module Standard, read its
    local adoption profile for scope, extensions, deviations, and exact gates.
-4. Work on a short-lived branch with a conventional prefix such as `feat/`,
-   `fix/`, `refactor/`, `docs/`, or `chore/`.
+4. Use the assigned delivery route. Where a PR is required, work on a short-lived
+   branch with a conventional prefix such as `feat/`, `fix/`, `refactor/`,
+   `docs/`, or `chore/`. For owner-authorized documentation, follow
+   [prompt documentation delivery](docs/ci-cd-practices.md#prompt-delivery-for-authorized-documentation);
+   a direct main push is available only when active repository rules permit it.
 
 ## Pull Requests
 

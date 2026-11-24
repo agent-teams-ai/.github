@@ -4,7 +4,8 @@ Owner direction recorded on 2026-11-24. This is the maintained organization-wide
 vision and coordination plan, not a new FMS edition, a package admission, a
 production API, or a qualification receipt. The owner has selected the
 foundation-first direction; detailed technical alternatives below remain
-proposals until accepted by their respective owners.
+proposals until accepted by their respective owners. Reading this plan does not
+assign its workstreams to an agent; apply the [task-scope boundary](../engineering-quality-standard.md#task-scope-and-obvious-corrections).
 
 ## Purpose and non-goals
 
@@ -25,6 +26,17 @@ ownership and independent evolution are intentional investments at this scale.
 Reduce accidental coupling, duplicate mechanisms and unnecessary layers; do not
 remove useful boundaries merely to reduce file, package or interface counts.
 
+## Reading order and decision status
+
+Use the ownership map to find the responsible repository, then read its current
+plan, accepted decisions and actual qualification evidence. The tables below
+record owner direction and review topics; an entry is not an implementation
+assignment, an accepted technical selection or a claim of shipped behavior.
+
+Keep owner direction, proposed choice, accepted contract, implemented mechanism,
+qualified artifact and consumer adoption distinct. Preserve the
+existing owner record for each state instead of copying a second roadmap here.
+
 ## Foundation-first delivery
 
 1. Establish the whole-system vision, product and context boundaries, authority
@@ -38,18 +50,19 @@ remove useful boundaries merely to reduce file, package or interface counts.
    be designed.
 3. Implement the qualified foundation in bounded increments, including static
    composition, module authoring, reusable plugin mechanisms and lifecycle.
-   Use representative disposable consumers and real consumer seams to falsify
-   the contracts. Different intended products should exercise materially
-   different cases, not copies of one toy. A planned consumer is not evidence
-   of adoption.
+   Qualify useful behavior through realistic disposable fixtures and named
+   consumer seams before dependent product implementations are ready. Record
+   independent expected outcomes, unsupported cases and the claimed profile.
+   Different intended consumers should exercise materially different cases,
+   not copies of one toy. A planned consumer is not evidence of adoption.
 4. Qualify exact artifacts, supported toolchains, contracts, integration and
    security/lifecycle behavior. Keep provisional 0.x implementation,
    stable/public SPI publication, production-host admission and actual
    consumer adoption separate. Preserve accepted safety and conformance gates.
 5. Begin or expand main greenfield product implementation on the applicable
    qualified foundation and accepted owner contracts. Product architecture,
-   independent research, and narrowly admitted qualification work can proceed
-   in parallel. Do not rush product implementation, but do not make every
+   independently assigned research, and narrowly admitted qualification work
+   can proceed in parallel within their explicit tasks. Do not rush product implementation, but do not make every
    future plugin kind, multi-region topology or research idea a prerequisite
    for the baseline.
 
@@ -150,12 +163,25 @@ current plans and active work.
 | Future frontend / desktop / web / mobile | Can reusable behavior run independently of a shell, with optional compatible presentation and separate trust/placement? |
 | Other tools and external applications | Can a consumer install only a selected ordinary library or a supported module/plugin, without organization-specific credentials, internal APIs or the whole platform? |
 
-Record the actual consumer repository, entry point, target/profile, required
-capabilities, denied cases, exact artifact and proof in the owning delivery
-plan. Do not treat two synthetic configurations of the same implementation as
-two independent SPI implementations. The breadth of planned consumers
+Record the actual test-consumer repository, entry point, target/profile,
+required capabilities, denied cases, exact artifact and proof in the owning
+delivery plan. Reuse of one built artifact needs that same artifact in independently
+wired test Hosts for its declared environments. Target-specific builds need
+shared-contract evidence and qualification of each actual artifact; they do not
+prove that one binary is interchangeable across targets. A bounded single-Host
+proof retains its narrower scope. Two Hosts using one core are not two independently
+authored implementations of a public SPI. The breadth of planned consumers
 justifies early reusable design, while actual qualification establishes which
 portability and compatibility claims are supported.
+
+The [existing foundation delivery plan](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/plans/foundation-delivery-plan.md)
+coordinates the F0-F5 fixture sequence; later application adoption remains with
+each consuming product owner. Start with the smallest supported useful scenario
+and its rejecting controls. Browser, desktop and untrusted third-party plugins
+are confirmed architecture targets; each claimed execution or isolation profile
+needs its own evidence. Live-update and state-migration guarantees also require
+their applicable qualification. A passing plan or documentation CI proves none
+of those runtime claims.
 
 ## Shared module and extension architecture
 
@@ -215,6 +241,27 @@ and separately qualified stateful migration. Preserve old-generation affinity,
 admission cutoff, fencing, state custody, compatible readers and cleanup/recovery.
 An update guarantee does not imply malicious-code isolation or physical unload.
 
+### Headless behavior, presentation and client targets
+
+Useful behavior should remain independently consumable without its optional UI.
+Distinguish UI-independent behavior, unstyled widgets, framework-neutral
+declarations, runtime portability and security isolation; none proves the others.
+Reuse established UI and accessibility primitives in the selected renderer.
+This direction does not assign construction of a new UI toolkit or universal
+renderer, choose a frontend framework, or make a library name an adoption.
+
+Web and desktop may reuse compatible presentation code; portable behavior may
+also serve mobile through target-owned adapters. A desktop shell must not own
+shared business policy. Sharing behavior does not require identical UI, DOM,
+storage, IPC or privilege APIs across those targets. Keep the core's public
+runtime and declaration dependencies free of optional renderer/shell packages.
+
+The [headless plugins and optional UI design](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md)
+owns the detailed behavior/UI contract questions and qualification criteria.
+Each product owns presentation, state, permissions and supported targets.
+Mobile is an intended consumer direction, not a newly admitted runtime profile.
+Keep target-specific decisions and tests in their existing owner plans.
+
 ## Global architecture constraints to settle before dependent product code
 
 These are required design topics, not new accepted technical decisions or an
@@ -223,14 +270,14 @@ ADRs and open decisions; add only missing deltas and review alternatives.
 
 | Topic | Preferred direction to evaluate | Primary owner routes |
 | --- | --- | --- |
-| Placement and failure domains | Cell-ready stable identities, scoped routing and fenced transfer; start with a bounded deployment | Platform Deployment Management; Orchestrator persistence and OD-033 |
-| Resource and cost limits | Owner-specific bounded reservations; hierarchical delegation where measured shared bottlenecks require it | Runtime v3 C0–C3; Orchestrator OD-024 and OD-033 |
-| Recovery | Owner-local durable effects and independent fencing; multi-store restore reconciliation | Runtime F01–F18 and S2; Orchestrator OD-003/OD-013/OD-032; Platform authority |
-| Authority | Scoped delegation and receiver/last-mile enforcement, including agent and extension trust boundaries | Orchestrator OD-012/OD-031/OD-032; Platform and Runtime owners |
-| Event/automation amplification | Bound causal depth, width, cumulative work, bytes, retries, fanout and reserved control progress | Orchestrator OD-033 and eventing contracts; Runtime capacity |
-| Independent upgrades | Versioned semantic contracts, bounded compatibility/recovery horizon and generation-aware rollout | Each contract owner; Foundation evidence mechanisms |
-| Persistence | Feature-owned mappings/schemas/migrations, shared technical infrastructure only; resolve S2 bundle ownership | Runtime #245/#246; FMS and consumer owners |
-| Large codebase | Independent source, compilation, composition, deployment and execution graphs; scoped/incremental checks with sound invalidation | FMS, Engineering Foundation, Get Modular, AAS integrations |
+| Placement and failure domains | Cell-ready stable identities, scoped routing and fenced transfer; start with a bounded deployment | [Platform Deployment Management](https://github.com/agent-teams-ai/agent-teams-platform/blob/main/docs/domain/contexts/deployment-management/README.md); Orchestrator persistence and OD-033 |
+| Resource and cost limits | Owner-specific bounded reservations; hierarchical delegation where measured shared bottlenecks require it | [Runtime v3 plan](https://github.com/agent-teams-ai/agent-runtime/blob/main/docs/architecture/agent-runtime-greenfield-foundation-plan.md), C0–C3; Orchestrator OD-024 and OD-033 |
+| Recovery | Owner-local durable effects and independent fencing; multi-store restore reconciliation | Runtime F01–F18 and S2 in the v3 plan; Orchestrator OD-003/OD-013/OD-032; Platform authority |
+| Authority | Scoped delegation and receiver/last-mile enforcement, including agent and extension trust boundaries | [Research E5](https://github.com/agent-teams-ai/engineering-research/blob/main/docs/lessons/preimplementation-decisions.md#e5-authorization-freshness-at-a-cross-cell-effect-boundary) routes to Orchestrator OD-012/OD-031/OD-032 and Platform/Runtime owners; it accepts no authorization mechanism |
+| Event/automation amplification | Bound causal depth, width, cumulative work, bytes, retries, fanout and reserved control progress | [Orchestrator OD-033](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/open-decisions/OD-033-ooda-convergence-and-context-activation.md), eventing contracts and Runtime capacity |
+| Independent upgrades | Versioned semantic contracts, bounded compatibility/recovery horizon and generation-aware rollout | [Research E6](https://github.com/agent-teams-ai/engineering-research/blob/main/docs/lessons/preimplementation-decisions.md#e6-independent-upgrades-with-retained-durable-work) routes options to each contract owner; Foundation owns evidence mechanisms |
+| Persistence | Feature-owned mappings/schemas/migrations, shared technical infrastructure only; resolve S2 bundle ownership | [Runtime #245](https://github.com/agent-teams-ai/agent-runtime/issues/245) and [#246](https://github.com/agent-teams-ai/agent-runtime/issues/246); FMS and consumer owners |
+| Large codebase | Independent source, compilation, composition, deployment and execution graphs; scoped/incremental checks with sound invalidation | [Foundation growth review](https://github.com/agent-teams-ai/engineering-foundation/blob/main/docs/development/quality-gates.md#foundation-first-growth-review-proposed), FMS, Get Modular and [AAS delivery focus](https://github.com/agent-teams-ai/agent-architecture-standard/blob/main/README.md#delivery-focus) |
 
 Design for future placement and independent evolution without building
 speculative distributed infrastructure now. Do not put physical shard IDs
@@ -257,8 +304,9 @@ ADR-0114/0116 local operational footprint; ADR-0100/0101 Agent occupancy;
 Foundation cohort compatibility. An accepted ADR may be right; a review
 candidate is not a supersession. Use the [owner-facing architecture decision comparison](../engineering-quality-standard.md#owner-facing-architecture-decisions-and-estimates)
 for estimates, conditional recommendations, evidence and critique. Record
-unresolved choices in their owning records, with independent work proceeding;
-reviewed documentation may land before the choices themselves are accepted.
+unresolved choices in their owning records. Continue only independently
+authorized parts of the assigned task; reviewed documentation may land before
+its proposed choices are accepted.
 
 ## Coordination and definition of readiness
 
