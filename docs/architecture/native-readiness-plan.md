@@ -333,13 +333,13 @@ Do not copy that state machine or add another process supervisor.
 
 | Stage | Deliverable / stop gate | New prod/tool LOC | Tests/fixtures LOC | Docs LOC |
 | --- | --- | ---: | ---: | ---: |
-| P0 | This owner-reviewed draft and concise EQS delta; no consumer pin changes | 0 | 0 | 250-450 |
+| P0 | This owner-reviewed draft and concise EQS delta; no consumer pin changes | 0 | 0 | 350-500 |
 | P1 | One Core probe, fixed vectors, honest target evidence; stop if unhelpful | 80-180 | 100-250 | 40-80 |
 | P2 | Only confirmed gaps: consumer config and existing gates first | 0-120 | 40-150 | 30-60 |
 | P3 | Optional shared neutral check only if reuse proven, exact packed E2E | 0-250 | 0-250 | 0-80 |
 
-Conditional P0-P3 envelope: 80-550 tooling, 140-650 tests and 320-670 docs
-= 540-1,870 LOC if the stages are useful.
+Conditional P0-P3 envelope: 80-550 tooling, 140-650 tests and 420-720 docs
+= 640-1,920 LOC if the stages are useful.
 A negative result can end after P0/P1. Counts exclude generated mechanical
 artifacts, upstream code, runner and release work; estimates, not scope
 targets. No LOC quota. Platform/ABI support, product migration and alternative
