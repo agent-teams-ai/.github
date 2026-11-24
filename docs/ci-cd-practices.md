@@ -2,6 +2,34 @@
 
 This is a short engineering guide, **not** an organization-wide CI enforcement policy. Each repository owns its required checks, release gates and migration decisions. Adopt optimizations only with local evidence and negative tests.
 
+## Prompt delivery for authorized documentation
+
+For documentation work already assigned by the owner, commit and push the
+smallest coherent change promptly. Use a direct non-force push to main when
+the assigned delivery route and active repository rules permit it. Otherwise
+reuse a PR for the same task, or create one coherent PR when required; do not
+attach changes to another agent's active workstream. Merge through the ordinary
+protected route as soon as its requirements are satisfied.
+
+Do not add discretionary waiting periods, wait for nonrequired checks merely
+because they exist, repeat checks on unchanged qualified inputs, or invent new
+review gates. Keep existing review obligations and resolve known blocking
+findings. A completed merge and completed verification are separate claims;
+inspect the actual main result and report pending or failed checks accurately.
+
+Use a qualified documentation route when the repository provides one.
+Classify the changed meaning as well as the extension: agent instructions,
+governance, admission/security policy, published contracts, immutable standards,
+release rules and executable examples may carry operational authority.
+Markdown alone does not establish that an expensive check is inapplicable.
+Retain source identity, accepted decisions and actual required checks.
+
+This delivery preference does not itself change branch protection, install a
+fast lane or authorize unrelated work. If the existing route still requires
+checks before merge, continue through that route; the current [input-proof
+checkpoint](engineering-quality.md#shared-qualification-input-proof-checkpoint)
+is the owner route for a future qualified reduction of repeated work.
+
 ## What pays off
 
 1. **Run impact-based qualification in the PR.** Start independent checks in parallel; put expensive native, OS, database and packaged E2E behind explicit changed-boundary classifiers. When classification is uncertain, include the check. Keep a stable required gate that fails when a selected job fails, is cancelled or is missing.

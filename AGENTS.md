@@ -8,6 +8,9 @@ For new owned production repositories and explicit older opt-ins, start at
 Install its explicit FMS, Foundation and CI configuration; GitHub does not
 automatically inherit those artifacts or required checks.
 
+For every assigned task, follow the [task-scope boundary](docs/engineering-quality-standard.md#task-scope-and-obvious-corrections).
+A plan or open decision does not assign additional work to an agent.
+
 For cross-repository planning, read the [Foundation-first ecosystem vision](docs/architecture/ecosystem-vision.md)
 first. Preserve its library-first direction, owner boundaries, and separate
 qualification and adoption gates.
@@ -62,7 +65,8 @@ for new helpers.
 
 For substantive unresolved architecture decisions, follow the
 [owner-facing comparison and estimate rule](docs/engineering-quality-standard.md#owner-facing-architecture-decisions-and-estimates).
-Record open questions without blocking independent authorized work.
+Use it to describe unresolved choices within the assignment; it grants no
+implementation, adoption or release authority.
 
 <!-- agent-teams:quality-standard:start -->
 Before planning, implementing, or reviewing changes, read and follow the

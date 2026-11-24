@@ -31,13 +31,38 @@ current guidance, not permission to change a content pin, frozen contract or
 accepted decision. Review upstream changes and use the owning adoption procedure.
 Keep stricter local requirements. If rules conflict, identify the specific
 conflicting requirements and follow the owning decision process before changing
-that boundary; continue independent work. Never silently choose a weaker rule.
+that boundary. Continue only other steps already covered by the assignment.
+Never silently choose a weaker rule.
 
 Required practices and demonstrated conformance are different claims. A new
 link, installed library, approved plan or passing partial checker does not prove
 that existing code conforms. Keep legacy gaps, exclusions, accepted deviations
 and unqualified behavior explicit in their existing owner records. This document
 does not require unrelated legacy migrations or create an exemption for new code.
+
+## Task scope and obvious corrections
+
+Owner clarification recorded on 2026-11-25: common instructions, architectural
+vision, research findings and open decisions do not assign work to an agent.
+The current owner task defines the requested outcome and scope. A useful idea,
+an apparently better architecture or an item in a roadmap does not authorize a
+new feature, refactor, dependency, migration or cross-repository rollout.
+
+Within an assigned task, an obvious editorial correction may proceed when its
+intended result follows directly from an existing accepted source: a typo,
+broken navigation link or stale factual status. Preserve the meaning and
+verify the source. A change to semantics, ownership, public contracts, data,
+security, release policy or acceptance criteria is not made obvious by the
+agent's confidence or by a Markdown file extension.
+
+Substantive implementation may already be explicitly authorized by the task;
+this section neither withdraws that authorization nor adds a permission step
+for every edit. It removes a blanket instruction to decide independently what
+else should be done. If a necessary owner-level choice remains unresolved,
+record the affected part and alternatives in its existing owner record.
+Other work may continue only when it is independently covered by the same
+assignment or another explicit owner instruction. Recording a proposal, passing
+checks or merging its documentation does not accept that proposal.
 
 ## Early product advantage
 
@@ -82,18 +107,21 @@ intended consumer seams, owner, useful behavior and independent expected results
 a planned application or two copies of one toy are not execution evidence.
 
 Owner sequencing clarification, 2026-11-24: real product implementation is not an
-entry prerequisite for foundation design, spikes or qualification. A portability
-claim requires the same built artifact in independently wired test Hosts for the
-claimed environments; a bounded single-Host profile does not acquire that wider
-requirement. Product adoption later proves its own integration and accepted gates.
+entry prerequisite for foundation design, spikes or qualification. A claim that
+one built artifact is reusable across Hosts requires that same artifact in
+independently wired test Hosts for the claimed environments. If supported targets
+need different builds, qualify their shared contract and each actual artifact;
+do not call source portability proof that one binary works everywhere. A bounded
+single-Host profile retains its narrower evidence requirement. Product adoption
+later proves its own integration and accepted gates.
 These are distinct from package materialization, stable/public SPI conformance
 and production-host admission under their owning contracts. Two Hosts sharing
 one core do not establish two independent SPI implementations. Preserve those
 owner gates and immutable standards; resolve any changed accepted requirement
 through its existing successor procedure.
 
-Breaking changes are allowed in every organization repository when they
-deliberately improve the system. The MVP stage lasts until the owner records
+Within work authorized by the owner, breaking changes are allowed in every
+organization repository when they deliberately improve the system. The MVP stage lasts until the owner records
 its end in this standard or, for one repository, in that repository's
 `AGENTS.md`, README or accepted decisions. A compatibility commitment exists
 only where those repository documents explicitly declare one; commitments
@@ -160,8 +188,8 @@ experiment only when its result can change the choice.
 
 Preserve accepted language, custody and deployment decisions. A reference stack
 does not adopt a consumer's storage, workflow engine or local deployment
-profile. Propose a scoped successor for a genuine conflict; continue unrelated
-work. This instruction does not approve a new runtime, migrate existing code or
+profile. Propose a scoped successor for a genuine conflict; continue only
+unaffected steps already within the assigned task. This instruction does not approve a new runtime, migrate existing code or
 add an approval step for routine implementation choices.
 
 ### TypeScript for JavaScript runtimes
@@ -214,7 +242,7 @@ work, to 7.0.2 or newer. This includes copies initialized by embedded tooling,
 not just the workspace compiler named in `package.json`. Inspect their resolved
 dependency paths and versions before running them. If a required tool still
 initializes an older implementation, report the exact tool, resolved version,
-owning dependency and blocked gate; continue unaffected work. Do not execute the
+owning dependency and blocked gate; continue unaffected steps within the task. Do not execute the
 older compiler, bypass the gate, relabel old evidence or alter immutable inputs
 to obtain a green result. Resolve that dependency through its owning upgrade
 and qualification route.
@@ -372,17 +400,18 @@ question. Record exact source revisions and conflicts. A choice already approved
 by the owner is **not** to be reopened merely because an older document is stale;
 propose a scoped reconciliation/successor instead.
 
-If a real owner-level choice remains, record it as an explicit open decision
-in its owning ADR/plan and summarize the choices in the conversation when the
-owner needs to decide. State the decision stage, affected dependencies, and
-independent work that can continue. A reviewed documentation checkpoint may
-land with open questions; do not block unrelated planning or merge merely
-because a proposed choice remains open. Do not implement dependent code, freeze
-its contract or represent the choice as accepted until the applicable owner
-decision is recorded. Keep routine authorized decisions moving without repeated
-permission requests. Follow ordinary approval, source-identity and required
-checks; prefer direct main commits only where repository rules allow, and reuse
-an existing PR when protection or ongoing review requires one.
+If a real owner-level choice remains within the assigned task, record it as an
+explicit open decision in its owning ADR/plan and summarize the alternatives
+when the owner needs to decide. State its stage, affected dependencies and
+which already-assigned steps are independent of it. This comparison is a record
+of a choice, not an instruction to select additional work. Apply the
+[task-scope boundary](#task-scope-and-obvious-corrections).
+
+An authorized, reviewed documentation checkpoint may land while its choices
+remain open. Do not implement dependent code, freeze its contract or represent
+the choice as accepted until the applicable owner decision is recorded.
+Use [prompt documentation delivery](ci-cd-practices.md#prompt-delivery-for-authorized-documentation)
+within the repository's actual permissions and existing obligations.
 
 Use the following compact comparison for each decision (not for trivial edits):
 
@@ -427,7 +456,7 @@ evaluate three options for every routine implementation detail.
 
 ## Change workflow and evidence
 
-1. Identify the changed behavior, semantic owner, relevant decisions, API and
+1. Identify the assigned outcome, changed behavior, semantic owner, relevant decisions, API and
    dependency edges. For significant changes, state invariants, failure cases,
    compatibility and resource ownership before implementation. Follow the
    repository's decision process when a required choice is unresolved.
