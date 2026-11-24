@@ -177,31 +177,31 @@ and [headless/UI design](https://github.com/agent-teams-ai/live-module-updates/b
 Coordinate with that workstream; do not create another module loader, registry,
 composition compiler, lifecycle kernel or update orchestrator in parallel.
 
-Compare the following at the existing owner decisions, not by package count.
-A single coherent SDK, installation or distribution is compatible with the
-first option if it delegates to the same independent mechanisms; it is not
-the second option merely because it is shipped as one package. The decision
-is about dependency, authority, lifetime and release coupling. Product
-developers should not manually assemble a duplicate update algorithm. Compare
-one optional entry point or integration preset against direct library
-composition using a real authoring, install, invoke, update and remove
-scenario. Verify that both paths exercise the same mechanism and that the
-minimal external library does not install unrelated runtime dependencies.
+The independently usable neutral cores and product-owned operational authority
+are accepted boundaries in
+[Extension Foundation ADR-0015](https://github.com/agent-teams-ai/extension-foundation/blob/5ee8a788935c885fac075a5860a0217cf420b4d7/docs/decisions/0015-authorize-get-modular-semantic-extraction.md).
+A coherent SDK, installation or distribution may delegate to those same
+mechanisms without combining their authority or making every consumer install
+unrelated runtime dependencies. Packaging alone does not decide that boundary.
 
+A compulsory runtime coupling neutral composition, artifact trust and product
+activation for every consumer, and separate copies of the same shared update
+algorithm in each product, are rejected counterexamples under those boundaries
+and the [library-first direction](../engineering-quality-standard.md#library-first-design-and-deliberate-evolution).
+They are not open alternatives. Product-specific policy, custody and narrow
+integration adapters still belong to their actual product owners.
 
-| Option | Reliability | Complexity | Confidence | Incremental implementation/test LOC |
-| --- | ---: | ---: | ---: | ---: |
-| Independently usable composition, extension and shared update mechanisms, with an optional coherent integration surface | 9 | 7 | 9 | 5,000–12,000 |
-| One compulsory runtime coupling composition, artifact trust and dynamic activation for every consumer | 7 | 9 | 7 | 12,000–30,000 |
-| Independently authored host lifecycle in each product | 7 | 8 | 9 | 8,000–15,000 per product |
-
-Estimates are provisional and overlap active delivery work. The preferred
-hypothesis is the first option, including a thin integration recipe or facade
-only if real authoring ergonomics require it. It is not an accepted new
-package, SDK or final graph. The other agent's existing work owns the detailed
-selection and estimates. If a shared mechanism already exists, reuse it;
-separation is by semantic ownership and dependency/lifecycle guarantees, not
-by a compulsory repository per abstraction.
+The remaining ergonomics question is direct library composition versus an
+optional coherent entry point or integration preset that delegates to the same
+mechanisms. Route that choice through
+[Extension OD-003](https://github.com/agent-teams-ai/extension-foundation/blob/5ee8a788935c885fac075a5860a0217cf420b4d7/docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md)
+and the existing Live Module Updates delivery plan above. Compare both paths in
+a representative authoring, install, invoke, update and remove scenario; verify
+that the minimal external library retains its independent dependency closure.
+Add a thin integration surface only if that evidence shows a concrete need.
+Keep implementation selection and detailed estimates with the active owner
+plan instead of maintaining a second cross-project estimate here. No new
+package, SDK or final graph is accepted by this navigation note.
 
 Keep contribution vocabulary extensible. Tool, skill, UI, worker, private
 state, workflow or integration are illustrative consumer capabilities, not an
