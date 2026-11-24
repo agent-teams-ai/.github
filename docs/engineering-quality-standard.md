@@ -105,6 +105,9 @@ a safe migration. Accepted decisions and pinned standards still change through
 their successor process.
 
 Repository agent instructions link here; they do not duplicate this direction.
+For the greenfield delivery order, intended consumers, and shared-library
+ownership map, read the [Foundation-first ecosystem vision](architecture/ecosystem-vision.md).
+That route does not change an adopted standard, release gate, or accepted ADR.
 
 ## Language selection and runtime boundaries
 

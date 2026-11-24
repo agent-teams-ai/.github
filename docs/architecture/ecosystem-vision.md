@@ -171,12 +171,22 @@ and [headless/UI design](https://github.com/agent-teams-ai/live-module-updates/b
 Coordinate with that workstream; do not create another module loader, registry,
 composition compiler, lifecycle kernel or update orchestrator in parallel.
 
-Compare the following at the existing owner decisions, not by package count:
+Compare the following at the existing owner decisions, not by package count.
+A single coherent SDK, installation or distribution is compatible with the
+first option if it delegates to the same independent mechanisms; it is not
+the second option merely because it is shipped as one package. The decision
+is about dependency, authority, lifetime and release coupling. Product
+developers should not manually assemble a duplicate update algorithm. Compare
+one optional entry point or integration preset against direct library
+composition using a real authoring, install, invoke, update and remove
+scenario. Verify that both paths exercise the same mechanism and that the
+minimal external library does not install unrelated runtime dependencies.
+
 
 | Option | Reliability | Complexity | Confidence | Incremental implementation/test LOC |
 | --- | ---: | ---: | ---: | ---: |
 | Independently usable composition, extension and shared update mechanisms, with an optional coherent integration surface | 9 | 7 | 9 | 5,000–12,000 |
-| One integrated runtime/package with distinct internal ownership boundaries | 7 | 9 | 7 | 12,000–30,000 |
+| One compulsory runtime coupling composition, artifact trust and dynamic activation for every consumer | 7 | 9 | 7 | 12,000–30,000 |
 | Independently authored host lifecycle in each product | 7 | 8 | 9 | 8,000–15,000 per product |
 
 Estimates are provisional and overlap active delivery work. The preferred
