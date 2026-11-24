@@ -255,13 +255,10 @@ extraction gates for library-first compatibility; Runtime v3 storage and
 local PostgreSQL handoff; Orchestrator ADR-0117 composition baseline and
 ADR-0114/0116 local operational footprint; ADR-0100/0101 Agent occupancy;
 Foundation cohort compatibility. An accepted ADR may be right; a review
-candidate is not a supersession. Compare at least three plausible alternatives
-where a material choice exists, with reliability, complexity, confidence and
-handwritten production/test LOC. Review from architecture, security/recovery,
-scale/operations and consumer/developer ergonomics perspectives; reconcile
-findings against existing records. Run independent critiques for substantial
-choices where available; never claim a reviewer or qualification ran if it did
-not.
+candidate is not a supersession. Use the [owner-facing architecture decision comparison](../engineering-quality-standard.md#owner-facing-architecture-decisions-and-estimates)
+for estimates, conditional recommendations, evidence and critique. Record
+unresolved choices in their owning records, with independent work proceeding;
+reviewed documentation may land before the choices themselves are accepted.
 
 ## Coordination and definition of readiness
 
