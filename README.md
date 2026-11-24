@@ -32,9 +32,14 @@ The organization has existing implementations as well as new products; this
 direction does not imply that all repositories are empty or that every current
 component should be rewritten. Existing product and foundation decisions,
 immutable standards, repository classification, adoption and release gates
-remain authoritative. Select the actual new product owner before qualifying a
-shared capability; a historical legacy reference is not a real greenfield
-consumer or evidence of its current conformance.
+remain authoritative. Select the shared capability's actual owner and the
+intended consumer seams before qualifying its claimed profile on realistic
+fixtures and, for portability claims, independent test Hosts. Dependent product
+implementation need not exist first; its later adoption still owns product-specific
+integration and
+accepted gates. Follow the [fixture qualification sequence](docs/engineering-quality-standard.md#library-first-design-and-deliberate-evolution).
+A historical legacy reference is not an adopted greenfield consumer or evidence
+of its current conformance.
 
 ## Shared Files
 
