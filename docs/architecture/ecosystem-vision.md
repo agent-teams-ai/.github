@@ -88,6 +88,50 @@ mechanisms where their contracts actually fit. Inventory actual planned
 adoptions in the owning library's existing plan, rather than promising that
 every repository will use every library. No legacy migration is implied.
 
+## Reuse levels and dependency rules
+
+Use the smallest appropriate level, independently of repository layout:
+
+| Level | Contract | Reuse and dependency direction |
+| --- | --- | --- |
+| Mechanism library | Portable behavior and narrow typed ports | Ordinary import; no mandatory Host, registry, product or deployment |
+| Feature or capability | Owned behavior, public surface and dependency policy | Consumer imports only declared public surfaces; no foreign internals |
+| Composed module | Declaration, bindings, construction and applicable resource lifetime | Composition depends on features and Get Modular; feature domain/application does not depend on the composition engine |
+| Installed extension | Artifact and one or more typed, versioned contributions | Product-owned adapters compose the extension, trust and update mechanisms; installation is not permission |
+| Host or service | Product authority, execution profile, routing, operational lifetime | Composition root selects compatible implementations; external consumers use published contracts |
+| Product or deployment | Business scope and independent release/failure domain | Integrate through owned API/SDK or published language, not shared private databases or domain aggregates |
+
+A neutral mechanism cannot import a consuming product. Engineering Foundation
+remains dev-only; AAS remains an independent specification, not a runtime
+dependency. Get Modular and Extension Foundation are independent neutral cores.
+The proposed shared update operation consumes qualified mechanisms and
+owner-specific ports, not another product's private state. A product-specific
+integration may compose several libraries; none should gain a mandatory
+dependency on unrelated capabilities. Existing accepted product boundaries
+and local adoption profiles decide exact package and source edges.
+
+### Intended consumer coverage
+
+Use actual owner seams rather than implementing an entire product to test a
+library. The following are consumer candidates, not confirmed adoption or
+authority to implement their domains. Reconcile these with the owners'
+current plans and active work.
+
+| Consumer | Representative qualification question |
+| --- | --- |
+| Runtime v3 | Can a headless runtime capability be constructed, replaced at an admitted boundary and cleaned up without product/UI dependencies or loss of execution authority? |
+| Orchestrator | Can independent nested features compose in multiple profiles, and can a replaceable capability use its own durable state and preserve cancellation? |
+| Platform | Can the same neutral mechanisms operate with managed, tenant-scoped policy and independent deployment authority? |
+| Future frontend / desktop / web / mobile | Can reusable behavior run independently of a shell, with optional compatible presentation and separate trust/placement? |
+| Other tools and external applications | Can a consumer install only a selected ordinary library or a supported module/plugin, without organization-specific credentials, internal APIs or the whole platform? |
+
+Record the actual consumer repository, entry point, target/profile, required
+capabilities, denied cases, exact artifact and proof in the owning delivery
+plan. Do not treat two synthetic configurations of the same implementation as
+two independent SPI implementations. The breadth of planned consumers
+justifies early reusable design, while actual qualification establishes which
+portability and compatibility claims are supported.
+
 ## Shared module and extension architecture
 
 Aim for one coherent developer experience and one implementation per shared
