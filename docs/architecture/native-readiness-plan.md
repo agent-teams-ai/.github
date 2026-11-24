@@ -147,6 +147,35 @@ EQS is current common practice; retained EQS/source authority bytes, digests,
 qualification and exact consumer pins must follow their existing transition
 procedure. Agent links provide discoverability, not adoption evidence.
 
+### Concrete owner follow-ups (not part of this draft)
+
+- Get Modular: extend the existing Core qualification plan and fixtures under
+  its architecture/qualification and packages/core test ownership. Exercise
+  the public byte input and existing canonical vectors. If an actual blocker
+  is proven, change only its responsible feature (e.g. plan-output), retain
+  unchanged wire/diagnostic/digest semantics, and qualify the packed consumer.
+  Do not move Assembly, Effect, Resources or Observation into a native core.
+- Engineering Foundation / Stack Toolchain: review the consumer's existing
+  architecture/foundation/source-dependencies.yaml and effective Oxlint config.
+  Keep the rule implementation in the current owning tool; Stack owns lint
+  presets, Foundation owns source dependency observation. Start with a local
+  config delta, not changes to the published base presets or quality profile.
+- Extension Foundation: add any unresolved native artifact/profile choices to
+  docs/open-decisions/OD-003-module-runtime-and-public-spi-choices.md and the
+  existing docs/architecture/plugin-delivery-plan.md only where needed. Keep
+  signing, admission, authorization and product Host obligations with their
+  accepted owners. No manifest change or stable SPI in this step.
+- Live Module Updates: reconcile the existing
+  docs/plans/foundation-delivery-plan.md and operation proposal with the
+  distinction between native static linkage and independent replacement.
+  Do not make new native profiles a prerequisite for the first useful update
+  operation or add a second generation state machine.
+
+Do not repeat the common rule text in those repositories. Reference the
+reviewed central guidance through the existing agent routes and retain local
+technical details in their already-owned plans. Each concrete change is a
+separate scoped delivery with its own evidence and owner decision.
+
 ## 5. Tooling: choose the cheapest reliable enforcement
 
 Read and verify the selected consumer's exact installed versions and existing
@@ -190,6 +219,34 @@ An opt-out consumer with no new config must retain its old CLI/API/config,
 findings, runtime dependencies, execution and release behavior. Qualify a
 packed unrelated consumer, not only this organization. Installation of
 Foundation, Stack or a preset is not consent to native-readiness enforcement.
+
+### Test design and adoption decision
+
+| Fixture | Required observation |
+| --- | --- |
+| Selected portable source imports a disallowed platform builtin | Actionable failure at the owned edge |
+| Ordinary adapter imports the same builtin outside selected scope | Existing behavior unchanged |
+| Allowed static import / legitimate TS type-only use | No false finding; enforce only the selected dependency or declaration policy |
+| Reexport, alias, relative path through another owned module, unresolved or computed reference | Exercise actual source-graph/target behavior; distinguish known forbidden from unknown, never certify an unresolved closure |
+| Local clock parameter and a shadowed identifier | Accept valid semantics; avoid a text-only global-name ban |
+| Actual portable-boundary type alias exposing a host-specific handle | Reject only if the adopted contract prohibits it; use declaration-level evidence if needed |
+| Packed unrelated consumer without any new option | Exact existing default findings/API/config behavior; no new required tool or runtime dependency |
+
+Run the existing tools first on those cases. If a case is outside their
+documented guarantee, describe the missing fact rather than writing a
+duplicate rule. Do not implement all candidate checks simply because they
+appear in this table. A new check needs a reproduced important violation,
+a demonstrated gap in existing tools and a low-noise fix. Confirm the normal
+feature path requires zero new per-feature declarations or configuration.
+A consumer opting into a narrow scope must be able to remove only that
+optional scope without weakening unrelated existing safety gates.
+
+Track the change in authoring steps, duplicated representations, false
+findings, maintenance LOC, execution cost and failure diagnostics in the
+pilot. If the same benefit is available from an existing rule or manual
+review, do not ship a new Foundation capability. Escalate complexity only
+with a concrete owner-reviewed tradeoff; no blanket zero-warning target
+that rewards suppressions.
 
 ## 6. First experiment: Get Modular Core, not Hello World
 
@@ -320,8 +377,10 @@ Self-review passes for this proposal; not independent reviewer approvals:
 5. Evidence/maintenance: one bounded probe, independent fixtures, no TS5
    fallback, separate strict/hybrid and exact platform evidence; stop on
    negative evidence. No fleet rollout or release until owner admission.
-6. Delivery/red team: challenge direct and transitive dependencies, computed
-   imports, shadowed globals, declaration aliases, false green tests,
+6. Delivery/red team: recheck exact owner routes and add a fixture/decision
+   matrix after comparing the proposed rules with the existing Stack preset
+   and Foundation schema. Distinguish direct and transitive dependencies,
+   computed imports, shadowed globals, declaration aliases, false green tests,
    hidden default activation and unavailable runners. Require valid negatives
    and independent review before widening scope.
 
