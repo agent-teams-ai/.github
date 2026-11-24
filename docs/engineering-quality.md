@@ -259,11 +259,11 @@ predicate. [PR-only actor bypass](https://docs.github.com/en/repositories/config
 retains a PR trail but is not docs-only authority. A broader actor bypass is a
 different owner policy choice, not an implementation of this scoped request.
 
-| Route | Result and limitation | Remaining work |
-| --- | --- | --- |
-| A. Native auto-merge after requirements | Removes manual waiting; all required checks still precede merge, so it does not meet the literal request | Enable repository auto-merge, then qualify a caller that preserves existing exact-head review, source identity and final merge attribution |
-| B. Qualified shorter path for inert documentation | Omits only proven inapplicable expensive suites; its trusted classification, identity and admission checks still finish before merge | Define the exact eligible scope and qualify the existing source/input-proof adapters and required aggregate; runner waiting remains possible |
-| C. Literal merge before CI completion | Requires a separate trusted writer that enforces eligible path/content and the current reviewed head/base under owner-granted merge authority | Design and qualify that authority and its rejecting cases; a GitHub actor grant itself is not content-scoped. This is unbuilt, broader work, not an assigned implementation |
+| Route                                             | Result and limitation                                                                                                                         | Remaining work                                                                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A. Native auto-merge after requirements           | Removes manual waiting; all required checks still precede merge, so it does not meet the literal request                                      | Enable repository auto-merge, then qualify a caller that preserves existing exact-head review, source identity and final merge attribution                                  |
+| B. Qualified shorter path for inert documentation | Omits only proven inapplicable expensive suites; its trusted classification, identity and admission checks still finish before merge          | Define the exact eligible scope and qualify the existing source/input-proof adapters and required aggregate; runner waiting remains possible                                |
+| C. Literal merge before CI completion             | Requires a separate trusted writer that enforces eligible path/content and the current reviewed head/base under owner-granted merge authority | Design and qualify that authority and its rejecting cases; a GitHub actor grant itself is not content-scoped. This is unbuilt, broader work, not an assigned implementation |
 
 A and B are alternatives to the requested timing, not its delivery. A's setting
 alone has production/test LOC P = T = 0; caller qualification and engineer-days
