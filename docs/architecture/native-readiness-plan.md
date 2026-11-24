@@ -305,7 +305,10 @@ Include repeat runs with permuted equivalent inputs where the contract
 promises determinism. Confirm the built executable runs without an externally
 installed Node runtime if claimed, and report embedded/linked runtime
 components, fallback and unsupported paths. Exercise actual artifact from an
-independent temp consumer. Test compilation alone is not semantic evidence.
+independent temp consumer. Test compilation alone is not semantic evidence. A zero compiler exit and
+high coverage percentage can still coexist with deferred runtime traps or
+known semantic divergences. Inspect structured diagnostics and distinguish
+artifact generation from support of the selected reachable behavior.
 
 If execution fails, isolate the first failing case (or module initialization)
 with the same packed API and compiler configuration. Preserve raw diagnostics
@@ -337,7 +340,14 @@ and a static-only Linux x64 build with scriptc 0.4.16 and its bundled
 7.1.0-beta checker. The resulting ELF failed at execution with
 `TypeError: Cannot convert undefined or null to object` in the
 [recorded probe run](https://github.com/agent-teams-ai/get-modular/actions/runs/45489830118).
-No parity, native runtime qualification, or performance result is established.
+The [preserved evidence artifact](https://github.com/agent-teams-ai/get-modular/actions/runs/45489830118/artifacts/14964993557)
+reports 99% static coverage, five failed statements in four deferred SC1090
+sites, and corresponding SC6015 divergence warnings in the successful build.
+The affected packed code includes scanner element assignments and a `freeze`
+binding reference. The native NDJSON is empty; these diagnostics identify
+concrete limitations but do not establish the exact cause of the first
+runtime exception. No parity, native runtime qualification, or performance
+result is established.
 Keep later evidence with the owning experiment, not in a duplicate central
 ledger. This failure alone does not justify a new lint restriction.
 
