@@ -107,6 +107,10 @@ human governance document intentionally does not duplicate its matrix.
 
 ## Product vision and shared research
 
+Start with the [Foundation-first ecosystem vision and delivery plan](docs/architecture/ecosystem-vision.md).
+It records the owner direction, shared-library consumers and ownership map,
+then routes to the existing product and foundation authorities.
+
 Agent Teams product deployment and execution-scale vision is owned by the
 [Orchestrator deployment profiles](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/main/docs/architecture/deployment-profiles.md#concurrent-execution-target).
 Platform and Agent Runtime adopt their responsibilities in their own documents.
