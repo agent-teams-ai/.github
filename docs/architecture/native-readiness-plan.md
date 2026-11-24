@@ -157,6 +157,10 @@ procedure. Agent links provide discoverability, not adoption evidence.
   is proven, change only its responsible feature (e.g. plan-output), retain
   unchanged wire/diagnostic/digest semantics, and qualify the packed consumer.
   Do not move Assembly, Effect, Resources or Observation into a native core.
+  A compiler-only rejection is not sufficient reason to refactor production:
+  isolate it in a fixture and report it upstream where actionable. Change the
+  owning implementation only for a real correctness/maintainability benefit
+  or a separately reviewed target-qualification decision.
 - Engineering Foundation / Stack Toolchain: review the consumer's existing
   architecture/foundation/source-dependencies.yaml and effective Oxlint config.
   Keep the rule implementation in the current owning tool; Stack owns lint
@@ -177,6 +181,16 @@ Do not repeat the common rule text in those repositories. Reference the
 reviewed central guidance through the existing agent routes and retain local
 technical details in their already-owned plans. Each concrete change is a
 separate scoped delivery with its own evidence and owner decision.
+
+Foundation qualification must not wait for a finished product. Where a real
+product feature is not yet available, exercise the smallest realistic fixture
+feature through the actual owning library, public contract and built artifact.
+For example, a graph fixture can select and reject bindings; a replacement
+fixture can execute useful work across generations and verify drain, fencing
+and rollback under the existing supported profile. Reuse existing fixture
+ownership; no substitute implementation, new universal fixture framework,
+mandatory native profile, or synthetic claim of product adoption follows.
+Product integration remains its own gate.
 
 ## 5. Tooling: choose the cheapest reliable enforcement
 
@@ -236,7 +250,10 @@ Foundation, Stack or a preset is not consent to native-readiness enforcement.
 
 Run the existing tools first on those cases. If a case is outside their
 documented guarantee, describe the missing fact rather than writing a
-duplicate rule. Do not implement all candidate checks simply because they
+duplicate rule. A target-specific compiler failure is not by itself a
+portable-design violation. Only enforce an independently useful architectural
+invariant at its existing owner; do not require a successful optional AOT
+probe for unrelated feature work. Do not implement all candidate checks simply because they
 appear in this table. A new check needs a reproduced important violation,
 a demonstrated gap in existing tools and a low-noise fix. Confirm the normal
 feature path requires zero new per-feature declarations or configuration.
@@ -266,8 +283,11 @@ Pin exact compiler artifact, version, resolved compiler frontend, fixture
 revision, lock, target, linker/SDK, flags and reachable dependencies. Verify
 which TS compiler path is actually used; if only a prohibited TS5 path works,
 stop and record the gap, do not weaken the organization's compiler floor.
-A diagnostic-only/coverage observation is permissible without claiming a
-qualified build. Use scriptc coverage and build on the selected entrypoint;
+A pinned prerelease checker may be observed in this non-production probe;
+record it separately from the repository's supported compiler and do not
+interpret its version output as proof of which frontend performed the build
+or as approval to change production pins. A diagnostic-only/coverage
+observation is permissible without claiming a qualified build. Use scriptc coverage and build on the selected entrypoint;
 read the pinned CLI help/docs for strict-native vs Node-island/hybrid options.
 If hybrid is the only supported mode, report that explicitly, never label it
 strict-native. Do not add a compile workaround to production before proving
@@ -287,6 +307,17 @@ installed Node runtime if claimed, and report embedded/linked runtime
 components, fallback and unsupported paths. Exercise actual artifact from an
 independent temp consumer. Test compilation alone is not semantic evidence.
 
+If execution fails, isolate the first failing case (or module initialization)
+with the same packed API and compiler configuration. Preserve raw diagnostics
+and exit status; use a focused reproducer to distinguish compiler lowering,
+package resolution, runtime API support and a genuine defect in the owning
+implementation. Do not remove failing cases, change expected results, or
+modify production to appease a speculative target. If one bounded isolation
+pass does not yield an actionable cause, record the unresolved limitation
+and stop this compiler probe; resume only with new evidence. Broader parity,
+performance and platform work must not hide this failure. A negative finding
+can complete the feasibility decision without qualifying the target.
+
 If successful, record cold/warm startup, wall time, peak RSS, artifact size,
 build cost and throughput on the same workload and host with repetitions.
 Distinguish CPU gain from crossing/serialization cost, compare whole use case.
@@ -299,6 +330,16 @@ build passed, runtime passed, parity passed, measured performance. These are
 separate evidence facts; queued, skipped, fallback and missing cases are not
 PASS. Document negative results and stop after the bounded probe if no useful
 decision changes. Do not create a permanent cross-compiler framework.
+
+Initial observation (2026-11-24): the [Get Modular Core experiment #252](https://github.com/agent-teams-ai/get-modular/pull/252)
+recorded a successful packed Node reference (12 cases, TypeScript 7.0.2)
+and a static-only Linux x64 build with scriptc 0.4.16 and its bundled
+7.1.0-beta checker. The resulting ELF failed at execution with
+`TypeError: Cannot convert undefined or null to object` in the
+[recorded probe run](https://github.com/agent-teams-ai/get-modular/actions/runs/45489830118).
+No parity, native runtime qualification, or performance result is established.
+Keep later evidence with the owning experiment, not in a duplicate central
+ledger. This failure alone does not justify a new lint restriction.
 
 ## 7. Extension and live-update guardrails
 
