@@ -10,6 +10,32 @@ require explicit repository adoption. Product domain models, local development
 commands, bounded-context policy, accepted decisions, adoption profiles, and
 release procedures remain in the owning repository.
 
+## New product scope and legacy references
+
+Owner clarification, 2026-11-23: the new Agent Teams product architecture is
+greenfield, developed in the owning repositories under the `agent-teams-ai`
+organization. Start from each target repository's current accepted architecture,
+domain contracts, and admission profile; do not infer the target design from
+the old application.
+
+[777genius/agent-teams-ai](https://github.com/777genius/agent-teams-ai) is the
+legacy desktop application for this initiative. Inspect it for product behavior,
+UX, compatibility requirements, historical failure evidence, and lessons only.
+It is **not** the implementation baseline or default integration target for new
+architecture or shared-library research. Do not start a legacy refactor,
+migration, dependency adoption, or pull request there unless the owner explicitly
+assigns that separate work. A previously approved, scoped compatibility/migration
+route remains governed by its owning decision; this navigation clarification
+does not revoke it or authorize its execution.
+
+The organization has existing implementations as well as new products; this
+direction does not imply that all repositories are empty or that every current
+component should be rewritten. Existing product and foundation decisions,
+immutable standards, repository classification, adoption and release gates
+remain authoritative. Select the actual new product owner before qualifying a
+shared capability; a historical legacy reference is not a real greenfield
+consumer or evidence of its current conformance.
+
 ## Shared Files
 
 - [Engineering Quality Standard](docs/engineering-quality-standard.md) - common
