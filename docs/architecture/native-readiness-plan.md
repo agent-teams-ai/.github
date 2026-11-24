@@ -182,6 +182,7 @@ reviewed central guidance through the existing agent routes and retain local
 technical details in their already-owned plans. Each concrete change is a
 separate scoped delivery with its own evidence and owner decision.
 
+Follow the existing [fixture-first qualification guidance](../engineering-quality-standard.md#library-first-design-and-deliberate-evolution).
 Foundation qualification must not wait for a finished product. Where a real
 product feature is not yet available, exercise the smallest realistic fixture
 feature through the actual owning library, public contract and built artifact.
@@ -348,8 +349,19 @@ binding reference. The native NDJSON is empty; these diagnostics identify
 concrete limitations but do not establish the exact cause of the first
 runtime exception. No parity, native runtime qualification, or performance
 result is established.
+Bounded follow-up (2026-11-24): [diagnostic run 45491892279](https://github.com/agent-teams-ai/get-modular/actions/runs/45491892279)
+at head `117c74a64e4847b26c8589cff82fcfcba68149bd` confirmed the unchanged
+Node oracle (12/12) and native artifact generation; native execution again
+exited 1 with the same TypeError and empty NDJSON, before the first recorded
+entry checkpoint. This does not locate the exact failing statement or rule out
+a native logging defect. The [owning evidence record](https://github.com/agent-teams-ai/get-modular/pull/252#issuecomment-7145970994)
+records the artifacts and limits of the diagnosis. The bounded P1 feasibility
+probe therefore ends with a negative result for this exact target/compiler;
+no native qualification is claimed. Keep the reproducible failing evidence;
+resume only if new evidence changes the decision. No new P2/P3 enforcement,
+production rewrite, or performance claim is justified by this compiler failure.
 Keep later evidence with the owning experiment, not in a duplicate central
-ledger. This failure alone does not justify a new lint restriction.
+ledger.
 
 ## 7. Extension and live-update guardrails
 
