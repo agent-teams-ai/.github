@@ -76,9 +76,21 @@ Extracting consumer-local code into a library later and migrating every copy
 costs more than adapting consumers to a deliberate change. Unify one concern
 behind one implementation instead of letting each project keep its own variant.
 Before choosing a shape, reason explicitly about how the contract will evolve
-and scale. Validate it with disposable test projects and at least one real
-consumer in the same delivery; that consumer proves the contract and is not an
-incubator for it.
+and scale. Qualify the claimed foundation profile with representative disposable
+consumers and realistic fixtures before dependent products are ready. Name the
+intended consumer seams, owner, useful behavior and independent expected results;
+a planned application or two copies of one toy are not execution evidence.
+
+Owner sequencing clarification, 2026-11-24: real product implementation is not an
+entry prerequisite for foundation design, spikes or qualification. A portability
+claim requires the same built artifact in independently wired test Hosts for the
+claimed environments; a bounded single-Host profile does not acquire that wider
+requirement. Product adoption later proves its own integration and accepted gates.
+These are distinct from package materialization, stable/public SPI conformance
+and production-host admission under their owning contracts. Two Hosts sharing
+one core do not establish two independent SPI implementations. Preserve those
+owner gates and immutable standards; resolve any changed accepted requirement
+through its existing successor procedure.
 
 Breaking changes are allowed in every organization repository when they
 deliberately improve the system. The MVP stage lasts until the owner records
