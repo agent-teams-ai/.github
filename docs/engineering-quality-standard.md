@@ -152,6 +152,61 @@ profile. Propose a scoped successor for a genuine conflict; continue unrelated
 work. This instruction does not approve a new runtime, migrate existing code or
 add an approval step for routine implementation choices.
 
+### Native and AOT readiness
+
+Prefer native-ready architecture, not native-first implementation. Ahead-of-time
+(AOT) compilation of TypeScript, another-language implementation, and execution
+across a process or ABI boundary are different choices. Where otherwise equally
+clear, correct and efficient, prefer the design with fewer unnecessary runtime
+assumptions. Do not sacrifice current correctness, ergonomics or performance
+for hypothetical compiler support.
+
+Apply these practices proportionately to new or changed responsibilities:
+
+- Keep ordinary TypeScript interfaces, functions, classes, generics, Promise,
+  Effect, collections and other useful language/runtime facilities. No extra
+  wire schema, DTO, mapping, package, asynchronous API, or port is required
+  merely to prepare for a possible future native target.
+- For deliberately selected portable computations, keep semantics independent
+  of unnecessary platform imports and ambient effects. Pass the relevant time,
+  configuration, entropy or state explicitly when that improves reproducibility.
+  Use an ordinary argument or existing narrow port before adding an abstraction.
+  Prefer static, explicit composition for known built-in implementations;
+  keep required runtime discovery and loading with their existing owners.
+- At a real cross-runtime, persistence or separately versioned protocol boundary,
+  specify relevant data ranges, encoding, ordering, errors, compatibility and
+  resource/ownership semantics. Validate untrusted data at admission. Reuse one
+  authoritative contract and existing bindings/generators when needed; retain
+  ergonomic language-specific adapters. Do not export process-local identity,
+  closures or handles as if they were portable wire data.
+- Retain explicit custody, cancellation, completion and cleanup for acquired
+  resources. A native artifact, GC, a returned cancellation or a cooperative
+  close report does not prove physical termination. Preserve the actual owner
+  and distinguish local calls from remote failure and latency semantics.
+- Qualify a claimed alternate target with the actual reachable dependency
+  closure, pinned toolchain and target, build, execution and independent
+  conformance evidence. Report hybrid/fallback execution and unsupported cases
+  separately. Compilation or lint success alone is not behavior, isolation,
+  resource-lifetime, or performance evidence.
+
+No repository-wide compiler-specific language subset, mandatory scriptc/Rust/Wasm
+support, universal wire format, or retroactive migration follows from this
+guidance. Select portable or AOT scopes in existing owner plans when justified;
+ordinary feature work needs no new classification, approval or checklist.
+Respect existing stricter contracts, accepted ADRs and the TypeScript floor.
+
+Use existing consumer-owned source boundaries, lint configuration and tests
+first. Shared Foundation/Stack tooling must remain neutral and optional:
+new native-readiness checks or presets require explicit consumer selection and
+must not change unrelated consumer defaults. Add automation only for a
+demonstrated gap, with positive/negative fixtures, actionable findings, and
+the applicable qualification and adoption process. Do not infer portability
+from the names of files, packages or types.
+
+The [Native-ready architecture plan](architecture/native-readiness-plan.md)
+records the reasoning, candidate tooling and staged evidence; it is not
+approval of an implementation, runtime, package, or new required gate.
+
 ### TypeScript for JavaScript runtimes
 
 Owner direction recorded on 2026-10-18: new maintained code for JavaScript
