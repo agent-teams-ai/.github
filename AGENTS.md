@@ -8,6 +8,10 @@ For new owned production repositories and explicit older opt-ins, start at
 Install its explicit FMS, Foundation and CI configuration; GitHub does not
 automatically inherit those artifacts or required checks.
 
+For cross-repository planning, read the [Foundation-first ecosystem vision](docs/architecture/ecosystem-vision.md)
+first. Preserve its library-first direction, owner boundaries, and separate
+qualification and adoption gates.
+
 Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).
