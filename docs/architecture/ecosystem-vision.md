@@ -88,6 +88,31 @@ mechanisms where their contracts actually fit. Inventory actual planned
 adoptions in the owning library's existing plan, rather than promising that
 every repository will use every library. No legacy migration is implied.
 
+## Existing independent projects and observed consumers
+
+The ecosystem is already larger than the three greenfield product repositories.
+The following source observations identify concrete reuse and independent
+delivery needs; they do not claim every listed repository adopts every
+foundation library or has released its complete product.
+
+| Project | Existing role and observed consumer boundary |
+| --- | --- |
+| [Payments SDK](https://github.com/agent-teams-ai/payments-sdk/blob/a6aa0c0859c6b2dc0205a4edbfc0fd275d1d52bc/README.md) | Reusable payment mechanisms; optional Get Modular composition package and independent core/provider/storage packages. Consumer owns commercial access and credit policy. |
+| [Account Gateway](https://github.com/agent-teams-ai/account-gateway/blob/b6da5f410e60d2b855d7ba311ff170bba5fa3664/README.md) | Reusable account and inference gateway; documented server SDK and static Get Modular entry. Consumer owns product users, workflows and workspace authorization. |
+| [Sub2API Standalone](https://github.com/agent-teams-ai/sub2api-standalone/blob/c0ba34e0c8a9dd54830e33a346df1a6b39a9b9f1/README.md) | Go inference engine and upstream-derived gateway work, independently owned. Do not force TypeScript or module framework migration into the fork. |
+| [Node or Bun](https://github.com/agent-teams-ai/node-or-bun/blob/31080e937fbbb1bdb7f7eb16d3907a5f176218d3/README.md) | Portable process execution with explicit runtime adapter selection; a reusable mechanism rather than an application Host. |
+| [Old provider implementations](https://github.com/agent-teams-ai/old-provider-implementations/blob/d58500bc983e897506e23d7b0bc8da1209864edd/README.md) | Independent historical provider adapter and session-contract workspace; a possible qualified donor/consumer seam, not the greenfield Runtime architecture baseline. |
+| [Managed OpenCodeReview](https://github.com/agent-teams-ai/open-code-review/blob/8a70944f567beba9ffc12d1153e33ef5fd60967d/README.md) | Managed upstream-derived review CLI; its own build, release and provenance boundaries. |
+| [Agent Teams Token](https://github.com/agent-teams-ai/agent-teams-token/blob/2a840af46aa092293c1479524bd0ca20f120a107/README.md) | Separate community-token, governance and transparency project; documented dev-only Engineering Foundation consumer, not part of the agent execution domain. |
+
+The Payment SDK and Account Gateway provide especially valuable independent
+consumer cases for modular-library ergonomics. Their documented integration
+surfaces are not evidence of current public release, independent plugin SPI
+conformance or a completed live-update operation. Inspect the actual pinned
+consumer contract before selecting them for new qualification. Include additional
+existing and planned products in the relevant library owner plan as needs become
+concrete; do not start migrations or duplicate upstream capabilities.
+
 ## Reuse levels and dependency rules
 
 Use the smallest appropriate level, independently of repository layout:
