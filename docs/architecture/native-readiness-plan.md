@@ -1,9 +1,11 @@
 # Native-ready architecture: scoped delivery and qualification plan
 
-Status: draft proposal for owner review, 2026-11-24. The owner supports
-high-leverage, low-friction portability and rejects speculative complexity.
-This plan does not approve a compiler, runtime, public SPI, package release,
-new mandatory CI gate, or migration. The proposed common practices live in the
+Status: owner-confirmed direction and staged implementation plan, 2026-11-24.
+The owner accepted high-leverage, low-friction portability and authorized
+bounded implementation of this plan, starting with existing mechanisms and
+one actual Core experiment. This is not approval of a compiler, runtime,
+public SPI, package release, new mandatory CI gate, or blanket migration.
+The common practices live in the
 [Engineering Quality Standard](../engineering-quality-standard.md#native-and-aot-readiness).
 This document owns the rationale, candidate work and evidence, not a second
 normative standard. Follow the existing
@@ -132,9 +134,9 @@ security boundary; isolation claims need host-specific evidence.
 
 ## 4. What already exists and where changes belong
 
-| Owner | Starting point | Next delta, if authorized |
+| Owner | Starting point | Next bounded owner delivery |
 | --- | --- | --- |
-| Organization .github | EQS language/runtime section and immutable language-neutral FMS | Proposed small common guidance and this plan; route via existing AGENTS/CLAUDE links |
+| Organization .github | EQS language/runtime section and immutable language-neutral FMS | Accepted direction and this plan; route via existing AGENTS/CLAUDE links |
 | Engineering Foundation | Source-dependency graph, public API check, AST patterns and neutral capability inputs | Reuse existing mechanisms; add only proven neutral gaps with explicit opt-in |
 | Stack Toolchain (in Foundation repo) | Oxlint presets and pinned tools | Reuse built-in rules locally; optional reusable preset only for demonstrated shared demand |
 | Get Modular | Core raw byte API, deterministic plan, schema, vectors; Assembly and Effect distinct | First bounded feasibility experiment; no rewrite or new public API |
@@ -147,7 +149,7 @@ EQS is current common practice; retained EQS/source authority bytes, digests,
 qualification and exact consumer pins must follow their existing transition
 procedure. Agent links provide discoverability, not adoption evidence.
 
-### Concrete owner follow-ups (not part of this draft)
+### Concrete owner follow-ups (separate implementation deliveries)
 
 - Get Modular: extend the existing Core qualification plan and fixtures under
   its architecture/qualification and packages/core test ownership. Exercise
@@ -344,12 +346,14 @@ A negative result can end after P0/P1. Counts exclude generated mechanical
 artifacts, upstream code, runner and release work; estimates, not scope
 targets. No LOC quota. Platform/ABI support, product migration and alternative
 production implementations require separate evidence, cost and approval.
-P0 docs are the only change authorized in this draft.
+P0 records owner acceptance. P1 and the conditional P2/P3 work are authorized
+within their stated scope and stop gates; each owning PR must retain its
+existing review, qualification and adoption process.
 
 | Alternative | Reliability / complexity / confidence (10 high) | Decision |
 | --- | --- | --- |
 | Ordinary TS only, no explicit readiness | 7 / 1 / 8 | Low friction, risks avoidable coupling |
-| Scoped readiness + real optional qualification | 9 / 3 / 9 | Proposed; preserve ergonomic defaults |
+| Scoped readiness + real optional qualification | 9 / 3 / 9 | Owner-selected direction; preserve ergonomic defaults |
 | Mandatory AOT/wire subset across all repositories | 5 / 9 / 8 | Reject: high regression and maintenance cost |
 | Immediate Rust/Wasm rewrite or universal ABI | 5 / 10 / 6 | Reject: unmeasured need and duplicated behavior |
 
@@ -390,7 +394,8 @@ constraints through existing routes; check local links and Markdown format;
 run owning required pnpm check and applicable source/identity/CI gates.
 Request independent architecture/maintainability and execution/security
 review, record findings with fixes on the exact head, and repeat for material
-changes. Do not mark ready/merge before owner reviews the proposed policy.
+changes. Owner direction is accepted; mark ready for ordinary review, and do not merge
+until applicable gates and review findings are resolved.
 For P1/P2/P3, add actual positive and rejecting fixtures, native execution
 logs, evidence of no changed behavior outside selected scope, and real
 independent consumer evidence as appropriate. Roll back the isolated

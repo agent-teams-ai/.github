@@ -154,7 +154,7 @@ add an approval step for routine implementation choices.
 
 ### Native and AOT readiness
 
-Prefer native-ready architecture, not native-first implementation. Ahead-of-time
+Owner direction recorded on 2026-11-24. Prefer native-ready architecture, not native-first implementation. Ahead-of-time
 (AOT) compilation of TypeScript, another-language implementation, and execution
 across a process or ABI boundary are different choices. Where otherwise equally
 clear, correct and efficient, prefer the design with fewer unnecessary runtime
@@ -204,8 +204,8 @@ the applicable qualification and adoption process. Do not infer portability
 from the names of files, packages or types.
 
 The [Native-ready architecture plan](architecture/native-readiness-plan.md)
-records the reasoning, candidate tooling and staged evidence; it is not
-approval of an implementation, runtime, package, or new required gate.
+records the reasoning, authorized bounded feasibility work and staged evidence;
+it is not adoption of a runtime, package, public SPI or new required gate.
 
 ### TypeScript for JavaScript runtimes
 

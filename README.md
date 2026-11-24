@@ -42,6 +42,8 @@ consumer or evidence of its current conformance.
   Clean Architecture, SOLID, DDD and DRY practices, including
   [TypeScript for JavaScript runtimes](docs/engineering-quality-standard.md#typescript-for-javascript-runtimes).
   Repository agent files link here explicitly.
+- [Native and AOT readiness](docs/engineering-quality-standard.md#native-and-aot-readiness) - scoped practices for low-cost portability;
+  [delivery plan](docs/architecture/native-readiness-plan.md), optional qualification and no mandatory compiler/runtime migration.
 - [Node runtime compatibility](docs/node-runtime-compatibility.md) - the Node 26 tooling default and independent full Node 24 compatibility checks.
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
 - [CI/CD practices](docs/ci-cd-practices.md) - reducing repeated PR/merge jobs safely, with fail-closed evidence and concrete antipatterns.

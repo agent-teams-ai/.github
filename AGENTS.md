@@ -12,6 +12,11 @@ For cross-repository planning, read the [Foundation-first ecosystem vision](docs
 first. Preserve its library-first direction, owner boundaries, and separate
 qualification and adoption gates.
 
+For runtime, native/AOT, Wasm or cross-language architecture choices, read
+[Native and AOT readiness](docs/engineering-quality-standard.md#native-and-aot-readiness)
+and the [scoped delivery plan](docs/architecture/native-readiness-plan.md).
+Keep ordinary feature authoring ergonomic; do not infer compiler adoption.
+
 Before changing governance or architecture material, read
 [the repository map](README.md), [governance boundaries](GOVERNANCE.md), and
 [contribution rules](CONTRIBUTING.md).
