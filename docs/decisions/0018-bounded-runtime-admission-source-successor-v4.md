@@ -15,10 +15,11 @@ before reconciling those owners would create policy and source drift.
 
 [PR423](https://github.com/agent-teams-ai/.github/pull/423) is the exact five-file
 identity compatibility target. Its base is
-`a277e75589ab765272961a5e1eba6725d098bd89`, head
-`dcefabe92d308ac07528e999f1e6b3ee2daffed5`, tree
-`b10afeb8395621f3f4d3eadf0d31c2f3183f0980`, pull ID `5483046730`, with one owner
-commit. It retains the default empty bypass list and accepts only the declared
+`6a33853123378ef8ea69868da8ecb550cd53c906`, head
+`2592d8e7a70224ca6df223f53465c3b30c55dacb`, tree
+`d03b59b675e17530179495cbb3287061546675f4`, pull ID `5483046730`, with two owner
+commits: the original compatibility change and its current-main update. It
+retains the default empty bypass list and accepts only the declared
 User `13103045` in `pull_request` mode in the six assigned repositories.
 Onboarding still creates the no-bypass default and does not install grants.
 
@@ -29,15 +30,17 @@ five before/after blobs. It does not adopt the unrelated staged v3/PR405 route.
 
 ## Source and protection contract
 
-Reviewed source commit S: `fa14f67d97361bf9713d94afdc102d3828a8160c`.
+Reviewed source commit S: `0b91687934938299c379a05f300e7fda915a5a9b`.
 
 S is retained on the ordinary preparation branch
 `refs/heads/review/native-owner-admission-v4-20261125`. The canonical source ref and its lock
 are not installed or qualified by that publication.
 
-Reviewed source tree: `e6310cbadd69189247560b16878e77f01d927491`.
-The source parent is the real PR423 head, retaining its history inside the future
-immutable source. The intended canonical ref is
+Reviewed source tree: `50789b91c4749153c5619598a86eaa2de64eec65`.
+The source has two parents: the previous ordinary preparation commit
+`fa14f67d97361bf9713d94afdc102d3828a8160c` and the current PR423 head
+`2592d8e7a70224ca6df223f53465c3b30c55dacb`. Both histories are retained; no
+published immutable source is rewritten. The intended canonical ref is
 `refs/heads/governance/runtime-admission-source-successor-v4`.
 
 The compatibility profile permits only the existing empty bypass list or the

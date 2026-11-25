@@ -13,7 +13,7 @@ permissions:
   statuses: write
 jobs:
   source:
-    uses: agent-teams-ai/.github/.github/workflows/runtime-admission-source-successor-v4.yml@fa14f67d97361bf9713d94afdc102d3828a8160c
+    uses: agent-teams-ai/.github/.github/workflows/runtime-admission-source-successor-v4.yml@0b91687934938299c379a05f300e7fda915a5a9b
     permissions:
       actions: read
       contents: read
