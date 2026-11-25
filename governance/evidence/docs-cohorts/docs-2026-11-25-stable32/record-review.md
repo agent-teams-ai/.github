@@ -11,8 +11,9 @@ The assigned Extension Foundation E1 qualification requires the repository's ful
 ordinary checks before merge. Its current stable31 toolchain uses Foundation
 1.7.2, whose eagerly imported API Extractor initializes TypeScript 5.9.3. The
 organization compiler floor is 7.0.2, including tool-owned compiler entrypoints.
-This record prepares the smallest supported managed transition that removes that
-incompatible execution path while retaining the existing generation-2 contract.
+This record preserves a reviewed generation-2 package-data candidate that removes
+that incompatible execution path. Applying it remains contingent on the separate
+source-admission decision below.
 
 Only `agent-teams-ai/extension-foundation` (repository ID `1333298097`) is the
 canary. The proposed coordinates are repository-mutation 0.4.2,
@@ -150,6 +151,13 @@ runtime policy before a successor or consumer default change is implemented.
 | B: full generation3 adoption | Adopt the qualified generation3 managed runtime and retained controller | Resolve the same source/restoration gap, then explicitly enroll, qualify and adopt generation3 |
 | C: permanent EF default Node 24 | Bring the real committed source within the existing generation2 topology | Accept a permanent consumer tooling-policy change and retain Node 26 as a separate complete execution |
 
+If preserving the current Node 26 default while retaining generation2 is the
+owner's objective, the conditional ranking is A, C, B, with C unavailable unless
+the default-policy change is accepted. If that permanent Node 24 default is
+acceptable, prefer C: it uses the existing transition and is the strongest
+counterexample to A's additional controller and restoration machinery. If managed
+generation3 is itself required, prefer B and qualify its wider adoption scope.
+
 Option A most closely preserves the existing EF tooling policy. It should use
 the current consumer-integration and Repository Mutation owners, with a separately
 installed published controller selected by exact version and integrity. The old
@@ -195,6 +203,21 @@ Engineer-days include implementation, integration and initial E2E debugging.
 | A | 300-800 | 700-1,800 | 60-180 | 5-10 | Low; bootstrap and restoration determine scope |
 | B | 250-800 | 800-2,000 | 100-250 | 7-14 | Low; controller reuse still needs actual adoption |
 | C | 0-40 | 0-120 | 30-100 | 2-4 | Medium; configuration and existing-route integration |
+
+The following are expert ordinal judgments, not probabilities, availability
+measurements or certification. U is confidence in fitness for preserving the
+current Node 26 default and completing the immediate compiler-safe upgrade;
+N is expected reliability within each option's declared scope after its required
+qualification; higher C means more implementation and maintenance burden.
+
+| Option | U (1-10) | N (1-10) | C (1-10) |
+| --- | ---: | ---: | ---: |
+| A | 8 | 8 | 7 |
+| B | 6 | 8 | 8 |
+| C | 5 | 8 | 3 |
+
+If a permanent Node 24 default is acceptable, C's conditional fitness rises to 9.
+The equal N scores do not equate the options' different qualification scopes.
 
 A new producer release must use its actual coherent published package family.
 No future version, SRI, source revision or cohort digest is invented here. The
