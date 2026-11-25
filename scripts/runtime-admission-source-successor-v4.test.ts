@@ -2233,16 +2233,13 @@ void test("current runtime v2 predecessor lock and context reject the historical
 });
 
 void test("finite collection rejects a substituted commit even with complete count and valid owner metadata", async () => {
-  assert.equal(
-    TARGET.commits,
-    2,
-    "This reviewed target retains its original and main-update commits",
-  );
-  for (const [index, expected] of [
-    [0, /Finite source commit identities changed/u],
-    [1, /Incomplete or mismatched current-head commit evidence/u],
-  ] as const) {
+  assert.equal(collectorFixture().state.commits.length, TARGET.commits);
+  for (let index = 0; index < TARGET.commits; index++) {
     const fixture = collectorFixture();
+    const expected =
+      mapping(fixture.state.commits[index]).sha === TARGET.headSHA
+        ? /Incomplete or mismatched current-head commit evidence/u
+        : /Finite source commit identities changed/u;
     Object.assign(mapping(fixture.state.commits[index]), { sha: "f".repeat(40) });
     await assert.rejects(
       collectSourceEvidence(fixture.api, executorFromEnvironment(fixture.env)),
