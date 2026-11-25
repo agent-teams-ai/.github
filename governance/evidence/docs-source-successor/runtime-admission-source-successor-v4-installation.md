@@ -1,8 +1,9 @@
 # Runtime admission source successor v4 installation preparation
 
-Preparation date: 2026-11-25 UTC
+Preparation refresh: 2026-11-26 Europe/Kiev
 
-Status: Preparation draft only. No protected source publication, source lock, hosted
+Status: Preparation draft only. Current ordinary hosted content checks are recorded
+below. No dedicated source lock, canonical source publication, protected source
 qualification, finite merge, caller installation or owner grant is claimed here.
 This file may be retained on an ordinary review branch, but it is not an observed
 installation snapshot and is not ready for publication as one. Replace pending observations with authenticated real receipts before the
@@ -13,19 +14,19 @@ three-file installation; do not fill them with synthetic identifiers.
 | Coordinate                    | Prepared value                                                   |
 | ----------------------------- | ---------------------------------------------------------------- |
 | Repository                    | `agent-teams-ai/.github`, ID `1316243981`                        |
-| Reviewed source commit S      | `0b91687934938299c379a05f300e7fda915a5a9b`                       |
+| Reviewed source commit S      | `72fa7a8af02e9ba7904c912f0bbb457254381002`                       |
 | Ordinary preparation ref      | `refs/heads/review/native-owner-admission-v4-20261125`           |
-| Reviewed source tree          | `50789b91c4749153c5619598a86eaa2de64eec65`                       |
-| Source parents                | `fa14f67d97361bf9713d94afdc102d3828a8160c`, `2592d8e7a70224ca6df223f53465c3b30c55dacb` |
+| Reviewed source tree          | `e762ed1328421970e92acc5d3639f7235bbbcd04`                       |
+| Source parents                | `0b91687934938299c379a05f300e7fda915a5a9b`, `9dff206369649d9eb7a76edc1943461fde837739` |
 | Intended canonical source ref | `refs/heads/governance/runtime-admission-source-successor-v4`    |
 | Source workflow               | `.github/workflows/runtime-admission-source-successor-v4.yml`    |
 | Source context                | `runtime-admission-source-successor-v4`                          |
 | Installed predecessor         | `6863c4b6e9f17b3a668e0afb9ff33cb9046788d0`, lock `26268325`      |
-| Exact finite target           | PR423, pull ID `5483046730`, two commits, five changed file pairs |
-| Target base                   | `6a33853123378ef8ea69868da8ecb550cd53c906`                       |
-| Target base tree              | `ee728c21305a0165ac23293a159a7c569bc1f6f1`                       |
-| Target head                   | `2592d8e7a70224ca6df223f53465c3b30c55dacb`                       |
-| Target tree                   | `d03b59b675e17530179495cbb3287061546675f4`                       |
+| Exact finite target           | PR423, pull ID `5483046730`, three commits, five changed file pairs |
+| Target base                   | `755c8515a5d106402a7e9e2cff621fb1fdc855cf`                       |
+| Target base tree              | `7a1576f050af70132329a7d241f1921fa12d855d`                       |
+| Target head                   | `9dff206369649d9eb7a76edc1943461fde837739`                       |
+| Target tree                   | `fd7d6388cabf8cb86284478213541e66b75bdda9`                       |
 
 The source-only artifact has 17 changed files relative to its real target-head
 parent: ten owned source/configuration/test files and seven byte-identical frozen
@@ -36,35 +37,102 @@ three-file main installation.
 
 ## Current preparation verification
 
-Main advanced through the separately owned documentation PR418. The policy PR
-was updated by a normal merge commit, preserving its original commit and all
-five reviewed policy blobs. The source's finite binding now names that actual
-main, policy head and two-commit list. Its negative test now covers substitution
+Main advanced through the separately owned evidence PR425. The policy PR
+was refreshed by a normal merge, preserving all five reviewed policy blobs
+and the new main evidence. The source now binds the full three-commit target:
+`dcefabe92d308ac07528e999f1e6b3ee2daffed5`,
+`2592d8e7a70224ca6df223f53465c3b30c55dacb` and
+`9dff206369649d9eb7a76edc1943461fde837739`.
+Its existing substitution regression checks every commit, preserving the
+distinct current-head and earlier-commit rejection expectations. Ordinary
+admission and workflow semantics are unchanged. Independent source review
+confirmed the exact target/tree/commit list, all five policy blob pairs and
+the seven byte-identical frozen closure files.
+
+The first current local invocation on Node 24.22.3 passed 68/70 tests. Two tests
+failed because the exact stack-toolchain installation was unavailable and the
+invocation used pnpm 11.25.0 instead of the required pnpm 11.18.0. The changed
+commit-substitution regression passed.
+
+The final outcome of the subsequent pinned-toolchain invocation was not
+recovered after the execution environment disconnected. No repeated local
+full-suite pass is claimed.
+
+All four ordinary hosted content runs below completed on attempt 1:
+
+| Content | Runtime | Run and job | Result |
+| --- | --- | --- | --- |
+| Policy `9dff2063` | Node 26.11.1 | [45721641063](https://github.com/agent-teams-ai/.github/actions/runs/45721641063), job `139581171762` | 5807/5807 current + 9/9 frozen; zero failures/skips/cancellations/todo |
+| Policy `9dff2063` | Node 24.21.0 | [45721641073](https://github.com/agent-teams-ai/.github/actions/runs/45721641073), job `139581171580` | 5807/5807 current + 9/9 frozen; zero failures/skips/cancellations/todo |
+| Source `72fa7a8a` | Node 26.11.1 | [45722236365](https://github.com/agent-teams-ai/.github/actions/runs/45722236365), job `139583146898` | 5939/5939 current + 9/9 frozen; zero failures/skips/cancellations/todo |
+| Source `72fa7a8a` | Node 24.21.0 | [45722236290](https://github.com/agent-teams-ai/.github/actions/runs/45722236290), job `139583146538` | 5939/5939 current + 9/9 frozen; zero failures/skips/cancellations/todo |
+
+Every run passed the prescribed frozen root install, isolated Renovate install,
+managed native prerequisite build and full `pnpm check`. For S, the actual
+ordinary strict tooling typecheck included both v4 source and test files; compiler
+metadata satisfied the 7.0.2 floor. The three-commit substitution regression
+passed in both source runs. The source workflow's dedicated canonical
+qualification is a separate pending observation.
+
+The policy runs checked out synthetic commit
+`0095ee86e1c7fae9eebc741e10b4aa6aec282344`, with parents
+`755c8515a5d106402a7e9e2cff621fb1fdc855cf` and
+`9dff206369649d9eb7a76edc1943461fde837739`, and tree
+`fd7d6388cabf8cb86284478213541e66b75bdda9`, exactly the reviewed policy tree.
+The source runs checked out synthetic commit
+`3d0b835f0cfc635558ff32a8cf63bf724844c9fc`, with parents
+`755c8515a5d106402a7e9e2cff621fb1fdc855cf` and
+`72fa7a8af02e9ba7904c912f0bbb457254381002`, and tree
+`e762ed1328421970e92acc5d3639f7235bbbcd04`, exactly S's tree.
+Independent review verified these actual checkout objects and complete logs;
+run head metadata alone is not the checkout proof.
+
+Temporary validation [PR424](https://github.com/agent-teams-ai/.github/pull/424)
+was closed without merge after its launched runs were terminal. Its two current
+ordinary content runs succeeded as recorded above. Legacy protected-source
+rejections remain failures and do not establish current source admission.
+
+The owner's source-lock UI submission reached GitHub Confirm access and did not
+complete. No new v4 source lock or canonical ref was created, and existing
+rules were not changed in this attempt. Authentication and lock creation remain
+prerequisites; no canonical source may be published before the exact lock is
+created and verified. Before that publication, freshly read actual main, PR423
+head/commits/files, source and preparation refs, and the complete rules inventory.
+If any finite coordinate moved, rebind and review before immutable publication;
+these current passes do not qualify a later tuple.
+
+## Historical preparation at source 0b916879
+
+At the 2026-11-25 checkpoint, main had advanced through the separately owned
+documentation PR418. The policy PR was updated by a normal merge commit, preserving its original commit and all
+five reviewed policy blobs. That source's finite binding named that actual
+main, policy head and two-commit list. Its negative test covered substitution
 of either the original or final commit; the admission implementation is
 otherwise unchanged.
 
-Builtin production `assertTargetBinding`, `parseCompleteTree` and
+The then-current builtin production `assertTargetBinding`, `parseCompleteTree` and
 `assertSourceTuple` passed against the actual local Git objects for this target:
 base `6a33853123378ef8ea69868da8ecb550cd53c906`, head
 `2592d8e7a70224ca6df223f53465c3b30c55dacb`, the exact two commits and five
 before/after file pairs. `git diff --check` passed. These are bounded preparation
 checks, not full source qualification.
 
-Current local dependency installation did not complete. An initial environment
-fallback used pnpm11.25.0, then the corrected exact Corepack pnpm11.18.0 frozen
+Local dependency installation at that checkpoint did not complete. An initial
+environment fallback used pnpm11.25.0, then the corrected exact Corepack pnpm11.18.0 frozen
 install also exited 137. Neither attempt qualifies the dependency graph.
 The dedicated v4 suite then failed to load the missing `yaml` dependency;
 the identity/onboarding invocation reported 41 passed tests and an onboarding
-file-level failure. No successful current local full-suite result is claimed.
+file-level failure. No successful local full-suite result was claimed for that
+checkpoint.
 The workspace subsequently reported exhausted disk space and the execution
 environment disconnected; that observation does not establish the cause of
 either earlier exit. Incomplete task-owned dependency files were removed.
 
-Full ordinary hosted validation for this rebound S passed on both supported
+Full ordinary hosted validation for that earlier rebound source passed on both supported
 CI runtimes through the reopened existing validation draft
 [PR424](https://github.com/agent-teams-ai/.github/pull/424):
 
-| Runtime | Current ordinary CI run | Result |
+| Runtime | Historical ordinary CI run | Result |
 | --- | --- | --- |
 | Node 26.11.1 | [45675425685](https://github.com/agent-teams-ai/.github/actions/runs/45675425685), job `139421562543` | 5939/5939 current and 9/9 frozen tests; zero failures/skips/cancellations |
 | Node 24.21.0 | [45675425701](https://github.com/agent-teams-ai/.github/actions/runs/45675425701), job `139421563712` | 5939/5939 current and 9/9 frozen tests; zero failures/skips/cancellations |
@@ -78,7 +146,7 @@ synthetic merge checkout `cda0c2392739fc4a2707a9d060339c13373d095a` has parents
 These are full ordinary content checks. Canonical source publication, genuine
 source push qualification, canaries and grant installation remain unobserved.
 
-## Retained earlier preparation evidence
+## Historical preparation at source fa14f67d
 
 The previous source `fa14f67d97361bf9713d94afdc102d3828a8160c` had focused
 70/70 success on Node24.22.3 and pnpm11.18.0, with compiler floor, quality scope,

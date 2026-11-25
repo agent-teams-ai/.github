@@ -1,8 +1,8 @@
 # ADR-0018: Bounded runtime admission source successor v4
 
-Status: Proposed installation; source qualification and installation prerequisites are pending
+Status: Proposed installation; protected source qualification and installation prerequisites are pending
 
-Date: 2026-11-25
+Date: 2026-11-26 (Europe/Kiev); refresh of the 2026-11-25 preparation
 
 Decision owner: Organization governance
 
@@ -15,10 +15,11 @@ before reconciling those owners would create policy and source drift.
 
 [PR423](https://github.com/agent-teams-ai/.github/pull/423) is the exact five-file
 identity compatibility target. Its base is
-`6a33853123378ef8ea69868da8ecb550cd53c906`, head
-`2592d8e7a70224ca6df223f53465c3b30c55dacb`, tree
-`d03b59b675e17530179495cbb3287061546675f4`, pull ID `5483046730`, with two owner
-commits: the original compatibility change and its current-main update. It
+`755c8515a5d106402a7e9e2cff621fb1fdc855cf`, head
+`9dff206369649d9eb7a76edc1943461fde837739`, tree
+`fd7d6388cabf8cb86284478213541e66b75bdda9`, pull ID `5483046730`, with three owner
+commits: `dcefabe92d308ac07528e999f1e6b3ee2daffed5`,
+`2592d8e7a70224ca6df223f53465c3b30c55dacb` and the current head. It
 retains the default empty bypass list and accepts only the declared
 User `13103045` in `pull_request` mode in the six assigned repositories.
 Onboarding still creates the no-bypass default and does not install grants.
@@ -30,16 +31,16 @@ five before/after blobs. It does not adopt the unrelated staged v3/PR405 route.
 
 ## Source and protection contract
 
-Reviewed source commit S: `0b91687934938299c379a05f300e7fda915a5a9b`.
+Reviewed source commit S: `72fa7a8af02e9ba7904c912f0bbb457254381002`.
 
 S is retained on the ordinary preparation branch
 `refs/heads/review/native-owner-admission-v4-20261125`. The canonical source ref and its lock
 are not installed or qualified by that publication.
 
-Reviewed source tree: `50789b91c4749153c5619598a86eaa2de64eec65`.
+Reviewed source tree: `e762ed1328421970e92acc5d3639f7235bbbcd04`.
 The source has two parents: the previous ordinary preparation commit
-`fa14f67d97361bf9713d94afdc102d3828a8160c` and the current PR423 head
-`2592d8e7a70224ca6df223f53465c3b30c55dacb`. Both histories are retained; no
+`0b91687934938299c379a05f300e7fda915a5a9b` and the current PR423 head
+`9dff206369649d9eb7a76edc1943461fde837739`. Both histories are retained; no
 published immutable source is rewritten. The intended canonical ref is
 `refs/heads/governance/runtime-admission-source-successor-v4`.
 
@@ -97,8 +98,9 @@ expand work independently.
 
 ## Pending observations and rollback
 
-The accompanying draft snapshot distinguishes reviewed preparation from missing
-live receipts. This proposal cannot be presented as an accepted installation until
+The accompanying draft snapshot distinguishes reviewed preparation and current
+ordinary hosted content checks from missing protected-source and installation
+receipts. This proposal cannot be presented as an accepted installation until
 its actual lock, immutable S, source qualification, finite merge and temporary
 restoration evidence are recorded. The installation PR result, installed-main
 canaries and permanent cutover remain later observations. Once installed, this
