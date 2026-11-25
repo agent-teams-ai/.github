@@ -101,6 +101,12 @@ mechanisms where their contracts actually fit. Inventory actual planned
 adoptions in the owning library's existing plan, rather than promising that
 every repository will use every library. No legacy migration is implied.
 
+For future native, AOT and cross-runtime choices, follow the accepted direction
+in [Native and AOT readiness](../engineering-quality-standard.md#native-and-aot-readiness)
+and its [delivery plan](native-readiness-plan.md). Prefer low-friction portable
+boundaries without adding wire contracts to ordinary features. Qualification
+of selected targets and consumer adoption remain separate evidence.
+
 ## Existing independent projects and observed consumers
 
 The ecosystem is already larger than the three greenfield product repositories.
