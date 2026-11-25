@@ -238,66 +238,76 @@ replace compilation. The focused `pnpm quality:typecheck` and `pnpm test:input-p
 glob. Public helper tests cover independent drift and malformed/replayed records;
 actual Git and tampered Actions trials remain for the two real adapters.
 
-### Documentation merge timing: open owner choice (2026-11-24 UTC)
+### Documentation merge timing: native owner route (2026-11-24 UTC)
 
 The owner requested immediate publication to main or merge without waiting for
-checks, at least for documentation. Central's protected no-wait route remains
-**unmet**; Research's authorized direct-main route already works. This helper,
-a delivery preference or a merged decision record does not implement that route.
+checks, at least for documentation; a server-enforced docs-only gate was not
+requested. Central's protected no-wait route remains **unmet**: no supported,
+authenticated settings-write channel is available in the observed session.
+Research's authorized direct-main route already works. Publishing this record
+does not activate the proposed Central exception.
 
 Read-only observation at Central `3d0a134e326f22ff867b418d64554167287638c8`:
 [Protect main](https://github.com/agent-teams-ai/.github/rules/19979783) and
 [commit identity](https://github.com/agent-teams-ai/.github/rules/24363205) require
 six current-head contexts from integration `15368`, with strict current-base
-checks and no bypass actors; the actor's bypass result is `never`.
-Repository `allow_auto_merge` is false. An admin role alone is not a bypass.
-Other protected repositories need their own live rule observation.
+checks and no bypass actors; the current actor's bypass result is `never`.
+The owner has repository admin permission; `allow_auto_merge` is false.
 
-GitHub's [ruleset schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10)
-targets branch refs and required status contexts, with no changed-document
-predicate. [PR-only actor bypass](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository)
-retains a PR trail but is not docs-only authority. A broader actor bypass is a
-different owner policy choice, not an implementation of this scoped request.
+GitHub supports [individual users on repository rulesets](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/).
+The minimal proposal adds exactly
+`{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`
+to `bypass_actors` in both rulesets `19979783` and `24363205`, preserving every
+other setting, rule, required context, issuer and branch condition. The
+[REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
+supports this individual-user, PR-only grant; no separate writer platform is a
+prerequisite. `always`, `exempt` and admin-role-wide grants are outside this proposal.
 
-| Route                                             | Result and limitation                                                                                                                         | Remaining work                                                                                                                                                              |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A. Native auto-merge after requirements           | Removes manual waiting; all required checks still precede merge, so it does not meet the literal request                                      | Enable repository auto-merge, then qualify a caller that preserves existing exact-head review, source identity and final merge attribution                                  |
-| B. Qualified shorter path for inert documentation | Omits only proven inapplicable expensive suites; its trusted classification, identity and admission checks still finish before merge          | Define the exact eligible scope and qualify the existing source/input-proof adapters and required aggregate; runner waiting remains possible                                |
-| C. Literal merge before CI completion             | Requires a separate trusted writer that enforces eligible path/content and the current reviewed head/base under owner-granted merge authority | Design and qualify that authority and its rejecting cases; a GitHub actor grant itself is not content-scoped. This is unbuilt, broader work, not an assigned implementation |
+The grant technically covers the entire matching ruleset and any matching PR
+merged by that account; GitHub does not enforce a docs-content boundary on it.
+Its use remains limited to specifically assigned, reviewed documentation and
+any wider delivery scope explicitly authorized by the owner. It does not
+authorize agents to choose more work, bypass known substantive findings,
+perform releases or push directly to protected main. Other actors retain the
+existing required gates. Ongoing and postmerge verification still completes;
+early merge does not report pending or omitted tests as successful.
 
-A and B are alternatives to the requested timing, not its delivery. A's setting
-alone has production/test LOC P = T = 0; caller qualification and engineer-days
-remain unestimated. B/C P, T, engineer-days and comparative fitness/reliability/
-complexity scores remain unknown until their scope and authority are defined.
-This is an incomplete decision packet, not an accepted implementation budget.
+The prepared application sequence is:
 
-B/C need an explicit inert-content scope, not a `.md` suffix or docs label.
-Exclude agent instructions, governance/contribution rules, ownership policies,
-accepted standards/ADRs, API/schema contracts, security/admission/release policy,
-executable examples and documents consumed as authority. The five files in
-[PR #421](https://github.com/agent-teams-ai/.github/pull/421) are authority-bearing.
-Preserve the checkpoint's complete inventory, unchanged-input and authenticated
-current-head/base/source requirements; omission never reports test execution.
-Unknown scope or evidence follows the full route or rejects the proposed reuse.
+1. Re-read the current actor, PR head/base, source identity and effective rules;
+   verify owner account `13103045` and the two current repository rulesets.
+2. Through authenticated GitHub settings or the official ruleset API with
+   Administration write, add only that User entry to each live configuration.
+   Read back both complete rulesets and confirm the intended entry and preserved fields.
+3. For the eligible assigned PR, verify its reviewed head and base again and use
+   the ordinary guarded merge route. If its wrapper lacks the permitted bypass,
+   use the official [asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
+   as the authorized actor with exact `sha`, `merge_method: "squash"`,
+   `merge_action: "direct_merge"` and `bypass_rules: true`; preserve required attribution.
+4. Follow the returned operation to an actual merged result; acceptance or an
+   enqueued result is not a merge. Confirm final main parent/tree, author and
+   committer, then finish the existing CI and Node 24 postmerge checks on that commit.
 
-**Owner step:** retain literal timing and separately scope C, or explicitly accept
-A or B's different timing. For A, [enable Allow auto-merge](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-auto-merge-for-pull-requests-in-your-repository)
-in Settings → General → Pull Requests, or provide a supported official
-[repository settings API](https://docs.github.com/en/rest/repos/repos?apiVersion=2026-03-10#update-a-repository)
-channel with Administration write. No settings-write channel was available in
-the observed delivery session; do not request secrets in chat. Merely connecting
-one does not create docs-only bypass. Auto-merge still [waits for requirements](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request).
+The remaining owner action is to make an official authenticated settings-write
+channel available; the fast-documentation preference is already given and needs
+no renewed approval. No secrets belong in chat. This record prepares the exact
+Central proposal and verification sequence; it does not claim that the grant
+was installed or tested. Other repositories require their own observed proposal.
 
-After B is selected and scoped, ordinary assigned implementation and review can
-proceed without an admin channel if protection/publisher contracts stay unchanged.
-Actual settings changes need an official channel with the applicable permission;
-protected-source changes follow their existing successor route. This record grants neither.
+| Optional alternative                 | Timing and remaining work                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A. Native auto-merge                 | [Enable auto-merge](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-auto-merge-for-pull-requests-in-your-repository) and preserve exact-head review and attribution; it removes manual waiting but all required checks still precede merge |
+| B. Qualified shorter inert-docs path | Scope and qualify existing source/input-proof adapters and the required aggregate; trusted classification, identity and admission checks still precede merge, with possible runner waiting                                                                                                                                     |
 
-The live rule/source audit and eligible-scope proposal above are prepared.
-Adverse-case requirements cover incomplete inventories, mode/path drift,
-mixed authority edits, stale head/base, unauthenticated receipts and known-red
-main. These are qualification requirements for an eventual selected route,
-not an assignment to implement it or expand the current task.
+A and B have different timing and do not fulfill the literal request. They are
+optional alternatives, not a new mandatory owner choice. B requires an explicit
+inert-content scope; authority-bearing instructions, governance, contracts,
+security/release policy and executable examples cannot use an inert-docs shortcut.
+The checkpoint's complete inventory and authenticated head/base/source obligations
+still govern any input-proof reuse; omission never means tests ran successfully.
+The native grant and A's setting alone have production/test LOC P = T = 0.
+End-to-end qualification effort and engineer-days remain unknown; B's P, T and
+days are unestimated pending scope. No new implementation budget is accepted here.
 
 ## npm publication contract tests
 
