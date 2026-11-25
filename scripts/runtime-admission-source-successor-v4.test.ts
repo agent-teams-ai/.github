@@ -2233,13 +2233,22 @@ void test("current runtime v2 predecessor lock and context reject the historical
 });
 
 void test("finite collection rejects a substituted commit even with complete count and valid owner metadata", async () => {
-  const fixture = collectorFixture();
-  assert.equal(TARGET.commits, 1, "This reviewed target is a single current-head commit");
-  Object.assign(mapping(fixture.state.commits[0]), { sha: "f".repeat(40) });
-  await assert.rejects(
-    collectSourceEvidence(fixture.api, executorFromEnvironment(fixture.env)),
-    /Incomplete or mismatched current-head commit evidence/u,
+  assert.equal(
+    TARGET.commits,
+    2,
+    "This reviewed target retains its original and main-update commits",
   );
+  for (const [index, expected] of [
+    [0, /Finite source commit identities changed/u],
+    [1, /Incomplete or mismatched current-head commit evidence/u],
+  ] as const) {
+    const fixture = collectorFixture();
+    Object.assign(mapping(fixture.state.commits[index]), { sha: "f".repeat(40) });
+    await assert.rejects(
+      collectSourceEvidence(fixture.api, executorFromEnvironment(fixture.env)),
+      expected,
+    );
+  }
 });
 
 void test("unchanged symlinked admission inputs cannot hide in an ordinary baseline", async () => {

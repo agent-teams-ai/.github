@@ -13,11 +13,11 @@ export const TARGET = Object.freeze({
   repositoryId: 1316243981,
   pullRequest: 423,
   pullId: 5483046730,
-  baseSHA: "a277e75589ab765272961a5e1eba6725d098bd89",
-  headSHA: "dcefabe92d308ac07528e999f1e6b3ee2daffed5",
-  baseTreeSHA: "e10a49c247636126309c2d3a38cb9d3ab79beb82",
-  headTreeSHA: "b10afeb8395621f3f4d3eadf0d31c2f3183f0980",
-  commits: 1,
+  baseSHA: "6a33853123378ef8ea69868da8ecb550cd53c906",
+  headSHA: "2592d8e7a70224ca6df223f53465c3b30c55dacb",
+  baseTreeSHA: "ee728c21305a0165ac23293a159a7c569bc1f6f1",
+  headTreeSHA: "d03b59b675e17530179495cbb3287061546675f4",
+  commits: 2,
 } as const);
 export const SOURCE_REF = "refs/heads/governance/runtime-admission-source-successor-v4";
 export const SOURCE_WORKFLOW = ".github/workflows/runtime-admission-source-successor-v4.yml";
@@ -126,6 +126,7 @@ export const TARGET_TUPLE: readonly (readonly [string, string | null, string])[]
   ],
 ]);
 export const TARGET_COMMITS: readonly string[] = Object.freeze([
+  "2592d8e7a70224ca6df223f53465c3b30c55dacb",
   "dcefabe92d308ac07528e999f1e6b3ee2daffed5",
 ]);
 
