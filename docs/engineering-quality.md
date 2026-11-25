@@ -238,6 +238,128 @@ replace compilation. The focused `pnpm quality:typecheck` and `pnpm test:input-p
 glob. Public helper tests cover independent drift and malformed/replayed records;
 actual Git and tampered Actions trials remain for the two real adapters.
 
+### Documentation merge timing: native owner route (2026-11-25 UTC)
+
+The owner requested immediate publication to main or merge without waiting for
+checks, at least for documentation; a server-enforced docs-only gate was not
+requested. Central's protected no-wait route remains **unmet**. The current
+identity audit and immutable admission source require no bypass; their scoped
+compatibility change and qualified source transition must precede installation.
+No supported, authenticated settings-write channel is available in the observed session.
+Research's authorized direct-main route already works. Publishing this record
+does not activate the proposed Central exception.
+
+Read-only observation at Central `3d0a134e326f22ff867b418d64554167287638c8`:
+[Protect main](https://github.com/agent-teams-ai/.github/rules/19979783) and
+[commit identity](https://github.com/agent-teams-ai/.github/rules/24363205) require
+six current-head contexts from integration `15368`, with strict current-base
+checks and no bypass actors; the current actor's bypass result is `never`.
+The owner has repository admin permission; `allow_auto_merge` is false.
+
+GitHub supports [individual users on repository rulesets](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/).
+The minimal proposal adds exactly
+`{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`
+to `bypass_actors` in both rulesets `19979783` and `24363205`, preserving every
+other setting, rule, required context, issuer and branch condition. The
+[REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
+supports this individual-user, PR-only grant; no separate writer platform is a
+prerequisite. `always`, `exempt` and admin-role-wide grants are outside this proposal.
+
+The same read-only proposal covers only the six protected repositories in this
+assigned documentation delivery. These are proposed additions, not applied settings:
+
+| Repository                 | Rulesets receiving the proposed User PR-only entry | Existing state to preserve                                               |
+| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| `.github`                  | `19979783`, `24363205`                             | All other fields and immutable source locks                              |
+| `engineering-foundation`   | `19979782`, `24372286`                             | All other fields and actors                                              |
+| `agent-runtime`            | `24363207`                                         | Existing User `13103045 / always` in `19979781`; history rule `26556591` |
+| `agent-teams-platform`     | `24363204`                                         | All other fields and actors                                              |
+| `agent-teams-orchestrator` | `19979784`, `24363212`                             | All other fields and actors                                              |
+| `extension-foundation`     | `20807525`, `24363213`                             | All other fields and actors                                              |
+
+Research receives no new grant. Other repositories require their own observed
+proposal. Re-read every live configuration before applying any change.
+
+The grant technically covers the entire matching ruleset and any matching PR
+merged by that account; GitHub does not enforce a docs-content boundary on it.
+Its use remains limited to specifically assigned, reviewed documentation and
+any wider delivery scope explicitly authorized by the owner. It does not
+authorize agents to choose more work, bypass known substantive findings,
+perform releases or push directly to protected main. Other actors retain the
+existing required gates. Ongoing and postmerge verification still completes;
+early merge does not report pending or omitted tests as successful.
+
+The canonical identity policy currently has `ruleset.bypass_actors: []` and the
+audit compares it exactly. The bounded compatibility change must keep that
+installation default and accept only the exact optional owner entry on the six
+named repositories; other actors, modes, repositories and rule drift still reject.
+The onboarding writer continues to create the default no-bypass rule and preserve
+existing rules. This compatibility is not a bypass installer or an identity-check
+exemption. The local legacy JavaScript correction and its tests do not establish
+strict TypeScript coverage or hosted admission.
+
+Changing the policy is itself protected. The installed runtime-v2 source
+`6863c4b6e9f17b3a668e0afb9ff33cb9046788d0` delegates to frozen owners that reject
+changes to `governance/commit-author-identity.json`; the
+[permanent cutover record](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v2-cutover.md)
+contains the actual rejecting canary #402. Its owner-full protection proof also
+requires no bypass on Central's two main rulesets. Existing finite successor
+targets do not authorize this new change. Use the existing
+[source-successor procedure](decisions/0016-bounded-runtime-admission-source-successor-v2.md)
+with a separately reviewed source and exact compatibility tuple. Preserve all
+previous source locks, callers, accepted ADRs and historical evidence. A hosted
+public-read response that omits private bypass fields is not an owner-full proof.
+
+The prepared application sequence is:
+
+1. Re-read the current actor, PR head/base, source identity and effective rules;
+   verify owner account `13103045` and each current repository ruleset.
+2. Review and qualify the bounded policy/audit change and its new trusted source.
+   Use the existing immutable-source lock and add-before-retire cutover protocol,
+   including exact-target positive and rejecting canaries and actual required
+   blocking proof. Keep a source requirement throughout the transition. Install
+   the compatible policy, audit and source before adding grants; preserve all
+   unrelated contexts, issuers and protections. Source locks retain no bypass.
+3. Through authenticated GitHub settings or the official ruleset API with
+   Administration write, add only that User entry to each live configuration.
+   Read back each complete ruleset, verify the intended entry and preserved fields,
+   and run the compatible identity audit and owner-full source protection proof.
+4. For the eligible assigned PR, verify its reviewed head and base again and use
+   the ordinary guarded merge route. If its wrapper lacks the permitted bypass,
+   use the official [asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
+   as the authorized actor with exact `sha`, `merge_method: "squash"`,
+   `merge_action: "direct_merge"` and `bypass_rules: true`; preserve required attribution.
+5. Follow the returned operation to an actual merged result; acceptance or an
+   enqueued result is not a merge. Confirm final main parent/tree, author and
+   committer, then finish that repository's existing postmerge checks on that commit.
+
+The concrete access prerequisite is an official authenticated settings-write
+channel for the new source lock, reviewed context transition and scoped grants.
+The fast-documentation preference is already given and needs no renewed approval.
+Code, tests, source preparation, independent review and ordinary documentation
+delivery can proceed independently of that access. No secrets belong in chat.
+This record does not claim that the compatibility source, grants or early merge
+were installed or qualified. Local test success and a settings proposal are
+preparation evidence, not a completed cutover or E2E result.
+
+| Optional alternative                 | Timing and remaining work                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A. Native auto-merge                 | [Enable auto-merge](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-auto-merge-for-pull-requests-in-your-repository) and preserve exact-head review and attribution; it removes manual waiting but all required checks still precede merge |
+| B. Qualified shorter inert-docs path | Scope and qualify existing source/input-proof adapters and the required aggregate; trusted classification, identity and admission checks still precede merge, with possible runner waiting                                                                                                                                     |
+
+A and B have different timing and do not fulfill the literal request. They are
+optional alternatives, not a new mandatory owner choice. B requires an explicit
+inert-content scope; authority-bearing instructions, governance, contracts,
+security/release policy and executable examples cannot use an inert-docs shortcut.
+The checkpoint's complete inventory and authenticated head/base/source obligations
+still govern any input-proof reuse; omission never means tests ran successfully.
+The native grant and A's setting alone have production/test LOC P = T = 0;
+the necessary policy/audit compatibility and source qualification add code and
+tests. Their exact reviewed diff and evidence belong to the implementing change.
+End-to-end qualification effort and engineer-days remain unknown; B's P, T and
+days are unestimated pending scope. The existing source-successor mechanism owns
+this integration; no new writer platform is proposed.
+
 ## npm publication contract tests
 
 `scripts/npm-publish.test.mts` joins the exact strict compiler entries and the
