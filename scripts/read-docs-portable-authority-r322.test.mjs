@@ -467,7 +467,7 @@ test("current G census is independently pinned and agrees with actual Oxlint sel
     sha256: "sha256:8bc75ef356c9a4c2e2eb1031e54b59e73d52c6b955232519ab844f1593ec4e4b",
   };
   verifyPortableBlob(live, current);
-  assert.equal(pre.length, 43);
+  assert.equal(pre.length, 47);
   for (const p of [
     "scripts/docs-portable-authority-r322.mjs",
     "scripts/read-docs-portable-authority-r322.mjs",
@@ -479,6 +479,10 @@ test("current G census is independently pinned and agrees with actual Oxlint sel
     "scripts/quality-process.test.ts",
     "scripts/run-governance-tests.ts",
     "scripts/run-governance-tests.test.ts",
+    "scripts/runtime-admission-source-successor-v2.ts",
+    "scripts/runtime-admission-source-successor-v2.test.ts",
+    "scripts/runtime-admission-source-successor-v4.ts",
+    "scripts/runtime-admission-source-successor-v4.test.ts",
   ]) {
     assert.ok(pre.includes(p));
   }
