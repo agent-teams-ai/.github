@@ -279,8 +279,13 @@ transition and consumer pin upgrades.
 
 Native commit-email restrictions failed the TEST rebase merge qualification;
 they are supplementary unproven posture and are not shipped as enforcement.
-The canonical payload requires the exact head status from GitHub Actions
+The canonical default payload requires the exact head status from GitHub Actions
 integration `15368`, on `~DEFAULT_BRANCH`, active and without bypass actors.
+The planned [native owner delivery route](docs/engineering-quality.md#documentation-merge-timing-native-owner-route-2026-11-25-utc)
+requires a compatible canonical policy and protected source transition before
+an exact owner PR-only grant can be installed and read back. This conditional
+profile is not an installed capability; default onboarding and immutable source
+locks retain their no-bypass requirements.
 Installation and actual merge qualification remain maintainer operations;
 this policy does not claim live enforcement or automatic inheritance on Free.
 Future owned repositories use the bounded [commit identity onboarding route](docs/repository-admission.md#commit-identity-onboarding)
@@ -316,12 +321,18 @@ Before the plugin merge, independently read the authenticated User/777genius,
 the live open non-draft User/777genius PR, its exact reviewed head and base,
 and the complete head-bound source commit list. Apply the same owner-only
 source identity rules as the CLI guard; preserve external contributions through
-the contributor-preserving flow. Confirm successful required checks on that
-head and no unresolved blocking review findings. Never merge Bot staging PRs.
+the contributor-preserving flow. The ordinary route requires successful checks
+on that head. An owner PR-only exception is usable only after its compatible
+policy and source are qualified and the exact grant is installed and read back,
+within the assigned delivery scope described by the native owner delivery
+route. Both routes require no unresolved blocking review findings. Never merge
+Bot staging PRs.
 
 Use squash with `expected_head_sha` set to the full reviewed head SHA and an
 explicit Conventional Commit title and complete body including issue references.
-Keep branch protection and required checks unchanged; never bypass them.
+Keep branch protection and required checks unchanged during the merge. Do not
+invent or broaden a bypass; the conditional native owner route above is the only
+exception described here and does not relax source identity or release gates.
 The plugin may let GitHub select the final author email when it cannot set it.
 Prefer the canonical owner email, but this missing input does not prevent merge.
 
