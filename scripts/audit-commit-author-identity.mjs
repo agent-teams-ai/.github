@@ -3,12 +3,24 @@ import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-export function assertIdentityRuleset(actual, expected) {
+export function assertIdentityRuleset(actual, expected, { repository, ownerPrBypass } = {}) {
   assert.ok(actual, "Missing identity ruleset");
   assert.deepEqual(
+    expected.bypass_actors,
+    [],
+    "Canonical identity rule must retain no-bypass default",
+  );
+  const bypassActors =
+    ownerPrBypass?.repositories.includes(repository) &&
+    actual.source_type === "Repository" &&
+    actual.source === repository &&
+    actual.bypass_actors?.length
+      ? [ownerPrBypass.actor]
+      : [];
+  assert.deepEqual(
     Object.fromEntries(Object.keys(expected).map((key) => [key, actual[key]])),
-    expected,
-    "Identity rule must be active, default-branch-only, without bypass, and require the exact app-bound status",
+    { ...expected, bypass_actors: bypassActors },
+    "Identity rule must retain the exact active default-branch app-bound status and only an explicitly scoped owner PR bypass",
   );
 }
 export function assertRegularGitFile(tree, path, file) {
@@ -100,7 +112,10 @@ export async function auditIdentity() {
       const rules = pages(`${root}/rulesets?includes_parents=true&per_page=100`);
       const candidates = rules.filter((rule) => rule.name === policy.ruleset.name);
       assert.equal(candidates.length, 1, "Missing/ambiguous dedicated identity ruleset");
-      assertIdentityRuleset(api(`${root}/rulesets/${candidates[0].id}`), policy.ruleset);
+      assertIdentityRuleset(api(`${root}/rulesets/${candidates[0].id}`), policy.ruleset, {
+        repository: repository.full_name,
+        ownerPrBypass: policy.owner_pr_bypass,
+      });
       const branch = api(`${root}/branches/${encodeURIComponent(repository.default_branch)}`);
       const caller = api(
         `${root}/contents/.github/workflows/commit-author-identity.yml?ref=${branch.commit.sha}`,

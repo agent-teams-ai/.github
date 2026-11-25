@@ -654,7 +654,125 @@ test("late policy/template drift and failure-status write error fail closed", as
   assert.ok(f.failures.length > 0);
   assert.deepEqual(states(f), ["pending"]);
 });
-test("audit rejects missing/inactive/bypassed/mismatched default-branch required status rules", () => {
+const ownerPrRepositories = [
+  "agent-teams-ai/.github",
+  "agent-teams-ai/engineering-foundation",
+  "agent-teams-ai/extension-foundation",
+  "agent-teams-ai/agent-runtime",
+  "agent-teams-ai/agent-teams-platform",
+  "agent-teams-ai/agent-teams-orchestrator",
+];
+const ownerPrActor = { actor_id: 13103045, actor_type: "User", bypass_mode: "pull_request" };
+
+// This independent scope oracle catches an unintended expansion of the canonical policy.
+test("identity policy retains the default and only the six approved owner PR compatibility targets", () => {
+  assert.equal(policy.schema_version, 1);
+  assert.deepEqual(policy.ruleset.bypass_actors, []);
+  assert.deepEqual(policy.owner_pr_bypass, {
+    repositories: ownerPrRepositories,
+    actor: ownerPrActor,
+  });
+});
+
+test("audit accepts current no-bypass rules and the exact optional owner PR shape in scope", () => {
+  for (const repository of ownerPrRepositories) {
+    for (const bypassActors of [[], [ownerPrActor]]) {
+      const rule = {
+        ...clone(policy.ruleset),
+        source_type: "Repository",
+        source: repository,
+        bypass_actors: clone(bypassActors),
+      };
+      const before = clone(rule);
+      assertIdentityRuleset(rule, policy.ruleset, {
+        repository,
+        ownerPrBypass: policy.owner_pr_bypass,
+      });
+      assert.deepEqual(rule, before, "Audit must not normalize or mutate the observed rule");
+    }
+  }
+});
+
+test("audit refuses owner bypass outside the named repository and exact repository source", () => {
+  for (const repository of [
+    "agent-teams-ai/engineering-research",
+    "agent-teams-ai/example",
+    "agent-teams-ai/agent-runtime-extra",
+    "another-owner/agent-runtime",
+    undefined,
+  ]) {
+    const rule = { ...clone(policy.ruleset), source_type: "Repository", source: repository };
+    const scope = { repository, ownerPrBypass: policy.owner_pr_bypass };
+    assertIdentityRuleset(rule, policy.ruleset, scope);
+    rule.bypass_actors = [clone(ownerPrActor)];
+    assert.throws(() => assertIdentityRuleset(rule, policy.ruleset, scope), /Identity rule/u);
+  }
+  const repository = "agent-teams-ai/agent-runtime";
+  for (const metadata of [
+    { source_type: "Organization", source: "agent-teams-ai" },
+    { source_type: "Repository", source: "agent-teams-ai/engineering-foundation" },
+    { source_type: "Repository" },
+    { source: repository },
+    {},
+  ]) {
+    const rule = { ...clone(policy.ruleset), ...metadata, bypass_actors: [clone(ownerPrActor)] };
+    assert.throws(
+      () =>
+        assertIdentityRuleset(rule, policy.ruleset, {
+          repository,
+          ownerPrBypass: policy.owner_pr_bypass,
+        }),
+      /Identity rule/u,
+    );
+  }
+});
+
+test("audit refuses other actors, modes, cardinalities and undeclared compatibility", () => {
+  const repository = "agent-teams-ai/agent-runtime";
+  const scope = { repository, ownerPrBypass: policy.owner_pr_bypass };
+  for (const bypassActors of [
+    undefined,
+    null,
+    {},
+    ownerPrActor,
+    [{ ...ownerPrActor, actor_id: 1 }],
+    [{ ...ownerPrActor, actor_id: "13103045" }],
+    [{ ...ownerPrActor, actor_type: "Team" }],
+    [{ ...ownerPrActor, actor_type: "Integration" }],
+    [{ ...ownerPrActor, actor_type: "RepositoryRole" }],
+    [{ ...ownerPrActor, bypass_mode: "always" }],
+    [{ ...ownerPrActor, bypass_mode: "exempt" }],
+    [{ actor_id: 13103045, actor_type: "User" }],
+    [{ ...ownerPrActor, extra: true }],
+    [ownerPrActor, ownerPrActor],
+    [ownerPrActor, { ...ownerPrActor, actor_id: 1 }],
+  ]) {
+    const rule = {
+      ...clone(policy.ruleset),
+      source_type: "Repository",
+      source: repository,
+      bypass_actors: clone(bypassActors),
+    };
+    assert.throws(() => assertIdentityRuleset(rule, policy.ruleset, scope), /Identity rule/u);
+  }
+  const rule = {
+    ...clone(policy.ruleset),
+    source_type: "Repository",
+    source: repository,
+    bypass_actors: [clone(ownerPrActor)],
+  };
+  assert.throws(() => assertIdentityRuleset(rule, policy.ruleset), /Identity rule/u);
+  assert.throws(
+    () => assertIdentityRuleset(rule, policy.ruleset, { repository }),
+    /Identity rule/u,
+  );
+  assert.throws(
+    () => assertIdentityRuleset(rule, { ...policy.ruleset, bypass_actors: [ownerPrActor] }, scope),
+    /no-bypass default/u,
+  );
+});
+
+test("audit rejects identity rule drift with and without the scoped owner PR bypass", () => {
   const rule = {
     name: "Commit author identity",
     target: "branch",
@@ -673,7 +791,15 @@ test("audit rejects missing/inactive/bypassed/mismatched default-branch required
     ],
   };
   assertIdentityRuleset(rule, policy.ruleset);
+  const repository = "agent-teams-ai/agent-runtime";
+  const scope = { repository, ownerPrBypass: policy.owner_pr_bypass };
   for (const mutate of [
+    (f) => {
+      f.name = "Protect main";
+    },
+    (f) => {
+      f.target = "tag";
+    },
     (f) => {
       f.enforcement = "disabled";
     },
@@ -684,13 +810,22 @@ test("audit rejects missing/inactive/bypassed/mismatched default-branch required
       f.conditions.ref_name.include = ["~ALL"];
     },
     (f) => {
+      f.conditions.ref_name.exclude = ["refs/heads/main"];
+    },
+    (f) => {
       f.rules = [];
+    },
+    (f) => {
+      f.rules.push({ type: "deletion" });
     },
     (f) => {
       f.rules[0].parameters.required_status_checks[0].context = "other";
     },
     (f) => {
       f.rules[0].parameters.required_status_checks[0].integration_id = null;
+    },
+    (f) => {
+      f.rules[0].parameters.required_status_checks.push({ context: "other", integration_id: 1 });
     },
     (f) => {
       f.rules[0].parameters.strict_required_status_checks_policy = false;
@@ -702,9 +837,16 @@ test("audit rejects missing/inactive/bypassed/mismatched default-branch required
       f.rules[0].parameters.do_not_enforce_on_create = true;
     },
   ]) {
-    const changed = clone(rule);
-    mutate(changed);
-    assert.throws(() => assertIdentityRuleset(changed, policy.ruleset));
+    for (const bypassActors of [[], [ownerPrActor]]) {
+      const changed = {
+        ...clone(rule),
+        source_type: "Repository",
+        source: repository,
+        bypass_actors: clone(bypassActors),
+      };
+      mutate(changed);
+      assert.throws(() => assertIdentityRuleset(changed, policy.ruleset, scope));
+    }
   }
   assert.throws(() => assertIdentityRuleset(null, policy.ruleset));
 });

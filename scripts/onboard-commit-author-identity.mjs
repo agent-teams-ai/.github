@@ -145,6 +145,7 @@ export async function onboardIdentity(argv, { gh = ghApi, checkout = checkoutRoo
       [implementationPath]: await localFile(checkout, revision, implementationPath),
     };
     const policy = JSON.parse(files[policyPath]);
+    const rulesetScope = { repository: options.repo, ownerPrBypass: policy.owner_pr_bypass };
     assert.equal(policy.owner?.login, "777genius", "Canonical owner must be 777genius");
     assertActionsWorkflowPermissions(
       policy.actions_workflow_permissions,
@@ -249,7 +250,7 @@ export async function onboardIdentity(argv, { gh = ghApi, checkout = checkoutRoo
       const candidates = detailed.filter((rule) => rule.name === policy.ruleset.name);
       assert.ok(candidates.length <= 1, "Ambiguous dedicated identity rulesets");
       if (candidates.length) {
-        assertIdentityRuleset(candidates[0], policy.ruleset);
+        assertIdentityRuleset(candidates[0], policy.ruleset, rulesetScope);
       }
       return detailed.toSorted((a, b) => a.id - b.id);
     }
@@ -409,7 +410,7 @@ export async function onboardIdentity(argv, { gh = ghApi, checkout = checkoutRoo
     assert.deepEqual(final, state, "Remote state changed during final verification");
     assertActionsWorkflowPermissions(final.permissions, policy.actions_workflow_permissions);
     const rule = final.rulesets.find((value) => value.name === policy.ruleset.name);
-    assertIdentityRuleset(rule, policy.ruleset);
+    assertIdentityRuleset(rule, policy.ruleset, rulesetScope);
     return {
       ...result,
       outcome: "configured_not_live_qualification",
