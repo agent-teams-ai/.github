@@ -30,8 +30,9 @@ and the existing cryptographic signature verifier. No package is published here.
 3. Let the existing trusted base-owned cohort gate validate the candidate live.
    Retain the actual successful run, attempt, source and job proof before
    appending VERIFIED and QUALIFIED events. Recheck the final candidate and
-   merge through the ordinary owner route. QUALIFIED enrolls only the named
-   canary; the current recommended cohort remains unchanged.
+   merge through the ordinary owner route. QUALIFIED makes the cohort selectable
+   only for its declared canary; the separate policy authorizes rollout. The
+   current recommended cohort remains unchanged.
 4. In a separate policy-only PR, set only Extension Foundation's desired cohort
    to stable32 with generation 2 and rollout_pending. Retain its observed
    stable31 binding and historical evidence until the consumer is qualified.
@@ -45,13 +46,27 @@ and the existing cryptographic signature verifier. No package is published here.
    revision, Docs check identity, record/event digests and workflow coordinates.
    Verify that final policy PR and its merged main result.
 
+Pre-CANARY evidence verification uses the existing changed-record route:
+
+```sh
+node scripts/verify-docs-cohort-evidence.mjs \
+  --registry governance/docs-qualified-cohorts.json \
+  --schema governance/docs-qualified-cohorts.schema.json \
+  --changed-from <exact-base-registry>
+```
+
+The direct `--cohort` mode also requires actual CANARY evidence and is not the
+appropriate mode for this bounded registration and qualification sequence.
+
 ## Compatibility and rollback
 
 The explicit upgrade source and rollback target are both
 `docs-2026-10-03-stable31`; adapter 0.6.1 retains the required stable31 transition
 assets. Generation-2 schema versions and the seven dependency edges stay exact.
-The managed runtime remains Node 24, with the existing Linux/macOS apply and
-Linux/macOS/Windows check/plan platforms. Consumer Node 26 qualification remains
+The managed runtime remains Node 24; its exact Node and pnpm bounds must agree
+with the actual candidate package engines and complete resolved closure. It
+retains Linux/macOS apply and Linux/macOS/Windows check/plan platforms. Consumer
+Node 26 qualification remains
 the consumer's existing separate gate. A rollback would retain its historical
 contract but would reintroduce the incompatible old compiler execution path;
 it is a recovery capability, not permission to execute an obsolete compiler.
@@ -64,5 +79,8 @@ preparation, local validation and queued work are not merge or CI success.
 
 ## Qualification status
 
-Candidate preparation and independent review are in progress. No lifecycle
-promotion, consumer admission or complete qualification is claimed by this plan.
+Two independent reviews approved this bounded delivery plan, including the
+separate rollout authority, exact changed-record verifier route and engine
+qualification requirements. Candidate evidence collection remains in progress.
+No lifecycle promotion, consumer admission or complete qualification is claimed
+by this plan.
