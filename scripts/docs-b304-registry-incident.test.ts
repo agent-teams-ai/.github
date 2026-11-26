@@ -496,7 +496,7 @@ void test("B304 archive verification shares native proof but creates no authorit
 void test("B304 retained archive and fixture bind actual run endpoints", async () => {
   const f = fixture();
   f.setAuthority(encoded({ schema_version: 1, authorization: null }));
-  const readRun = f.adapters.getWorkflowRun;
+  const readRun = f.adapters.getWorkflowRun.bind(f.adapters);
   // These independently retained normal-run responses differ from attempt metadata.
   f.adapters.getWorkflowRun = async (repository, id) => {
     const run = mapping(await readRun(repository, id));
@@ -527,7 +527,7 @@ void test("B304 rejects attempt metadata substituted for current or nightly run 
     [45792972738, "updated_at", "2026-11-26T09:44:48Z"],
   ] as const) {
     await refusal((f) => {
-      const readRun = f.adapters.getWorkflowRun;
+      const readRun = f.adapters.getWorkflowRun.bind(f.adapters);
       f.adapters.getWorkflowRun = async (repository, id) => {
         const run = await readRun(repository, id);
         return id === runId ? { ...mapping(run), [field]: attemptValue } : run;
