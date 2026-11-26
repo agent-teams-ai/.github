@@ -1,0 +1,593 @@
+{
+  "cohort_id": "docs-2026-11-26-stable33",
+  "status": "proposed",
+  "evidenceClass": "proposed-lifecycle-append-from-hosted-trusted-validation",
+  "recordDigest": "sha256:7dc72dd4aa1039d9dcef7f151f8627d1527c7ea71a45932f912461052e1de623",
+  "candidateDigest": "sha256:f0ad40aba1f8ddc3fa6b4a5a9b667882c2f2fe8a49ed9dab7a61591441470b6c",
+  "runtimeClosureDigest": "sha256:aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf",
+  "verifiedEventDigest": "sha256:39fece4f68d50d2fd861fbfa816cf22286cfe6689a08252caefc8965d00967f7",
+  "qualificationEventDigest": "sha256:96b307b1c602947520ee7591f81d263eb1a815683de18a9d493106ab0e73ddd3",
+  "proposedEvents": [
+    {
+      "sequence": 188,
+      "state": "VERIFIED",
+      "effective_at": "2026-11-26T13:33:46Z",
+      "event_digest": "sha256:39fece4f68d50d2fd861fbfa816cf22286cfe6689a08252caefc8965d00967f7"
+    },
+    {
+      "sequence": 189,
+      "state": "QUALIFIED",
+      "effective_at": "2026-11-26T13:33:46Z",
+      "event_digest": "sha256:96b307b1c602947520ee7591f81d263eb1a815683de18a9d493106ab0e73ddd3"
+    }
+  ],
+  "timeSemantics": "Both proposed lifecycle events use the actual completion time of the selected trusted A job. Sequence 188 then 189 orders the states; this does not represent two additional executions or a completed final B check.",
+  "publicationSource": {
+    "revision": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+    "tree": "7b760ad847559c7fcfaccc441eac2ad5195f244c",
+    "path": "governance/evidence/docs-cohorts/docs-2026-11-26-stable33/publication.json",
+    "url": "https://github.com/agent-teams-ai/.github/blob/57475ca38f1fd1f337d01d18fcb304ca790c414f/governance/evidence/docs-cohorts/docs-2026-11-26-stable33/publication.json",
+    "sha256": "sha256:f14db8a23a6686fcb1e441b7c1c25535e5cc9a1341c6d4bd73e33a9771ed1c70",
+    "registrySha256": "sha256:dc0fb102378d5ffa1d914da6d89e48fb5e8958fca1dd8028ef2082059a591587",
+    "publicationEventDigest": "sha256:1dd8c943a42abf989d453ea588752345dd31442be4e3e3337a82d2a7cfdc07b0"
+  },
+  "producerPublication": {
+    "repository": "agent-teams-ai/engineering-foundation",
+    "repositoryId": 1316243988,
+    "revision": "da1868240b96113582b508b0c15341c477d6334b",
+    "workflowPath": ".github/workflows/release.yml",
+    "workflowRunId": 45816094753,
+    "workflowRunAttempt": 1,
+    "url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753/attempts/1",
+    "coordinates": [
+      {
+        "name": "@agent-teams/repository-mutation",
+        "version": "0.5.2",
+        "integrity": "sha512-eK/HsE/1qt+TXzrrbggXykZJXloFZfZD0ZlwdGbm2Jc9O6lAlhu7+w9BdSeryX/vCyMYWeRLv38S/7V717RPMg==",
+        "registryAttestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.5.2"
+      },
+      {
+        "name": "@agent-teams/document-authoring",
+        "version": "0.3.9",
+        "integrity": "sha512-a6SOuytNOoKJVW+pp51AUMhrjzTvbYvro6nUuAFqmu0l0G63xkSAnhpwlaPJbHSbSBvoIawm8z+nL8OVMFIY3A==",
+        "registryAttestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.9"
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "version": "0.6.9",
+        "integrity": "sha512-rZ7Ie43dmN+m8LjCdXt5iqOP5h41M/TWNFg7bwvV05/XuSJrJF4udBLXIReqqVfeqdoYrFNxPbTknKJ30N6aTA==",
+        "registryAttestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.9"
+      },
+      {
+        "name": "@agent-teams/docs-protocol-agent-teams",
+        "version": "0.7.1",
+        "integrity": "sha512-Kio0YA5lPu8xxDEoLxzEK+VHcsre6M+5vEhlCpew+lLjs3OXdu5elh/eLksxwYeY3TLOtte74zZn7c7oiBCwLw==",
+        "registryAttestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.7.1"
+      },
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "version": "4.0.2",
+        "integrity": "sha512-OVnEi7aN/dQWpt5feF2gb92Nnic9YlXWeuTEf3tdDgyTEsVTs+lwiLHo1rS+ScdGnB+vK3WbkilnZiOJkHLJBQ==",
+        "registryAttestationUrl": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@4.0.2"
+      }
+    ]
+  },
+  "collector": {
+    "repository": "agent-teams-ai/extension-foundation",
+    "repositoryId": 1333298097,
+    "revision": "7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04",
+    "workflowRunId": 45827542992,
+    "workflowRunAttempt": 1,
+    "workflowPath": ".github/workflows/prepare-ef-docs-cohort.yml",
+    "event": "push",
+    "conclusion": "success",
+    "artifact": {
+      "id": 15120867486,
+      "name": "ef-docs-cohort-candidate-7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04-45827542992-1",
+      "sizeInBytes": 155392,
+      "digest": "sha256:6d06c07b089e265e7ecb3634ae0eeee2796e69e38b02a3210fc33d60b0e1167e"
+    },
+    "candidateInputDigest": "sha256:f0ad40aba1f8ddc3fa6b4a5a9b667882c2f2fe8a49ed9dab7a61591441470b6c",
+    "qualified": false
+  },
+  "hostedValidation": {
+    "source": "Independently retrieved exact GitHub attempt, job, selected GitHub Actions check and decoded job logs.",
+    "repository": "agent-teams-ai/.github",
+    "repositoryId": 1316243981,
+    "pullRequest": 432,
+    "workflowId": 335855222,
+    "workflowPath": ".github/workflows/docs-cohort-append-only.yml",
+    "workflowRunId": 45830178769,
+    "workflowRunAttempt": 1,
+    "event": "pull_request_target",
+    "status": "completed",
+    "conclusion": "success",
+    "providerRunHead": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+    "providerJobHead": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+    "testedCandidate": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+    "executionCheckoutBase": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+    "jobId": 139944594827,
+    "jobName": "trusted-validation",
+    "checkRunId": 139944594827,
+    "integrationId": 15368,
+    "startedAt": "2026-11-26T13:32:58Z",
+    "completedAt": "2026-11-26T13:33:46Z",
+    "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45830178769/attempts/1",
+    "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45830178769/job/139944594827",
+    "mode": "full",
+    "modeEvidence": "Full-only dependency, structural and live steps executed; emergency-only step skipped; exact base-owned workflow conditions inspected.",
+    "changedCohorts": 1,
+    "structuralStep": {
+      "name": "Validate untrusted head with trusted base code",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 10,
+      "started_at": "2026-11-26T13:33:20Z",
+      "completed_at": "2026-11-26T13:33:20Z"
+    },
+    "liveStep": {
+      "name": "Verify live evidence for every appended Cohort record or event",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 11,
+      "started_at": "2026-11-26T13:33:20Z",
+      "completed_at": "2026-11-26T13:33:41Z"
+    },
+    "logEvidence": {
+      "checkout": "2026-11-26T13:33:04.0586122Z 7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "candidate": "2026-11-26T13:33:20.8656380Z   DOCS_COHORT_EVIDENCE_REF: 57475ca38f1fd1f337d01d18fcb304ca790c414f",
+      "structural": "2026-11-26T13:33:20.8420937Z Qualified Docs Cohort head is schema-valid, lifecycle-valid, digest-bound, and append-only against the trusted base.",
+      "live": "2026-11-26T13:33:41.5721025Z Qualified Docs Cohort live evidence verified for 1 changed Cohort(s)."
+    },
+    "rawDigests": {
+      "run": {
+        "utf8Bytes": 13988,
+        "sha256": "aaf6c9438830e29fc9113f76437469a36cab1f92e104f4dc44ee2f50d7e27b55"
+      },
+      "jobs": {
+        "utf8Bytes": 4118,
+        "sha256": "ed497c126f931df189391fdc6102c4e6385ec8349461d960fc64fce98bd88e22"
+      },
+      "log": {
+        "utf8Bytes": 34795,
+        "sha256": "096441f45d4d4bcdc258842d33b8254e4fb32efe1dac883e2e7b0d744568f407"
+      }
+    },
+    "trustedSources": {
+      "revision": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "workflowSha256": "sha256:a3c9b67042268e0fdc1a847017e8a5de634375c80aee7ef79939ae0e92fb08bf",
+      "verifierSha256": "sha256:1573c7cde1db985bfe1f4da7f1d86297bb40d18180a9277d01528bf378b59a71",
+      "schemaSha256": "sha256:ea719a83bdc805701c3f3b89db6077e933196d6ad8332acd32c0d4c3115e330a"
+    }
+  },
+  "additionalSuccessfulAValidation": [
+    {
+      "workflowRunId": 45830116345,
+      "workflowRunAttempt": 1,
+      "jobId": 139944382990,
+      "integrationId": 15368,
+      "providerRunHead": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+      "executionCheckoutBase": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "completedAt": "2026-11-26T13:33:14Z",
+      "conclusion": "success",
+      "mode": "full",
+      "changedCohorts": 1,
+      "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45830116345/attempts/1",
+      "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45830116345/job/139944382990",
+      "rawDigests": {
+        "run": {
+          "utf8Bytes": 13728,
+          "sha256": "d334542f4805f0cc51bd550e288464d2d27f2a0d0e9252f3f6ea9ebae691aefe"
+        },
+        "jobs": {
+          "utf8Bytes": 4118,
+          "sha256": "f7bf70ff637512250e74365cd65da61314ad99223cacdd28ad8f9d016bc7ea8e"
+        },
+        "log": {
+          "utf8Bytes": 34792,
+          "sha256": "6913c05def32a30bdc3681a0fc35dacfcd51d79a4e1047e3403756d45e45ec33"
+        }
+      }
+    }
+  ],
+  "verificationScope": "The exact base-owned trusted A job executed structural and live verification for the one newly appended stable33 Cohort, including its exact packages, signed publication origins, selected packed assets, runtime closure and reusable workflow. Its structural validation checks the fixed policy identity and digest shape; it does not read the exact policy-source or packed runtime-policy bytes. Those bytes were observed and digest-bound by the earlier collector, as retained in the unchanged publication.json and candidate-input evidence. The A record, publication evidence, closure and all previous records/events remain unchanged. This inert evidence file records those distinct observations and proposes two lifecycle events; final B must pass its own native and fresh trusted live checks before merge.",
+  "runtimeClosure": {
+    "schema_version": 2,
+    "domain": "agent-teams.docs-runtime-closure/v2",
+    "package_manager": "pnpm@11.20.0",
+    "lockfile_version": "9.0",
+    "package_count": 88,
+    "projection_path": "governance/docs-runtime-closures/sha256-aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf.json",
+    "digest": "sha256:aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf"
+  },
+  "reusableWorkflow": {
+    "repository": "agent-teams-ai/.github",
+    "repository_id": 1316243981,
+    "path": ".github/workflows/docs-protocol-check.yml",
+    "revision": "755c8515a5d106402a7e9e2cff621fb1fdc855cf",
+    "blob_sha": "4097e816cf8725035c49c94e27308a6c66a0119b"
+  },
+  "canaryRepositories": [
+    {
+      "repository_id": 1333298097,
+      "repository": "agent-teams-ai/extension-foundation"
+    }
+  ],
+  "initialNativeFailure": {
+    "workflowRunId": 45830115625,
+    "workflowRunAttempt": 1,
+    "jobId": 139944373363,
+    "headRevision": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+    "conclusion": "failure",
+    "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45830115625/attempts/1",
+    "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45830115625/job/139944373363",
+    "currentTests": {
+      "total": 5807,
+      "passed": 5804,
+      "failed": 3,
+      "skipped": 0
+    },
+    "frozenTests": {
+      "total": 9,
+      "passed": 9
+    },
+    "failureDetailsSource": "The assigned native-CI observer retained the exact failing job log; the failed exact-head run metadata was independently re-read for this preparation.",
+    "failures": [
+      {
+        "path": "scripts/docs-admission-change.test.mjs",
+        "test": "generation3 admission proves both committed rollout legs from the actual stable31 origin",
+        "failure": "Cohort event 187 cannot be effective in the future."
+      },
+      {
+        "path": "scripts/docs-admission-change.test.mjs",
+        "test": "generation3 admission rejects stale profiles, old dispatch, source bytes, candidates, ambiguity and drift",
+        "failure": "Cohort event 187 cannot be effective in the future."
+      },
+      {
+        "path": "scripts/docs-legacy-admission-recovery.test.mjs",
+        "test": "exact legacy runner schemas reject BOTH full current documents; modern runners accept",
+        "failure": "a2fa473bcfdbcf1eb5a68c81b9f58ef9e03917c0: complete registry; false !== true"
+      }
+    ]
+  },
+  "prerequisiteRemediation": {
+    "pullRequest": 433,
+    "url": "https://github.com/agent-teams-ai/.github/pull/433",
+    "scope": "Two test-only fixture pairs read complete policy and registry data at immutable 7ad5abbf5a8dade79f91f3e6f06481070b966a9e through existing Git readers; test names, assertions, negative cases, clocks and schemas stay unchanged.",
+    "statusAtDataPreparation": "merged_main_checks_passed",
+    "finalCompositionRequirement": "Final B must use this verified merged main as first parent and immutable A as second parent, retaining the reviewed fixture fixes and the four cohort data/evidence files as the PR delta.",
+    "merge": {
+      "revision": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+      "tree": "9de2f712337d60aa459367de408ac20c2d198a23",
+      "soleParent": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "mergedAt": "2026-11-26T14:07:06Z",
+      "mergedBy": "777genius",
+      "prHead": "3934677b5d6140978f11aac8c4b624dc6538a12e",
+      "prBase": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "rawAuthor": {
+        "name": "Илия",
+        "email": "iliyazelenkog@gmail.com"
+      },
+      "technicalCommitter": {
+        "name": "GitHub",
+        "email": "noreply@github.com"
+      },
+      "signatureVerified": true,
+      "signatureReason": "valid",
+      "commitUrl": "https://github.com/agent-teams-ai/.github/commit/8dd07c9fbf3cdb8ba3823d568114afd85f74c790"
+    },
+    "nativePrChecks": [
+      {
+        "runtime": "Node 26.11.1",
+        "workflowRunId": 45832547206,
+        "workflowRunAttempt": 1,
+        "workflowPath": ".github/workflows/ci.yml",
+        "jobId": 139952787312,
+        "jobName": "check",
+        "providerRunHead": "3934677b5d6140978f11aac8c4b624dc6538a12e",
+        "providerJobHead": "3934677b5d6140978f11aac8c4b624dc6538a12e",
+        "executedPrMergeRevision": "0d959183f11df355ff238e9cb4c51a78ff18e5db",
+        "executedTree": "9de2f712337d60aa459367de408ac20c2d198a23",
+        "conclusion": "success",
+        "completedAt": "2026-11-26T13:50:18Z",
+        "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45832547206/attempts/1",
+        "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45832547206/job/139952787312",
+        "currentTests": {
+          "total": 5807,
+          "passed": 5807,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "todo": 0
+        },
+        "frozenTests": {
+          "total": 9,
+          "passed": 9,
+          "failed": 0
+        },
+        "mandatoryIdentities": 8,
+        "contractExceptions": [],
+        "previouslyFailingTests": "All three exact initial A failures passed in this completed prerequisite run.",
+        "metadataEvidence": "Exact completed run and job metadata independently retrieved; execution checkout, counts and decoded log hashes supplied by the assigned native-CI observer from its retained raw logs.",
+        "rawDigests": {
+          "run": {
+            "bytes": 13209,
+            "sha256": "c41d7f247438ae631f7e723c8448f45cd7f272b95fbf437326b97ffc3b3dd334"
+          },
+          "jobs": {
+            "bytes": 3239,
+            "sha256": "d0275e029a3ab692af0835522b02523272e5cd86b8c0e228dd8d42c95a4510b7"
+          },
+          "decodedJobLog": {
+            "bytes": 3051185,
+            "sha256": "e852e84633af41eb37fb23d1d9ef55c52ab024f571a52806c2fee83eb9b936b9",
+            "encoding": "UTF-8 with retained BOM/newlines; not a ZIP digest"
+          }
+        }
+      },
+      {
+        "runtime": "Node 24 compatibility",
+        "workflowRunId": 45832546961,
+        "workflowRunAttempt": 1,
+        "workflowPath": ".github/workflows/node24-compatibility.yml",
+        "jobId": 139952787154,
+        "jobName": "Node.js 24 compatibility",
+        "providerRunHead": "3934677b5d6140978f11aac8c4b624dc6538a12e",
+        "providerJobHead": "3934677b5d6140978f11aac8c4b624dc6538a12e",
+        "executedPrMergeRevision": "0d959183f11df355ff238e9cb4c51a78ff18e5db",
+        "executedTree": "9de2f712337d60aa459367de408ac20c2d198a23",
+        "conclusion": "success",
+        "completedAt": "2026-11-26T13:49:58Z",
+        "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45832546961/attempts/1",
+        "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45832546961/job/139952787154",
+        "currentTests": {
+          "total": 5807,
+          "passed": 5807,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "todo": 0
+        },
+        "frozenTests": {
+          "total": 9,
+          "passed": 9,
+          "failed": 0
+        },
+        "mandatoryIdentities": 8,
+        "contractExceptions": [],
+        "previouslyFailingTests": "All three exact initial A failures passed in this completed prerequisite run.",
+        "metadataEvidence": "Exact completed run and job metadata independently retrieved; execution checkout, counts and decoded log hashes supplied by the assigned native-CI observer from its retained raw logs.",
+        "rawDigests": {
+          "run": {
+            "bytes": 13247,
+            "sha256": "4ac1e4fef7af1687b0f21a9c9492465cb74d8f1523534c7406dad138cfea2a2e"
+          },
+          "jobs": {
+            "bytes": 3453,
+            "sha256": "3fd98e3dc7b77930bf3fa37e3e8a4a385458f17820e3135fff1b432736178957"
+          },
+          "decodedJobLog": {
+            "bytes": 3051069,
+            "sha256": "3bc86514e4a0aa38da52338d9935c2373ed2d527610e3be432e169a4031cc035",
+            "encoding": "UTF-8 with retained BOM/newlines; not a ZIP digest"
+          }
+        }
+      }
+    ],
+    "mainChecks": {
+      "revision": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+      "status": "success",
+      "completedRuns": 2,
+      "checks": [
+        {
+          "runtime": "Node 26.11.1",
+          "workflowRunId": 45835780973,
+          "workflowRunAttempt": 1,
+          "workflowPath": ".github/workflows/ci.yml",
+          "jobId": 139964136383,
+          "jobName": "check",
+          "event": "push",
+          "branch": "main",
+          "providerRunHead": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+          "providerJobHead": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+          "executedCheckoutRevision": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+          "executedTree": "9de2f712337d60aa459367de408ac20c2d198a23",
+          "conclusion": "success",
+          "completedAt": "2026-11-26T14:09:44Z",
+          "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45835780973/attempts/1",
+          "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45835780973/job/139964136383",
+          "currentTests": {
+            "total": 5807,
+            "passed": 5807,
+            "failed": 0,
+            "skipped": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "frozenTests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0
+          },
+          "mandatoryIdentities": 8,
+          "contractExceptions": [],
+          "previouslyFailingTests": "All three exact initial A failures passed on the actual merged prerequisite main.",
+          "metadataEvidence": "Exact completed main run and job metadata independently retrieved; checkout, counts and decoded log hashes supplied by the assigned native-CI observer from its retained raw logs.",
+          "rawDigests": {
+            "run": {
+              "bytes": 13392,
+              "sha256": "932df49426d80457c13c0a75489019b06b1712ffba429eba53b2ead2022c9bb3"
+            },
+            "jobs": {
+              "bytes": 3197,
+              "sha256": "7c76d35d4ddb540678b0dd9e71c39ddd95dcfda9f829e862b6644b15b491ea4c"
+            },
+            "decodedJobLog": {
+              "bytes": 3049267,
+              "sha256": "2de2717ffe97a190c25e4fcdf6d258b8ff943b6c2d1611cc98e2d37d2745d557",
+              "encoding": "UTF-8 with retained BOM/newlines; not a ZIP digest"
+            }
+          }
+        },
+        {
+          "runtime": "Node 24 compatibility",
+          "workflowRunId": 45835780809,
+          "workflowRunAttempt": 1,
+          "workflowPath": ".github/workflows/node24-compatibility.yml",
+          "jobId": 139964135914,
+          "jobName": "Node.js 24 compatibility",
+          "event": "push",
+          "branch": "main",
+          "providerRunHead": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+          "providerJobHead": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+          "executedCheckoutRevision": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+          "executedTree": "9de2f712337d60aa459367de408ac20c2d198a23",
+          "conclusion": "success",
+          "completedAt": "2026-11-26T14:11:05Z",
+          "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45835780809/attempts/1",
+          "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45835780809/job/139964135914",
+          "currentTests": {
+            "total": 5807,
+            "passed": 5807,
+            "failed": 0,
+            "skipped": 0,
+            "cancelled": 0,
+            "todo": 0
+          },
+          "frozenTests": {
+            "total": 9,
+            "passed": 9,
+            "failed": 0
+          },
+          "mandatoryIdentities": 8,
+          "contractExceptions": [],
+          "previouslyFailingTests": "All three exact initial A failures passed on the actual merged prerequisite main.",
+          "metadataEvidence": "Exact completed main run and job metadata independently retrieved; checkout, counts and decoded log hashes supplied by the assigned native-CI observer from its retained raw logs.",
+          "rawDigests": {
+            "run": {
+              "bytes": 13430,
+              "sha256": "a05490dbe24977dfdbf6f180301b6af2d8c513658896cb1767c4d43050f0988b"
+            },
+            "jobs": {
+              "bytes": 3411,
+              "sha256": "af0e156c3dd696728ae5b07000026e78dade1711b0b80fb95a927d87e6cc6863"
+            },
+            "decodedJobLog": {
+              "bytes": 3050393,
+              "sha256": "cefa9d907e0ac55bd28e2b5c0059e5c06b5135c185c5d760c18e99d74a9491d7",
+              "encoding": "UTF-8 with retained BOM/newlines; not a ZIP digest"
+            }
+          }
+        }
+      ]
+    },
+    "plannedFinalParents": {
+      "firstParent": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+      "secondParent": "57475ca38f1fd1f337d01d18fcb304ca790c414f"
+    },
+    "initialFailuresPreserved": "The original A failure remains recorded above. The fixture repair and both runtime lanes passed on PR 433 and on its actual merged main; this does not assert that final B has executed."
+  },
+  "localPreparation": {
+    "initialDigestPreparation": {
+      "officialModuleExecution": false,
+      "officialSchemaLifecycleAppendOnlyValidationExecuted": false,
+      "digestMethod": "The unchanged canonicalJson, digest, cohortRecordDigest and cohortEventDigest function definitions were read from the exact owner module and evaluated in the tool JavaScript runtime with a UTF-8 SHA-256 compatibility backend. The full Node module and its validators were not imported or executed.",
+      "ownerHelper": {
+        "revision": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+        "path": "scripts/docs-cohort-policy.mjs",
+        "blob": "ac9576c36f4f2d2919fcebab2643809b5d2e45cc",
+        "sha256": "sha256:2b97617b5c8e056dffb03d9285e394a5c7f67c72ffe26cf5781b962929e9b560"
+      },
+      "priorDigestReproduction": {
+        "records": 45,
+        "events": 187,
+        "allMatched": true
+      },
+      "preservedAExistingBytePrefix": true,
+      "newEventDigestsReproduced": true
+    },
+    "subsequentOfficialRegistryValidation": {
+      "result": "PASS",
+      "exitCode": 0,
+      "source": "The coordinating worker executed the byte-identical owner module under actual Node 26.11.1 and retained these results. The preparer read the proof, dependency proof and runner and checked all three exact byte digests without rerunning the validation.",
+      "validationProof": {
+        "result": "PASS",
+        "node": "v26.11.1",
+        "execution": "Byte-identical official owner module with normal isolated Ajv install; all five dependency versions and SRIs matched the unchanged Central pnpm lock before execution. No Foundation or compiler was executed.",
+        "sourceRevision": "8dd07c9fbf3cdb8ba3823d568114afd85f74c790",
+        "helperBlob": "ac9576c36f4f2d2919fcebab2643809b5d2e45cc",
+        "helperSha256": "2b97617b5c8e056dffb03d9285e394a5c7f67c72ffe26cf5781b962929e9b560",
+        "schemaSha256": "ea719a83bdc805701c3f3b89db6077e933196d6ad8332acd32c0d4c3115e330a",
+        "registrySha256": "1beb265e36593836f3bf1a06d3df2d9989403e8e457c8b1f70bb55c25885bab4",
+        "baseToBAppendOnly": true,
+        "aToBAppendOnly": true,
+        "schemaLifecycleValid": true,
+        "recordDigests": 45,
+        "eventDigests": 189,
+        "state": "QUALIFIED",
+        "efSelectable": true,
+        "unrelatedRepositoryRejected": true,
+        "aBytesExactlyReproducedAfterRemovingTwoEvents": true,
+        "inputPreserved": true,
+        "fullRepositoryCheckClaimed": false
+      },
+      "dependencyProof": {
+        "source": "Central F unchanged pnpm lock",
+        "dependencies": [
+          {
+            "name": "ajv",
+            "version": "8.20.0",
+            "integrity": "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="
+          },
+          {
+            "name": "fast-deep-equal",
+            "version": "3.1.3",
+            "integrity": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q=="
+          },
+          {
+            "name": "fast-uri",
+            "version": "3.1.5",
+            "integrity": "sha512-gHwA1O9LDIcKunMKhObS/HimwtehO1nPUECKAu5TpKgaO19fcWEl4bliWe1jWxVFvIXztJjjQ4L8XQ1EU9f7Jw=="
+          },
+          {
+            "name": "json-schema-traverse",
+            "version": "1.0.0",
+            "integrity": "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="
+          },
+          {
+            "name": "require-from-string",
+            "version": "2.0.2",
+            "integrity": "sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw=="
+          }
+        ],
+        "helperSha256": "2b97617b5c8e056dffb03d9285e394a5c7f67c72ffe26cf5781b962929e9b560"
+      },
+      "evidenceFiles": [
+        {
+          "name": "validation-proof.json",
+          "bytes": 996,
+          "sha256": "17f9de3ab04d91a527612026a8e3496e546e6b6f6c815a57b70231ecf904bd77"
+        },
+        {
+          "name": "dependency-proof.json",
+          "bytes": 1094,
+          "sha256": "ebf41abc1be78a192c89e6826d2398d0fdcf4d61bc671837b019018fa094f4ec"
+        },
+        {
+          "name": "validate-b.mjs",
+          "bytes": 3510,
+          "sha256": "8b8feeeb2e5e0f0c7449e7c00b39ab535cbe89c5fcab811b6fd015c1f368b623"
+        }
+      ],
+      "scope": "Literal owner validateDocsQualifiedCohorts and assertDocsCohortAppendOnly exports validated the unchanged B registry against F and A, with all record/event digests and the named repository-selection checks. This is a focused registry validation, not a full local repository check or final B hosted acceptance."
+    }
+  },
+  "canaryExecuted": false,
+  "consumerFinalChecksCompleted": false,
+  "defaultBranchDeliveryClaimed": false,
+  "finalCandidateChecksCompleted": false,
+  "pending": [
+    "Independent final-source review and all ordinary final B native and base-owned trusted live checks remain required before merge.",
+    "The EF desired-only policy change and actual published-controller consumer transition are later separate steps; no consumer or CANARY success is claimed."
+  ]
+}
