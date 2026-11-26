@@ -135,3 +135,5 @@ interaction workflow and pins both `uses` and `runtime_ref` to the same immutabl
 release commit. It preserves organization event filters, discussion variables,
 and secret mappings without copying checkout, setup, or runtime steps.
 Organization-wide community health, repository policy, and dependency automation configuration.
+
+<!-- Qualification fixture: installed runtime admission v4 positive, 2026-11-26. Never merge. -->
