@@ -493,6 +493,49 @@ void test("B304 archive verification shares native proof but creates no authorit
   );
 });
 
+void test("B304 retained archive and fixture bind actual run endpoints", async () => {
+  const f = fixture();
+  f.setAuthority(encoded({ schema_version: 1, authorization: null }));
+  const readRun = f.adapters.getWorkflowRun;
+  // These independently retained normal-run responses differ from attempt metadata.
+  f.adapters.getWorkflowRun = async (repository, id) => {
+    const run = mapping(await readRun(repository, id));
+    return id === RUN
+      ? { ...run, created_at: "2026-11-25T23:47:44Z" }
+      : { ...run, updated_at: "2026-11-26T09:44:47Z" };
+  };
+  for (const proofBytes of [
+    readFileSync(new URL(B304_RECOVERY_PROOF_PATH, ROOT)),
+    encoded(f.proof),
+  ]) {
+    const result = await verifyB304IncidentArchive({ ...archiveInput(f), proofBytes }, f.adapters);
+    assert.deepEqual(result, {
+      classification: "inert-b304-registry-incident",
+      proof_blob: blob(proofBytes),
+      source_head: HEAD,
+      semantics: "unverified",
+      qualification: "unverified",
+      capability_created: false,
+    });
+  }
+  assert.equal(await prepareB304AdmissionRecovery(f.input), undefined);
+});
+
+void test("B304 rejects attempt metadata substituted for current or nightly run evidence", async () => {
+  for (const [runId, field, attemptValue] of [
+    [RUN, "created_at", "2026-11-26T16:05:21Z"],
+    [45792972738, "updated_at", "2026-11-26T09:44:48Z"],
+  ] as const) {
+    await refusal((f) => {
+      const readRun = f.adapters.getWorkflowRun;
+      f.adapters.getWorkflowRun = async (repository, id) => {
+        const run = await readRun(repository, id);
+        return id === runId ? { ...mapping(run), [field]: attemptValue } : run;
+      };
+    }, /entire independently read native census/u);
+  }
+});
+
 void test("B304 installation requires prior source and archived proof yet creates no operation capability", async () => {
   const f = fixture();
   const candidate = stagingInput(f);

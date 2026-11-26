@@ -27,13 +27,35 @@ The [inert archive](../governance/evidence/docs-b304-registry-recovery/runtime-2
 binds eight immutable Central Git inputs, three unchanged Runtime file preimages,
 all 62 observed checks, three run records, four jobs in each canonical attempt,
 and four complete log digests. Its Git blob is
-`2ec1dd73094608e9b65bb5aa1a29d8f86a2b5271`. These are historical observations,
+`dba83124c585eb6f31a3da8020f9744606e8f493`. These are historical observations,
 not a current grant or live qualification. The canonical
 [attempt 1](https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/attempts/1)
 succeeded; [attempt 2](https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/attempts/2)
 failed before consumer qualification or semantic execution. The successful
 [nightly run](https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/attempts/1)
 remains in the complete census.
+
+### Run metadata correction before activation
+
+The proposed archive now matches the run endpoints used by the unchanged
+production verifier. For current run
+[45724048832](https://api.github.com/repos/agent-teams-ai/agent-runtime/actions/runs/45724048832),
+`created_at` is `2026-11-25T23:47:44Z`; the separate attempt-2 endpoint
+reports `2026-11-26T16:05:21Z`. For the
+[nightly run](https://api.github.com/repos/agent-teams-ai/agent-runtime/actions/runs/45792972738),
+`updated_at` is `2026-11-26T09:44:47Z`; its attempt-1 endpoint reports
+`2026-11-26T09:44:48Z`. The historical canonical observation continues to
+use its explicit attempt-1 endpoint.
+
+The earlier proposed archive, blob
+`2ec1dd73094608e9b65bb5aa1a29d8f86a2b5271`, remains immutable in retained
+source history. This correction precedes any authorization and changes only
+those two metadata fields and the corresponding test fixture. All 62 checks,
+both four-job sets and their steps, referenced workflows, source inputs, parser
+errors and four raw log digests remain unchanged. Regression tests verify the
+retained archive through the original proof kernel and refuse substitution of
+the attempt metadata. No production endpoint, verifier rule or authority is
+changed by this correction.
 
 Every verification rereads the whole census and source. Added, missing, altered
 or pending checks, a different attempt, a changed head, an independent failure,
