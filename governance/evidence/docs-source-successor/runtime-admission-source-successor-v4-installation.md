@@ -2,12 +2,11 @@
 
 Preparation refresh: 2026-11-26 Europe/Kiev
 
-Status: Preparation draft only. Current ordinary hosted content checks are recorded
-below. No dedicated source lock, canonical source publication, protected source
-qualification, finite merge, caller installation or owner grant is claimed here.
-This file may be retained on an ordinary review branch, but it is not an observed
-installation snapshot and is not ready for publication as one. Replace pending observations with authenticated real receipts before the
-three-file installation; do not fill them with synthetic identifiers.
+Status: Proposed installation snapshot. All source, canary, finite-target and
+temporary predecessor-restoration prerequisites for the ordinary three-file
+installation are observed below. Actual caller installation, installed-main
+canaries, permanent v4 enforcement and owner grants remain future observations.
+This snapshot does not claim that the three files are already installed on main.
 
 ## Known reviewed coordinates
 
@@ -18,7 +17,8 @@ three-file installation; do not fill them with synthetic identifiers.
 | Ordinary preparation ref      | `refs/heads/review/native-owner-admission-v4-20261125`           |
 | Reviewed source tree          | `e762ed1328421970e92acc5d3639f7235bbbcd04`                       |
 | Source parents                | `0b91687934938299c379a05f300e7fda915a5a9b`, `9dff206369649d9eb7a76edc1943461fde837739` |
-| Intended canonical source ref | `refs/heads/governance/runtime-admission-source-successor-v4`    |
+| Canonical source ref          | `refs/heads/governance/runtime-admission-source-successor-v4`    |
+| Dedicated source lock         | `28123607`, created 2026-11-26 00:34:21 UTC before publication |
 | Source workflow               | `.github/workflows/runtime-admission-source-successor-v4.yml`    |
 | Source context                | `runtime-admission-source-successor-v4`                          |
 | Installed predecessor         | `6863c4b6e9f17b3a668e0afb9ff33cb9046788d0`, lock `26268325`      |
@@ -27,6 +27,7 @@ three-file installation; do not fill them with synthetic identifiers.
 | Target base tree              | `7a1576f050af70132329a7d241f1921fa12d855d`                       |
 | Target head                   | `9dff206369649d9eb7a76edc1943461fde837739`                       |
 | Target tree                   | `fd7d6388cabf8cb86284478213541e66b75bdda9`                       |
+| Actual finite merge / installation base | `e35df6a3fcf4d5e33d0f79b5b27c3a3e454b5d56`, same reviewed policy tree |
 
 The source-only artifact has 17 changed files relative to its real target-head
 parent: ten owned source/configuration/test files and seven byte-identical frozen
@@ -71,8 +72,8 @@ Every run passed the prescribed frozen root install, isolated Renovate install,
 managed native prerequisite build and full `pnpm check`. For S, the actual
 ordinary strict tooling typecheck included both v4 source and test files; compiler
 metadata satisfied the 7.0.2 floor. The three-commit substitution regression
-passed in both source runs. The source workflow's dedicated canonical
-qualification is a separate pending observation.
+passed in both source runs. Dedicated canonical qualification is recorded
+separately below; ordinary content checks were not used as a substitute.
 
 The policy runs checked out synthetic commit
 `0095ee86e1c7fae9eebc741e10b4aa6aec282344`, with parents
@@ -92,14 +93,120 @@ was closed without merge after its launched runs were terminal. Its two current
 ordinary content runs succeeded as recorded above. Legacy protected-source
 rejections remain failures and do not establish current source admission.
 
-The owner's source-lock UI submission reached GitHub Confirm access and did not
-complete. No new v4 source lock or canonical ref was created, and existing
-rules were not changed in this attempt. Authentication and lock creation remain
-prerequisites; no canonical source may be published before the exact lock is
-created and verified. Before that publication, freshly read actual main, PR423
-head/commits/files, source and preparation refs, and the complete rules inventory.
-If any finite coordinate moved, rebind and review before immutable publication;
-these current passes do not qualify a later tuple.
+The earlier source-lock UI submission reached GitHub Confirm access and did not
+complete. No new source lock or canonical ref was created in that earlier
+attempt, and existing rules were unchanged. This remains historical evidence;
+it is no longer the current authentication or lock-creation blocker.
+
+## Actual source publication and qualification
+
+Repository-owned lock `28123607` was created at 2026-11-26 00:34:21 UTC and
+read back before canonical publication. It is active and covers exactly
+`refs/heads/governance/runtime-admission-source-successor-v4`, with no exclusions
+or bypass actors and with update, deletion and non-fast-forward restrictions.
+There is no fetch-and-merge exception. The canonical ref was published at
+reviewed S and read back unchanged, with the branch protected. No predecessor
+source or lock was rewritten.
+
+The genuine canonical source push
+[45730526165](https://github.com/agent-teams-ai/.github/actions/runs/45730526165),
+attempt 1, was created at 2026-11-26 00:41:31 UTC for S on the canonical source
+branch. Its [qualify job 139611107577](https://github.com/agent-teams-ai/.github/actions/runs/45730526165/job/139611107577),
+[source job 139612302756](https://github.com/agent-teams-ai/.github/actions/runs/45730526165/job/139612302756)
+and [publish job 139612703099](https://github.com/agent-teams-ai/.github/actions/runs/45730526165/job/139612703099)
+all completed successfully. The actual qualifier passed 70/70 dedicated,
+5939/5939 current and 9/9 frozen tests, without failures, cancellations or skips.
+
+At 00:46:35 UTC the publisher wrote status `59928307464`,
+`runtime-admission-source-successor-v4: success`, on exact policy head
+`9dff206369649d9eb7a76edc1943461fde837739`, bound to that run and attempt 1.
+This source-owned status was inspected separately from the current required
+source set. It did not by itself authorize retiring v2 or merging the policy.
+
+## Actual source canaries and required blocking
+
+The generated canary caller at
+`.github/workflows/runtime-admission-source-v4-canary.yml` used immutable S.
+Both source-canary runs were real push executions, attempt 1, with actor
+`777genius`, and qualified against base
+`755c8515a5d106402a7e9e2cff621fb1fdc855cf`.
+
+| Canary | Actual target and run | Outcome |
+| --- | --- | --- |
+| Positive [#426](https://github.com/agent-teams-ai/.github/pull/426), pull ID `5501544058` | Head `5981b02a8e85222d18364395ce7abaddcef31dd0`; [45731268148](https://github.com/agent-teams-ai/.github/actions/runs/45731268148), completed 00:53:03 UTC | Qualify `139613571026`, source `139615183118` (ordinary noop), publish `139615434859`: SUCCESS. Status `59928628449`: v4 success |
+| Negative [#427](https://github.com/agent-teams-ai/.github/pull/427), pull ID `5501550539` | Head `1daf0333bde7438a883b8656440c39a484ba8010`; [45731273621](https://github.com/agent-teams-ai/.github/actions/runs/45731273621), completed 00:57:12 UTC | Qualify `139613591777`: SUCCESS. Source `139616851104` and publisher `139617081919`: expected FAILURE. Status `59928839075`: v4 failure |
+
+Each canary qualifier passed 70 dedicated, 5939 current and 9 frozen tests with
+no failures or skips. The negative source log explicitly reports
+`Protected input changed: governance/commit-author-identity.json`.
+The current-attempt publisher retained failure; that red run is the measured
+rejection and is not relabelled as a successful workflow.
+
+After the additive bridge below, the unchanged negative head was observed in
+GitHub with both v4 failure and v2 failure marked Required and the Squash merge
+control disabled. API readback separately recorded an open, Ready, unmerged PR,
+`mergeable: true` (no textual conflict) and `mergeable_state: blocked`.
+The v4 context was therefore required during the blocking observation;
+an optional negative result alone was not treated as this proof. Neither
+source canary was merged. Positive #426 was closed without merge at
+2026-11-26 01:05:45 UTC; negative #427 at 01:05:47 UTC. Their receipts retain
+the original qualified base and heads.
+
+## Finite protection transition and actual policy merge
+
+The owner-full readbacks retained repository-owned active main rule
+`19979783` and identity rule `24363205`, default-branch scope with no
+exclusions, empty bypass lists, strict status checks and
+`do_not_enforce_on_create: false`. All status contexts remained bound to
+App `15368`. The non-source main contexts remained exactly `check`,
+`trusted-admission-authority-evolution-v1`, `trusted-admission-evidence`
+and `trusted-validation`; the identity context remained `commit-author-identity`.
+
+Deletion, non-fast-forward and linear-history restrictions, squash-only PR
+delivery, zero required approvals, stale-review dismissal, required thread
+resolution, no code-owner or last-push approval, no additional required reviewers,
+disabled dismissal restriction and the unattributed-change approval protection
+remained unchanged.
+
+| Phase | Actual UTC ruleset update | Required source contexts and observation |
+| --- | --- | --- |
+| First additive bridge | 2026-11-26 00:59:20.707 | v2 and v4 together; only v4/App15368 added, identity unchanged; same negative head blocked with v4 Required |
+| Finite target | 2026-11-26 01:03:04.817 | v4 only; only v2 retired after the bridge proof, other fields unchanged |
+| Temporary restore bridge | 2026-11-26 01:12:26.207 | v4 and v2 together; only v2/App15368 restored, all other fields retained |
+| Restored ordinary predecessor | 2026-11-26 01:13:08.289 | v2 only; only temporary v4 removed, ordinary installation predecessor restored |
+
+Complete owner-full finite, restore and installation readbacks were checked by
+the actual source-owned `planProtectionTransition` implementation. Each phase
+retained identity rule `24363205` unchanged and both empty bypass lists; the
+actual reader response remained `current_user_can_bypass: never`. The source
+lock also retained that response, active enforcement, exact ref and no bypass.
+Canonical S remained protected and unchanged. During both restoration
+observations, main remained at actual merge M.
+No owner grant was installed during these temporary source transitions.
+
+With all actual current required checks successful, PR423 merged through the
+ordinary protected squash route, without bypass, at 2026-11-26 01:04:22 UTC:
+[`e35df6a3fcf4d5e33d0f79b5b27c3a3e454b5d56`](https://github.com/agent-teams-ai/.github/commit/e35df6a3fcf4d5e33d0f79b5b27c3a3e454b5d56).
+Its single parent is `755c8515a5d106402a7e9e2cff621fb1fdc855cf`;
+its tree is exactly reviewed policy tree
+`fd7d6388cabf8cb86284478213541e66b75bdda9`.
+Main was read back at that commit. All five reviewed policy blobs, the complete
+supplied merge message and owner attribution were independently verified.
+
+Actual author: `Илия <iliyazelenkog@gmail.com>`, associated with `777genius`.
+The permitted technical squash committer is
+`GitHub <noreply@github.com>`, account `web-flow`.
+No source, caller, canary or other policy file entered the finite merge.
+
+| Actual merge validation | Run / job | Observed result |
+| --- | --- | --- |
+| Node 26.11.1 full CI | [45733204616](https://github.com/agent-teams-ai/.github/actions/runs/45733204616), job `139620049142`, attempt 1 | SUCCESS; 5807/5807 current + 9/9 frozen; zero failures/cancellations/skips/todo |
+| Node 24.21.0 full compatibility | [45733204528](https://github.com/agent-teams-ai/.github/actions/runs/45733204528), job `139620048644`, attempt 1 | SUCCESS; 5807/5807 current + 9/9 frozen; zero failures/cancellations/skips/todo |
+
+Both jobs completed the frozen install, isolated Renovate installation, managed
+native prerequisite build and full `pnpm check`. Actual checkout logs name M,
+not only run metadata. These are real postmerge observations and do not install
+the three files or qualify their later PR.
 
 ## Historical preparation at source 0b916879
 
@@ -178,16 +285,16 @@ installation or any owner grant.
 
 | Observation                                                                  | Actual evidence |
 | ---------------------------------------------------------------------------- | --------------- |
-| Dedicated new lock ID and owner-full readback before canonical publication   | Not observed    |
-| First canonical source ref publication at reviewed S                         | Not observed    |
-| Genuine source push run, attempt and successful qualify/source/publish jobs  | Not observed    |
-| Source-owned success status on exact PR423 head                              | Not observed    |
-| Source-defined positive canary PR/head/base/run/attempt/result               | Not observed    |
-| Source-defined rejecting canary PR/head/base/run/attempt/result              | Not observed    |
-| Required negative blocking proof during v2 plus v4 bridge                    | Not observed    |
-| Complete main and identity ruleset readbacks for finite add/retire           | Not observed    |
-| Actual normal PR423 merge commit/tree/attribution and postmerge checks       | Not observed    |
-| Complete restore/install readbacks returning to the installed v2 requirement | Not observed    |
+| Dedicated new lock ID and owner-full readback before canonical publication | Lock `28123607`; active, exact canonical ref, no bypass; created and read back before source publication |
+| First canonical source ref publication at reviewed S | Canonical ref read back at `72fa7a8af02e9ba7904c912f0bbb457254381002`, protected; source tree `e762ed1328421970e92acc5d3639f7235bbbcd04` |
+| Genuine source push run, attempt and successful qualify/source/publish jobs | [45730526165](https://github.com/agent-teams-ai/.github/actions/runs/45730526165), attempt 1, exact S; jobs `139611107577`, `139612302756`, `139612703099` SUCCESS |
+| Source-owned success status on exact PR423 head | Status `59928307464`, v4 success on exact `9dff2063...`, source push attempt 1 |
+| Source-defined positive canary PR/head/base/run/attempt/result | #426 / `5981b02a...` / `755c8515...` / [45731268148](https://github.com/agent-teams-ai/.github/actions/runs/45731268148) / attempt 1 / SUCCESS; complete coordinates and jobs above |
+| Source-defined rejecting canary PR/head/base/run/attempt/result | #427 / `1daf0333...` / `755c8515...` / [45731273621](https://github.com/agent-teams-ai/.github/actions/runs/45731273621) / attempt 1 / expected protected-input FAILURE |
+| Required negative blocking proof during v2 plus v4 bridge | Same #427 head `1daf0333...`; v4 failure marked Required, Squash merge disabled, API state blocked after 00:59:20.707 UTC bridge |
+| Complete main and identity ruleset readbacks for finite add/retire | Owner-full bridge and finite observations at 00:59:20.707 / 01:03:04.817 UTC; only source-context additions/removal, all other fields retained |
+| Actual normal PR423 merge commit/tree/attribution and postmerge checks | Actual M `e35df6a3fcf4d5e33d0f79b5b27c3a3e454b5d56`, exact reviewed tree/parent/owner/message; both named postmerge full checks SUCCESS as detailed above |
+| Complete restore/install readbacks returning to the installed v2 requirement | Owner-full restore at 01:12:26.207 UTC (v4+v2), then installation phase at 01:13:08.289 UTC (v2 only); actual source transition planner PASS; main/identity/source locks and reader authority retained |
 
 Qualification canaries are never merged. An optional failed check proves rejection
 only; the same negative head must be observed with the successor required and
