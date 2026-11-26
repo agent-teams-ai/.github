@@ -1,0 +1,688 @@
+{
+  "evidenceClass": "preparatory-published-cohort-candidate",
+  "qualified": false,
+  "assembledAt": "2026-11-26T13:24:44.551Z",
+  "cohortId": "docs-2026-11-26-stable33",
+  "state": "PUBLISHED_UNQUALIFIED",
+  "base": {
+    "revision": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+    "tree": "9f0217f6978b615ef02dba05edf01e0c957635c4",
+    "registryDigest": "sha256:442d6aaddc870ce6bea0c95674b0b1752c5b94c55d918e775b34f78f6fba2f49"
+  },
+  "observedCollectorRun": {
+    "id": 45827542992,
+    "name": "Prepare EF Docs Cohort Evidence",
+    "node_id": "WFR_kwLOT3iDsc8AAAAKq4jP0A",
+    "head_branch": "test/ef-cohort-publication-20261126",
+    "head_sha": "7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04",
+    "path": ".github/workflows/prepare-ef-docs-cohort.yml",
+    "display_title": "test(docs): retain bounded collector HTTP failure facts",
+    "run_number": 3,
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "workflow_id": 430897755,
+    "check_suite_id": 123987804604,
+    "check_suite_node_id": "CS_kwDOT3iDsc8AAAAc3j_BvA",
+    "url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/runs/45827542992",
+    "html_url": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45827542992",
+    "pull_requests": [],
+    "created_at": "2026-11-26T13:16:25Z",
+    "updated_at": "2026-11-26T13:17:05Z",
+    "actor": {
+      "login": "777genius",
+      "id": 13103045,
+      "node_id": "MDQ6VXNlcjEzMTAzMDQ1",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13103045?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/777genius",
+      "html_url": "https://github.com/777genius",
+      "followers_url": "https://api.github.com/users/777genius/followers",
+      "following_url": "https://api.github.com/users/777genius/following{/other_user}",
+      "gists_url": "https://api.github.com/users/777genius/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/777genius/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/777genius/subscriptions",
+      "organizations_url": "https://api.github.com/users/777genius/orgs",
+      "repos_url": "https://api.github.com/users/777genius/repos",
+      "events_url": "https://api.github.com/users/777genius/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/777genius/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "run_attempt": 1,
+    "referenced_workflows": [],
+    "run_started_at": "2026-11-26T13:16:25Z",
+    "triggering_actor": {
+      "login": "777genius",
+      "id": 13103045,
+      "node_id": "MDQ6VXNlcjEzMTAzMDQ1",
+      "avatar_url": "https://avatars.githubusercontent.com/u/13103045?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/777genius",
+      "html_url": "https://github.com/777genius",
+      "followers_url": "https://api.github.com/users/777genius/followers",
+      "following_url": "https://api.github.com/users/777genius/following{/other_user}",
+      "gists_url": "https://api.github.com/users/777genius/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/777genius/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/777genius/subscriptions",
+      "organizations_url": "https://api.github.com/users/777genius/orgs",
+      "repos_url": "https://api.github.com/users/777genius/repos",
+      "events_url": "https://api.github.com/users/777genius/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/777genius/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "jobs_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/runs/45827542992/attempts/1/jobs",
+    "logs_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/runs/45827542992/attempts/1/logs",
+    "check_suite_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/check-suites/123987804604",
+    "artifacts_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/runs/45827542992/artifacts",
+    "cancel_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/runs/45827542992/cancel",
+    "rerun_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/runs/45827542992/rerun",
+    "previous_attempt_url": null,
+    "workflow_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/workflows/430897755",
+    "head_commit": {
+      "id": "7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04",
+      "tree_id": "519d6d5b68a0ec2135b25cd4d356d1b4c89b5620",
+      "message": "test(docs): retain bounded collector HTTP failure facts\n\nRecord the failed public GitHub GET status, body presence and four bounded\npublic diagnostic headers in the temporary evidence artifact. Preserve the\nrequest, anonymous read-only transport, timeout, size bound and every package\nprovenance and attestation requirement.\n\nThis diagnoses the first consumer-repository response rejected by collector\nrun 45825367988. It does not infer that response's status or alter admission.",
+      "timestamp": "2026-11-26T13:16:03Z",
+      "author": {
+        "name": "Илия",
+        "email": "iliyazelenkog@gmail.com"
+      },
+      "committer": {
+        "name": "Илия",
+        "email": "iliyazelenkog@gmail.com"
+      }
+    },
+    "repository": {
+      "id": 1333298097,
+      "node_id": "R_kgDOT3iDsQ",
+      "name": "extension-foundation",
+      "full_name": "agent-teams-ai/extension-foundation",
+      "private": false,
+      "owner": {
+        "login": "agent-teams-ai",
+        "id": 280712041,
+        "node_id": "O_kgDOELtTaQ",
+        "avatar_url": "https://avatars.githubusercontent.com/u/280712041?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/agent-teams-ai",
+        "html_url": "https://github.com/agent-teams-ai",
+        "followers_url": "https://api.github.com/users/agent-teams-ai/followers",
+        "following_url": "https://api.github.com/users/agent-teams-ai/following{/other_user}",
+        "gists_url": "https://api.github.com/users/agent-teams-ai/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/agent-teams-ai/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/agent-teams-ai/subscriptions",
+        "organizations_url": "https://api.github.com/users/agent-teams-ai/orgs",
+        "repos_url": "https://api.github.com/users/agent-teams-ai/repos",
+        "events_url": "https://api.github.com/users/agent-teams-ai/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/agent-teams-ai/received_events",
+        "type": "Organization",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/agent-teams-ai/extension-foundation",
+      "description": "Product-neutral extension contracts, lifecycle primitives, OCI distribution, and conformance tooling for Agent Teams products.",
+      "fork": false,
+      "url": "https://api.github.com/repos/agent-teams-ai/extension-foundation",
+      "forks_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/forks",
+      "keys_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/teams",
+      "hooks_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/hooks",
+      "issue_events_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/events",
+      "assignees_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/tags",
+      "blobs_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/languages",
+      "stargazers_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/stargazers",
+      "contributors_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/contributors",
+      "subscribers_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/subscribers",
+      "subscription_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/subscription",
+      "commits_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/merges",
+      "archive_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/downloads",
+      "issues_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/labels{/name}",
+      "releases_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/deployments"
+    },
+    "head_repository": {
+      "id": 1333298097,
+      "node_id": "R_kgDOT3iDsQ",
+      "name": "extension-foundation",
+      "full_name": "agent-teams-ai/extension-foundation",
+      "private": false,
+      "owner": {
+        "login": "agent-teams-ai",
+        "id": 280712041,
+        "node_id": "O_kgDOELtTaQ",
+        "avatar_url": "https://avatars.githubusercontent.com/u/280712041?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/agent-teams-ai",
+        "html_url": "https://github.com/agent-teams-ai",
+        "followers_url": "https://api.github.com/users/agent-teams-ai/followers",
+        "following_url": "https://api.github.com/users/agent-teams-ai/following{/other_user}",
+        "gists_url": "https://api.github.com/users/agent-teams-ai/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/agent-teams-ai/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/agent-teams-ai/subscriptions",
+        "organizations_url": "https://api.github.com/users/agent-teams-ai/orgs",
+        "repos_url": "https://api.github.com/users/agent-teams-ai/repos",
+        "events_url": "https://api.github.com/users/agent-teams-ai/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/agent-teams-ai/received_events",
+        "type": "Organization",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/agent-teams-ai/extension-foundation",
+      "description": "Product-neutral extension contracts, lifecycle primitives, OCI distribution, and conformance tooling for Agent Teams products.",
+      "fork": false,
+      "url": "https://api.github.com/repos/agent-teams-ai/extension-foundation",
+      "forks_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/forks",
+      "keys_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/teams",
+      "hooks_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/hooks",
+      "issue_events_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/events",
+      "assignees_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/tags",
+      "blobs_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/languages",
+      "stargazers_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/stargazers",
+      "contributors_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/contributors",
+      "subscribers_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/subscribers",
+      "subscription_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/subscription",
+      "commits_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/merges",
+      "archive_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/downloads",
+      "issues_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/labels{/name}",
+      "releases_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/deployments"
+    }
+  },
+  "observedCollectorArtifact": {
+    "id": 15120867486,
+    "name": "ef-docs-cohort-candidate-7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04-45827542992-1",
+    "size_in_bytes": 155392,
+    "url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/artifacts/15120867486",
+    "archive_download_url": "https://api.github.com/repos/agent-teams-ai/extension-foundation/actions/artifacts/15120867486/zip",
+    "expired": false,
+    "created_at": "2026-11-26T13:17:01Z",
+    "expires_at": "2026-12-26T13:17:01Z",
+    "updated_at": "2026-11-26T13:17:01Z",
+    "digest": "sha256:6d06c07b089e265e7ecb3634ae0eeee2796e69e38b02a3210fc33d60b0e1167e",
+    "workflow_run": {
+      "id": 45827542992,
+      "repository_id": 1333298097,
+      "head_repository_id": 1333298097,
+      "head_branch": "test/ef-cohort-publication-20261126",
+      "head_sha": "7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04"
+    }
+  },
+  "invocation": {
+    "evidenceClass": "preparatory-published-cohort-candidate",
+    "qualified": false,
+    "repository": "agent-teams-ai/extension-foundation",
+    "repositoryId": 1333298097,
+    "sourceRevision": "7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04",
+    "branch": "refs/heads/test/ef-cohort-publication-20261126",
+    "cohortGeneration": 3,
+    "publicationPins": [
+      {
+        "name": "@agent-teams/repository-mutation",
+        "role": "transitive",
+        "version": "0.5.2",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/document-authoring",
+        "role": "transitive",
+        "version": "0.3.9",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "role": "direct",
+        "version": "0.6.9",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/docs-protocol-agent-teams",
+        "role": "direct",
+        "version": "0.7.1",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "role": "direct",
+        "version": "4.0.2",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      }
+    ],
+    "controllerRevision": "755c8515a5d106402a7e9e2cff621fb1fdc855cf",
+    "reusableWorkflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "755c8515a5d106402a7e9e2cff621fb1fdc855cf",
+      "blob_sha": "4097e816cf8725035c49c94e27308a6c66a0119b"
+    },
+    "runId": "45827542992",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/agent-teams-ai/extension-foundation/actions/runs/45827542992/attempts/1",
+    "startedAt": "2026-11-26T13:16:49.298Z",
+    "node": "26.11.1",
+    "pnpm": "11.20.0",
+    "npm": "11.20.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "collectorDigest": "sha256:1d1266b265a7b727400ad8b062e7e78001a02eb8ccb0e5e6c32536219f87f077",
+    "workflowDigest": "sha256:955258b5bf57e29e6e0195740cdc13accc00037ada3190fa52de9ad759ed0efc"
+  },
+  "result": {
+    "outcome": "collected",
+    "stage": "complete",
+    "qualified": false,
+    "completedAt": "2026-11-26T13:17:01.151Z"
+  },
+  "candidateInputDigest": "sha256:f0ad40aba1f8ddc3fa6b4a5a9b667882c2f2fe8a49ed9dab7a61591441470b6c",
+  "candidateInput": {
+    "evidenceClass": "preparatory-published-cohort-candidate",
+    "qualified": false,
+    "cohortGeneration": 3,
+    "publicationPins": [
+      {
+        "name": "@agent-teams/repository-mutation",
+        "role": "transitive",
+        "version": "0.5.2",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/document-authoring",
+        "role": "transitive",
+        "version": "0.3.9",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "role": "direct",
+        "version": "0.6.9",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/docs-protocol-agent-teams",
+        "role": "direct",
+        "version": "0.7.1",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      },
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "role": "direct",
+        "version": "4.0.2",
+        "sourceRevision": "da1868240b96113582b508b0c15341c477d6334b",
+        "sourceWorkflow": ".github/workflows/release.yml",
+        "runId": 45816094753,
+        "runAttempt": 1
+      }
+    ],
+    "packages": [
+      {
+        "name": "@agent-teams/repository-mutation",
+        "role": "transitive",
+        "version": "0.5.2",
+        "integrity": "sha512-eK/HsE/1qt+TXzrrbggXykZJXloFZfZD0ZlwdGbm2Jc9O6lAlhu7+w9BdSeryX/vCyMYWeRLv38S/7V717RPMg==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:19:37.492Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.5.2",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/document-authoring",
+        "role": "transitive",
+        "version": "0.3.9",
+        "integrity": "sha512-a6SOuytNOoKJVW+pp51AUMhrjzTvbYvro6nUuAFqmu0l0G63xkSAnhpwlaPJbHSbSBvoIawm8z+nL8OVMFIY3A==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:25:07.116Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.9",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "role": "direct",
+        "version": "0.6.9",
+        "integrity": "sha512-rZ7Ie43dmN+m8LjCdXt5iqOP5h41M/TWNFg7bwvV05/XuSJrJF4udBLXIReqqVfeqdoYrFNxPbTknKJ30N6aTA==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:26:37.182Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.9",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/docs-protocol-agent-teams",
+        "role": "direct",
+        "version": "0.7.1",
+        "integrity": "sha512-Kio0YA5lPu8xxDEoLxzEK+VHcsre6M+5vEhlCpew+lLjs3OXdu5elh/eLksxwYeY3TLOtte74zZn7c7oiBCwLw==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:34:25.801Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.7.1",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "role": "direct",
+        "version": "4.0.2",
+        "integrity": "sha512-OVnEi7aN/dQWpt5feF2gb92Nnic9YlXWeuTEf3tdDgyTEsVTs+lwiLHo1rS+ScdGnB+vK3WbkilnZiOJkHLJBQ==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:44:20.353Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@4.0.2",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      }
+    ],
+    "providerEvidenceDigests": {
+      "provenance/consumer-repository.json": "sha256:c4c3af362d0cd763191754f35a1545bf4217b48e7e091c422491ac3621941700",
+      "provenance/repository-mutation-run.json": "sha256:47141bb25aa34e6c3b71dd6ea19383ea5006d5bd092e6613118099a81a8e9551",
+      "provenance/document-authoring-run.json": "sha256:47141bb25aa34e6c3b71dd6ea19383ea5006d5bd092e6613118099a81a8e9551",
+      "provenance/docs-protocol-run.json": "sha256:47141bb25aa34e6c3b71dd6ea19383ea5006d5bd092e6613118099a81a8e9551",
+      "provenance/docs-protocol-agent-teams-run.json": "sha256:47141bb25aa34e6c3b71dd6ea19383ea5006d5bd092e6613118099a81a8e9551",
+      "provenance/engineering-foundation-run.json": "sha256:47141bb25aa34e6c3b71dd6ea19383ea5006d5bd092e6613118099a81a8e9551"
+    },
+    "controllerRevision": "755c8515a5d106402a7e9e2cff621fb1fdc855cf",
+    "reusableWorkflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "755c8515a5d106402a7e9e2cff621fb1fdc855cf",
+      "blob_sha": "4097e816cf8725035c49c94e27308a6c66a0119b"
+    },
+    "policyIdentity": {
+      "id": "agent-teams.docs-protocol-current-policy",
+      "version": "3.0.0",
+      "digest": "sha256:7af41f44a6e522b8919ace5f85499747215ddd1955199584c34046ec95c4b141"
+    },
+    "policySource": {
+      "repository": "agent-teams-ai/engineering-foundation",
+      "revision": "da1868240b96113582b508b0c15341c477d6334b",
+      "path": "architecture/foundation/docs-protocol-current-policy-v3.json",
+      "digest": "sha256:7af41f44a6e522b8919ace5f85499747215ddd1955199584c34046ec95c4b141"
+    },
+    "runtime": {
+      "selected_lane": "node-26-managed-qualified",
+      "node": ">=26.0.0 <27",
+      "pnpm": ">=11.17.0 <12",
+      "qualification_runtime": {
+        "node_version": "26.11.1",
+        "pnpm_version": "11.20.0",
+        "platform": "linux",
+        "architecture": "x64"
+      }
+    },
+    "runtimeClosure": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 88,
+      "projection_path": "governance/docs-runtime-closures/sha256-aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf.json",
+      "digest": "sha256:aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf"
+    },
+    "assetDigests": {
+      "package.json": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "package.json",
+        "bytes": 2219,
+        "digest": "sha256:9676e4a90a3e1ebd328eb9dd49512f9014e68e02f483df0f6b2295ff921522f9"
+      },
+      "skills/docs/SKILL.md": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "skills/docs/SKILL.md",
+        "bytes": 2094,
+        "digest": "sha256:a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5"
+      },
+      "assets/docs-protocol.yml": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/docs-protocol.yml",
+        "bytes": 247,
+        "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac"
+      },
+      "renderedCallerWorkflow": {
+        "repository": "agent-teams-ai/.github",
+        "repository_id": 1316243981,
+        "path": ".github/workflows/docs-protocol-check.yml",
+        "revision": "755c8515a5d106402a7e9e2cff621fb1fdc855cf",
+        "blob_sha": "4097e816cf8725035c49c94e27308a6c66a0119b",
+        "digest": "sha256:8db488e8603488a9ea50a98e937bc1fc0d15837e31e861dcd6770e197619fc5e"
+      },
+      "assets/catalog.json": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/catalog.json",
+        "bytes": 922,
+        "digest": "sha256:3ec380a1a6dd8534824ba82ff23affba993e19e9cb6b3c5e424ea9973ad686da"
+      },
+      "assets/transition-catalog.json": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/transition-catalog.json",
+        "bytes": 51997,
+        "digest": "sha256:605fad26bd2c836e0dcf7484910ee62ac3fba7963bc05c90f8a89f813b41cb4a"
+      },
+      "assets/runtime-policy.v1.json": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/runtime-policy.v1.json",
+        "bytes": 1620,
+        "digest": "sha256:8eddd8a818c918879d81e6b50be10646086dd2856fcb087bffb944a429972f3c"
+      },
+      "schemas/managed-runtime-policy/v1.schema.json": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "schemas/managed-runtime-policy/v1.schema.json",
+        "bytes": 1942,
+        "digest": "sha256:3dba03181cf863f6b3c88b9bd582ad7534ce3d7d2db7381f94c7053842248a83"
+      }
+    },
+    "verifiedSignaturesDigest": "sha256:c2fed1d7f9a84621064bc3c1bacafc1de5370c34b34a6eec8d652ed1b163b00b",
+    "canaryRepositories": [
+      {
+        "repository_id": 1333298097,
+        "repository": "agent-teams-ai/extension-foundation"
+      }
+    ]
+  },
+  "recordDigest": "sha256:7dc72dd4aa1039d9dcef7f151f8627d1527c7ea71a45932f912461052e1de623",
+  "eventDigest": "sha256:1dd8c943a42abf989d453ea588752345dd31442be4e3e3337a82d2a7cfdc07b0",
+  "inputDigests": {
+    "result.json": {
+      "bytes": 119,
+      "digest": "sha256:8f5ff5017a968d37f26ac7ea680014907320bb5f185e1b8a500de1971024933b"
+    },
+    "invocation.json": {
+      "bytes": 2646,
+      "digest": "sha256:3be75186e3fe1e013d4cf6587101cd996479ee550d47374e706654e36e3680a5"
+    },
+    "candidate-input.json": {
+      "bytes": 11170,
+      "digest": "sha256:f0ad40aba1f8ddc3fa6b4a5a9b667882c2f2fe8a49ed9dab7a61591441470b6c"
+    },
+    "candidate-input-digest.json": {
+      "bytes": 126,
+      "digest": "sha256:d645c0c6d39d26766b3c2108f190be45779f10848b6b7e8cdc1ee5ff73b5a995"
+    },
+    "observed-collector-run.json": {
+      "bytes": 15689,
+      "digest": "sha256:cc5243388ae1e6654eb58fcca28989f79f6851bbc94ca9d69e2d43b5f88c5652"
+    },
+    "observed-artifact.json": {
+      "bytes": 842,
+      "digest": "sha256:68761931a9ade7833b546b667f02c063f1d388e316a2e66d862853283f2a570f"
+    },
+    "publication-packages.json": {
+      "bytes": 4600,
+      "digest": "sha256:af4e76485163a6fc8d331c28be0e39eccd1debee05bffb95909e10a230fb5a81"
+    },
+    "packages.json": {
+      "bytes": 1578,
+      "digest": "sha256:514ea18fa13509d7f92169bdb46afd6fe61ef3a38bdb0f7fe9c362984f3440ae"
+    },
+    "verified-signatures.json": {
+      "bytes": 212440,
+      "digest": "sha256:c2fed1d7f9a84621064bc3c1bacafc1de5370c34b34a6eec8d652ed1b163b00b"
+    },
+    "runtime-closure-authority.json": {
+      "bytes": 387,
+      "digest": "sha256:98d8380e06f0ac30dd0732e02a50dcc9c4685e672bc0fcd7fda2e18a67273b9f"
+    },
+    "governance/docs-runtime-closures/sha256-aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf.json": {
+      "bytes": 28744,
+      "digest": "sha256:aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf"
+    },
+    "runtime-closure-evidence.json": {
+      "bytes": 42018,
+      "digest": "sha256:86d4798d8b3d1270649642678f3355e8e8925f5c924cc525b970772a4ef53dfe"
+    },
+    "provenance/adapter-policy-source.json": {
+      "bytes": 6226,
+      "digest": "sha256:7af41f44a6e522b8919ace5f85499747215ddd1955199584c34046ec95c4b141"
+    },
+    "asset-digests.json": {
+      "bytes": 2088,
+      "digest": "sha256:dd32557e488755ba14f933b70bc4d96f7ffb1a7fa371f1e94532236a60f63ab7"
+    },
+    "published-assets/rendered-docs-protocol.yml": {
+      "bytes": 262,
+      "digest": "sha256:8db488e8603488a9ea50a98e937bc1fc0d15837e31e861dcd6770e197619fc5e"
+    },
+    "published-assets/skills/docs/SKILL.md": {
+      "bytes": 2094,
+      "digest": "sha256:a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5"
+    },
+    "published-assets/assets/docs-protocol.yml": {
+      "bytes": 247,
+      "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac"
+    },
+    "published-assets/assets/catalog.json": {
+      "bytes": 922,
+      "digest": "sha256:3ec380a1a6dd8534824ba82ff23affba993e19e9cb6b3c5e424ea9973ad686da"
+    },
+    "published-assets/assets/transition-catalog.json": {
+      "bytes": 51997,
+      "digest": "sha256:605fad26bd2c836e0dcf7484910ee62ac3fba7963bc05c90f8a89f813b41cb4a"
+    }
+  },
+  "offlineValidation": {
+    "helper": {
+      "revision": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "path": "scripts/docs-cohort-policy.mjs",
+      "digest": "sha256:2b97617b5c8e056dffb03d9285e394a5c7f67c72ffe26cf5781b962929e9b560"
+    },
+    "schema": {
+      "revision": "7ad5abbf5a8dade79f91f3e6f06481070b966a9e",
+      "path": "governance/docs-qualified-cohorts.schema.json",
+      "digest": "sha256:ea719a83bdc805701c3f3b89db6077e933196d6ad8332acd32c0d4c3115e330a"
+    },
+    "closureReproduced": true,
+    "appendOnly": true,
+    "trustedQualificationPerformed": false,
+    "archiveAndExecutionVerification": "supplied separately by the caller; not performed by this assembler"
+  }
+}
