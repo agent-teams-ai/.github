@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.tooling.json",
+  "include": [
+    "scripts/runtime-admission-source-successor-v7.ts",
+    "scripts/runtime-admission-source-successor-v7.test.ts",
+    "scripts/runtime-admission-source-successor-v7-target.ts",
+    "scripts/runtime-admission-source-successor-v7-owners.ts",
+    "scripts/runtime-admission-source-successor-v7-owners.test.ts"
+  ]
+}

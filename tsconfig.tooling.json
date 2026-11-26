@@ -34,12 +34,22 @@
     "scripts/validate-renovate.ts",
     "scripts/validate-renovate.test.ts",
     "scripts/validate-renovate-abi.probe.ts",
+    "scripts/docs-b304-registry-incident.ts",
+    "scripts/docs-b304-registry-incident.test.ts",
+    "scripts/docs-b304-admission-integration.test.ts",
+    "scripts/docs-b304-recovery-staging.ts",
+    "scripts/docs-b304-recovery-staging.test.ts",
     "scripts/runtime-admission-source-successor-v2.ts",
     "scripts/runtime-admission-source-successor-v2.test.ts",
     "scripts/runtime-admission-source-successor-v4.ts",
     "scripts/runtime-admission-source-successor-v4.test.ts",
+    "scripts/runtime-admission-source-successor-v7.ts",
+    "scripts/runtime-admission-source-successor-v7.test.ts",
+    "scripts/runtime-admission-source-successor-v7-target.ts",
+    "scripts/runtime-admission-source-successor-v7-owners.ts",
+    "scripts/runtime-admission-source-successor-v7-owners.test.ts",
     "scripts/docs-quality-source-successor-v2.ts",
-    "scripts/docs-quality-source-successor-v3.ts",
-    "scripts/docs-quality-source-successor-v3-target.ts"
+    "scripts/docs-quality-source-successor-v3-target.ts",
+    "scripts/docs-quality-source-successor-v3.ts"
   ]
 }

@@ -9,7 +9,10 @@ import {
   auditRepositoryBootstrapConfigurations,
   loadRemoteBootstrapSource,
 } from "./repository-bootstrap-observation.ts";
-import { projectRepositoryRegistrations } from "./repository-registration.ts";
+import {
+  projectCurrentRepositoryInventory,
+  projectRepositoryRegistrations,
+} from "./repository-registration.ts";
 export {
   auditRepositoryBootstrapConfigurations,
   loadRemoteBootstrapSource,
@@ -84,8 +87,12 @@ export function repositoryInventoryDrift(liveRepositories, inventory, policy, re
   const live = new Map(
     liveRepositories.map((record) => [record.full_name, liveProjection(record)]),
   );
-  const { inventoryRecords: declaredRecords, docsRecords: policyRecords } =
-    projectRepositoryRegistrations(inventory, policy, registrations);
+  const { inventoryRecords, docsRecords: policyRecords } = projectRepositoryRegistrations(
+    inventory,
+    policy,
+    registrations,
+  );
+  const declaredRecords = projectCurrentRepositoryInventory(inventoryRecords, policyRecords);
   const declared = new Map(declaredRecords.map((record) => [record.repository, record]));
   const activePolicy = new Map(
     policyRecords

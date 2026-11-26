@@ -108,21 +108,16 @@ const RETAINED_AUTHORITY_SOURCES = [
     gitBlob: "767e4c4b530fdfad8356e299709be08f3237fdb0",
   },
   {
-    path: "scripts/docs-quality-source-successor-v3.ts",
-    gitBlob: "bd0072b49306a78069be10bbe34bacff5ac457cc",
-  },
-  {
     path: "scripts/docs-quality-source-successor-v3-target.ts",
     gitBlob: "f0b15b0ec460171a7b9a7b39d005cd897888634e",
   },
-];
-
-const FORMAT_RETAINED_AUTHORITY_SOURCES = [
   {
-    path: "scripts/verify-docs-admission-change.mjs",
-    gitBlob: "f3db341a5d9fc5ec74c9c3379153940db99177c0",
+    path: "scripts/docs-quality-source-successor-v3.ts",
+    gitBlob: "bd0072b49306a78069be10bbe34bacff5ac457cc",
   },
 ];
+
+const FORMAT_RETAINED_AUTHORITY_SOURCES = [];
 
 export function deriveFormatPaths(trackedPaths) {
   const source = trackedPaths.filter(
@@ -145,9 +140,11 @@ export function deriveFormatPaths(trackedPaths) {
       "docs/engineering-quality-profile.json",
       "docs/engineering-quality-source-policy.yaml",
       "docs/engineering-quality.md",
+      ".github/workflows/docs-admission-evidence.yml",
       ".github/workflows/docs-protocol-check.yml",
       "docs/governance/docs-gen3-current-policy-mapping.md",
       "governance/docs-protocol-policy-v2.schema.json",
+      "governance/docs-b304-registry-recovery.json",
     ]),
   ].toSorted((left, right) =>
     String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
@@ -484,23 +481,57 @@ export function assertQualityAdoption({
           "scripts/validate-renovate.ts",
           "scripts/validate-renovate.test.ts",
           "scripts/validate-renovate-abi.probe.ts",
+          "scripts/docs-b304-registry-incident.ts",
+          "scripts/docs-b304-registry-incident.test.ts",
+          "scripts/docs-b304-admission-integration.test.ts",
+          "scripts/docs-b304-recovery-staging.ts",
+          "scripts/docs-b304-recovery-staging.test.ts",
           "scripts/runtime-admission-source-successor-v2.ts",
           "scripts/runtime-admission-source-successor-v2.test.ts",
           "scripts/runtime-admission-source-successor-v4.ts",
           "scripts/runtime-admission-source-successor-v4.test.ts",
+          "scripts/runtime-admission-source-successor-v7.ts",
+          "scripts/runtime-admission-source-successor-v7.test.ts",
+          "scripts/runtime-admission-source-successor-v7-target.ts",
+          "scripts/runtime-admission-source-successor-v7-owners.ts",
+          "scripts/runtime-admission-source-successor-v7-owners.test.ts",
           "scripts/docs-quality-source-successor-v2.ts",
-          "scripts/docs-quality-source-successor-v3.ts",
           "scripts/docs-quality-source-successor-v3-target.ts",
+          "scripts/docs-quality-source-successor-v3.ts",
         ],
         compilerManifest: "stack-toolchain/toolchain-manifest.json",
       },
-      retainedAuthoritySources: RETAINED_AUTHORITY_SOURCES,
-      formatRetainedAuthoritySources: [
+      retainedAuthoritySources: [
         {
-          path: "scripts/verify-docs-admission-change.mjs",
-          gitBlob: "f3db341a5d9fc5ec74c9c3379153940db99177c0",
+          path: "scripts/check-docs-source-successor-v1.mts",
+          gitBlob: "36cb752a50b8a0d7f83c813ed17cec775cdd79bb",
+        },
+        {
+          path: "scripts/check-docs-source-successor-v1.test.mts",
+          gitBlob: "281032ebb0afecd5bb425f7f4018c99b20ee6635",
+        },
+        {
+          path: "scripts/check-docs-verifier-authority.mts",
+          gitBlob: "55c462acdc808bff8b032dce9819de48a02e5e3b",
+        },
+        {
+          path: "scripts/check-docs-verifier-authority.test.mts",
+          gitBlob: "c34697abc079e0a161fb3872a8a9acb07e951ded",
+        },
+        {
+          path: "scripts/docs-quality-source-successor-v2.ts",
+          gitBlob: "767e4c4b530fdfad8356e299709be08f3237fdb0",
+        },
+        {
+          path: "scripts/docs-quality-source-successor-v3-target.ts",
+          gitBlob: "f0b15b0ec460171a7b9a7b39d005cd897888634e",
+        },
+        {
+          path: "scripts/docs-quality-source-successor-v3.ts",
+          gitBlob: "bd0072b49306a78069be10bbe34bacff5ac457cc",
         },
       ],
+      formatRetainedAuthoritySources: [],
     },
     "quality profile changed",
   );
@@ -542,13 +573,23 @@ export function assertQualityAdoption({
         "scripts/validate-renovate.ts",
         "scripts/validate-renovate.test.ts",
         "scripts/validate-renovate-abi.probe.ts",
+        "scripts/docs-b304-registry-incident.ts",
+        "scripts/docs-b304-registry-incident.test.ts",
+        "scripts/docs-b304-admission-integration.test.ts",
+        "scripts/docs-b304-recovery-staging.ts",
+        "scripts/docs-b304-recovery-staging.test.ts",
         "scripts/runtime-admission-source-successor-v2.ts",
         "scripts/runtime-admission-source-successor-v2.test.ts",
         "scripts/runtime-admission-source-successor-v4.ts",
         "scripts/runtime-admission-source-successor-v4.test.ts",
+        "scripts/runtime-admission-source-successor-v7.ts",
+        "scripts/runtime-admission-source-successor-v7.test.ts",
+        "scripts/runtime-admission-source-successor-v7-target.ts",
+        "scripts/runtime-admission-source-successor-v7-owners.ts",
+        "scripts/runtime-admission-source-successor-v7-owners.test.ts",
         "scripts/docs-quality-source-successor-v2.ts",
-        "scripts/docs-quality-source-successor-v3.ts",
         "scripts/docs-quality-source-successor-v3-target.ts",
+        "scripts/docs-quality-source-successor-v3.ts",
       ],
     },
     "strict compiler scope and settings must stay exact",
