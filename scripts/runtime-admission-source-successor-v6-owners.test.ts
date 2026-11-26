@@ -88,9 +88,13 @@ const literalWorkflow = readFileSync(new URL(`../${FROZEN_ADMISSION_V1.path}`, i
 const workflow: unknown = parse(literalWorkflow);
 const steps = mapping(mapping(mapping(workflow).jobs)["trusted-admission-authority-evolution-v1"]).steps;
 assert.ok(Array.isArray(steps));
-const literalScript = mapping(mapping(steps[0]).with).script;
-assert.equal(typeof literalScript, "string");
-assert.ok(typeof literalScript === "string");
+function readLiteralScript(): string {
+  const script = mapping(mapping(steps[0]).with).script;
+  assert.equal(typeof script, "string");
+  assert.ok(typeof script === "string");
+  return script;
+}
+const literalScript = readLiteralScript();
 
 function v1Fixture() {
   const files: Changed[] = [{
@@ -122,7 +126,7 @@ async function literalV1Outcome(snapshot: AdmissionV1Snapshot) {
     github: {
       paginate: async () => snapshot.files,
       rest: {
-        pulls: { listFiles: () => undefined },
+        pulls: { listFiles: () => null },
         repos: {
           get: async () => ({ data: snapshot.repository }),
           getBranch: async () => ({ data: snapshot.defaultBranch }),

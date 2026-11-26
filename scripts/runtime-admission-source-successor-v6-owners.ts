@@ -33,6 +33,8 @@ const mapping = (value: unknown): Record<string, unknown> => {
   assert.ok(isMapping(value));
   return value;
 };
+const allPaths = (file: Record<string, unknown>): unknown[] =>
+  [file.filename, file.previous_filename].filter(Boolean);
 const expectedVerifier = new Map<unknown, AdmissionV1Mode>([
   ["e3f0f3d2e065b7c0ae324481a3056b7955a0702d", "rollback"],
   ["1bf455f2ca5bf97440e62b2ff4eaa6c36aa2212b", "forward"],
@@ -58,8 +60,6 @@ export function checkAdmissionV1Owner(snapshot: AdmissionV1Snapshot): AdmissionV
       new Set(changed.map((file) => file.filename)).size === changed.length,
     "Paginated admission authority evidence is incomplete or duplicated.",
   );
-  const allPaths = (file: Record<string, unknown>): unknown[] =>
-    [file.filename, file.previous_filename].filter(Boolean);
   if (!changed.some((file) => allPaths(file).includes(FROZEN_ADMISSION_V1.target))) {
     return "noop";
   }

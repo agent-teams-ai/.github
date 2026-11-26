@@ -250,7 +250,7 @@ const oid = /^(?!0{40}$)[0-9a-f]{40}$/u;
 function sha(value: unknown): void {
   assert.ok(typeof value === "string" && oid.test(value), "Unbound finite Git identity");
 }
-function path(value: unknown): asserts value is string {
+function assertFinitePath(value: unknown): asserts value is string {
   assert.ok(
     typeof value === "string" &&
       value.length > 0 &&
@@ -279,7 +279,9 @@ export function assertFiniteTargetBinding(value: unknown): asserts value is Boun
       target["headRef"] !== "main" && !/[\s\p{Cc}]/u.test(target["headRef"]),
     "Real same-repository operation head ref required",
   );
-  for (const key of ["baseSHA", "headSHA", "baseTreeSHA", "headTreeSHA"]) sha(target[key]);
+  for (const key of ["baseSHA", "headSHA", "baseTreeSHA", "headTreeSHA"]) {
+    sha(target[key]);
+  }
   assert.notEqual(target["baseSHA"], target["headSHA"]);
   assert.notEqual(target["baseTreeSHA"], target["headTreeSHA"]);
   assert.notEqual(target["pullRequest"], 438, "Historical retirement PR is not the atomic target");
@@ -290,9 +292,11 @@ export function assertFiniteTargetBinding(value: unknown): asserts value is Boun
   for (const raw of tuple) {
     const entry = list(raw);
     assert.equal(entry.length, 3);
-    path(entry[0]);
+    assertFinitePath(entry[0]);
     assert.ok(!images.has(entry[0]), "Duplicate finite path");
-    if (entry[1] !== null) sha(entry[1]);
+    if (entry[1] !== null) {
+      sha(entry[1]);
+    }
     sha(entry[2]);
     assert.notEqual(entry[1], entry[2], "Unchanged finite tuple member");
     images.set(entry[0], entry);
@@ -316,8 +320,16 @@ export function assertFiniteTargetBinding(value: unknown): asserts value is Boun
   const commits = list(binding["commits"]);
   assert.equal(commits.length, target["commits"]);
   assert.equal(new Set(commits).size, commits.length);
-  for (const commit of commits) sha(commit);
-  assert.deepEqual(commits, [...commits].sort(), "Canonical complete commit census required");
+  for (const commit of commits) {
+    sha(commit);
+  }
+  assert.deepEqual(
+    commits,
+    commits.toSorted((left, right) =>
+      String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
+    ),
+    "Canonical complete commit census required",
+  );
   assert.ok(commits.includes(target["headSHA"]), "Exact head absent from finite commit census");
 }
 

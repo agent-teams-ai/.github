@@ -2514,7 +2514,7 @@ void test("v6 binding rejects incomplete coordinates, altered retained images an
   const fixture = {
     target: { ...TARGET },
     tuple: TARGET_TUPLE.map(([path, before, after]): [string, string | null, string] => [path, before, after]),
-    commits: git("rev-list", `${TARGET.baseSHA}..${TARGET.headSHA}`).toString().trim().split("\n").sort(),
+    commits: git("rev-list", `${TARGET.baseSHA}..${TARGET.headSHA}`).toString().trim().split("\n").toSorted(),
   };
   assert.doesNotThrow(() => assertTargetBinding(fixture));
   for (const delta of [
@@ -2594,8 +2594,8 @@ void test("finite target additions and modifications match every actual base and
   const files = filesBetween(TARGET.baseSHA, TARGET.headSHA);
   assert.equal(files.length, TARGET_TUPLE.length);
   assert.deepEqual(
-    files.filter((file) => file.status === "added").map((file) => file.filename).sort(),
-    TARGET_TUPLE.filter(([, before]) => before === null).map(([path]) => path).sort(),
+    files.filter((file) => file.status === "added").map((file) => file.filename).toSorted(),
+    TARGET_TUPLE.filter(([, before]) => before === null).map(([path]) => path).toSorted(),
   );
   for (const [path, before, after] of TARGET_TUPLE) {
     assert.equal(base.tree.find((entry) => entry.path === path)?.sha ?? null, before);
