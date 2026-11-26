@@ -2177,11 +2177,15 @@ export async function publishSourceSuccessor(
     await status("success");
     await bound.recheck();
   } catch (error) {
+    let statusFailure: { error: unknown } | undefined;
     try {
       await status("failure");
     } catch (statusError) {
+      statusFailure = { error: statusError };
+    }
+    if (statusFailure !== undefined) {
       throw new AggregateError(
-        [error, statusError],
+        [error, statusFailure.error],
         "Source publication failed and its failure status could not be recorded",
         { cause: error },
       );
