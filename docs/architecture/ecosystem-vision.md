@@ -203,6 +203,12 @@ and [headless/UI design](https://github.com/agent-teams-ai/live-module-updates/b
 Coordinate with that workstream; do not create another module loader, registry,
 composition compiler, lifecycle kernel or update orchestrator in parallel.
 
+For a concrete module authoring example, read the
+[maintained modular authoring reference](https://github.com/agent-teams-ai/live-module-updates/blob/main/tests/qualification/portable-document/README.md).
+Its bounded TEST scope uses independent Node/Chromium Hosts and controlled
+restart. The consumer's accepted CMS/FMS and local adoption profile remain
+authoritative.
+
 The independently usable neutral cores and product-owned operational authority
 are accepted boundaries in
 [Extension Foundation ADR-0015](https://github.com/agent-teams-ai/extension-foundation/blob/5ee8a788935c885fac075a5860a0217cf420b4d7/docs/decisions/0015-authorize-get-modular-semantic-extraction.md).
