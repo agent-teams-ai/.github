@@ -84,3 +84,47 @@ and [Node 24 compatibility 45848232407/1](https://github.com/agent-teams-ai/.git
 both on exact resulting SHA `8abe1f803939d93372a150f3a68fb1c2097b1242`.
 This is a Central observation, not separate E2E qualification of the other five
 repositories.
+
+## Central blocking-check bypass — 2026-11-26
+
+[PR #436](https://github.com/agent-teams-ai/.github/pull/436), a separately
+reviewed documentation correction recording the first observation above, was
+merged by `777genius` at `15:29:57Z`. Its sole source commit was
+`fd0f7add1fb46ec4e66578a10c253de05344c22b`, with owner-linked author and
+committer and the canonical owner email. The reviewed base was
+`8abe1f803939d93372a150f3a68fb1c2097b1242`.
+
+At `15:29:46Z`, the real required `check` job
+[140011553087](https://github.com/agent-teams-ai/.github/actions/runs/45849419397/attempts/1)
+was in progress on the reviewed head, run `45849419397`, attempt 1. It
+completed successfully at `15:30:38Z`, after merge. The ordinary CLI guard
+first refused the pending-policy merge; the ordinary synchronous single-PR
+REST merge then accepted the exact reviewed head SHA and explicit squash
+message. No `--admin`, auto-merge, asynchronous merge, fabricated status or
+ruleset change was used. GitHub rule suite
+[5390944428](https://github.com/agent-teams-ai/.github/rules/rule-suites/5390944428)
+recorded actor `777genius` and result `bypass`: main ruleset `19979783`
+reported required status checks failed, with two of five not successful and
+one expected. Identity ruleset `24363205` passed. This is direct evidence of
+an owner bypass of blocking checks in Central, not qualification of five other
+repositories.
+
+The resulting commit `939ed21b24486d96aabb9de2dd1ab1eee71ac91d` has the
+reviewed base as sole parent and tree `0c14d4a9611e48acfe10f90f358d3c58cac68c28`,
+identical to the source head tree. Its author is GitHub user `777genius` with
+email `iliyazelenkog@gmail.com`; committer is GitHub `noreply@github.com`.
+The full message was:
+
+```text
+docs: record first owner route merge evidence
+
+Record the first owner-route merge, its later guard failures and resulting-main CI, and distinguish that observation from proof of a blocking-check bypass.
+```
+
+The resulting main passed [Node 26 CI 45849686985/1](https://github.com/agent-teams-ai/.github/actions/runs/45849686985/attempts/1)
+and [Node 24 compatibility 45849686959/1](https://github.com/agent-teams-ai/.github/actions/runs/45849686959/attempts/1)
+on exact resulting SHA `939ed21b24486d96aabb9de2dd1ab1eee71ac91d`.
+The already-running v4 [run 45849419948/1](https://github.com/agent-teams-ai/.github/actions/runs/45849419948/attempts/1)
+failed after merge: qualifier reported `Live protected main moved` and publisher
+reported `Invalid live source PR metadata`. These are failures, separate from
+resulting-main CI; no closed-PR retry was made.
