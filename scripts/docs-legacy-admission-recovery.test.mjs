@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import Ajv2020 from "ajv/dist/2020.js";
@@ -855,8 +854,11 @@ test("dependency-guard failures do not excuse a cancelled/missing/incomplete par
 
 test("exact legacy runner schemas reject BOTH full current documents; modern runners accept", async () => {
   const run = promisify(execFile);
+  // "Current" is this complete checkpoint relative to the retained legacy runners.
+  // Later registry generations must not change either document in this historical case.
+  const fixtureRevision = "7ad5abbf5a8dade79f91f3e6f06481070b966a9e";
   const [policy, registry] = await Promise.all(
-    [POLICY_PATH, REGISTRY_PATH].map(async (path) => JSON.parse(await readFile(path, "utf8"))),
+    [POLICY_PATH, REGISTRY_PATH].map((path) => document(fixtureRevision, path)),
   );
   const legacy = [
     "07d49409cb51f6124ad17673860b812a9d7b5f5b",
