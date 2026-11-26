@@ -1,14 +1,18 @@
-# Runtime admission v4 permanent enforcement and scoped owner delivery
+# Governance admission v4: permanent enforcement and deferred owner delivery
 
-> Unpublished candidate: every `{{...}}` slot must be replaced by an actual
-> observation before publication. Remove this notice only after those readbacks.
+Observation cutoff: `2026-11-26T13:20:50Z`. All timestamps below are UTC on
+2026-11-26 unless a different date is stated. Earlier observations retain their
+stated cutoff; later successful attempts do not erase earlier failures.
 
-Observation time: `{{FINAL_OBSERVATION_UTC}}`. All timestamps below are UTC on
-2026-11-26 unless a different date is stated.
+Scope: completed Central governance-admission v4 source, compatible policy,
+installation and permanent enforcement, with the ten native owner grants and
+actual early-merge qualification explicitly deferred by the owner. This v4
+mechanism is not Agent Runtime v3, live extension updates or product-scale
+qualification. The current documentation checkpoint uses ordinary protected
+merge; this record does not claim that native no-wait merge is installed.
 
-Scope: completed v4 enforcement in Central and the ten exact owner PR-only
-grants. This dated snapshot records facts observed before the documentation PR's
-own merge. Its later merge and postmerge results belong to that PR's receipt.
+This dated snapshot records facts observed before the documentation PR's own
+merge. Its later merge and postmerge results belong to that PR's receipt.
 The [installation snapshot](runtime-admission-source-successor-v4-installation.md),
 [ADR-0018](../../../docs/decisions/0018-bounded-runtime-admission-source-successor-v4.md)
 and earlier source/cutover evidence retain their original bytes and claims.
@@ -496,44 +500,63 @@ payloads.
 }
 ```
 
-## Ten grant observations
+## Deferred owner grants and observed no-grant state
 
-The fresh owner-full before and after observations below add exactly
+At `2026-11-26T13:20:50Z`, the authenticated connector read all ten target
+rulesets with active enforcement, explicit `bypass_actors: []` and
+`current_user_can_bypass: never` for that connector reader. These are observed
+no-grant snapshots, not before/after grant receipts or separate owner-session
+readbacks. A public or Actions response omitting private actors does not
+establish an empty list.
+
+| Repository | Ruleset | Observed enforcement / bypass actors / connector-reader result |
+| --- | --- | --- |
+| `agent-teams-ai/.github` | `19979783` Protect main | `active / [] / never` |
+| `agent-teams-ai/.github` | `24363205` identity | `active / [] / never` |
+| `agent-teams-ai/engineering-foundation` | `19979782` Protect main | `active / [] / never` |
+| `agent-teams-ai/engineering-foundation` | `24372286` identity | `active / [] / never` |
+| `agent-teams-ai/agent-runtime` | `24363207` identity | `active / [] / never` |
+| `agent-teams-ai/agent-teams-platform` | `24363204` identity | `active / [] / never` |
+| `agent-teams-ai/agent-teams-orchestrator` | `19979784` Protect main | `active / [] / never` |
+| `agent-teams-ai/agent-teams-orchestrator` | `24363212` identity | `active / [] / never` |
+| `agent-teams-ai/extension-foundation` | `20807525` Protect main | `active / [] / never` |
+| `agent-teams-ai/extension-foundation` | `24363213` identity | `active / [] / never` |
+
+The still-uninstalled proposal adds exactly
 `{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`.
-Every before list was empty; every after list contains only that entry.
-The configured `bypass_mode: pull_request` is distinct from the observed
-owner response `current_user_can_bypass: pull_requests_only`.
-Public or Actions responses that omit private actors do not establish an empty
-list; the source's Actions observer remains `never`.
+The configured `bypass_mode: pull_request` would be distinct from an actual
+owner-session response `current_user_can_bypass: pull_requests_only`.
+Neither an expected value nor acceptance by the compatible policy establishes
+that a grant was installed. The source's Actions observer remains `never`.
 
-| Repository | Ruleset | Observation time | Exact observed delta |
-| --- | --- | --- | --- |
-| `agent-teams-ai/.github` | `19979783` Protect main | {{GRANT_CENTRAL_MAIN_UTC}} | `[] → [User 13103045 / pull_request]`; owner `never → pull_requests_only` |
-| `agent-teams-ai/.github` | `24363205` identity | {{GRANT_CENTRAL_IDENTITY_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/engineering-foundation` | `19979782` Protect main | {{GRANT_FOUNDATION_MAIN_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/engineering-foundation` | `24372286` identity | {{GRANT_FOUNDATION_IDENTITY_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/agent-runtime` | `24363207` identity | {{GRANT_RUNTIME_IDENTITY_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/agent-teams-platform` | `24363204` identity | {{GRANT_PLATFORM_IDENTITY_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/agent-teams-orchestrator` | `19979784` Protect main | {{GRANT_ORCHESTRATOR_MAIN_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/agent-teams-orchestrator` | `24363212` identity | {{GRANT_ORCHESTRATOR_IDENTITY_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/extension-foundation` | `20807525` Protect main | {{GRANT_EXTENSION_MAIN_UTC}} | Same exact actor and owner-reader delta |
-| `agent-teams-ai/extension-foundation` | `24363213` identity | {{GRANT_EXTENSION_IDENTITY_UTC}} | Same exact actor and owner-reader delta |
-
-{{TEN_GRANT_FULL_BEFORE_AFTER_READBACKS_JSON}}
-
-All ten rules retained their repository ownership, ID, active enforcement and
-exact `~DEFAULT_BRANCH` scope with no exclusions. Every non-bypass protected
-field was compared with its fresh before snapshot. The three non-central main
-rules retained their own required contexts and issuers; specifically,
-Engineering Foundation's CodeQL remains App `57789`, not App `15368`.
+At the earlier complete preservation comparison at 02:42:36, all ten target
+ruleset payloads matched their no-grant before snapshots. That comparison
+included repository ownership, ID, active enforcement, exact
+`~DEFAULT_BRANCH` scope with no exclusions, and all protected fields.
+The three non-central main rules retained their own required contexts and
+issuers; specifically, Engineering Foundation's CodeQL remained App `57789`.
+The same comparison retained all eleven excluded ruleset payloads and the
+ruleset-ID collections for all seven inspected repositories.
 
 Runtime's pre-existing User `13103045 / always` in main rule `19979781`,
-its actual owner-reader result `always`, and history rule `26556591` remain
-unchanged. Source and tag locks receive no grant, including v4 lock `28123607`;
-Research receives no new grant. No repository outside the six named rows
-inherits the optional profile.
+its observed owner-reader result `always`, and history rule `26556591`
+were unchanged at that preservation cutoff. Source and tag locks receive no
+grant, including v4 lock `28123607`; Research receives no new grant.
+No repository outside the six named repositories inherits the optional profile.
+The later ten-target observation above is not a new full audit of unrelated
+settings or proof of continuous preservation between observations.
 
-{{PRESERVED_RUNTIME_AND_SOURCE_LOCK_READBACKS}}
+| Deferred operation | Actual state at this cutoff |
+| --- | --- |
+| Install the ten proposed owner entries | NOT INSTALLED; DEFERRED by the owner |
+| Fresh owner-full before/after grant readbacks | NOT RUN; no grants were applied |
+| Production-export validation against applied-grant inputs | NOT RUN; no applied-grant inputs exist |
+| Actual early documentation merge and its resulting-main verification | NOT RUN; current publication uses ordinary protected merge |
+
+Resuming the grant work requires fresh reads, preservation of all other
+protected fields, an authorized settings writer, actual after-readbacks and
+qualification of the resulting route. This documentation checkpoint grants
+no settings permission and does not substitute expected values for those steps.
 
 ## Identity compatibility and scope of validation
 
@@ -560,7 +583,7 @@ CLI audit or inspect ruleset bypass actors. Current grant-aware policy blob
 `c7aaacfa24521a9f3e2ecb024d852fefb2b91115` therefore applies without consumer
 pin changes. The identity names, aliases and email remain unchanged.
 
-Post-grant validation uses the current production audit blob
+The deferred post-grant validation procedure would use production audit blob
 `ee394c2bf38ba35eac094aeb68f1bbddd4b27831`:
 
 ```javascript
@@ -575,23 +598,183 @@ The first export checks the six dedicated identity rules. The second comes
 from S and applies only to central rules `19979783` and `24363205`; foreign
 main rules retain their own exact before/after field comparison.
 
-{{POST_GRANT_EXACT_EXPORT_RESULTS_AND_INPUT_BINDINGS}}
+This applied-grant validation is NOT RUN. No actual after-grant input bindings
+or export results are claimed. The completed source qualification and
+permanent-enforcement checks above used their actual observed no-grant inputs.
 
-These are bounded settings and source-compatibility observations, not an
-execution of the global `auditIdentity()` wrapper or a claim that every
-repository's future identity job has run after the grant. The wrapper also
+The completed observations are bounded no-grant settings and source
+compatibility checks, not an execution of the global `auditIdentity()` wrapper
+or a claim that any repository's identity job has run after a new grant. The wrapper also
 inventories all active repositories and queries organization/repository Actions
 review permissions. No permission, credential or audit guard was changed to
 make this bounded check pass. Historical pre-423 CLI audit checkouts still
 require no bypass and must not be substituted for the compatible current audit.
 
+## Earlier Draft #431 checks and API recovery
+
+The following receipts qualify the named earlier preparation heads, ending
+with corrected head `179e8228e73dbde4d5d64efedecb021508973646`.
+They do not qualify a later documentation revision or establish installed
+owner grants. Their distinct failures, cancellations, retries and observation
+cutoffs remain part of this record.
+
+### Real formatting failure, bounded correction, and ordinary CI
+
+Draft [#431](https://github.com/agent-teams-ai/.github/pull/431) first published
+head `2065ddd7eec60d21cae85bfde8750d95b7137639` on installation N.
+[Node 26 run 45741941519](https://github.com/agent-teams-ai/.github/actions/runs/45741941519)
+and [Node 24 run 45741941537](https://github.com/agent-teams-ai/.github/actions/runs/45741941537)
+both actually failed `format:check` on `docs/engineering-quality.md`, before
+their test suites ran. They remain failures.
+
+The existing pinned `stack-toolchain@0.1.1` route uses `oxfmt@0.74.0`, its fixed
+format preset and `--disable-nested-config`; Markdown is a native supported
+language. Running that installed formatter on a copy changed only padding and
+separator widths in eight source lines of the grant table. Independent review verified every
+cell's content and all text outside that table remained identical. No package
+installation or test framework was added.
+
+The normal push produced head
+`179e8228e73dbde4d5d64efedecb021508973646`, sole parent `2065ddd7…`, tree
+`dd378c7cfbe1f03d84189d598c9241ce023f275e`. Only the quality-document blob
+changed, to `2dc70458d61c4d010c616a681547150daf2932b2`; the other 414 leaves
+were retained. The PR remained Draft.
+
+| Actual ordinary run on corrected head | Result | Executed evidence |
+| --- | --- | --- |
+| [Node 26 — 45742914282/1](https://github.com/agent-teams-ai/.github/actions/runs/45742914282/attempts/1), job 139652016468 | SUCCESS | Formatter passed on 109 selected files; typecheck and 5,807 current + 9 frozen tests passed |
+| [Node 24 — 45742914194/1](https://github.com/agent-teams-ai/.github/actions/runs/45742914194/attempts/1), job 139652016204 | SUCCESS | Formatter passed on 109 selected files; typecheck and 5,807 current + 9 frozen tests passed |
+
+Each run recorded zero failures, cancellations, skips and TODOs. The actual
+synthetic checkout was `11cfcdf670a9a045e421b32eff8607cc135d6b7e`, with parents
+N and `179e8228…` and the exact corrected tree. These are PR content checks;
+at that cutoff there had been no merge of #431 or resulting-main check.
+
+### Later admission and quota observations on the same draft head
+
+First corrected-head v4
+[run 45742911218/1](https://github.com/agent-teams-ai/.github/actions/runs/45742911218/attempts/1)
+passed 70 dedicated + 5,939 current + 9 frozen tests, but its qualifier then
+failed GET `pulls/431` with HTTP 403 at 02:34:29.646. Its source job was skipped;
+publisher job 139653359653 failed POST `statuses/179e8228…` with HTTP 403 at
+02:34:50.768. The workflow failed; its v4 commit-status context was absent at
+02:37:21. A failed workflow does not prove that a failure status was published.
+
+Subsequent genuine edited
+[run 45742982591/1](https://github.com/agent-teams-ai/.github/actions/runs/45742982591/attempts/1)
+completed successfully: the same full qualifier passed, source job 139654598099
+returned `noop` at 02:38:32.639, and publisher 139654810239 succeeded. Actual
+status `59933511592` was SUCCESS at 02:39:02 for head `179e8228…`, base/caller
+N and protected source S. This proves that this later attempt could read and
+publish; it does not change the first attempt's failure.
+
+The final edited event also produced explicit quota failures in three required
+workflows:
+
+| Workflow | Actual failed run/job | Failure time |
+| --- | --- | --- |
+| Authority evolution | [45743500534](https://github.com/agent-teams-ai/.github/actions/runs/45743500534), job 139653908640 | 02:36:11.7186048 |
+| Commit author identity | [45743501182](https://github.com/agent-teams-ai/.github/actions/runs/45743501182), job 139653913517 | 02:36:17.3766254 |
+| Trusted validation | [45743500853](https://github.com/agent-teams-ai/.github/actions/runs/45743500853), job 139653911029 | 02:36:23.1189821 |
+
+These logs explicitly report `API rate limit exceeded for installation`.
+Authority/validation response headers recorded core limit/used `5000/5000`,
+remaining `0`, reset `1795660597` (02:36:37). Identity also warned at
+02:36:17.3741190 that it could not publish failure and the status state was
+unknown. Its earlier status `59933192572` remained SUCCESS from 02:31:45; that
+retained status is not success of the later job. The separately executed
+evidence gate 45743500178/job 139653907741 succeeded. Generic HTTP 403 lines
+alone do not establish that every failed request had the same quota cause.
+
+At the complete 02:39:46 inventory cutoff, current head had 182 unique workflow
+runs across pages of 100 and 82: 108 SUCCESS, 68 FAILURE, 4 CANCELLED, and two
+still running (final genuine edited v2 45743501022 and v4 45743500710). Any
+later outcome or retry requires its own actual receipt; no all-checks-green
+claim is made at that cutoff.
+
+### Completion-body edits on already merged PRs
+
+Publishing the reviewed completion bodies on closed #423 at 02:34:12 and #428
+at 02:34:15 genuinely triggered 45 new `pull_request_target` workflow runs on
+each old PR head. All were attempt 1 and all were terminal by the 02:39:15
+inventory observation:
+
+| Closed PR / unchanged old head | New workflow results | Runtime-v4 outcome |
+| --- | --- | --- |
+| #423 / `9dff2063…` | 45 total: 4 SUCCESS, 41 FAILURE | [45743301112/1](https://github.com/agent-teams-ai/.github/actions/runs/45743301112/attempts/1) FAILURE |
+| #428 / `c9415908…` | 45 total: 3 SUCCESS, 42 FAILURE | [45743303041/1](https://github.com/agent-teams-ai/.github/actions/runs/45743303041/attempts/1) FAILURE |
+
+Both v4 content suites passed 70 + 5,939 + 9, then live binding and publishing
+failed `Invalid live source PR metadata`; source jobs were skipped. The exact
+[S implementation](https://github.com/agent-teams-ai/.github/blob/72fa7a8af02e9ba7904c912f0bbb457254381002/scripts/runtime-admission-source-successor-v4.ts)
+requires the target PR to be open and unmerged. Both v1 runs also failed this
+live-state guard. These failures are separate from the previously recorded
+premerge and actual M/N postmerge successes.
+
+#423's new identity run 45743299615/job 139653270104 failed the live-PR
+precondition at 02:34:25.9911746. #428's new identity run
+45743302919/job 139653279577 instead recorded an actual installation quota
+failure at 02:34:39.1394753; its log supplied no reset header.
+
+The 02:41:39 combined-status observation further distinguishes jobs from
+statuses: #423 retained its historical v4 SUCCESS `59928307464` from 00:46:35
+and had new identity FAILURE `59933309241`; #428 had no v4 context and retained
+identity SUCCESS `59930775981` from 01:37:47 despite its later failed identity
+job. No closed-PR run was retried. The immutable installation evidence retains
+its original cutoff and is not rewritten to conceal these later events.
+
+### Final corrected-head cutoff — 02:47:20 UTC
+
+At the later 02:47:20 observation, all 182 unique workflow runs on corrected
+head `179e8228e73dbde4d5d64efedecb021508973646` were terminal: 112 SUCCESS,
+66 FAILURE and 4 CANCELLED. Exactly three runs had attempt 2, each an explicit
+retry of its latest required quota-failed job; all three actual replacement
+jobs succeeded:
+
+| Required workflow | Run / successful attempt | Actual new job |
+| --- | --- | --- |
+| Authority evolution | [45743500534/2](https://github.com/agent-teams-ai/.github/actions/runs/45743500534/attempts/2) | 139657318121 |
+| Trusted validation | [45743500853/2](https://github.com/agent-teams-ai/.github/actions/runs/45743500853/attempts/2) | 139657323976 |
+| Commit author identity | [45743501182/2](https://github.com/agent-teams-ai/.github/actions/runs/45743501182/attempts/2) | 139657331901 |
+
+Their check runs were bound to the exact corrected head and App 15368. Identity
+published new pending status `59933809139` at 02:45:49, then fresh SUCCESS
+`59933812666` at 02:45:54. This is actual new execution and publication, distinct
+from the older retained success described above.
+
+The final natural v4 [run 45743500710/1](https://github.com/agent-teams-ai/.github/actions/runs/45743500710/attempts/1)
+also completed SUCCESS without a retry. Qualifier job 139653911941 passed strict
+compilation and 70 + 5,939 + 9 tests with zero failures, cancellations, skips or TODOs. Source job
+139656687376 returned `noop` at 02:44:24.769, with current head `179e8228…`,
+base/caller N and protected S; publisher 139656878569 succeeded. Actual v4 status
+`59933764063` was SUCCESS at 02:44:46, targeting that exact run and attempt.
+
+All six current required gates were therefore SUCCESS, and Node 24 compatibility
+also remained SUCCESS; the ordinary Node 26/24 formatter, typecheck and
+5,807 + 9 results above remain their actual content evidence. The PR was still
+OPEN, Draft and unmerged, with head `179e8228…` and base N. Earlier dated
+cutoffs, attempt-1 quota failures, cancelled runs and old-head formatting
+failures remain part of the record. No closed-PR run was retried.
+
 ## Scope and subsequent delivery receipt
 
-The native grant is not a documentation path filter. Use stays within assigned,
-reviewed delivery and does not authorize independent work, releases, direct
-protected-main pushes or ignoring substantive findings. Product architecture
-proposals and existing ownership boundaries remain unchanged. Optional A/B
-alternatives in the maintained quality route remain unselected.
+The current checkpoint publishes completed source, policy, installation and
+permanent-enforcement work through ordinary protected merge. Its own current
+head still requires the applicable reviews and hosted checks; successful
+checks on earlier preparation heads are not proof for a later revision.
+Owner grants, owner-session after-readbacks, validation against actual applied
+grants and a real early documentation merge remain explicitly deferred.
+
+Any future native grant is not a documentation path filter. Use stays within
+assigned, reviewed delivery and does not authorize independent work, releases,
+direct protected-main pushes or ignoring substantive findings. Product
+architecture proposals and existing ownership boundaries remain unchanged.
+Optional A/B alternatives in the
+[maintained quality route](../../../docs/engineering-quality.md#documentation-merge-timing-native-owner-route-2026-11-25-utc)
+remain unselected. Asynchronous transport and stacked-PR delivery are separately
+unqualified and deferred: explicit assignment and complete review of the entire
+affected PR set would be necessary, together with separate transport
+qualification. Current delivery uses the ordinary protected single-PR route.
 
 At this snapshot's pre-merge cutoff, the publishing documentation PR's own merge
 and postmerge results are not yet observed. Its eventual PR receipt records the
@@ -599,8 +782,9 @@ actual head/base, operation result, final tree/attribution and postmerge run
 outcomes. The actual PR URL belongs in that receipt, without another content
 commit solely to prove this publication.
 
-An early merge can close the PR before an already-running open-PR snapshot or
-admission job completes. Record any actual closed-target or metadata-change
-rejection as FAILURE with its reason, separately from actual resulting-main
-quality checks. Pending, cancelled, omitted and failed checks are not success;
-the resulting main full CI still must complete successfully.
+Closing a PR or editing metadata on a closed PR can cause an open-PR guard to
+reject the target. Record any actual closed-target or metadata-change rejection
+as FAILURE with its reason, separately from actual resulting-main quality
+checks. Do not rerun a closed target solely to seek a green open-PR guard.
+Pending, cancelled, omitted and failed checks are not success; the resulting
+main full CI still must complete successfully.
