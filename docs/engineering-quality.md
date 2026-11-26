@@ -15,7 +15,7 @@ execution, the canonical test runner, and their typed tests. Legacy JavaScript r
 untyped; `typedCoverage: false` still describes the repository honestly.
 
 `pnpm quality:doctor` reports installed tool pins. `pnpm quality:typecheck`
-uses public `stack-toolchain typecheck` on the unchanged nine-entry strict
+uses public `stack-toolchain typecheck` on the owning strict
 `tsconfig.tooling.json`; ordinary success stops after tsrs. Bun and the pinned
 TypeScript checker selected by Stack's public toolchain manifest are sequential fallbacks only for unavailable engines
 or recognized engine failures. Project diagnostics stop the command.
@@ -39,17 +39,16 @@ maintained census. The four exact frozen live verifier/source-successor files
 listed in `retainedAuthoritySources` retain exact authority blobs under
 ADR-0012 and the existing native historical checks. They are classified separately
 from current maintained lint/format inputs; they remain in the independent source
-census and the unchanged native test scopes. The nine-entry main strict project directly
+census and the unchanged native test scopes. The owning main strict project directly
 includes the verifier pair; the separately retained `tsconfig.docs-source-successor.json`
 lists all four, but is not claimed as a new command in `pnpm check`.
-`scripts/verify-docs-admission-change.mjs` has a separate format-only retained
-identity: Git blob `f3db341a5d9fc5ec74c9c3379153940db99177c0`, owned by the live
-`trusted-admission-authority-evolution-v1` required workflow. That workflow admits
-only one helper file at two exact historical forward/rollback blobs; formatting
-it in this multi-file migration is not admitted. The helper retains its exact
-main bytes and stays in the 31-file lint census, source boundaries and native
-tests. Only the 97-file formatter roster classifies it separately; it is live
-authority, not generated or unused code.
+The bounded b304 registry-incident candidate changes
+`scripts/verify-docs-admission-change.mjs` through its separate protected-source
+successor. The previously retained format-only blob
+`f3db341a5d9fc5ec74c9c3379153940db99177c0` remains historical; the changed helper
+joins the ordinary maintained formatter roster. The four immutable retained
+source blobs above are unchanged. This candidate does not activate its own
+source authority or bypass the installed admission-evolution workflow.
 The gate rejects extra exclusions, dropped maintained files and hidden ignore
 files. Formatting debt remains pending; the candidate does not weaken it.
 
@@ -107,17 +106,17 @@ no `check:changed` or `check:fast` scripts. Full qualification also requires
 `pnpm check` and a successful frozen install including native prerequisites.
 Historical SHA receipts are unchanged; current-input evidence is separate.
 
-| Installed mechanism                                                            | Applicability and enforcement                                                                                                                                                                                                                                                                                               |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public Node preset and source boundaries                                       | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries`                                                                                                                                                                                                                                        |
-| Source census and exact selection                                              | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser                                                                                                                                                                                                     |
-| Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets                                                                                                                                                                      |
-| Strict typed tooling                                                           | Active only for the nine explicit `.mts`/`.ts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes public Stack read-only checking with the manifest-owned TypeScript fallback with independently pinned Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
-| Mandatory Node execution                                                       | Fail closed on proposed published Foundation 3.0.0: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck                                                                                                                 |
-| Registry and development-only admission                                        | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only`                                                                                                                                                                                                                      |
-| SDK growth authority                                                           | N/A: no SDK owner or inventory; no grant activation or release eligibility claim                                                                                                                                                                                                                                            |
-| Scaffolding, plugins and native production quality                             | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary                                                                                                                                                                       |
-| Executable specifications, contracts, governance and documentation             | Existing consumer-owned validators and complete tests remain required by `pnpm check`; the versioned pure input-proof contract has its own behavioral tests; no new documentation admission                                                                                                                                 |
+| Installed mechanism                                                            | Applicability and enforcement                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public Node preset and source boundaries                                       | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries`                                                                                                                                                                                                                                     |
+| Source census and exact selection                                              | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser                                                                                                                                                                                                  |
+| Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets                                                                                                                                                                   |
+| Strict typed tooling                                                           | Active for the owning explicit `.mts`/`.ts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes public Stack read-only checking with the manifest-owned TypeScript fallback with independently pinned Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
+| Mandatory Node execution                                                       | Fail closed on proposed published Foundation 3.0.0: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck                                                                                                              |
+| Registry and development-only admission                                        | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only`                                                                                                                                                                                                                   |
+| SDK growth authority                                                           | N/A: no SDK owner or inventory; no grant activation or release eligibility claim                                                                                                                                                                                                                                         |
+| Scaffolding, plugins and native production quality                             | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary                                                                                                                                                                    |
+| Executable specifications, contracts, governance and documentation             | Existing consumer-owned validators and complete tests remain required by `pnpm check`; the versioned pure input-proof contract has its own behavioral tests; no new documentation admission                                                                                                                              |
 
 The retained Consumer Module Standard has no accepting Central ADR or local
 content pin to migrate. The reviewed source-packet delta is evidence only;
@@ -125,7 +124,7 @@ Foundation installation does not adopt Get Modular or change architecture.
 
 ## Bounded lint execution
 
-`scripts/run-quality-lint.mjs` keeps the consumer's independent 31-file maintained census
+`scripts/run-quality-lint.mjs` keeps the consumer's independently derived maintained census
 and exact Oxlint debug-selection agreement, then calls Stack's public
 `runCommand({ command: "lint", ... })`. The existing 120-second quality budget
 is supplied explicitly. Stack owns executable resolution, installed native
@@ -140,7 +139,7 @@ now carries the actual Stack configuration and registers its additional
 disposable inputs in both censuses. Its complete positive/diagnostic-batch
 qualification remains required after the adoption debt is resolved.
 
-The nine strict compiler entries, exact mandatory identities, existing complete
+The owning strict compiler project, exact mandatory identities, existing complete
 test partitions and all immutable historical files remain. This proposal does
 not establish process-tree supervision of arbitrary descendants, new production
 ownership or Docs Cohort admission.
@@ -442,8 +441,8 @@ pass actual required CI. No new build script is authorized by this change.
 ## Runtime and admission integration recovery
 
 This integration retains Foundation 3.0.0 and Stack 0.1.1 ownership. Its strict
-program includes 21 entries and its maintained type-aware lint census includes
-43 files. Historical authority sources and the four process/test helpers remain
+program includes 26 entries and its maintained type-aware lint census includes
+48 files. Historical authority sources and the four process/test helpers remain
 byte-identical to the installed main basis.
 
 The metadata-only compiler preflight follows the real Stack and Foundation
@@ -456,3 +455,47 @@ The old PR390 activation tuple is historical, not applicable to installed v3.
 New protected compiler/admission/toolchain inputs require a separately reviewed
 finite successor, fresh positive/negative qualification and an add-before-retire
 transition. This functional candidate does not activate its own authority.
+
+## Bounded b304 registry incident preparation
+
+The separate `scripts/docs-b304-registry-incident.ts` mechanism, typed
+`docs-b304-recovery-staging.ts` boundary and three TypeScript test entries join
+the real strict, lint and formatter censuses.
+The existing admission verifier, evidence reader and Actions materializer retain
+small entry-point adapters; their legacy JavaScript remains untyped. The existing
+workflow and quality-census tests keep only localized static-host assertions.
+Substantive new incident proof and pending-result validation live in TypeScript.
+
+The proposed capability covers only the exact audited canary-retirement policy
+image and the one pinned Runtime registry-parser incident. It cannot select a
+new Runtime or EF Cohort, advance an observation, accept qualification or report
+consumer semantics as successful. Historical evidence for every admitted
+consumer remains mandatory. The existing changed-row current-admission scope
+is unchanged; the retirement's changed global counts already require the full
+current fleet audit.
+
+A later separately qualified installation must supply the real base-owned,
+bounded authority and proof. Source preparation carries no active record and
+cannot authorize same-PR authority. Both existing source controls still apply
+until their separately reviewed successors are qualified and cut over. Legacy
+and Platform incident contracts and the eight mandatory test identities remain
+unchanged.
+
+The B304 data boundary has disjoint archive, staging and policy modes. An archive
+adds only its fixed inert proof JSON; staging changes only the installed null
+authority to one active record using an already merged ancestor proof. The
+source-owned shared kernel verifies complete Runtime evidence and the real
+separate policy operation without creating or consuming an operation capability.
+Full Git trees and current controller/operation PR rereads precede the final
+owner-authority and process-clock checks. Full base checkout history is required
+for immutable ancestor reads; no candidate code executes.
+
+A restrictive active-to-revoked transition preserves every other record field.
+It requires the current human owner of the revocation PR to retain repository
+admin permission, but does not require the expired incident, old comment or old
+approver to remain usable. Revocation never extends, rebinds, reactivates or
+removes the record. Archive, activation and revocation all report consumer
+semantics and qualification as unverified. Changes to either new executable
+helper are rejected before the ordinary code-only no-op, so later source changes
+still require a separately qualified source transition after restoring the
+predecessor controls. Legacy and Platform authority/proof staging remains denied.

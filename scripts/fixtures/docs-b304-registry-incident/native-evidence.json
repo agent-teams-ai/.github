@@ -1,0 +1,1421 @@
+{
+  "classification": "immutable-public-native-evidence-fixture-not-authorization",
+  "native": {
+    "checks": [
+      {
+        "id": 139589259419,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "install-build-runtime (Node 24.21.0)",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048339/job/139589259419",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589259621,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "install-build-runtime (Node 26.11.1)",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048339/job/139589259621",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260495,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "postgres-durability",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260495",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260643,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (agent-execution-1) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260643",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260688,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / full / remainder",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260688",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260710,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (filesystem-custody) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260710",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260723,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs / lane",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260723",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260728,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (embedded-runtime) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260728",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260788,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (runtime-configuration) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260788",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260806,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (provider-access) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260806",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260865,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (runtime-security) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260865",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260886,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (agent-execution-2) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260886",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260954,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / full / fixtures (1) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260954",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589260969,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / full / fixtures (0) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589260969",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261013,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "macos-product / packages",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261013",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261024,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "architecture / lane",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261024",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261079,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / packages (agent-execution-3) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261079",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261116,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / full / fixtures (2) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261116",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261119,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "quick / lane",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261119",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261147,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / root",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261147",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261301,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-authorize",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589261301",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589261983,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / pr",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139589261983",
+        "status": "completed",
+        "conclusion": "skipped",
+        "app_id": 15368
+      },
+      {
+        "id": 139589494629,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-structural",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589494629",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589710079,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-qualification",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589710079",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139589928841,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / docs-protocol-check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589928841",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139590294585,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / full / aggregate",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139590294585",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139590457281,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "product / aggregate",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139590457281",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139590521184,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "foundation / aggregate",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139590521184",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139593100453,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139593100453",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139593182065,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime-macos",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048433/job/139593182065",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816379986,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-authorize",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816379986",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816380389,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / root",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816380389",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816380425,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / postgres-durability",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816380425",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816380514,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / architecture / lane",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816380514",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816380666,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / docs / lane",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816380666",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816380753,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / macos-product / packages",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816380753",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381147,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / full / remainder",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381147",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381366,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (provider-access) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381366",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381402,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (agent-execution-3) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381402",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381529,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (runtime-security) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381529",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381530,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (agent-execution-2) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381530",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381551,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (embedded-runtime) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381551",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381575,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (agent-execution-1) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381575",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381603,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (filesystem-custody) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381603",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381709,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / packages (runtime-configuration) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381709",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816381955,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / quick / lane",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816381955",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816382283,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / full / fixtures (1) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816382283",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816382416,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / full / fixtures (2) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816382416",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816382460,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / full / fixtures (0) / shard",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816382460",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816382941,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / pr",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816382941",
+        "status": "completed",
+        "conclusion": "skipped",
+        "app_id": 15368
+      },
+      {
+        "id": 139816680898,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-structural",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816680898",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139816910882,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-qualification",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139816910882",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139817264933,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / docs-protocol-check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139817264933",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139817898721,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / product / aggregate",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139817898721",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139817938475,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / full / aggregate",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139817938475",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139818273644,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / foundation / aggregate",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139818273644",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139822254119,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / runtime-macos",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139822254119",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 139822518526,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "runtime / check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45792972738/job/139822518526",
+        "status": "completed",
+        "conclusion": "success",
+        "app_id": 15368
+      },
+      {
+        "id": 140032413292,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-authorize",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032413292",
+        "status": "completed",
+        "conclusion": "failure",
+        "app_id": 15368
+      },
+      {
+        "id": 140032688518,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-qualification",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032688518",
+        "status": "completed",
+        "conclusion": "failure",
+        "app_id": 15368
+      },
+      {
+        "id": 140032689398,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-structural",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032689398",
+        "status": "completed",
+        "conclusion": "skipped",
+        "app_id": 15368
+      },
+      {
+        "id": 140032783052,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / docs-protocol-check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032783052",
+        "status": "completed",
+        "conclusion": "failure",
+        "app_id": 15368
+      }
+    ],
+    "historical": {
+      "id": 45724048832,
+      "workflow_id": 335216823,
+      "run_attempt": 1,
+      "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+      "head_branch": "main",
+      "event": "push",
+      "path": ".github/workflows/docs-protocol.yml",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-25T23:47:44Z",
+      "updated_at": "2026-11-25T23:50:00Z",
+      "run_started_at": "2026-11-25T23:47:44Z",
+      "repository": {
+        "id": 1314129620,
+        "full_name": "agent-teams-ai/agent-runtime"
+      },
+      "referenced_workflows": [
+        {
+          "path": "agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c",
+          "sha": "b30455e32cf5d54ade6d8301637701347e4ce57c"
+        }
+      ]
+    },
+    "current": {
+      "id": 45724048832,
+      "workflow_id": 335216823,
+      "run_attempt": 2,
+      "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+      "head_branch": "main",
+      "event": "push",
+      "path": ".github/workflows/docs-protocol.yml",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-11-26T16:05:21Z",
+      "updated_at": "2026-11-26T16:06:06Z",
+      "run_started_at": "2026-11-26T16:05:19Z",
+      "repository": {
+        "id": 1314129620,
+        "full_name": "agent-teams-ai/agent-runtime"
+      },
+      "referenced_workflows": [
+        {
+          "path": "agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c",
+          "sha": "b30455e32cf5d54ade6d8301637701347e4ce57c"
+        }
+      ]
+    },
+    "nightly": {
+      "id": 45792972738,
+      "workflow_id": 375281830,
+      "run_attempt": 1,
+      "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+      "head_branch": "main",
+      "event": "schedule",
+      "path": ".github/workflows/ci-nightly.yml",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-26T09:32:51Z",
+      "updated_at": "2026-11-26T09:44:48Z",
+      "run_started_at": "2026-11-26T09:32:51Z",
+      "repository": {
+        "id": 1314129620,
+        "full_name": "agent-teams-ai/agent-runtime"
+      },
+      "referenced_workflows": [
+        {
+          "path": "agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c",
+          "sha": "b30455e32cf5d54ade6d8301637701347e4ce57c"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-lane.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-product.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-foundation-route.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-pr-regressions.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-foundation.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-foundation-shard.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-darwin-packages.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        },
+        {
+          "path": "agent-teams-ai/agent-runtime/.github/workflows/ci-product-shard.yml@cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+          "ref": "refs/heads/main"
+        }
+      ]
+    },
+    "historical_jobs": [
+      {
+        "id": 139589261301,
+        "run_id": 45724048832,
+        "run_attempt": 1,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-authorize",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589261301",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Resolve trusted controller snapshot and called-workflow identity",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check out exact Cohort-bound validator implementation",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up pnpm for trusted tooling",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up Node for trusted tooling",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install only base-owned validator dependencies",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Authorize exact consumer snapshot without executing consumer code",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Publish bounded structural authorization for the non-OIDC verifier",
+            "number": 8,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up Node for trusted tooling",
+            "number": 14,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up pnpm for trusted tooling",
+            "number": 15,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out exact Cohort-bound validator implementation",
+            "number": 16,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "number": 17,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 139589494629,
+        "run_id": 45724048832,
+        "run_attempt": 1,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-structural",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589494629",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check out exact Cohort-bound validator implementation",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up pnpm for trusted tooling",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up Node for trusted tooling",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install only base-owned validator dependencies",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Download exact authorization from the OIDC-only job",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check out authorized immutable consumer snapshot",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Bind checkout bytes to central authorization",
+            "number": 8,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Confirm current controller authority stayed stable through structural validation",
+            "number": 9,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out authorized immutable consumer snapshot",
+            "number": 15,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up Node for trusted tooling",
+            "number": 16,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up pnpm for trusted tooling",
+            "number": 17,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out exact Cohort-bound validator implementation",
+            "number": 18,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "number": 19,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 139589710079,
+        "run_id": 45724048832,
+        "run_attempt": 1,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-qualification",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589710079",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Require successful trusted structural authorization",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Initialize isolated qualification paths",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check out exact Cohort-bound validator implementation",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up pnpm for legacy trusted qualification tooling",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Set up pnpm for Cohort v2 trusted qualification tooling",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up Node for trusted qualification tooling",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install only base-owned qualification verifier dependencies",
+            "number": 8,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Download exact authorization from the OIDC-only job",
+            "number": 9,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check out authorized immutable consumer snapshot",
+            "number": 10,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Bind checkout bytes to central authorization",
+            "number": 11,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Prepare fresh isolated exact Cohort installation",
+            "number": 12,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify isolated exact lock before package installation",
+            "number": 13,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install isolated exact Cohort graph without lifecycle hooks",
+            "number": 14,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Verify installed Cohort package identities before execution",
+            "number": 15,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run only the exact installed agent-teams-docs qualify CLI",
+            "number": 16,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Run Cohort v2 qualification through the trusted base-owned runner",
+            "number": 17,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Bind released-cohort receipt to exact checkout and installed Cohort",
+            "number": 18,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Bind Cohort v2 authorized consumer receipt without asserting central CANARY",
+            "number": 19,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Confirm current controller authority stayed stable through qualification",
+            "number": 20,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out authorized immutable consumer snapshot",
+            "number": 37,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up Node for trusted qualification tooling",
+            "number": 38,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up pnpm for Cohort v2 trusted qualification tooling",
+            "number": 39,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out exact Cohort-bound validator implementation",
+            "number": 40,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "number": 41,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 139589928841,
+        "run_id": 45724048832,
+        "run_attempt": 1,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / docs-protocol-check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/139589928841",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Require successful trusted qualification",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Check out consumer revision",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up pnpm for repository semantic gate",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up Node for repository semantic gate",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install consumer dependencies in the untrusted context",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Run repository semantic documentation gate",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up Node for repository semantic gate",
+            "number": 12,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Set up pnpm for repository semantic gate",
+            "number": 13,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out consumer revision",
+            "number": 14,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "number": 15,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "current_jobs": [
+      {
+        "id": 140032413292,
+        "run_id": 45724048832,
+        "run_attempt": 2,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-authorize",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032413292",
+        "status": "completed",
+        "conclusion": "failure",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Resolve trusted controller snapshot and called-workflow identity",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Check out exact Cohort-bound validator implementation",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up pnpm for trusted tooling",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Set up Node for trusted tooling",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Install only base-owned validator dependencies",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Authorize exact consumer snapshot without executing consumer code",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          {
+            "name": "Publish bounded structural authorization for the non-OIDC verifier",
+            "number": 8,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Post Set up Node for trusted tooling",
+            "number": 14,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Post Set up pnpm for trusted tooling",
+            "number": 15,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Post Check out exact Cohort-bound validator implementation",
+            "number": 16,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Complete job",
+            "number": 17,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 140032688518,
+        "run_id": 45724048832,
+        "run_attempt": 2,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-qualification",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032688518",
+        "status": "completed",
+        "conclusion": "failure",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Require successful trusted structural authorization",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          {
+            "name": "Initialize isolated qualification paths",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Check out exact Cohort-bound validator implementation",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Set up pnpm for legacy trusted qualification tooling",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Set up pnpm for Cohort v2 trusted qualification tooling",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Set up Node for trusted qualification tooling",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Install only base-owned qualification verifier dependencies",
+            "number": 8,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Download exact authorization from the OIDC-only job",
+            "number": 9,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Check out authorized immutable consumer snapshot",
+            "number": 10,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Bind checkout bytes to central authorization",
+            "number": 11,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Prepare fresh isolated exact Cohort installation",
+            "number": 12,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Verify isolated exact lock before package installation",
+            "number": 13,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Install isolated exact Cohort graph without lifecycle hooks",
+            "number": 14,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Verify installed Cohort package identities before execution",
+            "number": 15,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Run only the exact installed agent-teams-docs qualify CLI",
+            "number": 16,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Run Cohort v2 qualification through the trusted base-owned runner",
+            "number": 17,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Bind released-cohort receipt to exact checkout and installed Cohort",
+            "number": 18,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Bind Cohort v2 authorized consumer receipt without asserting central CANARY",
+            "number": 19,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Confirm current controller authority stayed stable through qualification",
+            "number": 20,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Complete job",
+            "number": 21,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "id": 140032689398,
+        "run_id": 45724048832,
+        "run_attempt": 2,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / trusted-structural",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032689398",
+        "status": "completed",
+        "conclusion": "skipped",
+        "steps": []
+      },
+      {
+        "id": 140032783052,
+        "run_id": 45724048832,
+        "run_attempt": 2,
+        "head_sha": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+        "name": "docs-protocol / docs-protocol-check",
+        "html_url": "https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/job/140032783052",
+        "status": "completed",
+        "conclusion": "failure",
+        "steps": [
+          {
+            "name": "Set up job",
+            "number": 1,
+            "status": "completed",
+            "conclusion": "success"
+          },
+          {
+            "name": "Require successful trusted qualification",
+            "number": 2,
+            "status": "completed",
+            "conclusion": "failure"
+          },
+          {
+            "name": "Check out consumer revision",
+            "number": 3,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Set up pnpm for repository semantic gate",
+            "number": 4,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Set up Node for repository semantic gate",
+            "number": 5,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Install consumer dependencies in the untrusted context",
+            "number": 6,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Run repository semantic documentation gate",
+            "number": 7,
+            "status": "completed",
+            "conclusion": "skipped"
+          },
+          {
+            "name": "Complete job",
+            "number": 8,
+            "status": "completed",
+            "conclusion": "success"
+          }
+        ]
+      }
+    ]
+  },
+  "logs": {
+    "historical_authorize": {
+      "job_id": 139589261301,
+      "digest": "sha256:0b1667f3297614ed727bb58690964b2893af2b252e99f8bd77f3bb151372a243",
+      "utf8": "﻿2026-11-25T23:47:49.5683071Z Current runner version: '2.338.2'\n2026-11-25T23:47:49.5704355Z ##[group]Runner Image Provisioner\n2026-11-25T23:47:49.5705157Z Hosted Compute Agent\n2026-11-25T23:47:49.5705612Z Version: 20261111.635\n2026-11-25T23:47:49.5706137Z Commit: b8a594ea514ff44cadb5342986c68b1eac6e22ed\n2026-11-25T23:47:49.5707018Z Build Date: 2026-11-11T01:49:01Z\n2026-11-25T23:47:49.5707528Z Worker ID: {c92eeb07-7aa1-4a47-829b-9c6a708fc238}\n2026-11-25T23:47:49.5708100Z Region: us-west-2\n2026-11-25T23:47:49.5708524Z Cloud: AWS\n2026-11-25T23:47:49.5708905Z ##[endgroup]\n2026-11-25T23:47:49.5709924Z ##[group]Operating System\n2026-11-25T23:47:49.5710378Z Ubuntu\n2026-11-25T23:47:49.5710765Z 24.04.5\n2026-11-25T23:47:49.5711158Z LTS\n2026-11-25T23:47:49.5711518Z ##[endgroup]\n2026-11-25T23:47:49.5711965Z ##[group]Runner Image\n2026-11-25T23:47:49.5712419Z Image: ubuntu-24.04\n2026-11-25T23:47:49.5712886Z Version: 20261116.133.1\n2026-11-25T23:47:49.5713932Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261116.133/images/ubuntu/Ubuntu2404-Readme.md\n2026-11-25T23:47:49.5715191Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261116.133\n2026-11-25T23:47:49.5715951Z ##[endgroup]\n2026-11-25T23:47:49.5717013Z ##[group]GITHUB_TOKEN Permissions\n2026-11-25T23:47:49.5718780Z Contents: read\n2026-11-25T23:47:49.5719230Z Metadata: read\n2026-11-25T23:47:49.5719626Z ##[endgroup]\n2026-11-25T23:47:49.5721168Z Secret source: Actions\n2026-11-25T23:47:49.5721903Z Cache mode: write\n2026-11-25T23:47:49.5722397Z Prepare workflow directory\n2026-11-25T23:47:49.6108520Z Prepare all required actions\n2026-11-25T23:47:49.6149323Z Getting action download info\n2026-11-25T23:47:49.9987403Z Download action repository 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd' (SHA:ed597411d8f924073f98dfc5c65a23a2325f34cd)\n2026-11-25T23:47:51.2083644Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)\n2026-11-25T23:47:51.2768635Z Download action repository 'pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9' (SHA:008330803749db0355799c700092d9a85fd074e9)\n2026-11-25T23:47:51.5693985Z Download action repository 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020' (SHA:820762786026740c76f36085b0efc47a31fe5020)\n2026-11-25T23:47:51.6675630Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)\n2026-11-25T23:47:51.9040094Z Uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:47:51.9044861Z Complete job name: docs-protocol / trusted-authorize\n2026-11-25T23:47:51.9761391Z ##[group]Run actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd\n2026-11-25T23:47:51.9762930Z with:\n2026-11-25T23:47:51.9780663Z   script: const expectedRepository = \"agent-teams-ai/.github\";\nconst expectedPath = \".github/workflows/docs-protocol-check.yml\";\nconst audience = \"agent-teams-docs-gate\";\nconst token = await core.getIDToken(audience);\nconst segments = token.split(\".\");\nif (segments.length !== 3) {\n  throw new Error(\"GitHub OIDC token is malformed.\");\n}\nlet claims;\ntry {\n  claims = JSON.parse(Buffer.from(segments[1], \"base64url\").toString(\"utf8\"));\n} catch {\n  throw new Error(\"GitHub OIDC claims are malformed.\");\n}\nconst sha = claims.job_workflow_sha;\nconst workflowRef = claims.job_workflow_ref;\nconst expectedRef = expectedRepository + \"/\" + expectedPath + \"@\" + sha;\nif (claims.iss !== \"https://token.actions.githubusercontent.com\" ||\n    claims.aud !== audience ||\n    claims.repository !== context.repo.owner + \"/\" + context.repo.repo ||\n    String(claims.repository_id) !== process.env.CALLER_REPOSITORY_ID ||\n    claims.sha !== context.sha || claims.ref !== context.ref ||\n    !/^(?!0{40}$)[0-9a-f]{40}$/.test(sha ?? \"\") ||\n    workflowRef !== expectedRef) {\n  throw new Error(\"Called reusable workflow identity is not the exact pinned controller workflow.\");\n}\ncore.setOutput(\"workflow-sha\", sha);\ncore.setOutput(\"workflow-ref\", workflowRef);\ncore.setOutput(\"workflow-repository\", expectedRepository);\ncore.setOutput(\"workflow-file-path\", expectedPath);\nconst controller = await github.rest.repos.get({\n  owner: \"agent-teams-ai\",\n  repo: \".github\"\n});\nif (controller.data.id !== 1316243981 ||\n    controller.data.full_name !== expectedRepository ||\n    controller.data.archived || controller.data.disabled) {\n  throw new Error(\"Live controller repository identity is invalid.\");\n}\nconst branch = await github.rest.repos.getBranch({\n  owner: \"agent-teams-ai\",\n  repo: \".github\",\n  branch: controller.data.default_branch\n});\nconst revision = branch.data.commit.sha;\nif (!/^(?!0{40}$)[0-9a-f]{40}$/.test(revision)) {\n  throw new Error(\"Current controller snapshot is not an immutable commit SHA.\");\n}\ncore.setOutput(\"controller-sha\", revision);\n\n2026-11-25T23:47:51.9804772Z   github-token: ***\n2026-11-25T23:47:51.9805758Z   debug: false\n2026-11-25T23:47:51.9806852Z   user-agent: actions/github-script\n2026-11-25T23:47:51.9808112Z   result-encoding: json\n2026-11-25T23:47:51.9809029Z   retries: 0\n2026-11-25T23:47:51.9809964Z   retry-exempt-status-codes: 400,401,403,404,422\n2026-11-25T23:47:51.9811377Z env:\n2026-11-25T23:47:51.9812624Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:47:51.9814792Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:47:51.9816483Z   CALLER_REPOSITORY_ID: 1314129620\n2026-11-25T23:47:51.9817657Z ##[endgroup]\n2026-11-25T23:47:54.9021940Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n2026-11-25T23:47:54.9022351Z with:\n2026-11-25T23:47:54.9022654Z   repository: agent-teams-ai/.github\n2026-11-25T23:47:54.9022982Z   ref: b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:47:54.9023368Z   path: .trusted/governance\n2026-11-25T23:47:54.9023665Z   persist-credentials: false\n2026-11-25T23:47:54.9025736Z   token: ***\n2026-11-25T23:47:54.9026004Z   ssh-strict: true\n2026-11-25T23:47:54.9026290Z   ssh-user: git\n2026-11-25T23:47:54.9026841Z   clean: true\n2026-11-25T23:47:54.9027191Z   sparse-checkout-cone-mode: true\n2026-11-25T23:47:54.9027515Z   fetch-depth: 1\n2026-11-25T23:47:54.9027785Z   fetch-tags: false\n2026-11-25T23:47:54.9028050Z   show-progress: true\n2026-11-25T23:47:54.9028325Z   lfs: false\n2026-11-25T23:47:54.9028602Z   submodules: false\n2026-11-25T23:47:54.9028921Z   set-safe-directory: true\n2026-11-25T23:47:54.9029230Z   allow-unsafe-pr-checkout: false\n2026-11-25T23:47:54.9029534Z env:\n2026-11-25T23:47:54.9030032Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:47:54.9030637Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:47:54.9031089Z ##[endgroup]\n2026-11-25T23:47:54.9829241Z Syncing repository: agent-teams-ai/.github\n2026-11-25T23:47:54.9830768Z ##[group]Getting Git version info\n2026-11-25T23:47:54.9831243Z Working directory is '/home/runner/work/agent-runtime/agent-runtime/.trusted/governance'\n2026-11-25T23:47:54.9831931Z [command]/usr/bin/git version\n2026-11-25T23:47:54.9956777Z git version 2.56.1\n2026-11-25T23:47:54.9973998Z ##[endgroup]\n2026-11-25T23:47:54.9980738Z Temporarily overriding HOME='/home/runner/work/_temp/d06d7c2b-7ba7-4380-83f7-ac465df045ad' before making global git config changes\n2026-11-25T23:47:54.9981768Z Adding repository directory to the temporary git global config as a safe directory\n2026-11-25T23:47:54.9986468Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:47:55.0030811Z ##[group]Determining repository object format\n2026-11-25T23:47:55.0032067Z ##[endgroup]\n2026-11-25T23:47:55.0036163Z ##[group]Initializing the repository\n2026-11-25T23:47:55.0037246Z [command]/usr/bin/git init /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:47:55.0150547Z hint: Using 'master' as the name for the initial branch. This default branch name\n2026-11-25T23:47:55.0151493Z hint: will change to \"main\" in Git 3.0. To configure the initial branch name\n2026-11-25T23:47:55.0152011Z hint: to use in all of your new repositories, which will suppress this warning,\n2026-11-25T23:47:55.0152439Z hint: call:\n2026-11-25T23:47:55.0152694Z hint:\n2026-11-25T23:47:55.0153060Z hint: \tgit config --global init.defaultBranch <name>\n2026-11-25T23:47:55.0153433Z hint:\n2026-11-25T23:47:55.0153989Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\n2026-11-25T23:47:55.0154482Z hint: 'development'. The just-created branch can be renamed via this command:\n2026-11-25T23:47:55.0154901Z hint:\n2026-11-25T23:47:55.0155153Z hint: \tgit branch -m <name>\n2026-11-25T23:47:55.0155478Z hint:\n2026-11-25T23:47:55.0155854Z hint: Disable this message with \"git config set advice.defaultBranchName false\"\n2026-11-25T23:47:55.0161907Z Initialized empty Git repository in /home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/\n2026-11-25T23:47:55.0169980Z [command]/usr/bin/git remote add origin https://github.com/agent-teams-ai/.github\n2026-11-25T23:47:55.0214672Z ##[endgroup]\n2026-11-25T23:47:55.0215590Z ##[group]Disabling automatic garbage collection\n2026-11-25T23:47:55.0216848Z [command]/usr/bin/git config --local gc.auto 0\n2026-11-25T23:47:55.0241726Z ##[endgroup]\n2026-11-25T23:47:55.0242457Z ##[group]Setting up auth\n2026-11-25T23:47:55.0243324Z Removing SSH command configuration\n2026-11-25T23:47:55.0246929Z [command]/usr/bin/git config --local --name-only --get-regexp core\\.sshCommand\n2026-11-25T23:47:55.0274561Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'core\\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\"\n2026-11-25T23:47:55.1324459Z Removing HTTP extra header\n2026-11-25T23:47:55.1330731Z [command]/usr/bin/git config --local --name-only --get-regexp http\\.https\\:\\/\\/github\\.com\\/\\.extraheader\n2026-11-25T23:47:55.1367083Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'http\\.https\\:\\/\\/github\\.com\\/\\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\"\n2026-11-25T23:47:55.1529087Z Removing includeIf entries pointing to credentials config files\n2026-11-25T23:47:55.1532791Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\\.gitdir:\n2026-11-25T23:47:55.1562800Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url\n2026-11-25T23:47:55.1728819Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config http.https://github.com/.extraheader AUTHORIZATION: basic ***\n2026-11-25T23:47:55.1764358Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path /home/runner/work/_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.1793492Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.1820436Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.trusted/governance/.git.path /github/runner_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.1846221Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path /github/runner_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.1870869Z ##[endgroup]\n2026-11-25T23:47:55.1871427Z ##[group]Fetching the repository\n2026-11-25T23:47:55.1877973Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:47:55.7467204Z From https://github.com/agent-teams-ai/.github\n2026-11-25T23:47:55.7468208Z  * branch            b30455e32cf5d54ade6d8301637701347e4ce57c -> FETCH_HEAD\n2026-11-25T23:47:55.7475559Z [command]/usr/bin/git rev-parse --verify --quiet b30455e32cf5d54ade6d8301637701347e4ce57c^{object}\n2026-11-25T23:47:55.7500840Z b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:47:55.7502671Z ##[endgroup]\n2026-11-25T23:47:55.7503222Z ##[group]Determining the checkout info\n2026-11-25T23:47:55.7503791Z ##[endgroup]\n2026-11-25T23:47:55.7507909Z [command]/usr/bin/git sparse-checkout disable\n2026-11-25T23:47:55.7559755Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig\n2026-11-25T23:47:55.7582260Z ##[group]Checking out the ref\n2026-11-25T23:47:55.7584693Z [command]/usr/bin/git checkout --progress --force b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:47:55.7770265Z Note: switching to 'b30455e32cf5d54ade6d8301637701347e4ce57c'.\n2026-11-25T23:47:55.7770679Z \n2026-11-25T23:47:55.7770882Z You are in 'detached HEAD' state. You can look around, make experimental\n2026-11-25T23:47:55.7771349Z changes and commit them, and you can discard any commits you make in this\n2026-11-25T23:47:55.7771792Z state without impacting any branches by switching back to a branch.\n2026-11-25T23:47:55.7772029Z \n2026-11-25T23:47:55.7772213Z If you want to create a new branch to retain commits you create, you may\n2026-11-25T23:47:55.7772586Z do so (now or later) by using -c with the switch command. Example:\n2026-11-25T23:47:55.7772820Z \n2026-11-25T23:47:55.7773121Z   git switch -c <new-branch-name>\n2026-11-25T23:47:55.7773323Z \n2026-11-25T23:47:55.7773425Z Or undo this operation with:\n2026-11-25T23:47:55.7773600Z \n2026-11-25T23:47:55.7773745Z   git switch -\n2026-11-25T23:47:55.7773892Z \n2026-11-25T23:47:55.7774099Z Turn off this advice by setting config variable advice.detachedHead to false\n2026-11-25T23:47:55.7774325Z \n2026-11-25T23:47:55.7774549Z HEAD is now at b30455e ci(docs): qualify managed launchers on Node 24.21\n2026-11-25T23:47:55.7780467Z ##[endgroup]\n2026-11-25T23:47:55.7814428Z [command]/usr/bin/git log -1 --format=%H\n2026-11-25T23:47:55.7835063Z b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:47:55.7840975Z ##[group]Removing auth\n2026-11-25T23:47:55.7841385Z Removing SSH command configuration\n2026-11-25T23:47:55.7843750Z [command]/usr/bin/git config --local --name-only --get-regexp core\\.sshCommand\n2026-11-25T23:47:55.7869105Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'core\\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\"\n2026-11-25T23:47:55.8024918Z Removing HTTP extra header\n2026-11-25T23:47:55.8025558Z [command]/usr/bin/git config --local --name-only --get-regexp http\\.https\\:\\/\\/github\\.com\\/\\.extraheader\n2026-11-25T23:47:55.8050645Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'http\\.https\\:\\/\\/github\\.com\\/\\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\"\n2026-11-25T23:47:55.8199330Z Removing includeIf entries pointing to credentials config files\n2026-11-25T23:47:55.8207715Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\\.gitdir:\n2026-11-25T23:47:55.8231124Z includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path\n2026-11-25T23:47:55.8232068Z includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path\n2026-11-25T23:47:55.8232709Z includeif.gitdir:/github/workspace/.trusted/governance/.git.path\n2026-11-25T23:47:55.8233216Z includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path\n2026-11-25T23:47:55.8238706Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path\n2026-11-25T23:47:55.8257017Z /home/runner/work/_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.8264143Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path \\/home\\/runner\\/work\\/_temp\\/git\\-credentials\\-2f399e19\\-dfee\\-4a2f\\-8b08\\-d4b102e9d06a\\.config\n2026-11-25T23:47:55.8289167Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path\n2026-11-25T23:47:55.8307434Z /home/runner/work/_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.8312732Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path \\/home\\/runner\\/work\\/_temp\\/git\\-credentials\\-2f399e19\\-dfee\\-4a2f\\-8b08\\-d4b102e9d06a\\.config\n2026-11-25T23:47:55.8337583Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.trusted/governance/.git.path\n2026-11-25T23:47:55.8356694Z /github/runner_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.8361183Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.trusted/governance/.git.path \\/github\\/runner_temp\\/git\\-credentials\\-2f399e19\\-dfee\\-4a2f\\-8b08\\-d4b102e9d06a\\.config\n2026-11-25T23:47:55.8385940Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path\n2026-11-25T23:47:55.8404293Z /github/runner_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config\n2026-11-25T23:47:55.8409364Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path \\/github\\/runner_temp\\/git\\-credentials\\-2f399e19\\-dfee\\-4a2f\\-8b08\\-d4b102e9d06a\\.config\n2026-11-25T23:47:55.8432969Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url\n2026-11-25T23:47:55.8579187Z Removing credentials config '/home/runner/work/_temp/git-credentials-2f399e19-dfee-4a2f-8b08-d4b102e9d06a.config'\n2026-11-25T23:47:55.8584726Z ##[endgroup]\n2026-11-25T23:47:55.8692008Z ##[group]Run pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9\n2026-11-25T23:47:55.8692343Z with:\n2026-11-25T23:47:55.8692593Z   version: 11.18.0\n2026-11-25T23:47:55.8692817Z   run_install: false\n2026-11-25T23:47:55.8693068Z   dest: ~/setup-pnpm\n2026-11-25T23:47:55.8693331Z   cache: false\n2026-11-25T23:47:55.8693557Z   cache_dependency_path: pnpm-lock.yaml\n2026-11-25T23:47:55.8693860Z   package_json_file: package.json\n2026-11-25T23:47:55.8694119Z   standalone: false\n2026-11-25T23:47:55.8694357Z env:\n2026-11-25T23:47:55.8694709Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:47:55.8695269Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:47:55.8695733Z ##[endgroup]\n2026-11-25T23:47:55.9848888Z ##[group]Running self-installer...\n2026-11-25T23:47:59.9015840Z \n2026-11-25T23:47:59.9016772Z added 1 package, and audited 2 packages in 1s\n2026-11-25T23:47:59.9017518Z \n2026-11-25T23:47:59.9017698Z 1 package is looking for funding\n2026-11-25T23:47:59.9018098Z   run `npm fund` for details\n2026-11-25T23:47:59.9098635Z \n2026-11-25T23:47:59.9099212Z 1 high severity vulnerability\n2026-11-25T23:47:59.9099497Z \n2026-11-25T23:47:59.9099598Z To address all issues, run:\n2026-11-25T23:47:59.9100042Z   npm audit fix --force\n2026-11-25T23:47:59.9100200Z \n2026-11-25T23:47:59.9100343Z Run `npm audit` for details.\n2026-11-25T23:48:00.7329008Z Checking for updates...\n2026-11-25T23:48:00.8578717Z Switching pnpm from v11.7.0 to v11.18.0...\n2026-11-25T23:48:01.3676140Z .../.bin/global/v11/8f4-1a2151bec48      | Progress: resolved 1, reused 0, downloaded 0, added 0\n2026-11-25T23:48:01.3688375Z .../.bin/global/v11/8f4-1a2151bec48      |   +1 +\n2026-11-25T23:48:01.6258499Z .../.bin/global/v11/8f4-1a2151bec48      | Progress: resolved 1, reused 0, downloaded 1, added 1, done\n2026-11-25T23:48:01.7098749Z [WARN] Detected a pnpm v10 installation layout at PNPM_HOME. The pnpm shims at PNPM_HOME have been refreshed so the new version is active, but pnpm v11 expects bins in PNPM_HOME/bin. Run \"pnpm setup\" to migrate your PATH to the v11 layout.\n2026-11-25T23:48:01.7130420Z Successfully updated pnpm to v11.18.0\n2026-11-25T23:48:01.9111535Z ##[endgroup]\n2026-11-25T23:48:01.9111838Z Installation Completed!\n2026-11-25T23:48:01.9230451Z ##[group]Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020\n2026-11-25T23:48:01.9230785Z with:\n2026-11-25T23:48:01.9231070Z   node-version: 24.21.0\n2026-11-25T23:48:01.9231297Z   cache: pnpm\n2026-11-25T23:48:01.9231693Z   cache-dependency-path: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance/pnpm-lock.yaml\n2026-11-25T23:48:01.9232115Z   check-latest: false\n2026-11-25T23:48:01.9233910Z   token: ***\n2026-11-25T23:48:01.9234146Z   package-manager-cache: true\n2026-11-25T23:48:01.9234386Z env:\n2026-11-25T23:48:01.9234904Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:48:01.9235447Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:48:01.9235944Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-25T23:48:01.9236228Z ##[endgroup]\n2026-11-25T23:48:02.0484308Z Attempting to download 24.21.0...\n2026-11-25T23:48:02.6904013Z Acquiring 24.21.0 - x64 from https://github.com/actions/node-versions/releases/download/24.21.0-34304089047/node-24.21.0-linux-x64.tar.gz\n2026-11-25T23:48:04.6755949Z Extracting ...\n2026-11-25T23:48:04.6844460Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/fe763131-95ef-479e-8e51-449d3dada0b9 -f /home/runner/work/_temp/22c299da-0c1b-4ed6-9b25-d7f08c500e22\n2026-11-25T23:48:05.7332621Z Adding to the cache ...\n2026-11-25T23:48:06.7074481Z ##[group]Environment details\n2026-11-25T23:48:07.1389724Z node: v24.21.0\n2026-11-25T23:48:07.1390280Z npm: 11.19.0\n2026-11-25T23:48:07.1390541Z yarn: 1.22.22\n2026-11-25T23:48:07.1391312Z ##[endgroup]\n2026-11-25T23:48:07.1403116Z [command]/home/runner/setup-pnpm/node_modules/.bin/bin/pnpm store path --silent\n2026-11-25T23:48:07.5696657Z /home/runner/setup-pnpm/node_modules/.bin/store/v11\n2026-11-25T23:48:07.8454476Z Cache hit for: node-cache-Linux-x64-pnpm-9021a548dba5f96c077d2f80441bba54208130677aee13af813b55f52f4ccf5f\n2026-11-25T23:48:09.1862826Z Received 0 of 81865673 (0.0%), 0.0 MBs/sec\n2026-11-25T23:48:10.1868563Z Received 73477065 of 81865673 (89.8%), 35.0 MBs/sec\n2026-11-25T23:48:10.3066191Z Received 81865673 of 81865673 (100.0%), 36.8 MBs/sec\n2026-11-25T23:48:10.3066931Z Cache Size: ~78 MB (81865673 B)\n2026-11-25T23:48:10.3090483Z [command]/usr/bin/tar -xf /home/runner/work/_temp/5dc6e0db-e99b-406e-adba-692102fbc975/cache.tzst -P -C /home/runner/work/agent-runtime/agent-runtime --use-compress-program unzstd\n2026-11-25T23:48:10.8957776Z Cache restored successfully\n2026-11-25T23:48:10.8990367Z Cache restored from key: node-cache-Linux-x64-pnpm-9021a548dba5f96c077d2f80441bba54208130677aee13af813b55f52f4ccf5f\n2026-11-25T23:48:10.9149415Z ##[group]Run pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile\n2026-11-25T23:48:10.9150145Z \u001b[36;1mpnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile\u001b[0m\n2026-11-25T23:48:11.0550247Z shell: /usr/bin/bash -e {0}\n2026-11-25T23:48:11.0550549Z env:\n2026-11-25T23:48:11.0550902Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:48:11.0551529Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:48:11.0551990Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-25T23:48:11.0552325Z ##[endgroup]\n2026-11-25T23:48:11.4237127Z ? Verifying lockfile against supply-chain policies (674 entries)...\n2026-11-25T23:48:11.4262625Z Lockfile is up to date, resolution step is skipped\n2026-11-25T23:48:11.4298603Z ✓ Lockfile passes supply-chain policies (674 entries in 7ms)\n2026-11-25T23:48:11.4614226Z Progress: resolved 1, reused 0, downloaded 0, added 0\n2026-11-25T23:48:11.5257357Z Packages: +635\n2026-11-25T23:48:11.5258271Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n2026-11-25T23:48:11.7804223Z Packages are hard linked from the content-addressable store to the virtual store.\n2026-11-25T23:48:11.7810429Z   Content-addressable store is at: /home/runner/setup-pnpm/node_modules/.bin/store/v11\n2026-11-25T23:48:11.7811000Z   Virtual store is at:             node_modules/.pnpm\n2026-11-25T23:48:12.3259511Z Progress: resolved 635, reused 632, downloaded 0, added 635, done\n2026-11-25T23:48:12.4865818Z \n2026-11-25T23:48:12.4866844Z devDependencies:\n2026-11-25T23:48:12.4867533Z + @agent-teams/engineering-foundation 1.5.0\n2026-11-25T23:48:12.4867993Z + ajv 8.20.0\n2026-11-25T23:48:12.4868346Z + oxlint 1.85.0\n2026-11-25T23:48:12.4868683Z + renovate 44.24.2\n2026-11-25T23:48:12.4869018Z + yaml 2.9.0\n2026-11-25T23:48:12.4869231Z \n2026-11-25T23:48:12.4975888Z Done in 1.4s using pnpm v11.18.0\n2026-11-25T23:48:12.5159171Z ##[group]Run node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize\n2026-11-25T23:48:12.5159722Z \u001b[36;1mnode \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize\u001b[0m\n2026-11-25T23:48:12.5185819Z shell: /usr/bin/bash -e {0}\n2026-11-25T23:48:12.5186138Z env:\n2026-11-25T23:48:12.5186951Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:48:12.5187547Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:48:12.5188035Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-25T23:48:12.5190214Z   GITHUB_TOKEN: ***\n2026-11-25T23:48:12.5190496Z   GITHUB_REPOSITORY: agent-teams-ai/agent-runtime\n2026-11-25T23:48:12.5190791Z   CALLER_REPOSITORY_ID: 1314129620\n2026-11-25T23:48:12.5191130Z   GITHUB_SHA: cae4d350c947cd9f74bc04130531527c9a36baeb\n2026-11-25T23:48:12.5191589Z   CONTROLLER_SNAPSHOT_SHA: 755c8515a5d106402a7e9e2cff621fb1fdc855cf\n2026-11-25T23:48:12.5191962Z   JOB_WORKFLOW_SHA: b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:48:12.5192516Z   JOB_WORKFLOW_REF: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-25T23:48:12.5192996Z   JOB_WORKFLOW_REPOSITORY: agent-teams-ai/.github\n2026-11-25T23:48:12.5193365Z   JOB_WORKFLOW_FILE_PATH: .github/workflows/docs-protocol-check.yml\n2026-11-25T23:48:12.5193706Z ##[endgroup]\n2026-11-25T23:48:15.4891190Z Authorized agent-teams-ai/agent-runtime at cae4d350c947cd9f74bc04130531527c9a36baeb for docs-2026-10-03-stable31.\n2026-11-25T23:48:15.5015455Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a\n2026-11-25T23:48:15.5015843Z with:\n2026-11-25T23:48:15.5016096Z   name: docs-gate-authorization-45724048832-1\n2026-11-25T23:48:15.5017049Z   path: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:48:15.5017506Z   if-no-files-found: error\n2026-11-25T23:48:15.5017760Z   retention-days: 1\n2026-11-25T23:48:15.5018007Z   compression-level: 6\n2026-11-25T23:48:15.5018262Z   overwrite: false\n2026-11-25T23:48:15.5018522Z   include-hidden-files: false\n2026-11-25T23:48:15.5019407Z   archive: true\n2026-11-25T23:48:15.5019643Z env:\n2026-11-25T23:48:15.5020209Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:48:15.5020892Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-25T23:48:15.5021536Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-25T23:48:15.5021907Z ##[endgroup]\n2026-11-25T23:48:15.6098708Z With the provided path, there will be 1 file uploaded\n2026-11-25T23:48:15.6147472Z Artifact name is valid!\n2026-11-25T23:48:15.6177941Z Root directory input is valid!\n2026-11-25T23:48:15.9997817Z Uploading artifact: docs-gate-authorization-45724048832-1.zip\n2026-11-25T23:48:16.0016865Z Beginning upload of artifact content to blob storage\n2026-11-25T23:48:16.3442101Z Uploaded bytes 10699\n2026-11-25T23:48:16.4299023Z Finished uploading artifact content to blob storage!\n2026-11-25T23:48:16.4299999Z SHA256 digest of uploaded artifact is bd33a9787952599a37265f2a5633e11123578c8ff8ba213cb09a353fa4a1e264\n2026-11-25T23:48:16.4300504Z Finalizing artifact upload\n2026-11-25T23:48:16.9679197Z Artifact docs-gate-authorization-45724048832-1 successfully finalized. Artifact ID 15074345142\n2026-11-25T23:48:16.9680011Z Artifact docs-gate-authorization-45724048832-1 has been successfully uploaded! Final size is 10699 bytes. Artifact ID is 15074345142\n2026-11-25T23:48:16.9681994Z Artifact download URL: https://github.com/agent-teams-ai/agent-runtime/actions/runs/45724048832/artifacts/15074345142\n2026-11-25T23:48:16.9815556Z Post job cleanup.\n2026-11-25T23:48:17.0652357Z Cache hit occurred on the primary key node-cache-Linux-x64-pnpm-9021a548dba5f96c077d2f80441bba54208130677aee13af813b55f52f4ccf5f, not saving cache.\n2026-11-25T23:48:17.0724981Z Post job cleanup.\n2026-11-25T23:48:17.1795794Z Pruning is unnecessary.\n2026-11-25T23:48:17.1885762Z Post job cleanup.\n2026-11-25T23:48:17.2547896Z [command]/usr/bin/git version\n2026-11-25T23:48:17.2577044Z git version 2.56.1\n2026-11-25T23:48:17.2599564Z Temporarily overriding HOME='/home/runner/work/_temp/2e66b6fd-63eb-4337-9578-2b197fd379dc' before making global git config changes\n2026-11-25T23:48:17.2600980Z Adding repository directory to the temporary git global config as a safe directory\n2026-11-25T23:48:17.2602829Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-25T23:48:17.2624167Z Removing SSH command configuration\n2026-11-25T23:48:17.2629540Z [command]/usr/bin/git config --local --name-only --get-regexp core\\.sshCommand\n2026-11-25T23:48:17.2654328Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'core\\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\"\n2026-11-25T23:48:17.2824446Z Removing HTTP extra header\n2026-11-25T23:48:17.2829115Z [command]/usr/bin/git config --local --name-only --get-regexp http\\.https\\:\\/\\/github\\.com\\/\\.extraheader\n2026-11-25T23:48:17.2877156Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'http\\.https\\:\\/\\/github\\.com\\/\\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\"\n2026-11-25T23:48:17.3092269Z Removing includeIf entries pointing to credentials config files\n2026-11-25T23:48:17.3098684Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\\.gitdir:\n2026-11-25T23:48:17.3160314Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url\n2026-11-25T23:48:17.3444619Z Evaluate and set job outputs\n2026-11-25T23:48:17.3450651Z Set output 'workflow-sha'\n2026-11-25T23:48:17.3452123Z Set output 'controller-sha'\n2026-11-25T23:48:17.3452782Z Set output 'workflow-ref'\n2026-11-25T23:48:17.3453309Z Set output 'workflow-repository'\n2026-11-25T23:48:17.3453697Z Set output 'workflow-file-path'\n2026-11-25T23:48:17.3454089Z Set output 'qualification-profile'\n2026-11-25T23:48:17.3454673Z Cleaning up orphan processes\n"
+    },
+    "current_authorize": {
+      "job_id": 140032413292,
+      "digest": "sha256:01169a71afdf8216d19b3350e5f3ae3b24644e4c593445eaa19f14ec64391eda",
+      "utf8": "﻿2026-11-26T16:05:25.5870933Z Current runner version: '2.338.2'\n2026-11-26T16:05:25.5896988Z ##[group]Runner Image Provisioner\n2026-11-26T16:05:25.5897768Z Hosted Compute Agent\n2026-11-26T16:05:25.5898191Z Version: 20261111.635\n2026-11-26T16:05:25.5898680Z Commit: b8a594ea514ff44cadb5342986c68b1eac6e22ed\n2026-11-26T16:05:25.5899239Z Build Date: 2026-11-11T01:49:01Z\n2026-11-26T16:05:25.5899762Z Worker ID: {aab2bc8b-97a0-4ebf-ab1a-a59500ad71a2}\n2026-11-26T16:05:25.5900323Z Region: us-east-1\n2026-11-26T16:05:25.5900720Z Cloud: AWS\n2026-11-26T16:05:25.5901115Z ##[endgroup]\n2026-11-26T16:05:25.5902129Z ##[group]Operating System\n2026-11-26T16:05:25.5902604Z Ubuntu\n2026-11-26T16:05:25.5902975Z 24.04.5\n2026-11-26T16:05:25.5903331Z LTS\n2026-11-26T16:05:25.5903723Z ##[endgroup]\n2026-11-26T16:05:25.5904109Z ##[group]Runner Image\n2026-11-26T16:05:25.5904528Z Image: ubuntu-24.04\n2026-11-26T16:05:25.5904952Z Version: 20261122.23.1\n2026-11-26T16:05:25.5906198Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261122.23/images/ubuntu/Ubuntu2404-Readme.md\n2026-11-26T16:05:25.5907454Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261122.23\n2026-11-26T16:05:25.5908343Z ##[endgroup]\n2026-11-26T16:05:25.5909196Z ##[group]GITHUB_TOKEN Permissions\n2026-11-26T16:05:25.5911035Z Contents: read\n2026-11-26T16:05:25.5911451Z Metadata: read\n2026-11-26T16:05:25.5911844Z ##[endgroup]\n2026-11-26T16:05:25.5913463Z Secret source: Actions\n2026-11-26T16:05:25.5914134Z Cache mode: write\n2026-11-26T16:05:25.5914802Z Prepare workflow directory\n2026-11-26T16:05:25.6284335Z Prepare all required actions\n2026-11-26T16:05:25.6322493Z Getting action download info\n2026-11-26T16:05:25.8420437Z Download action repository 'actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd' (SHA:ed597411d8f924073f98dfc5c65a23a2325f34cd)\n2026-11-26T16:05:26.7737636Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)\n2026-11-26T16:05:26.8216373Z Download action repository 'pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9' (SHA:008330803749db0355799c700092d9a85fd074e9)\n2026-11-26T16:05:26.9037033Z Download action repository 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020' (SHA:820762786026740c76f36085b0efc47a31fe5020)\n2026-11-26T16:05:27.1050069Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)\n2026-11-26T16:05:27.3326083Z Uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:27.3330900Z Complete job name: docs-protocol / trusted-authorize\n2026-11-26T16:05:27.3987875Z ##[group]Run actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd\n2026-11-26T16:05:27.3989280Z with:\n2026-11-26T16:05:27.4006130Z   script: const expectedRepository = \"agent-teams-ai/.github\";\nconst expectedPath = \".github/workflows/docs-protocol-check.yml\";\nconst audience = \"agent-teams-docs-gate\";\nconst token = await core.getIDToken(audience);\nconst segments = token.split(\".\");\nif (segments.length !== 3) {\n  throw new Error(\"GitHub OIDC token is malformed.\");\n}\nlet claims;\ntry {\n  claims = JSON.parse(Buffer.from(segments[1], \"base64url\").toString(\"utf8\"));\n} catch {\n  throw new Error(\"GitHub OIDC claims are malformed.\");\n}\nconst sha = claims.job_workflow_sha;\nconst workflowRef = claims.job_workflow_ref;\nconst expectedRef = expectedRepository + \"/\" + expectedPath + \"@\" + sha;\nif (claims.iss !== \"https://token.actions.githubusercontent.com\" ||\n    claims.aud !== audience ||\n    claims.repository !== context.repo.owner + \"/\" + context.repo.repo ||\n    String(claims.repository_id) !== process.env.CALLER_REPOSITORY_ID ||\n    claims.sha !== context.sha || claims.ref !== context.ref ||\n    !/^(?!0{40}$)[0-9a-f]{40}$/.test(sha ?? \"\") ||\n    workflowRef !== expectedRef) {\n  throw new Error(\"Called reusable workflow identity is not the exact pinned controller workflow.\");\n}\ncore.setOutput(\"workflow-sha\", sha);\ncore.setOutput(\"workflow-ref\", workflowRef);\ncore.setOutput(\"workflow-repository\", expectedRepository);\ncore.setOutput(\"workflow-file-path\", expectedPath);\nconst controller = await github.rest.repos.get({\n  owner: \"agent-teams-ai\",\n  repo: \".github\"\n});\nif (controller.data.id !== 1316243981 ||\n    controller.data.full_name !== expectedRepository ||\n    controller.data.archived || controller.data.disabled) {\n  throw new Error(\"Live controller repository identity is invalid.\");\n}\nconst branch = await github.rest.repos.getBranch({\n  owner: \"agent-teams-ai\",\n  repo: \".github\",\n  branch: controller.data.default_branch\n});\nconst revision = branch.data.commit.sha;\nif (!/^(?!0{40}$)[0-9a-f]{40}$/.test(revision)) {\n  throw new Error(\"Current controller snapshot is not an immutable commit SHA.\");\n}\ncore.setOutput(\"controller-sha\", revision);\n\n2026-11-26T16:05:27.4028166Z   github-token: ***\n2026-11-26T16:05:27.4028935Z   debug: false\n2026-11-26T16:05:27.4029696Z   user-agent: actions/github-script\n2026-11-26T16:05:27.4030562Z   result-encoding: json\n2026-11-26T16:05:27.4031304Z   retries: 0\n2026-11-26T16:05:27.4032088Z   retry-exempt-status-codes: 400,401,403,404,422\n2026-11-26T16:05:27.4033319Z env:\n2026-11-26T16:05:27.4034403Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:27.4036370Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:27.4037861Z   CALLER_REPOSITORY_ID: 1314129620\n2026-11-26T16:05:27.4038693Z ##[endgroup]\n2026-11-26T16:05:30.8075652Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n2026-11-26T16:05:30.8076312Z with:\n2026-11-26T16:05:30.8076600Z   repository: agent-teams-ai/.github\n2026-11-26T16:05:30.8076923Z   ref: b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:30.8077244Z   path: .trusted/governance\n2026-11-26T16:05:30.8077530Z   persist-credentials: false\n2026-11-26T16:05:30.8079393Z   token: ***\n2026-11-26T16:05:30.8079642Z   ssh-strict: true\n2026-11-26T16:05:30.8079919Z   ssh-user: git\n2026-11-26T16:05:30.8080180Z   clean: true\n2026-11-26T16:05:30.8080463Z   sparse-checkout-cone-mode: true\n2026-11-26T16:05:30.8080807Z   fetch-depth: 1\n2026-11-26T16:05:30.8081049Z   fetch-tags: false\n2026-11-26T16:05:30.8081390Z   show-progress: true\n2026-11-26T16:05:30.8081687Z   lfs: false\n2026-11-26T16:05:30.8081962Z   submodules: false\n2026-11-26T16:05:30.8082254Z   set-safe-directory: true\n2026-11-26T16:05:30.8082572Z   allow-unsafe-pr-checkout: false\n2026-11-26T16:05:30.8082876Z env:\n2026-11-26T16:05:30.8083331Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:30.8083906Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:30.8084338Z ##[endgroup]\n2026-11-26T16:05:30.8822108Z Syncing repository: agent-teams-ai/.github\n2026-11-26T16:05:30.8823752Z ##[group]Getting Git version info\n2026-11-26T16:05:30.8824356Z Working directory is '/home/runner/work/agent-runtime/agent-runtime/.trusted/governance'\n2026-11-26T16:05:30.8825128Z [command]/usr/bin/git version\n2026-11-26T16:05:31.0979643Z git version 2.56.1\n2026-11-26T16:05:31.1001172Z ##[endgroup]\n2026-11-26T16:05:31.1011675Z Temporarily overriding HOME='/home/runner/work/_temp/8d54c0c8-6f80-4ea5-bb63-4043b038d37e' before making global git config changes\n2026-11-26T16:05:31.1012371Z Adding repository directory to the temporary git global config as a safe directory\n2026-11-26T16:05:31.1017791Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:31.1638542Z ##[group]Determining repository object format\n2026-11-26T16:05:31.1640086Z ##[endgroup]\n2026-11-26T16:05:31.1640439Z ##[group]Initializing the repository\n2026-11-26T16:05:31.1644189Z [command]/usr/bin/git init /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:31.1783370Z hint: Using 'master' as the name for the initial branch. This default branch name\n2026-11-26T16:05:31.1784457Z hint: will change to \"main\" in Git 3.0. To configure the initial branch name\n2026-11-26T16:05:31.1784870Z hint: to use in all of your new repositories, which will suppress this warning,\n2026-11-26T16:05:31.1785205Z hint: call:\n2026-11-26T16:05:31.1785505Z hint:\n2026-11-26T16:05:31.1785983Z hint: \tgit config --global init.defaultBranch <name>\n2026-11-26T16:05:31.1786301Z hint:\n2026-11-26T16:05:31.1786593Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\n2026-11-26T16:05:31.1786988Z hint: 'development'. The just-created branch can be renamed via this command:\n2026-11-26T16:05:31.1787393Z hint:\n2026-11-26T16:05:31.1787612Z hint: \tgit branch -m <name>\n2026-11-26T16:05:31.1787858Z hint:\n2026-11-26T16:05:31.1788150Z hint: Disable this message with \"git config set advice.defaultBranchName false\"\n2026-11-26T16:05:31.1789530Z Initialized empty Git repository in /home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/\n2026-11-26T16:05:31.1798073Z [command]/usr/bin/git remote add origin https://github.com/agent-teams-ai/.github\n2026-11-26T16:05:31.1848009Z ##[endgroup]\n2026-11-26T16:05:31.1848442Z ##[group]Disabling automatic garbage collection\n2026-11-26T16:05:31.1851370Z [command]/usr/bin/git config --local gc.auto 0\n2026-11-26T16:05:31.1874721Z ##[endgroup]\n2026-11-26T16:05:31.1875175Z ##[group]Setting up auth\n2026-11-26T16:05:31.1875472Z Removing SSH command configuration\n2026-11-26T16:05:31.1879509Z [command]/usr/bin/git config --local --name-only --get-regexp core\\.sshCommand\n2026-11-26T16:05:31.1906129Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'core\\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\"\n2026-11-26T16:05:31.4737622Z Removing HTTP extra header\n2026-11-26T16:05:31.4743031Z [command]/usr/bin/git config --local --name-only --get-regexp http\\.https\\:\\/\\/github\\.com\\/\\.extraheader\n2026-11-26T16:05:31.4774609Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'http\\.https\\:\\/\\/github\\.com\\/\\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\"\n2026-11-26T16:05:31.4926791Z Removing includeIf entries pointing to credentials config files\n2026-11-26T16:05:31.4930867Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\\.gitdir:\n2026-11-26T16:05:31.4954570Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url\n2026-11-26T16:05:31.5104774Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config http.https://github.com/.extraheader AUTHORIZATION: basic ***\n2026-11-26T16:05:31.5135091Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path /home/runner/work/_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.5158533Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.5182007Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.trusted/governance/.git.path /github/runner_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.5206079Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path /github/runner_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.5227957Z ##[endgroup]\n2026-11-26T16:05:31.5228575Z ##[group]Fetching the repository\n2026-11-26T16:05:31.5231686Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:31.8457120Z From https://github.com/agent-teams-ai/.github\n2026-11-26T16:05:31.8458185Z  * branch            b30455e32cf5d54ade6d8301637701347e4ce57c -> FETCH_HEAD\n2026-11-26T16:05:31.8467141Z [command]/usr/bin/git rev-parse --verify --quiet b30455e32cf5d54ade6d8301637701347e4ce57c^{object}\n2026-11-26T16:05:31.8489402Z b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:31.8491509Z ##[endgroup]\n2026-11-26T16:05:31.8492091Z ##[group]Determining the checkout info\n2026-11-26T16:05:31.8492752Z ##[endgroup]\n2026-11-26T16:05:31.8496350Z [command]/usr/bin/git sparse-checkout disable\n2026-11-26T16:05:31.8551396Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig\n2026-11-26T16:05:31.8572808Z ##[group]Checking out the ref\n2026-11-26T16:05:31.8575511Z [command]/usr/bin/git checkout --progress --force b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:31.8750546Z Note: switching to 'b30455e32cf5d54ade6d8301637701347e4ce57c'.\n2026-11-26T16:05:31.8750823Z \n2026-11-26T16:05:31.8751100Z You are in 'detached HEAD' state. You can look around, make experimental\n2026-11-26T16:05:31.8751544Z changes and commit them, and you can discard any commits you make in this\n2026-11-26T16:05:31.8751952Z state without impacting any branches by switching back to a branch.\n2026-11-26T16:05:31.8752169Z \n2026-11-26T16:05:31.8752346Z If you want to create a new branch to retain commits you create, you may\n2026-11-26T16:05:31.8752707Z do so (now or later) by using -c with the switch command. Example:\n2026-11-26T16:05:31.8752913Z \n2026-11-26T16:05:31.8753197Z   git switch -c <new-branch-name>\n2026-11-26T16:05:31.8753395Z \n2026-11-26T16:05:31.8753492Z Or undo this operation with:\n2026-11-26T16:05:31.8753807Z \n2026-11-26T16:05:31.8753916Z   git switch -\n2026-11-26T16:05:31.8754040Z \n2026-11-26T16:05:31.8754265Z Turn off this advice by setting config variable advice.detachedHead to false\n2026-11-26T16:05:31.8754542Z \n2026-11-26T16:05:31.8754689Z HEAD is now at b30455e ci(docs): qualify managed launchers on Node 24.21\n2026-11-26T16:05:31.8760343Z ##[endgroup]\n2026-11-26T16:05:31.8792940Z [command]/usr/bin/git log -1 --format=%H\n2026-11-26T16:05:31.8813861Z b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:31.8822476Z ##[group]Removing auth\n2026-11-26T16:05:31.8822845Z Removing SSH command configuration\n2026-11-26T16:05:31.8824158Z [command]/usr/bin/git config --local --name-only --get-regexp core\\.sshCommand\n2026-11-26T16:05:31.8848444Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'core\\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\"\n2026-11-26T16:05:31.8998083Z Removing HTTP extra header\n2026-11-26T16:05:31.9000396Z [command]/usr/bin/git config --local --name-only --get-regexp http\\.https\\:\\/\\/github\\.com\\/\\.extraheader\n2026-11-26T16:05:31.9024389Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'http\\.https\\:\\/\\/github\\.com\\/\\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\"\n2026-11-26T16:05:31.9171048Z Removing includeIf entries pointing to credentials config files\n2026-11-26T16:05:31.9174733Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\\.gitdir:\n2026-11-26T16:05:31.9200591Z includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path\n2026-11-26T16:05:31.9201568Z includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path\n2026-11-26T16:05:31.9202452Z includeif.gitdir:/github/workspace/.trusted/governance/.git.path\n2026-11-26T16:05:31.9203031Z includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path\n2026-11-26T16:05:31.9206862Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path\n2026-11-26T16:05:31.9230627Z /home/runner/work/_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.9237040Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git.path \\/home\\/runner\\/work\\/_temp\\/git\\-credentials\\-bd45595c\\-b18a\\-4ddb\\-ba71\\-6847af7208ce\\.config\n2026-11-26T16:05:31.9260644Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path\n2026-11-26T16:05:31.9278608Z /home/runner/work/_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.9284663Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/agent-runtime/agent-runtime/.trusted/governance/.git/worktrees/*.path \\/home\\/runner\\/work\\/_temp\\/git\\-credentials\\-bd45595c\\-b18a\\-4ddb\\-ba71\\-6847af7208ce\\.config\n2026-11-26T16:05:31.9308344Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.trusted/governance/.git.path\n2026-11-26T16:05:31.9326375Z /github/runner_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.9331157Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.trusted/governance/.git.path \\/github\\/runner_temp\\/git\\-credentials\\-bd45595c\\-b18a\\-4ddb\\-ba71\\-6847af7208ce\\.config\n2026-11-26T16:05:31.9356795Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path\n2026-11-26T16:05:31.9374087Z /github/runner_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config\n2026-11-26T16:05:31.9378441Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.trusted/governance/.git/worktrees/*.path \\/github\\/runner_temp\\/git\\-credentials\\-bd45595c\\-b18a\\-4ddb\\-ba71\\-6847af7208ce\\.config\n2026-11-26T16:05:31.9401951Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url\n2026-11-26T16:05:31.9548615Z Removing credentials config '/home/runner/work/_temp/git-credentials-bd45595c-b18a-4ddb-ba71-6847af7208ce.config'\n2026-11-26T16:05:31.9554019Z ##[endgroup]\n2026-11-26T16:05:31.9658766Z ##[group]Run pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9\n2026-11-26T16:05:31.9659101Z with:\n2026-11-26T16:05:31.9659364Z   version: 11.18.0\n2026-11-26T16:05:31.9659572Z   run_install: false\n2026-11-26T16:05:31.9659856Z   dest: ~/setup-pnpm\n2026-11-26T16:05:31.9660069Z   cache: false\n2026-11-26T16:05:31.9660303Z   cache_dependency_path: pnpm-lock.yaml\n2026-11-26T16:05:31.9660576Z   package_json_file: package.json\n2026-11-26T16:05:31.9660809Z   standalone: false\n2026-11-26T16:05:31.9661048Z env:\n2026-11-26T16:05:31.9661400Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:31.9661926Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:31.9662328Z ##[endgroup]\n2026-11-26T16:05:32.0733721Z ##[group]Running self-installer...\n2026-11-26T16:05:36.4397239Z \n2026-11-26T16:05:36.4397908Z added 1 package, and audited 2 packages in 1s\n2026-11-26T16:05:36.4398432Z \n2026-11-26T16:05:36.4398732Z 1 package is looking for funding\n2026-11-26T16:05:36.4399135Z   run `npm fund` for details\n2026-11-26T16:05:36.4495774Z \n2026-11-26T16:05:36.4497251Z 1 high severity vulnerability\n2026-11-26T16:05:36.4497599Z \n2026-11-26T16:05:36.4497714Z To address all issues, run:\n2026-11-26T16:05:36.4497975Z   npm audit fix --force\n2026-11-26T16:05:36.4498127Z \n2026-11-26T16:05:36.4498274Z Run `npm audit` for details.\n2026-11-26T16:05:37.5246343Z Checking for updates...\n2026-11-26T16:05:37.7884880Z Switching pnpm from v11.7.0 to v11.18.0...\n2026-11-26T16:05:38.2624103Z .../.bin/global/v11/8ed-1a2189af4c0      | Progress: resolved 1, reused 0, downloaded 0, added 0\n2026-11-26T16:05:38.2636527Z .../.bin/global/v11/8ed-1a2189af4c0      |   +1 +\n2026-11-26T16:05:38.5091747Z .../.bin/global/v11/8ed-1a2189af4c0      | Progress: resolved 1, reused 0, downloaded 1, added 1, done\n2026-11-26T16:05:38.6015939Z [WARN] Detected a pnpm v10 installation layout at PNPM_HOME. The pnpm shims at PNPM_HOME have been refreshed so the new version is active, but pnpm v11 expects bins in PNPM_HOME/bin. Run \"pnpm setup\" to migrate your PATH to the v11 layout.\n2026-11-26T16:05:38.6051848Z Successfully updated pnpm to v11.18.0\n2026-11-26T16:05:38.8094553Z ##[endgroup]\n2026-11-26T16:05:38.8095644Z Installation Completed!\n2026-11-26T16:05:38.8213311Z ##[group]Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020\n2026-11-26T16:05:38.8213670Z with:\n2026-11-26T16:05:38.8213884Z   node-version: 24.21.0\n2026-11-26T16:05:38.8214160Z   cache: pnpm\n2026-11-26T16:05:38.8214545Z   cache-dependency-path: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance/pnpm-lock.yaml\n2026-11-26T16:05:38.8214967Z   check-latest: false\n2026-11-26T16:05:38.8216946Z   token: ***\n2026-11-26T16:05:38.8217189Z   package-manager-cache: true\n2026-11-26T16:05:38.8217435Z env:\n2026-11-26T16:05:38.8217758Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:38.8218284Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:38.8218775Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-26T16:05:38.8219066Z ##[endgroup]\n2026-11-26T16:05:38.9515064Z Attempting to download 24.21.0...\n2026-11-26T16:05:39.4357102Z Acquiring 24.21.0 - x64 from https://github.com/actions/node-versions/releases/download/24.21.0-34304089047/node-24.21.0-linux-x64.tar.gz\n2026-11-26T16:05:39.7230742Z Extracting ...\n2026-11-26T16:05:39.7326092Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/e4ffc205-c830-417e-b0ce-5a01f9b1828f -f /home/runner/work/_temp/83def151-6a7c-4c16-978e-83afd5ea5451\n2026-11-26T16:05:40.7714641Z Adding to the cache ...\n2026-11-26T16:05:41.8011609Z ##[group]Environment details\n2026-11-26T16:05:42.1254702Z node: v24.21.0\n2026-11-26T16:05:42.1255261Z npm: 11.19.0\n2026-11-26T16:05:42.1255544Z yarn: 1.22.22\n2026-11-26T16:05:42.1256622Z ##[endgroup]\n2026-11-26T16:05:42.1270733Z [command]/home/runner/setup-pnpm/node_modules/.bin/bin/pnpm store path --silent\n2026-11-26T16:05:42.5535033Z /home/runner/setup-pnpm/node_modules/.bin/store/v11\n2026-11-26T16:05:42.6387824Z Cache hit for: node-cache-Linux-x64-pnpm-9021a548dba5f96c077d2f80441bba54208130677aee13af813b55f52f4ccf5f\n2026-11-26T16:05:43.3694095Z Received 81865673 of 81865673 (100.0%), 122.2 MBs/sec\n2026-11-26T16:05:43.3694602Z Cache Size: ~78 MB (81865673 B)\n2026-11-26T16:05:43.3716196Z [command]/usr/bin/tar -xf /home/runner/work/_temp/b0d9505c-ac58-47d8-b7cf-2c78f65fc4d1/cache.tzst -P -C /home/runner/work/agent-runtime/agent-runtime --use-compress-program unzstd\n2026-11-26T16:05:44.0052065Z Cache restored successfully\n2026-11-26T16:05:44.0084737Z Cache restored from key: node-cache-Linux-x64-pnpm-9021a548dba5f96c077d2f80441bba54208130677aee13af813b55f52f4ccf5f\n2026-11-26T16:05:44.0242988Z ##[group]Run pnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile\n2026-11-26T16:05:44.0243680Z \u001b[36;1mpnpm install --dir \"$TRUSTED_GOVERNANCE_ROOT\" --frozen-lockfile --ignore-scripts --ignore-pnpmfile\u001b[0m\n2026-11-26T16:05:44.5144053Z shell: /usr/bin/bash -e {0}\n2026-11-26T16:05:44.5144440Z env:\n2026-11-26T16:05:44.5144821Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:44.5145371Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:44.5146070Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-26T16:05:44.5146399Z ##[endgroup]\n2026-11-26T16:05:44.8905029Z ? Verifying lockfile against supply-chain policies (674 entries)...\n2026-11-26T16:05:44.8931669Z Lockfile is up to date, resolution step is skipped\n2026-11-26T16:05:44.8969458Z ✓ Lockfile passes supply-chain policies (674 entries in 7ms)\n2026-11-26T16:05:44.9318567Z Progress: resolved 1, reused 0, downloaded 0, added 0\n2026-11-26T16:05:44.9841903Z Packages: +635\n2026-11-26T16:05:44.9869064Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n2026-11-26T16:05:45.1893317Z Packages are hard linked from the content-addressable store to the virtual store.\n2026-11-26T16:05:45.1897047Z   Content-addressable store is at: /home/runner/setup-pnpm/node_modules/.bin/store/v11\n2026-11-26T16:05:45.1900605Z   Virtual store is at:             node_modules/.pnpm\n2026-11-26T16:05:45.7315242Z Progress: resolved 635, reused 632, downloaded 0, added 635, done\n2026-11-26T16:05:45.9288122Z \n2026-11-26T16:05:45.9291736Z devDependencies:\n2026-11-26T16:05:45.9295152Z + @agent-teams/engineering-foundation 1.5.0\n2026-11-26T16:05:45.9295909Z + ajv 8.20.0\n2026-11-26T16:05:45.9296196Z + oxlint 1.85.0\n2026-11-26T16:05:45.9296543Z + renovate 44.24.2\n2026-11-26T16:05:45.9296802Z + yaml 2.9.0\n2026-11-26T16:05:45.9296902Z \n2026-11-26T16:05:45.9394105Z Done in 1.3s using pnpm v11.18.0\n2026-11-26T16:05:45.9564821Z ##[group]Run node \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize\n2026-11-26T16:05:45.9565401Z \u001b[36;1mnode \"$TRUSTED_GOVERNANCE_ROOT/scripts/verify-docs-consumer-gate.mjs\" authorize\u001b[0m\n2026-11-26T16:05:45.9589654Z shell: /usr/bin/bash -e {0}\n2026-11-26T16:05:45.9589969Z env:\n2026-11-26T16:05:45.9590405Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:45.9590974Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:45.9591426Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin\n2026-11-26T16:05:45.9593596Z   GITHUB_TOKEN: ***\n2026-11-26T16:05:45.9593853Z   GITHUB_REPOSITORY: agent-teams-ai/agent-runtime\n2026-11-26T16:05:45.9594222Z   CALLER_REPOSITORY_ID: 1314129620\n2026-11-26T16:05:45.9594523Z   GITHUB_SHA: cae4d350c947cd9f74bc04130531527c9a36baeb\n2026-11-26T16:05:45.9594986Z   CONTROLLER_SNAPSHOT_SHA: b88a08c8131b8c98650318eb374a5fd2840bed46\n2026-11-26T16:05:45.9595352Z   JOB_WORKFLOW_SHA: b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:45.9596074Z   JOB_WORKFLOW_REF: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:45.9596560Z   JOB_WORKFLOW_REPOSITORY: agent-teams-ai/.github\n2026-11-26T16:05:45.9596944Z   JOB_WORKFLOW_FILE_PATH: .github/workflows/docs-protocol-check.yml\n2026-11-26T16:05:45.9597256Z ##[endgroup]\n2026-11-26T16:05:48.9481559Z DOCS_GATE_INFRASTRUCTURE_FAILURE: Qualified Docs Cohort registry does not satisfy its JSON Schema: /cohorts/44 must NOT have additional properties; /cohorts/44 must NOT have additional properties; /cohorts/44 must NOT have additional properties; /cohorts/44 must NOT have additional properties; /cohorts/44/packages must NOT have more than 2 items; /cohorts/44/packages/0 must NOT have additional properties; /cohorts/44/packages/0/name must be equal to one of the allowed values; /cohorts/44/packages/0/provenance/registry_attestation_url must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\"; /cohorts/44/packages/1 must NOT have additional properties; /cohorts/44/packages/1/name must be equal to one of the allowed values; /cohorts/44/packages/1/provenance/registry_attestation_url must match pattern \"^https://registry\\.npmjs\\.org/-/npm/v1/attestations/@agent-teams%2f(?:engineering-foundation|docs-protocol)@[0-9A-Za-z.-]+$\"; /cohorts/44/schemas must have required property 'consumer_plan'; /cohorts/44/schemas must NOT have additional properties; /cohorts/44/schemas/consumer_integration must be equal to constant; /cohorts/44/schemas/managed_state must be equal to constant; /cohorts/44/assets/skill/package must be equal to constant; /cohorts/44/assets/caller_workflow/package must be equal to constant; /cohorts/44/assets/asset_catalog/package must be equal to constant; /cohorts/44/assets/transition_catalog/package must be equal to constant; /cohorts/44/runtime must have required property 'apply_platforms'; /cohorts/44/runtime must have required property 'check_plan_platforms'; /cohorts/44/runtime must NOT have additional properties; /cohorts/44/runtime must NOT have additional properties; /cohorts/44/runtime/node must be equal to constant; /cohorts/44/runtime_closure must NOT have additional properties; /cohorts/44/runtime_closure/schema_version must be equal to constant; /cohorts/44/runtime_closure/package_manager must be equal to constant; /cohorts/44 must NOT have additional properties; /cohorts/44 must NOT have additional properties; /cohorts/44/cohort_generation must be equal to constant; /cohorts/44/schemas/consumer_integration must be equal to constant; /cohorts/44/schemas/managed_state must be equal to constant; /cohorts/44/schemas/qualification_receipt must be equal to constant; /cohorts/44/runtime must have required property 'apply_platforms'; /cohorts/44/runtime must have required property 'check_plan_platforms'; /cohorts/44/runtime must NOT have additional properties; /cohorts/44/runtime must NOT have additional properties; /cohorts/44/runtime/node must be equal to constant; /cohorts/44 must match exactly one schema in oneOf\n2026-11-26T16:05:48.9621176Z ##[error]Process completed with exit code 1.\n2026-11-26T16:05:48.9701530Z Post job cleanup.\n2026-11-26T16:05:49.0770660Z Pruning is unnecessary.\n2026-11-26T16:05:49.0918780Z Post job cleanup.\n2026-11-26T16:05:49.1636174Z [command]/usr/bin/git version\n2026-11-26T16:05:49.1669386Z git version 2.56.1\n2026-11-26T16:05:49.1706072Z Temporarily overriding HOME='/home/runner/work/_temp/047fc253-6f7d-4157-9ccb-07c735d94821' before making global git config changes\n2026-11-26T16:05:49.1706816Z Adding repository directory to the temporary git global config as a safe directory\n2026-11-26T16:05:49.1707625Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:49.1750061Z Removing SSH command configuration\n2026-11-26T16:05:49.1754971Z [command]/usr/bin/git config --local --name-only --get-regexp core\\.sshCommand\n2026-11-26T16:05:49.1781517Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'core\\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\"\n2026-11-26T16:05:49.2041190Z Removing HTTP extra header\n2026-11-26T16:05:49.2045974Z [command]/usr/bin/git config --local --name-only --get-regexp http\\.https\\:\\/\\/github\\.com\\/\\.extraheader\n2026-11-26T16:05:49.2098259Z [command]/usr/bin/git submodule foreach --recursive sh -c \"git config --local --name-only --get-regexp 'http\\.https\\:\\/\\/github\\.com\\/\\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\"\n2026-11-26T16:05:49.2276748Z Removing includeIf entries pointing to credentials config files\n2026-11-26T16:05:49.2281246Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\\.gitdir:\n2026-11-26T16:05:49.2307038Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url\n2026-11-26T16:05:49.2572753Z Evaluate and set job outputs\n2026-11-26T16:05:49.2579822Z Set output 'workflow-sha'\n2026-11-26T16:05:49.2581353Z Set output 'controller-sha'\n2026-11-26T16:05:49.2582054Z Set output 'workflow-ref'\n2026-11-26T16:05:49.2582426Z Set output 'workflow-repository'\n2026-11-26T16:05:49.2582837Z Set output 'workflow-file-path'\n2026-11-26T16:05:49.2583398Z Cleaning up orphan processes\n"
+    },
+    "current_qualification": {
+      "job_id": 140032688518,
+      "digest": "sha256:c2bb931187aa5055c46b1cf356354fe39ccdadd54ed5dfb7a1fa2848ba3e8a80",
+      "utf8": "﻿2026-11-26T16:05:55.3549097Z Current runner version: '2.338.2'\n2026-11-26T16:05:55.3565723Z ##[group]Runner Image Provisioner\n2026-11-26T16:05:55.3566423Z Hosted Compute Agent\n2026-11-26T16:05:55.3566880Z Version: 20261111.635\n2026-11-26T16:05:55.3567350Z Commit: b8a594ea514ff44cadb5342986c68b1eac6e22ed\n2026-11-26T16:05:55.3567920Z Build Date: 2026-11-11T01:49:01Z\n2026-11-26T16:05:55.3568457Z Worker ID: {6935a6d7-a014-4f1e-8ccf-cfb7683c14df}\n2026-11-26T16:05:55.3569005Z Region: us-west-2\n2026-11-26T16:05:55.3569412Z Cloud: AWS\n2026-11-26T16:05:55.3569799Z ##[endgroup]\n2026-11-26T16:05:55.3570655Z ##[group]Operating System\n2026-11-26T16:05:55.3571105Z Ubuntu\n2026-11-26T16:05:55.3571491Z 24.04.5\n2026-11-26T16:05:55.3571844Z LTS\n2026-11-26T16:05:55.3572284Z ##[endgroup]\n2026-11-26T16:05:55.3572675Z ##[group]Runner Image\n2026-11-26T16:05:55.3573501Z Image: ubuntu-24.04\n2026-11-26T16:05:55.3573932Z Version: 20261122.23.1\n2026-11-26T16:05:55.3574927Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261122.23/images/ubuntu/Ubuntu2404-Readme.md\n2026-11-26T16:05:55.3576133Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261122.23\n2026-11-26T16:05:55.3576895Z ##[endgroup]\n2026-11-26T16:05:55.3577718Z ##[group]GITHUB_TOKEN Permissions\n2026-11-26T16:05:55.3579320Z Contents: read\n2026-11-26T16:05:55.3579729Z Metadata: read\n2026-11-26T16:05:55.3580108Z ##[endgroup]\n2026-11-26T16:05:55.3581561Z Secret source: Actions\n2026-11-26T16:05:55.3582223Z Cache mode: write\n2026-11-26T16:05:55.3583244Z Prepare workflow directory\n2026-11-26T16:05:55.3939483Z Prepare all required actions\n2026-11-26T16:05:55.3976037Z Getting action download info\n2026-11-26T16:05:55.8040121Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)\n2026-11-26T16:05:56.7235958Z Download action repository 'pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9' (SHA:008330803749db0355799c700092d9a85fd074e9)\n2026-11-26T16:05:57.0186789Z Download action repository 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020' (SHA:820762786026740c76f36085b0efc47a31fe5020)\n2026-11-26T16:05:57.1975077Z Download action repository 'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c' (SHA:3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c)\n2026-11-26T16:05:57.6779889Z Uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:05:57.6784284Z Complete job name: docs-protocol / trusted-qualification\n2026-11-26T16:05:57.7416754Z ##[group]Run exit 1\n2026-11-26T16:05:57.7417583Z \u001b[36;1mexit 1\u001b[0m\n2026-11-26T16:05:58.2138453Z shell: /usr/bin/bash -e {0}\n2026-11-26T16:05:58.2139223Z env:\n2026-11-26T16:05:58.2139974Z   TRUSTED_GOVERNANCE_ROOT: /home/runner/work/agent-runtime/agent-runtime/.trusted/governance\n2026-11-26T16:05:58.2141226Z   CONSUMER_CHECKOUT: /home/runner/work/agent-runtime/agent-runtime/.trusted/consumer\n2026-11-26T16:05:58.2142540Z   AUTHORIZATION_PATH: /home/runner/work/agent-runtime/agent-runtime/.trusted/docs-gate-authorization.json\n2026-11-26T16:05:58.2143843Z ##[endgroup]\n2026-11-26T16:05:58.2240901Z ##[error]Process completed with exit code 1.\n2026-11-26T16:05:58.2490125Z Cleaning up orphan processes\n"
+    },
+    "current_semantic": {
+      "job_id": 140032783052,
+      "digest": "sha256:ac64d78d22201f363b8859b1585934799d372810864e999ebbb648beb9320e46",
+      "utf8": "﻿2026-11-26T16:06:04.2280109Z Current runner version: '2.338.2'\n2026-11-26T16:06:04.2301302Z ##[group]Runner Image Provisioner\n2026-11-26T16:06:04.2302070Z Hosted Compute Agent\n2026-11-26T16:06:04.2302652Z Version: 20261111.635\n2026-11-26T16:06:04.2303185Z Commit: b8a594ea514ff44cadb5342986c68b1eac6e22ed\n2026-11-26T16:06:04.2303826Z Build Date: 2026-11-11T01:49:01Z\n2026-11-26T16:06:04.2304477Z Worker ID: {7ae8a92e-c149-4883-a185-8abed921b9f5}\n2026-11-26T16:06:04.2305081Z Region: eastus2\n2026-11-26T16:06:04.2305587Z Cloud: Azure\n2026-11-26T16:06:04.2306087Z ##[endgroup]\n2026-11-26T16:06:04.2307219Z ##[group]Operating System\n2026-11-26T16:06:04.2307888Z Ubuntu\n2026-11-26T16:06:04.2308335Z 24.04.5\n2026-11-26T16:06:04.2309162Z LTS\n2026-11-26T16:06:04.2309646Z ##[endgroup]\n2026-11-26T16:06:04.2310113Z ##[group]Runner Image\n2026-11-26T16:06:04.2310855Z Image: ubuntu-24.04\n2026-11-26T16:06:04.2311349Z Version: 20261116.376.1\n2026-11-26T16:06:04.2312471Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261116.376/images/ubuntu/Ubuntu2404-Readme.md\n2026-11-26T16:06:04.2313708Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261116.376\n2026-11-26T16:06:04.2314599Z ##[endgroup]\n2026-11-26T16:06:04.2315518Z ##[group]GITHUB_TOKEN Permissions\n2026-11-26T16:06:04.2317409Z Contents: read\n2026-11-26T16:06:04.2317916Z Metadata: read\n2026-11-26T16:06:04.2318492Z ##[endgroup]\n2026-11-26T16:06:04.2320706Z Secret source: Actions\n2026-11-26T16:06:04.2321790Z Cache mode: write\n2026-11-26T16:06:04.2322421Z Prepare workflow directory\n2026-11-26T16:06:04.2587774Z Prepare all required actions\n2026-11-26T16:06:04.2627060Z Getting action download info\n2026-11-26T16:06:04.4791897Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)\n2026-11-26T16:06:04.6067014Z Download action repository 'pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9' (SHA:008330803749db0355799c700092d9a85fd074e9)\n2026-11-26T16:06:04.7398714Z Download action repository 'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020' (SHA:820762786026740c76f36085b0efc47a31fe5020)\n2026-11-26T16:06:04.9350748Z Uses: agent-teams-ai/.github/.github/workflows/docs-protocol-check.yml@b30455e32cf5d54ade6d8301637701347e4ce57c\n2026-11-26T16:06:04.9354466Z Complete job name: docs-protocol / docs-protocol-check\n2026-11-26T16:06:04.9992940Z ##[group]Run exit 1\n2026-11-26T16:06:04.9993393Z \u001b[36;1mexit 1\u001b[0m\n2026-11-26T16:06:05.0016420Z shell: /usr/bin/bash -e {0}\n2026-11-26T16:06:05.0017470Z ##[endgroup]\n2026-11-26T16:06:05.0132004Z ##[error]Process completed with exit code 1.\n2026-11-26T16:06:05.0280005Z Cleaning up orphan processes\n"
+    }
+  }
+}

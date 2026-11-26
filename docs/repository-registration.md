@@ -45,6 +45,14 @@ lifecycle and hosted admission verification remain owned by their existing
 authorities. A pending row cannot silently grant an admitted consumer, a
 qualified executable specification, remote enforcement or an SDK exemption.
 
+Current membership uses `projectCurrentRepositoryInventory` after this union.
+It omits only an exact ID-and-name match to an explicitly deleted current Docs
+policy row. The raw historical inventory, ledger, security evidence and pending
+registration records are preserved. This bounded retirement path requires
+provider deletion evidence under [repository admission](repository-admission.md#inventory-and-drift);
+it is not a complete census or a pending-registration handoff. The live observer
+continues to reject a still-present retired identity and unregistered same-name recreation.
+
 ## Payments registration and current limits
 
 The supplement records `agent-teams-ai/payments-sdk` under owner
