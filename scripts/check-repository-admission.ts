@@ -1,4 +1,5 @@
 import { constants } from "node:fs";
+import { createHash } from "node:crypto";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -104,7 +105,9 @@ export async function localAdmissionSource(root: string): Promise<AdmissionSourc
       if (length > MAX_FILE_BYTES || bytes > MAX_TOTAL_BYTES) {
         throw new Error("Repository read budget exceeded.");
       }
-      return new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, length));
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
+        buffer.subarray(0, length),
+      );
     } finally {
       await handle.close();
     }
@@ -138,9 +141,14 @@ export async function localAdmissionSource(root: string): Promise<AdmissionSourc
   };
 }
 
+export function parseAdmissionJson(text: string): unknown {
+  // Preserve decoded bytes for digest checks; ignore one leading BOM only when parsing JSON.
+  return JSON.parse(text.startsWith("\uFEFF") ? text.slice(1) : text) as unknown;
+}
+
 function parseStructured(text: string, path: string): unknown {
   if (path.endsWith(".json")) {
-    return JSON.parse(text) as unknown;
+    return parseAdmissionJson(text);
   }
   const document = parseDocument(text, { uniqueKeys: true });
   if (document.errors.length > 0) {
@@ -348,6 +356,175 @@ function workflowCommands(workflow: Data, scripts: Data, manager: string): Set<s
   return commands;
 }
 
+interface ConfigurationReader {
+  read: (path: string, required?: boolean) => Promise<string | undefined>;
+  document: (path: string) => Promise<Data>;
+  issue: (path: string, message: string) => void;
+}
+
+function paths(value: unknown, allowRoot = false): string[] | undefined {
+  if (
+    !Array.isArray(value) ||
+    value.some(
+      (entry) =>
+        typeof entry !== "string" || (!(allowRoot && entry === ".") && !safeAdmissionPath(entry)),
+    ) ||
+    new Set(value).size !== value.length
+  ) {
+    return undefined;
+  }
+  return strings(value);
+}
+
+function containsRoot(root: string, path: string): boolean {
+  return root === "." || root === path || path.startsWith(`${root}/`);
+}
+
+async function coverageTopology(coverage: Data, coveragePath: string, reader: ConfigurationReader) {
+  const selected = (field: string): string | undefined => {
+    const path = coverage[field];
+    if (!nonempty(path) || !safeAdmissionPath(path)) {
+      reader.issue(coveragePath, `Coverage v5 requires a bounded ${field}.`);
+      return undefined;
+    }
+    return path;
+  };
+  const topologyPath = selected("topologyPath");
+  const toolchainPath = selected("toolchainConfigPath");
+  const topology = topologyPath ? await reader.document(topologyPath) : {};
+  const toolchain = toolchainPath ? await reader.document(toolchainPath) : {};
+  if (topology.schemaVersion !== 1 || toolchain.schemaVersion !== 1) {
+    reader.issue(
+      coveragePath,
+      "Coverage v5 binds reviewed topology and Stack configuration schema 1.",
+    );
+  }
+  for (const field of [
+    "censusRoots",
+    "packageRoots",
+    "sourceRoots",
+    "testRoots",
+    "excludedRoots",
+    "toolingFiles",
+  ]) {
+    const values = paths(topology[field], field !== "toolingFiles");
+    if (
+      !values ||
+      (["censusRoots", "packageRoots", "sourceRoots"].includes(field) && values.length === 0)
+    ) {
+      reader.issue(
+        topologyPath ?? coveragePath,
+        `Topology ${field} must be an explicit unique safe path array.`,
+      );
+    }
+  }
+  if (data(toolchain.lint).config !== coverage.lintConfigPath) {
+    reader.issue(
+      toolchainPath ?? coveragePath,
+      "Stack lint must use the same type-aware coverage configuration.",
+    );
+  }
+  const compilerProjects = paths(data(toolchain.typecheck).projects);
+  if (!compilerProjects || compilerProjects.length === 0) {
+    reader.issue(
+      toolchainPath ?? coveragePath,
+      "Stack typecheck.projects must name real standalone compiler projects.",
+    );
+  }
+  const profiles = await derivedFeatureProfiles(topology, topologyPath ?? coveragePath, reader);
+  if (!records(topology.derivedFrom).some((entry) => entry.path === coveragePath)) {
+    reader.issue(
+      topologyPath ?? coveragePath,
+      "Topology derivedFrom must bind the selected coverage input bytes.",
+    );
+  }
+  if (profiles.length !== 1) {
+    reader.issue(
+      topologyPath ?? coveragePath,
+      "Topology derivedFrom must bind exactly one owned FMS adoption profile.",
+    );
+  }
+  return {
+    topology,
+    topologyPath,
+    toolchainPath,
+    compilerProjects: compilerProjects ?? [],
+    profilePath: profiles[0],
+  };
+}
+
+async function derivedFeatureProfiles(
+  topology: Data,
+  path: string,
+  reader: ConfigurationReader,
+): Promise<string[]> {
+  const entries = records(topology.derivedFrom);
+  if (entries.length === 0 || entries.length > MAX_FILES) {
+    reader.issue(path, "Topology derivedFrom requires a nonempty bounded input inventory.");
+    return [];
+  }
+  const seen = new Set<string>();
+  const profiles: string[] = [];
+  for (const entry of entries) {
+    if (
+      !nonempty(entry.path) ||
+      !safeAdmissionPath(entry.path) ||
+      seen.has(entry.path) ||
+      typeof entry.sha256 !== "string" ||
+      !/^[a-f0-9]{64}$/u.test(entry.sha256)
+    ) {
+      reader.issue(
+        path,
+        "Topology derivation entries require unique safe paths and exact SHA-256 digests.",
+      );
+      continue;
+    }
+    seen.add(entry.path);
+    const text = await reader.read(entry.path);
+    if (text === undefined || createHash("sha256").update(text).digest("hex") !== entry.sha256) {
+      reader.issue(path, `Topology derivation bytes do not match: ${entry.path}`);
+      continue;
+    }
+    if (
+      /\.(?:json|ya?ml)$/u.test(entry.path) &&
+      data((await reader.document(entry.path)).standard).id ===
+        "agent-teams.feature-module-standard"
+    ) {
+      profiles.push(entry.path);
+    }
+  }
+  return profiles;
+}
+
+function modernCompilerRoute(
+  full: Set<string>,
+  toolchainPath: string | undefined,
+  projects: string[],
+): boolean {
+  const typechecks = toolchainPath
+    ? [
+        `stack-toolchain typecheck --config ${toolchainPath}`,
+        `stack-toolchain typecheck --config ${toolchainPath} --json`,
+        `stack-toolchain typecheck --json --config ${toolchainPath}`,
+        ...(toolchainPath === "toolchain.config.json"
+          ? ["stack-toolchain typecheck", "stack-toolchain typecheck --json"]
+          : []),
+      ]
+    : [];
+  if (typechecks.some((command) => full.has(command))) {
+    return true;
+  }
+  return (
+    projects.length > 0 &&
+    projects.every(
+      (path) =>
+        full.has(`stack-toolchain compile --project ${path}`) ||
+        full.has(`stack-toolchain compile --project ${path} --json`) ||
+        full.has(`stack-toolchain compile --json --project ${path}`),
+    )
+  );
+}
+
 export async function checkRepositoryAdmission(source: AdmissionSource): Promise<AdmissionResult> {
   const issues: AdmissionIssue[] = [];
   const cache = new Map<string, string | undefined>();
@@ -506,17 +683,40 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
   const lintPath = coverage.lintConfigPath;
   const lint = nonempty(lintPath) ? await document(lintPath) : {};
   const devDependencies = data(manifest.devDependencies);
+  const modernCoverage = coverage.schemaVersion === 5;
+  const approvedModernGraph =
+    modernCoverage &&
+    foundation.schemaVersion === 3 &&
+    devDependencies["@agent-teams/engineering-foundation"] === "4.0.2" &&
+    devDependencies["@agent-teams/feature-module-standard"] === "0.4.3" &&
+    devDependencies["stack-toolchain"] === "0.3.1";
+  if (modernCoverage && !approvedModernGraph) {
+    issue(
+      coveragePath ?? "foundation.config.yaml",
+      "Coverage v5 requires the reviewed Foundation 4.0.2, FMS 0.4.3, Stack 0.3.1 and root schema 3 configuration graph.",
+    );
+  }
+  if (
+    modernCoverage &&
+    (coverage.featureProfilePath !== undefined || coverage.compilerProjects !== undefined)
+  ) {
+    issue(
+      coveragePath ?? "foundation.config.yaml",
+      "Coverage v5 owns topologyPath and toolchainConfigPath; legacy duplicate featureProfilePath/compilerProjects are not supported.",
+    );
+  }
   // The approved Stack release retains the strict TS and typed-lint preset contracts.
   // This is bounded config recognition, not a claim that installed package bytes were checked.
   const approvedStack =
-    devDependencies["stack-toolchain"] === "0.1.1" &&
+    ((!modernCoverage && devDependencies["stack-toolchain"] === "0.1.1") || approvedModernGraph) &&
     ["dependencies", "optionalDependencies", "peerDependencies"].every(
       (field) => data(manifest[field])["stack-toolchain"] === undefined,
     );
   if (
     !strings(lint.extends).some(
       (path) =>
-        path.includes("@agent-teams/engineering-foundation/presets/oxlint/type-aware") ||
+        (!modernCoverage &&
+          path.includes("@agent-teams/engineering-foundation/presets/oxlint/type-aware")) ||
         (approvedStack && path === "./node_modules/stack-toolchain/presets/oxlint/type-aware.json"),
     )
   ) {
@@ -538,14 +738,34 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     if (data(manifest.dependencies)[name] !== undefined) {
       issue("package.json", `${name} must remain development-only.`);
     }
+    if (
+      modernCoverage &&
+      ["optionalDependencies", "peerDependencies"].some(
+        (field) => data(manifest[field])[name] !== undefined,
+      )
+    ) {
+      issue(
+        "package.json",
+        `${name} must remain solely development-owned in the reviewed v5 graph.`,
+      );
+    }
   }
   if (manager !== undefined) {
     await read(manager === "pnpm" ? "pnpm-lock.yaml" : "bun.lock");
   }
 
-  const profilePath = nonempty(coverage.featureProfilePath)
-    ? coverage.featureProfilePath
+  const modern = modernCoverage
+    ? await coverageTopology(coverage, coveragePath ?? "foundation.config.yaml", {
+        read,
+        document,
+        issue,
+      })
     : undefined;
+  const profilePath = modern
+    ? modern.profilePath
+    : nonempty(coverage.featureProfilePath)
+      ? coverage.featureProfilePath
+      : undefined;
   const profile = nonempty(profilePath) ? await document(profilePath) : {};
   const standard = data(profile.standard);
   if (
@@ -594,6 +814,19 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     issue("README.md", "Link the one owned FMS adoption profile from the repository entry point.");
   }
   const modules = records(profile.modules);
+  if (modern) {
+    for (const root of [
+      ...strings(profile.productionRoots),
+      ...strings(profile.applicationRoots),
+    ]) {
+      if (!strings(modern.topology.censusRoots).some((census) => containsRoot(census, root))) {
+        issue(
+          modern.topologyPath ?? "foundation.config.yaml",
+          `Topology census omits declared production/application root: ${root}`,
+        );
+      }
+    }
+  }
   if (modules.length === 0) {
     issue(
       profilePath ?? "foundation.config.yaml",
@@ -601,22 +834,29 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     );
   }
   const governed = strings(sourcePolicy.governedRoots);
-  const compilerProjects = strings(coverage.compilerProjects);
+  const compilerProjects = modern?.compilerProjects ?? strings(coverage.compilerProjects);
   for (const module of modules) {
     const features = records(module.features);
     const moduleRoot = module.root;
+    const moduleSourceRoot = module.sourceRoot;
     if (
       !nonempty(module.id) ||
       !nonempty(module.role) ||
       !nonempty(moduleRoot) ||
-      !nonempty(module.sourceRoot) ||
+      !nonempty(moduleSourceRoot) ||
       features.length === 0 ||
       features.some(
         (feature) =>
           !nonempty(feature.id) || !nonempty(feature.root) || records(feature.layers).length === 0,
       ) ||
-      !governed.includes(module.sourceRoot) ||
-      !compilerProjects.some((path) => moduleRoot === "." || path.startsWith(`${moduleRoot}/`))
+      !governed.includes(moduleSourceRoot) ||
+      (modern
+        ? !strings(modern.topology.packageRoots).includes(moduleRoot) ||
+          !strings(modern.topology.sourceRoots).includes(moduleSourceRoot) ||
+          strings(modern.topology.excludedRoots).some(
+            (root) => containsRoot(root, moduleSourceRoot) || containsRoot(moduleSourceRoot, root),
+          )
+        : !compilerProjects.some((path) => moduleRoot === "." || path.startsWith(`${moduleRoot}/`)))
     ) {
       issue(
         profilePath ?? "foundation.config.yaml",
@@ -667,6 +907,22 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
     return { ...parent, ...data(config.compilerOptions) };
   };
   for (const path of compilerProjects) {
+    if (modern) {
+      const config = await document(path);
+      const files = config.files === undefined ? [] : paths(config.files);
+      const include = config.include;
+      const includes = Array.isArray(include) && include.every(nonempty) ? strings(include) : [];
+      if (
+        !files ||
+        (files.length === 0 && includes.length === 0) ||
+        config.references !== undefined
+      ) {
+        issue(
+          path,
+          "The reviewed Stack v5 route requires explicit nonempty standalone compiler inputs; reference-only or empty projects are not coverage.",
+        );
+      }
+    }
     const options = await compilerOptions(path);
     const strictFlags = [
       "alwaysStrict",
@@ -685,6 +941,8 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
       options.exactOptionalPropertyTypes !== true ||
       options.noEmitOnError === false ||
       options.noCheck === true ||
+      (modern !== undefined &&
+        (options.skipLibCheck === true || options.skipDefaultLibCheck === true)) ||
       strictFlags.some((flag) => options[flag] === false)
     ) {
       issue(
@@ -737,23 +995,25 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
       "agent-teams-foundation assert-dev-only",
       "agent-teams-foundation assert-registry",
     ]) {
-      if (!full.has(command)) {
+      if (!full.has(command) && !(modern && full.has(`${command} --consumer .`))) {
         issue("package.json", `The complete native check route must execute ${command}.`);
       }
     }
     if (
-      ![...full].some(
-        (command) =>
-          /^(?:tsc(?: |$)|tsrs(?: |$)|node (?:tools|scripts)\/[^ ]*build[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(
-            command,
-          ) &&
-          !/(?:^| )(?:--version|-v|--help|-h|--showConfig|--listFilesOnly|--noCheck|--dry|--clean)(?: |$)/u.test(
-            command,
-          ) &&
-          !/(?:^| )--(?:strict\w*|noUncheckedIndexedAccess|exactOptionalPropertyTypes|noImplicit\w*) false(?: |$)/u.test(
-            command,
-          ),
-      )
+      modern
+        ? !modernCompilerRoute(full, modern.toolchainPath, compilerProjects)
+        : ![...full].some(
+            (command) =>
+              /^(?:tsc(?: |$)|tsrs(?: |$)|node (?:tools|scripts)\/[^ ]*build[^ ]*\.(?:ts|mts|mjs|js)(?: |$))/u.test(
+                command,
+              ) &&
+              !/(?:^| )(?:--version|-v|--help|-h|--showConfig|--listFilesOnly|--noCheck|--dry|--clean)(?: |$)/u.test(
+                command,
+              ) &&
+              !/(?:^| )--(?:strict\w*|noUncheckedIndexedAccess|exactOptionalPropertyTypes|noImplicit\w*) false(?: |$)/u.test(
+                command,
+              ),
+          )
     ) {
       issue(
         "package.json",

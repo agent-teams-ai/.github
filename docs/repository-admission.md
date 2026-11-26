@@ -68,9 +68,12 @@ classification obligations.
 2. Declare consumer-owned `architecture.source-dependencies`,
    `quality.source-coverage` and `quality.suppression-governance` config paths in
    root `foundation.config.yaml`. Source coverage binds the same source and
-   suppression policies, the type-aware lint configuration, the one
-   `featureProfilePath`, real production `compilerProjects`, and the scope,
-   typed and full native script names. Use the existing Foundation configuration
+   suppression policies, the type-aware lint configuration and the scope,
+   typed and full native script names. The retained coverage contract uses one
+   `featureProfilePath` and real production `compilerProjects`. The separately
+   reviewed coverage-v5 adapter instead binds the published topology and Stack
+   configuration as described below; do not copy deprecated fields into v5.
+   Use the owning Foundation configuration
    contracts and the consumer's exact released development-only Foundation/FMS
    package pins. Source coverage includes the actual modules, SDKs and features.
    Production compiler projects inherit strict, noUncheckedIndexedAccess and
@@ -158,6 +161,56 @@ Docs Protocol admission, executable-specification registration, hosted workflow
 availability/success or remote required-check enforcement. Follow the existing
 Docs admission contract below and the owning qualification ledgers for those
 separate claims; do not fabricate a qualified repository record.
+
+### Coverage v5 and the current Stack adapter
+
+The bounded current adapter recognizes this exact development graph together:
+`@agent-teams/engineering-foundation@4.0.2`,
+`@agent-teams/feature-module-standard@0.4.3` and `stack-toolchain@0.3.1`, with
+root Foundation schema 3 and quality source-coverage schema 5. The retained
+legacy configuration and reviewed Stack 0.1.1 contract remain unchanged.
+Unknown releases, mixed graphs and duplicate runtime declarations fail closed;
+this recognition does not upgrade Central's own installed tooling.
+
+Coverage v5 names `topologyPath` and `toolchainConfigPath`. Its topology schema 1
+contains explicit bounded root inventories and `derivedFrom` entries. Every
+entry binds actual input bytes by exact SHA-256. The derived inputs must include
+the selected coverage file and exactly one complete adopted FMS profile. The
+checker reads those regular files through its existing bounded adapter; it
+does not execute a consumer projector or introduce another FMS engine.
+Both local and immutable-Git readers preserve every valid UTF-8 byte, including
+a leading BOM, for the digest. JSON parsing alone retains the existing support
+for one leading BOM; parsing must not silently normalize the bytes being bound.
+
+The topology must retain the profile's production/application census and every
+declared module's package and source roots. Exclusions cannot hide a declared
+module or one of its source subtrees. Source-policy coverage remains mandatory.
+Compiler projects come only from the selected Stack configuration's
+`typecheck.projects`; an aggregate project can cover several modules. Each
+selected project must declare explicit nonempty standalone inputs and preserve
+strict checking without `noCheck`, library-check suppression or weakening
+overrides. Reference-only roots do not become checked programs. Actual expanded
+program membership and every maintained source remain the native Foundation
+coverage gate's responsibility.
+
+The full route must reach the selected public `stack-toolchain typecheck`
+configuration, or public `stack-toolchain compile --project` for every selected
+project. A default typecheck selects `toolchain.config.json`; a different config
+requires the matching explicit `--config` argument. JSON output is supported;
+help, probes, unrelated projects and arbitrary build wrappers cannot substitute
+for this binding. Reference-graph builds remain useful separate build steps;
+they do not by themselves prove checking of the selected standalone programs.
+The type-aware preset and Stack lint config must match the coverage authority.
+Foundation's direct `check`, `assert-dev-only` and `assert-registry` commands also
+accept their supported explicit `--consumer .` form for this adapter.
+
+Positive aggregate/project fixtures and rejecting graph, derivation, topology,
+compiler and command-route fixtures accompany the source change. They establish
+configuration behavior only. Publishing the adapter still requires the normal
+source review, full native checks and hosted reusable-workflow qualification.
+A consumer explicitly updates its immutable caller after that delivery; no
+source change, fixture or local result silently changes an existing admission
+runtime or its required-check enforcement.
 
 ### Accepted identity policy and runtime publication
 

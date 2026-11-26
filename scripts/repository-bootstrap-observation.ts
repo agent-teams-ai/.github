@@ -9,6 +9,7 @@ import {
   MAX_FILE_BYTES,
   MAX_FILES,
   MAX_TOTAL_BYTES,
+  parseAdmissionJson,
   safeAdmissionPath,
 } from "./check-repository-admission.ts";
 import type { AdmissionResult, AdmissionSource } from "./check-repository-admission.ts";
@@ -68,7 +69,7 @@ export async function auditRepositoryBootstrapConfigurations(
     let explicitOptIn = false;
     if (manifestText !== undefined) {
       try {
-        explicitOptIn = object(JSON.parse(manifestText) as unknown).repositoryAdmission === 1;
+        explicitOptIn = object(parseAdmissionJson(manifestText)).repositoryAdmission === 1;
       } catch {
         /* Required repositories are rejected by the full checker. */
       }
@@ -192,7 +193,7 @@ export async function loadRemoteBootstrapSource(
             hash === entry.sha,
           "Bootstrap blob bytes do not match the bounded immutable tree.",
         );
-        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+        text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
       }
       cache.set(path, text);
       return text;

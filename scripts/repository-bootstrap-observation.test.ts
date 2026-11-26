@@ -130,7 +130,7 @@ void test("bootstrap remote reader fails closed for truncated trees and inaccess
 void test("the typed remote reader verifies immutable bytes, regular modes and live repository identity", async () => {
   const revision = "1".repeat(40),
     treeSHA = "2".repeat(40),
-    bytes = Buffer.from('{"repositoryAdmission":1}');
+    bytes = Buffer.from('\uFEFF{"repositoryAdmission":1}');
   const blob = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
   const commit = { sha: revision, commit: { tree: { sha: treeSHA } } };
   let mode = "100644",
@@ -163,6 +163,11 @@ void test("the typed remote reader verifies immutable bytes, regular modes and l
   };
   const source = await loadRemoteBootstrapSource(current, request);
   assert.equal(await source.read("package.json"), bytes.toString());
+  assert.equal(
+    (await auditRepositoryBootstrapConfigurations([current], async () => source)).length,
+    1,
+    "Preserving raw BOM bytes must retain the existing explicit JSON opt-in behavior",
+  );
   await source.recheck?.();
   moved = true;
   await assert.rejects(
