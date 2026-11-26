@@ -240,48 +240,44 @@ actual Git and tampered Actions trials remain for the two real adapters.
 
 ### Documentation merge timing: native owner route (2026-11-25 UTC)
 
-The owner requested immediate publication to main or merge without waiting for
-checks, at least for documentation; a server-enforced docs-only gate was not
-requested. Central's protected no-wait route remains **unmet**. The current
-identity audit and immutable admission source require no bypass; their scoped
-compatibility change and qualified source transition must precede installation.
-No supported, authenticated settings-write channel is available in the observed session.
-Research's authorized direct-main route already works. Publishing this record
-does not activate the proposed Central exception.
+Owner direction was recorded on 2026-11-25. The native owner PR route was
+installed and read back at `{{FINAL_OBSERVATION_UTC}}` for the ten rulesets in the
+six assigned repositories below. The [dated permanent-enforcement and owner
+delivery evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-permanent-owner-delivery-20261126.md)
+records the actual installation, source qualification, rejecting canaries,
+required-check blocking observations and grant readbacks.
 
-Read-only observation at Central `3d0a134e326f22ff867b418d64554167287638c8`:
-[Protect main](https://github.com/agent-teams-ai/.github/rules/19979783) and
-[commit identity](https://github.com/agent-teams-ai/.github/rules/24363205) require
-six current-head contexts from integration `15368`, with strict current-base
-checks and no bypass actors; the current actor's bypass result is `never`.
-The owner has repository admin permission; `allow_auto_merge` is false.
+Central requires `runtime-admission-source-successor-v4`. Its main caller pins
+immutable source `72fa7a8af02e9ba7904c912f0bbb457254381002`. The compatible policy
+and audit were merged in [PR #423](https://github.com/agent-teams-ai/.github/pull/423)
+as `e35df6a3fcf4d5e33d0f79b5b27c3a3e454b5d56`; the three-file installation was
+merged in [PR #428](https://github.com/agent-teams-ai/.github/pull/428) as
+`7ad5abbf5a8dade79f91f3e6f06481070b966a9e`. The permanent transition retained
+Central's other App `15368` contexts, strict and creation enforcement, PR
+protections and immutable source locks. Grant readbacks retained each
+repository's other fields and issuers, including Engineering Foundation's
+CodeQL App `57789`. Runtime v2's source, caller and historical records remain.
 
-GitHub supports [individual users on repository rulesets](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/).
-The minimal proposal adds exactly
-`{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`
-to `bypass_actors` in both rulesets `19979783` and `24363205`, preserving every
-other setting, rule, required context, issuer and branch condition. The
-[REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
-supports this individual-user, PR-only grant; no separate writer platform is a
-prerequisite. `always`, `exempt` and admin-role-wide grants are outside this proposal.
+The installed entry is exactly
+`{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`.
+It permits the authorized owner to merge an eligible reviewed PR while checks
+are pending. GitHub applies this grant to matching PRs for that account; it does
+not enforce a documentation-content boundary. The configured mode is
+`pull_request`; the observed owner's API result is `pull_requests_only`.
 
-The same read-only proposal covers only the six protected repositories in this
-assigned documentation delivery. These are proposed additions, not applied settings:
-
-| Repository                 | Rulesets receiving the proposed User PR-only entry | Existing state to preserve                                               |
-| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
-| `.github`                  | `19979783`, `24363205`                             | All other fields and immutable source locks                              |
-| `engineering-foundation`   | `19979782`, `24372286`                             | All other fields and actors                                              |
-| `agent-runtime`            | `24363207`                                         | Existing User `13103045 / always` in `19979781`; history rule `26556591` |
-| `agent-teams-platform`     | `24363204`                                         | All other fields and actors                                              |
-| `agent-teams-orchestrator` | `19979784`, `24363212`                             | All other fields and actors                                              |
-| `extension-foundation`     | `20807525`, `24363213`                             | All other fields and actors                                              |
+| Repository | Rulesets with the observed User PR-only entry | Existing state retained |
+| --- | --- | --- |
+| `.github` | `19979783`, `24363205` | Final v4-only source requirement; other main protections and source locks |
+| `engineering-foundation` | `19979782`, `24372286` | Other fields and actors |
+| `agent-runtime` | `24363207` | Existing User `13103045 / always` in `19979781`; history rule `26556591` |
+| `agent-teams-platform` | `24363204` | Other fields and actors |
+| `agent-teams-orchestrator` | `19979784`, `24363212` | Other fields and actors |
+| `extension-foundation` | `20807525`, `24363213` | Other fields and actors |
 
 Research receives no new grant. Other repositories require their own observed
-proposal. Re-read every live configuration before applying any change.
+proposal. Before use, verify the current actor, exact PR head/base, complete
+source commit identities and applicable live rules.
 
-The grant technically covers the entire matching ruleset and any matching PR
-merged by that account; GitHub does not enforce a docs-content boundary on it.
 Its use remains limited to specifically assigned, reviewed documentation and
 any wider delivery scope explicitly authorized by the owner. It does not
 authorize agents to choose more work, bypass known substantive findings,
@@ -289,58 +285,66 @@ perform releases or push directly to protected main. Other actors retain the
 existing required gates. Ongoing and postmerge verification still completes;
 early merge does not report pending or omitted tests as successful.
 
-The canonical identity policy currently has `ruleset.bypass_actors: []` and the
-audit compares it exactly. The bounded compatibility change must keep that
-installation default and accept only the exact optional owner entry on the six
-named repositories; other actors, modes, repositories and rule drift still reject.
-The onboarding writer continues to create the default no-bypass rule and preserve
-existing rules. This compatibility is not a bypass installer or an identity-check
-exemption. The local legacy JavaScript correction and its tests do not establish
-strict TypeScript coverage or hosted admission.
+The canonical identity policy retains `ruleset.bypass_actors: []` as its
+installation default. The compatible audit also accepts only the exact optional
+owner PR-only profile on the six named repositories. Other actors, modes,
+repositories and rule drift still reject. Onboarding creates the no-bypass
+default and preserves existing rules; it does not install the grant.
+Immutable source locks retain no bypass.
 
-Changing the policy is itself protected. The installed runtime-v2 source
-`6863c4b6e9f17b3a668e0afb9ff33cb9046788d0` delegates to frozen owners that reject
-changes to `governance/commit-author-identity.json`; the
-[permanent cutover record](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v2-cutover.md)
-contains the actual rejecting canary #402. Its owner-full protection proof also
-requires no bypass on Central's two main rulesets. Existing finite successor
-targets do not authorize this new change. Use the existing
-[source-successor procedure](decisions/0016-bounded-runtime-admission-source-successor-v2.md)
-with a separately reviewed source and exact compatibility tuple. Preserve all
-previous source locks, callers, accepted ADRs and historical evidence. A hosted
-public-read response that omits private bypass fields is not an owner-full proof.
+All six current identity callers resolve to the same reusable workflow bytes.
+That implementation reads current central policy and the caller template from
+one observed main revision, rechecks their blobs before success, and does not
+execute a frozen CLI audit or read ruleset bypass actors. Existing consumer pins
+therefore require no upgrade for this grant. Use the current compatible audit
+for settings readbacks; the older CLI audit at a historical consumer pin is not
+the implementation executed by its reusable identity job.
 
-The prepared application sequence is:
+For each eligible assigned PR, follow the existing
+[owner merge route](../GOVERNANCE.md#github-plugin-merge-route): freshly verify
+User/777genius, the non-draft owner PR, reviewed head/base and complete commit
+list; resolve blocking findings; preserve exact head matching, squash
+attribution and the complete reviewed message. Use only a supported authenticated
+merge surface and the already installed exception within its assigned scope.
+The existing [official asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
+fallback remains conditional on an ordinary wrapper lacking the permitted
+exception: use the authorized actor, exact `sha`, `merge_method: "squash"`,
+`merge_action: "direct_merge"` and `bypass_rules: true`, with the same attribution.
+Do not claim that a connector accepts unsupported inputs.
 
-1. Re-read the current actor, PR head/base, source identity and effective rules;
-   verify owner account `13103045` and each current repository ruleset.
-2. Review and qualify the bounded policy/audit change and its new trusted source.
-   Use the existing immutable-source lock and add-before-retire cutover protocol,
-   including exact-target positive and rejecting canaries and actual required
-   blocking proof. Keep a source requirement throughout the transition. Install
-   the compatible policy, audit and source before adding grants; preserve all
-   unrelated contexts, issuers and protections. Source locks retain no bypass.
-3. Through authenticated GitHub settings or the official ruleset API with
-   Administration write, add only that User entry to each live configuration.
-   Read back each complete ruleset, verify the intended entry and preserved fields,
-   and run the compatible identity audit and owner-full source protection proof.
-4. For the eligible assigned PR, verify its reviewed head and base again and use
-   the ordinary guarded merge route. If its wrapper lacks the permitted bypass,
-   use the official [asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
-   as the authorized actor with exact `sha`, `merge_method: "squash"`,
-   `merge_action: "direct_merge"` and `bypass_rules: true`; preserve required attribution.
-5. Follow the returned operation to an actual merged result; acceptance or an
-   enqueued result is not a merge. Confirm final main parent/tree, author and
-   committer, then finish that repository's existing postmerge checks on that commit.
+Follow the actual operation to a merged result. An accepted request or queued
+operation is not a merge. Verify main parent/tree, actual author and committer,
+full message and issue references. Finish the existing ongoing and postmerge
+checks on the resulting main commit and report their outcomes separately.
 
-The concrete access prerequisite is an official authenticated settings-write
-channel for the new source lock, reviewed context transition and scoped grants.
-The fast-documentation preference is already given and needs no renewed approval.
-Code, tests, source preparation, independent review and ordinary documentation
-delivery can proceed independently of that access. No secrets belong in chat.
-This record does not claim that the compatibility source, grants or early merge
-were installed or qualified. Local test success and a settings proposal are
-preparation evidence, not a completed cutover or E2E result.
+An early merge can close the PR while an already-running open-PR snapshot or
+admission job is collecting evidence. Such a job may reject a closed target or
+changed metadata. Record its actual outcome and reason alongside the resulting
+main checks; a closed-target rejection is not successful validation. Investigate
+any unrelated failure through the existing route.
+
+**Historical preparation observation — 2026-11-25.** At that time Central's
+protected no-wait route was unmet: the then-current audit and immutable source
+required no bypass, and the session had no authenticated settings-write channel.
+Research's authorized direct-main route already worked. The read-only
+observation at Central `3d0a134e326f22ff867b418d64554167287638c8` found
+[Protect main](https://github.com/agent-teams-ai/.github/rules/19979783) and
+[commit identity](https://github.com/agent-teams-ai/.github/rules/24363205)
+requiring six current-head contexts from integration `15368`, strict
+current-base checks, empty bypass lists and actor result `never`. The owner had
+repository admin permission; `allow_auto_merge` was false. Those values describe
+that historical observation, not the completed grant readback.
+
+The retained [v2 cutover record](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v2-cutover.md)
+records source `6863c4b6e9f17b3a668e0afb9ff33cb9046788d0` and the actual
+rejecting policy canary #402. The [ADR-0018 installation snapshot](decisions/0018-bounded-runtime-admission-source-successor-v4.md)
+and its [evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-installation.md)
+remain unchanged; the new dated observation records subsequent installation,
+permanent enforcement and grants. Public responses omitting private bypass
+fields are not owner-full observations. The original
+[individual-user ruleset support](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/)
+and [REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
+references remain applicable to the configured native grant.
 
 | Optional alternative                 | Timing and remaining work                                                                                                                                                                                                                                                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

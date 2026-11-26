@@ -281,13 +281,20 @@ Native commit-email restrictions failed the TEST rebase merge qualification;
 they are supplementary unproven posture and are not shipped as enforcement.
 The canonical default payload requires the exact head status from GitHub Actions
 integration `15368`, on `~DEFAULT_BRANCH`, active and without bypass actors.
-The planned [native owner delivery route](docs/engineering-quality.md#documentation-merge-timing-native-owner-route-2026-11-25-utc)
-requires a compatible canonical policy and protected source transition before
-an exact owner PR-only grant can be installed and read back. This conditional
-profile is not an installed capability; default onboarding and immutable source
-locks retain their no-bypass requirements.
+The [native owner delivery route](docs/engineering-quality.md#documentation-merge-timing-native-owner-route-2026-11-25-utc)
+is installed for the ten rulesets in the six assigned repositories, observed at
+`{{FINAL_OBSERVATION_UTC}}` in the
+[dated evidence](governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-permanent-owner-delivery-20261126.md).
+Its compatible canonical policy and qualified immutable v4 source admit only the
+declared owner PR-only profile. Default onboarding and immutable source locks
+retain their no-bypass requirements. Use remains limited to explicitly assigned,
+reviewed documentation and wider delivery scope explicitly authorized by the
+owner; source identity, release gates and task ownership remain mandatory.
+Installed configuration and an actual completed merge are separate claims.
+Other repositories do not inherit this exception automatically.
 Installation and actual merge qualification remain maintainer operations;
-this policy does not claim live enforcement or automatic inheritance on Free.
+this default policy alone does not establish enforcement outside the recorded
+installation or automatic inheritance on Free.
 Future owned repositories use the bounded [commit identity onboarding route](docs/repository-admission.md#commit-identity-onboarding)
 to prepare the caller, inspect a write-free plan and apply owner-reviewed additive settings.
 
