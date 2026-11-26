@@ -1,0 +1,21 @@
+name: Trusted Runtime and Admission Source Successor V4
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+  statuses: write
+jobs:
+  source:
+    uses: agent-teams-ai/.github/.github/workflows/runtime-admission-source-successor-v4.yml@72fa7a8af02e9ba7904c912f0bbb457254381002
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      statuses: write

@@ -72,7 +72,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 47);
+  assert.equal(paths.length, 50);
   assert.ok(paths.includes("scripts/verify-docs-admission-change.mjs"));
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
@@ -108,6 +108,28 @@ test("source v4 and its tests are in the real strict and lint census without exp
   for (const path of [
     "scripts/runtime-admission-source-successor-v4.ts",
     "scripts/runtime-admission-source-successor-v4.test.ts",
+  ]) {
+    assert.ok(accepted.toolingTsconfig.include.includes(path));
+    assert.ok(lintPaths.includes(path));
+    assert.ok(!accepted.profile.retainedAuthoritySources.some((entry) => entry.path === path));
+    const changed = structuredClone(accepted);
+    changed.toolingTsconfig.include = changed.toolingTsconfig.include.filter(
+      (entry) => entry !== path,
+    );
+    assert.throws(() => assertQualityAdoption(changed));
+  }
+  for (const entry of accepted.profile.retainedAuthoritySources) {
+    assert.ok(!lintPaths.includes(entry.path));
+  }
+});
+
+test("source v5, target binding and tests are in the real strict and lint census without expanding frozen exclusions", () => {
+  const census = assertQualityAdoption(accepted);
+  const lintPaths = deriveLintPaths(census, accepted.profile);
+  for (const path of [
+    "scripts/runtime-admission-source-successor-v5.ts",
+    "scripts/runtime-admission-source-successor-v5.test.ts",
+    "scripts/runtime-admission-source-successor-v5-target.ts",
   ]) {
     assert.ok(accepted.toolingTsconfig.include.includes(path));
     assert.ok(lintPaths.includes(path));

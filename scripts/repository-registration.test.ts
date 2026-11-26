@@ -6,6 +6,7 @@ import { validateSchema } from "./governance-schema.ts";
 import {
   createRepositoryRegistrationReader,
   parseRepositoryRegistrationJson,
+  projectCurrentRepositoryInventory,
   projectRepositoryRegistrations,
 } from "./repository-registration.ts";
 import type {
@@ -240,6 +241,211 @@ void test("historical Docs records may omit classification evidence without the 
   assert.ok(retained);
   assert.equal(Object.hasOwn(retained, "classification_evidence"), false);
   assert.equal(retained.classification_evidence, undefined);
+});
+
+void test("current retirement projection preserves historical inputs and pending Payments registration", () => {
+  const historical = structuredClone(inventory);
+  const policy = structuredClone(docsProtocol);
+  const supplement = structuredClone(registrations);
+  const canary = policy.repositories.find(
+    (record) => record.repository === "agent-teams-ai/docs-protocol-canary-20260817",
+  );
+  assert.ok(canary);
+  canary.repository_lifecycle = "deleted";
+  const before = structuredClone({ historical, policy, supplement });
+  const view = projectRepositoryRegistrations(historical, policy, supplement);
+  const current = projectCurrentRepositoryInventory(view.inventoryRecords, view.docsRecords);
+  assert.equal(view.inventoryRecords.length, inventory.repositories.length + 1);
+  assert.equal(current.length, inventory.repositories.length);
+  assert.ok(
+    view.inventoryRecords.some(
+      (record) => record.repository === "agent-teams-ai/docs-protocol-canary-20260817",
+    ),
+  );
+  assert.ok(
+    !current.some((record) => record.repository === "agent-teams-ai/docs-protocol-canary-20260817"),
+  );
+  const payment = current.find((record) => record.repository === "agent-teams-ai/payments-sdk");
+  assert.ok(payment);
+  assert.strictEqual(payment, first(supplement).inventory);
+  assert.equal(
+    first(supplement).feature_module_standard.requirement,
+    "full_adoption_all_production_modules",
+  );
+  assert.deepEqual({ historical, policy, supplement }, before);
+  assert.notStrictEqual(current, view.inventoryRecords);
+});
+
+void test("current retirement requires both exact identity fields and an explicit deleted lifecycle", () => {
+  const records = [{ repository: "agent-teams-ai/current", id: 1, archived: false }];
+  const tombstone = {
+    repository: "agent-teams-ai/current",
+    repository_id: 1,
+    repository_lifecycle: "deleted",
+  };
+  assert.deepEqual(projectCurrentRepositoryInventory(records, [tombstone]), []);
+  for (const docs of [
+    [],
+    [{ ...tombstone, repository_id: 2 }],
+    [{ ...tombstone, repository: "agent-teams-ai/another" }],
+    [{ ...tombstone, repository_lifecycle: "active" }],
+    [{ ...tombstone, repository_lifecycle: "archived" }],
+    [{ ...tombstone, repository_lifecycle: "transferred" }],
+  ]) {
+    assert.deepEqual(projectCurrentRepositoryInventory(records, docs), records);
+  }
+  const archived = [{ repository: "agent-teams-ai/current", id: 1, archived: true }];
+  assert.deepEqual(projectCurrentRepositoryInventory(archived, [tombstone]), archived);
+});
+
+void test("current retirement cannot remove a different ID that reuses a historical name", () => {
+  const records = [{ repository: "agent-teams-ai/recreated", id: 2, archived: false }];
+  const policy = [
+    {
+      repository: "agent-teams-ai/recreated",
+      repository_id: 1,
+      repository_lifecycle: "deleted",
+    },
+    {
+      repository: "agent-teams-ai/recreated",
+      repository_id: 2,
+      repository_lifecycle: "active",
+    },
+  ];
+  assert.deepEqual(projectCurrentRepositoryInventory(records, policy), records);
+});
+
+void test("current retirement refuses ambiguous or invalid identity inputs instead of masking them", () => {
+  const record = { repository: "agent-teams-ai/current", id: 1, archived: false };
+  const tombstone = {
+    repository: "agent-teams-ai/current",
+    repository_id: 1,
+    repository_lifecycle: "deleted",
+  };
+  for (const records of [
+    [record, { ...record }],
+    [record, { ...record, repository: "agent-teams-ai/another" }],
+    [record, { ...record, id: 2 }],
+    [{ ...record, id: 0 }],
+    [{ ...record, id: Number.NaN }],
+    [{ ...record, repository: "" }],
+  ]) {
+    assert.throws(
+      () => projectCurrentRepositoryInventory(records, [tombstone]),
+      /unambiguous inventory identities/u,
+    );
+  }
+  for (const policy of [
+    [tombstone, { ...tombstone }],
+    [tombstone, { ...tombstone, repository_lifecycle: "active" }],
+    [tombstone, { ...tombstone, repository: "agent-teams-ai/another" }],
+    [
+      { ...tombstone, repository_lifecycle: "active" },
+      { ...tombstone, repository_id: 2, repository_lifecycle: "active" },
+    ],
+    [{ ...tombstone, repository_id: 0 }],
+    [{ ...tombstone, repository_id: Number.NaN }],
+    [{ ...tombstone, repository: "" }],
+    [{ ...tombstone, repository_lifecycle: "unknown" }],
+  ]) {
+    assert.throws(
+      () => projectCurrentRepositoryInventory([record], policy),
+      /unambiguous Docs identities and lifecycle/u,
+    );
+  }
+});
+
+void test("current retirement retains real historical guards, live drift rejection and full-fleet admission", () => {
+  // This JavaScript fixture executes the retained .mjs runtime boundary. Its
+  // successful execution does not claim strict type coverage of those modules.
+  const source = String.raw`
+    import assert from "node:assert/strict";
+    import { readFile } from "node:fs/promises";
+    import {
+      loadJson, loadRepositoryRegistrationScope, validateDocsProtocolPolicy,
+      validateGovernanceReferences, validateOrganizationRepositoryInventory,
+    } from "./scripts/governance-policy.mjs";
+    import { assertRepositoryInventoryCurrent } from "./scripts/observe-org-repository-inventory.mjs";
+    import { currentAdmissionScope } from "./scripts/verify-docs-cohort-evidence.mjs";
+    import { POLICY_PATH } from "./scripts/docs-legacy-admission-recovery.mjs";
+    const paths = ["organization-repository-inventory", "executable-spec-qualification",
+      "code-security-defaults", "actions-policy", "docs-protocol-policy-v2"]
+      .map((name) => "governance/" + name + ".json");
+    const bytes = await Promise.all(paths.map((path) => readFile(path)));
+    const [inventory, ledger, security, actions, recordedPolicy] = bytes.map((value) => JSON.parse(value.toString("utf8")));
+    const basePolicy = structuredClone(recordedPolicy);
+    const canaryName = "agent-teams-ai/docs-protocol-canary-20260817";
+    const prior = basePolicy.repositories.find((record) => record.repository === canaryName);
+    assert.equal(prior.repository_id, 1336577313);
+    assert.ok(["active", "deleted"].includes(prior.repository_lifecycle));
+    // Keep this transition fixture usable after the actual data-only retirement.
+    if (prior.repository_lifecycle === "deleted") {
+      prior.repository_lifecycle = "active";
+      basePolicy.admission.expected_repository_count += 1;
+      basePolicy.admission.owned_repository_count += 1;
+    }
+    const policySchema = await loadJson("governance/docs-protocol-policy-v2.schema.json");
+    validateOrganizationRepositoryInventory(inventory,
+      await loadJson("governance/organization-repository-inventory.schema.json"));
+    validateDocsProtocolPolicy(basePolicy, policySchema);
+    const registrations = await loadRepositoryRegistrationScope({ inventory, ledger, docsProtocol: basePolicy });
+    const originals = structuredClone({ inventory, ledger, security, actions, basePolicy, registrations });
+    const policy = structuredClone(basePolicy);
+    const canary = policy.repositories.find((record) => record.repository === canaryName);
+    assert.equal(canary.repository_id, 1336577313);
+    canary.repository_lifecycle = "deleted";
+    policy.admission.expected_repository_count -= 1;
+    policy.admission.owned_repository_count -= 1;
+    validateDocsProtocolPolicy(policy, policySchema);
+    const verify = (docs = policy, historical = inventory, specification = ledger, defaults = security) =>
+      validateGovernanceReferences(specification, defaults, actions, historical, docs, registrations);
+    verify();
+    assert.equal(currentAdmissionScope(policy, basePolicy, [POLICY_PATH]), null);
+    for (const change of [
+      (docs) => { docs.repositories = docs.repositories.filter((record) => record.repository !== canaryName); },
+      (docs) => { docs.repositories.find((record) => record.repository === canaryName).repository_id += 1; },
+      (docs) => { docs.repositories.find((record) => record.repository === canaryName).repository = "agent-teams-ai/another"; },
+      (docs) => { docs.repositories.find((record) => record.repository === canaryName).repository_lifecycle = "archived"; },
+      (docs) => { docs.repositories.find((record) => record.repository === canaryName).repository_lifecycle = "transferred"; },
+    ]) {
+      const changed = structuredClone(policy);
+      change(changed);
+      assert.throws(() => verify(changed), /documentation protocol identity must match the active inventory/u);
+    }
+    const changedLedger = structuredClone(ledger);
+    changedLedger.repositories.find((record) => record.repository === canaryName).repository_id += 1;
+    assert.throws(() => verify(policy, inventory, changedLedger), /active ledger identity/u);
+    const changedSecurity = structuredClone(security);
+    assert.equal(changedSecurity.repository_attachments[0].visibility, "private");
+    changedSecurity.repository_attachments[0].visibility = "public";
+    assert.throws(() => verify(policy, inventory, ledger, changedSecurity), /security attachment identity/u);
+    const declared = [...inventory.repositories, ...registrations.repositories.map((record) => record.inventory)];
+    const liveRow = ({ repository, is_fork, ...record }) => ({ ...record, full_name: repository, fork: is_fork });
+    const live = declared.filter((record) => record.id !== 1336577313).map(liveRow);
+    assert.deepEqual(assertRepositoryInventoryCurrent(live, inventory, policy, registrations), {
+      missingFromSnapshot: [], absentFromOrganization: [], structuralChanges: [], missingClassification: [],
+    });
+    const retired = liveRow(declared.find((record) => record.id === 1336577313));
+    for (const present of [retired, { ...retired, id: 2000000017 }]) {
+      assert.throws(() => assertRepositoryInventoryCurrent([...live, present], inventory, policy, registrations),
+        /Organization repository inventory drift detected/u);
+    }
+    assert.deepEqual({ inventory, ledger, security, actions, basePolicy, registrations }, originals);
+    assert.deepEqual(await Promise.all(paths.map((path) => readFile(path))), bytes);
+    process.stdout.write("current-retirement-boundaries:PASS\n");
+  `;
+  assert.match(
+    execFileSync(
+      process.execPath,
+      ["--input-type=module", "--eval", source, "repository-retirement-fixture.mjs"],
+      {
+        encoding: "utf8",
+        timeout: 30_000,
+        maxBuffer: 1024 * 1024,
+      },
+    ),
+    /^Organization defaults verified: [1-9][0-9]* files\ncurrent-retirement-boundaries:PASS\n$/u,
+  );
 });
 
 void test("the shared synchronous schema boundary rejects invalid data and asynchronous schema claims", () => {
