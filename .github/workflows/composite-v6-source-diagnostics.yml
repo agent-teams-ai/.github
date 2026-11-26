@@ -1,0 +1,147 @@
+name: Composite V6 Source Diagnostics
+
+on:
+  push:
+    branches:
+      - test/composite-v6-source-diagnostics-20261126
+
+permissions:
+  contents: read
+
+concurrency:
+  group: composite-v6-source-diagnostics-20261126
+  cancel-in-progress: false
+
+jobs:
+  source-diagnostics:
+    if: github.repository == 'agent-teams-ai/.github' && github.event_name == 'push' && github.ref == 'refs/heads/test/composite-v6-source-diagnostics-20261126'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      V6_PREP_SOURCE_SHA: 4b57ad73b1413a12138bde6d39b0862ed3135c09
+      V6_PREP_SOURCE_TREE: 452b208bfa334207fc6604ff000106a8bdc7c9c8
+      V6_PREP_BASE_SHA: 89b5d7c512d9c4b5ae63709857a0d71cb2e6d178
+      V6_PREP_WORKFLOW_PATH: .github/workflows/composite-v6-source-diagnostics.yml
+    steps:
+      - name: Check out the exact reviewed source candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 4b57ad73b1413a12138bde6d39b0862ed3135c09
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify actual launcher ancestry and candidate identity
+        id: binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_WORKFLOW_SHA" = "$GITHUB_SHA"
+          test "$GITHUB_WORKFLOW_REF" = "agent-teams-ai/.github/$V6_PREP_WORKFLOW_PATH@refs/heads/test/composite-v6-source-diagnostics-20261126"
+          test "$GITHUB_SHA" != "$V6_PREP_SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$V6_PREP_SOURCE_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$V6_PREP_SOURCE_TREE"
+          test "$(git rev-parse "$GITHUB_SHA^")" = "$V6_PREP_SOURCE_SHA"
+          test "$(git diff --name-only "$V6_PREP_SOURCE_SHA" "$GITHUB_SHA")" = "$V6_PREP_WORKFLOW_PATH"
+          test "$(git rev-parse origin/main)" = "$V6_PREP_BASE_SHA"
+          git merge-base --is-ancestor 72fa7a8af02e9ba7904c912f0bbb457254381002 HEAD
+          git merge-base --is-ancestor bd982a6fa1a77329a558414aef2a99cb87d18896 HEAD
+          test -z "$(git status --porcelain)"
+          git show --no-patch --format='candidate=%H tree=%T parents=%P author=%an <%ae> committer=%cn <%ce>' HEAD
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26.11.1
+          package-manager-cache: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+          run_install: false
+          cache: false
+      - name: Install the unchanged frozen root dependency closure
+        id: install
+        run: pnpm install --frozen-lockfile
+      - name: Verify the compiler floor and complete maintained source scope
+        id: floor
+        run: |
+          node scripts/compiler-floor.ts
+          node scripts/check-quality-scope.mjs
+      - name: Format only the five new maintained V6 TypeScript files
+        id: format
+        run: |
+          node node_modules/.pnpm/oxfmt@0.74.0/node_modules/oxfmt/bin/oxfmt --write --config node_modules/stack-toolchain/presets/format.json --disable-nested-config -- scripts/runtime-admission-source-successor-v6.ts scripts/runtime-admission-source-successor-v6.test.ts scripts/runtime-admission-source-successor-v6-target.ts scripts/runtime-admission-source-successor-v6-owners.ts scripts/runtime-admission-source-successor-v6-owners.test.ts
+      - name: Run the actual type-aware lint gate
+        id: lint
+        if: ${{ !cancelled() && steps.format.conclusion == 'success' }}
+        run: pnpm quality:lint
+      - name: Run the owning strict TypeScript gate
+        id: strict
+        if: ${{ !cancelled() && steps.format.conclusion == 'success' }}
+        run: pnpm quality:typecheck
+      - name: Compile the dedicated source project with pinned TypeScript
+        id: compiler
+        if: ${{ !cancelled() && steps.format.conclusion == 'success' }}
+        run: pnpm exec stack-toolchain compile --project tsconfig.runtime-admission-source-successor-v6.json
+      - name: Execute all 78 transport and 21 owner cases
+        id: focused
+        if: ${{ !cancelled() && steps.format.conclusion == 'success' }}
+        timeout-minutes: 12
+        run: node --test scripts/runtime-admission-source-successor-v6.test.ts scripts/runtime-admission-source-successor-v6-owners.test.ts
+      - name: Check the complete repository format scope
+        id: format_check
+        if: ${{ !cancelled() && steps.format.conclusion == 'success' }}
+        run: pnpm format:check
+      - name: Verify closed tracked integrity and export exact formatter bytes
+        if: ${{ !cancelled() && steps.binding.conclusion == 'success' && steps.floor.conclusion == 'success' && steps.format.conclusion == 'success' }}
+        env:
+          V6_PREP_LINT_RESULT: ${{ steps.lint.conclusion }}
+          V6_PREP_STRICT_RESULT: ${{ steps.strict.conclusion }}
+          V6_PREP_COMPILER_RESULT: ${{ steps.compiler.conclusion }}
+          V6_PREP_FOCUSED_RESULT: ${{ steps.focused.conclusion }}
+          V6_PREP_FORMAT_RESULT: ${{ steps.format_check.conclusion }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, stat, subprocess
+          def git(*args):
+              return subprocess.check_output(["git", *args])
+          assert git("rev-parse", "HEAD").decode().strip() == os.environ["V6_PREP_SOURCE_SHA"], "Final source HEAD drift"
+          assert git("rev-parse", "HEAD^{tree}").decode().strip() == os.environ["V6_PREP_SOURCE_TREE"], "Final source commit tree drift"
+          allowed = {
+              "scripts/runtime-admission-source-successor-v6.ts",
+              "scripts/runtime-admission-source-successor-v6.test.ts",
+              "scripts/runtime-admission-source-successor-v6-target.ts",
+              "scripts/runtime-admission-source-successor-v6-owners.ts",
+              "scripts/runtime-admission-source-successor-v6-owners.test.ts",
+          }
+          def names(value):
+              return {item.decode("utf-8") for item in value.split(b"\0") if item}
+          changed = names(git("diff", "--name-only", "-z", "HEAD", "--"))
+          assert changed <= allowed, "Tracked changes exceed the five reviewed formatter inputs"
+          assert not names(git("ls-files", "--others", "--exclude-standard", "-z")), "Unexpected untracked source output"
+          rows = []
+          for name in sorted(changed):
+              path = pathlib.Path(name)
+              mode = path.lstat().st_mode
+              assert stat.S_ISREG(mode) and not mode & 0o111, "Formatter output must remain a regular non-executable source file"
+              before = git("show", "HEAD:" + name)
+              after = path.read_bytes()
+              before_blob = hashlib.sha1(b"blob " + str(len(before)).encode() + b"\0" + before).hexdigest()
+              after_blob = hashlib.sha1(b"blob " + str(len(after)).encode() + b"\0" + after).hexdigest()
+              row = {"path": name, "before_blob": before_blob, "after_blob": after_blob, "sha256": hashlib.sha256(after).hexdigest(), "bytes": len(after), "mode": "100644"}
+              rows.append(row)
+              print("V6_FORMAT_FILE_META " + json.dumps(row, sort_keys=True))
+              content = after.decode("utf-8", errors="strict")
+              chunks = [content[index:index + 16000] for index in range(0, len(content), 16000)]
+              for index, chunk in enumerate(chunks):
+                  print("V6_FORMAT_FILE_CHUNK " + json.dumps({"path": name, "index": index, "count": len(chunks), "content": chunk}, sort_keys=True))
+          if changed:
+              subprocess.run(["git", "add", "--", *sorted(changed)], check=True)
+          resulting_tree = git("write-tree").decode().strip()
+          assert not git("diff", "--name-only"), "Unstaged tracked drift after exact export"
+          print("V6_SOURCE_EXPORT_SUMMARY " + json.dumps({
+              "source": os.environ["V6_PREP_SOURCE_SHA"],
+              "before_tree": os.environ["V6_PREP_SOURCE_TREE"],
+              "after_tree": resulting_tree,
+              "changed_files": rows,
+              "gate_conclusions": {key: os.environ[key] for key in ["V6_PREP_LINT_RESULT", "V6_PREP_STRICT_RESULT", "V6_PREP_COMPILER_RESULT", "V6_PREP_FOCUSED_RESULT", "V6_PREP_FORMAT_RESULT"]},
+          }, sort_keys=True))
+          PY
