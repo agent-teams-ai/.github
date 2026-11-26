@@ -102,7 +102,7 @@ first refused the pending-policy merge; the ordinary synchronous single-PR
 REST merge then accepted the exact reviewed head SHA and explicit squash
 message. No `--admin`, auto-merge, asynchronous merge, fabricated status or
 ruleset change was used. GitHub rule suite
-[5390944428](https://github.com/agent-teams-ai/.github/rules/rule-suites/5390944428)
+[5390944428](https://api.github.com/repos/agent-teams-ai/.github/rulesets/rule-suites/5390944428)
 recorded actor `777genius` and result `bypass`: main ruleset `19979783`
 reported required status checks failed, with two of five not successful and
 one expected. Identity ruleset `24363205` passed. This is direct evidence of
@@ -127,4 +127,7 @@ on exact resulting SHA `939ed21b24486d96aabb9de2dd1ab1eee71ac91d`.
 The already-running v4 [run 45849419948/1](https://github.com/agent-teams-ai/.github/actions/runs/45849419948/attempts/1)
 failed after merge: qualifier reported `Live protected main moved` and publisher
 reported `Invalid live source PR metadata`. These are failures, separate from
-resulting-main CI; no closed-PR retry was made.
+resulting-main CI. The separate already-running v4
+[run 45849472789/1](https://github.com/agent-teams-ai/.github/actions/runs/45849472789/attempts/1)
+failed the same live-main and closed-target guards at `15:34:21Z` and
+`15:34:38Z`. No closed-PR retry was made.
