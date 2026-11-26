@@ -240,16 +240,16 @@ actual Git and tampered Actions trials remain for the two real adapters.
 
 ### Documentation merge timing: native owner route (2026-11-25 UTC)
 
-Owner direction was recorded on 2026-11-25. On 2026-11-26 the owner deferred
-the ten native owner grants and actual early-merge qualification. The compatible
-policy, immutable v4 source, installed Central caller and permanent v4
-enforcement are complete. Those prerequisites do not establish an installed
-no-wait merge route. At the connector observation `2026-11-26T13:20:50Z`, all ten
-target rulesets were active with `bypass_actors: []` and
-`current_user_can_bypass: never` for that connector reader.
+Owner direction was recorded on 2026-11-25. On 2026-11-26 the ten native
+owner grants were installed and read back by the owner. The compatible policy,
+immutable v4 source, installed Central caller and permanent v4 enforcement
+remain in place. Installation and export validation are recorded in the
+[dated owner-grant report](../governance/evidence/docs-source-successor/native-owner-grants-20261126.md).
+A practical early merge and resulting-main checks require their own evidence;
+installation alone does not establish them.
 The [dated permanent-enforcement and deferred-delivery evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-permanent-owner-delivery-20261126.md)
 records the completed work, rejecting canaries, required-check blocking
-observations, subsequent hosted checks and the explicitly deferred steps.
+observations, subsequent hosted checks and the steps deferred at that observation.
 
 Central requires `runtime-admission-source-successor-v4`. Its main caller pins
 immutable source `72fa7a8af02e9ba7904c912f0bbb457254381002`. The compatible policy
@@ -263,33 +263,30 @@ historical records remain. Here v4 names the governance admission mechanism;
 it does not establish Agent Runtime v3, live extension updates or product-scale
 qualification.
 
-The deferred proposed entry is exactly
+The installed entry is exactly
 `{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`.
-If installed and independently read back, it would permit the authorized owner
-to merge an eligible reviewed PR while checks are pending. GitHub applies this
-grant to matching PRs for that account; it does not enforce a documentation
-content boundary. The proposed configured mode is `pull_request`; the expected
-owner-reader result after a successful installation is `pull_requests_only`.
-Neither is the observed current `never` result or an actual after-grant receipt.
+It permits the authorized owner to merge an eligible reviewed PR while checks
+are pending, subject to the applicable GitHub rules and the assigned scope. GitHub applies
+this grant to matching PRs for that account; it does not enforce a documentation
+content boundary. The configured mode is `pull_request`; the actual owner-reader
+result was `pull_requests_only` for each of the ten rulesets.
 
-| Repository                 | Deferred target rulesets; no new entry installed | Existing state outside the proposed grant                                 |
-| -------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------- |
-| `.github`                  | `19979783`, `24363205`                           | Final v4-only source requirement; other main protections and source locks |
-| `engineering-foundation`   | `19979782`, `24372286`                           | Other fields and actors, including CodeQL App `57789`                     |
-| `agent-runtime`            | `24363207`                                       | Existing User `13103045 / always` in `19979781`; history rule `26556591`  |
-| `agent-teams-platform`     | `24363204`                                       | Other fields and actors                                                   |
-| `agent-teams-orchestrator` | `19979784`, `24363212`                           | Other fields and actors                                                   |
-| `extension-foundation`     | `20807525`, `24363213`                           | Other fields and actors                                                   |
+| Repository                 | Installed target rulesets | Existing state outside the grant                                          |
+| -------------------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `.github`                  | `19979783`, `24363205`    | Final v4-only source requirement; other main protections and source locks |
+| `engineering-foundation`   | `19979782`, `24372286`    | Other fields and actors, including CodeQL App `57789`                     |
+| `agent-runtime`            | `24363207`                | Existing User `13103045 / always` in `19979781`; history rule `26556591`  |
+| `agent-teams-platform`     | `24363204`                | Other fields and actors                                                   |
+| `agent-teams-orchestrator` | `19979784`, `24363212`    | Other fields and actors                                                   |
+| `extension-foundation`     | `20807525`, `24363213`    | Other fields and actors                                                   |
 
 Research receives no new grant. Other repositories require their own observed
-proposal. The ten-target observation does not claim a new full audit of unrelated
-rules; the dated evidence retains the earlier complete preservation comparison.
-Before any later grant use, verify the current actor, exact PR head/base,
+proposal. The dated report records the seven-repository preservation comparison.
+Before grant use, verify the current actor, exact PR head/base,
 complete source commit identities and applicable live rules.
 
-Current delivery follows the ordinary protected merge route. Any later native
-owner route remains limited to specifically assigned, reviewed documentation
-and any wider delivery scope explicitly authorized by the owner. It does not
+The native owner route remains limited to specifically assigned, reviewed
+documentation and any wider delivery scope explicitly authorized by the owner. It does not
 authorize agents to choose more work, bypass known substantive findings,
 perform releases or push directly to protected main. Other actors retain the
 existing required gates. Ongoing and postmerge verification still completes;
@@ -307,19 +304,19 @@ current identity callers resolved to the same reusable workflow bytes.
 That implementation reads current central policy and the caller template from
 one observed main revision, rechecks their blobs before success, and does not
 execute a frozen CLI audit or read ruleset bypass actors. Those observed
-consumer pins required no upgrade for the compatible policy. Any deferred
-settings readback must use the current compatible audit; the older CLI audit at
-a historical consumer pin is not the implementation executed by its reusable
-identity job. Actual after-grant export validation remains not run.
+consumer pins required no upgrade for the compatible policy. Settings readback
+must use the current compatible audit; the older CLI audit at a historical
+consumer pin is not the implementation executed by its reusable identity job.
+The current identity export and exact v4 source export passed against the actual
+owner-full after snapshots, as recorded in the dated report.
 
 For each eligible assigned PR, follow the existing
 [owner merge route](../GOVERNANCE.md#github-plugin-merge-route): freshly verify
 User/777genius, the non-draft owner PR, reviewed head/base and complete commit
 list; resolve blocking findings; preserve exact head matching, squash
-attribution and the complete reviewed message. Current delivery uses a
-supported authenticated ordinary single-PR merge surface and the applicable
-protected-merge checks. A future native exception would first need its actual
-installation, readback and qualification within the assigned scope.
+attribution and the complete reviewed message. Use a supported authenticated
+ordinary single-PR merge surface. The installed exception applies only within the assigned scope; do not infer practical early
+merge qualification from installation alone.
 
 The [official asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
 is separately unqualified and deferred here; it is not a fallback for current
@@ -360,12 +357,12 @@ The retained [v2 cutover record](../governance/evidence/docs-source-successor/ru
 records source `6863c4b6e9f17b3a668e0afb9ff33cb9046788d0` and the actual
 rejecting policy canary #402. The [ADR-0018 installation snapshot](decisions/0018-bounded-runtime-admission-source-successor-v4.md)
 and its [evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-installation.md)
-remain unchanged; the new dated observation records subsequent installation,
-permanent enforcement, hosted results and deferred grants. Public responses
+remain unchanged; the earlier dated observation records subsequent installation,
+permanent enforcement, hosted results and the then-deferred grants. Public responses
 omitting private bypass fields are not owner-full observations. The original
 [individual-user ruleset support](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/)
 and [REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
-references remain applicable to the proposed native grant.
+references remain applicable to the native grant.
 
 | Optional alternative                 | Timing and remaining work                                                                                                                                                                                                                                                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
