@@ -105,80 +105,50 @@ const ownerId = 13103045;
 export const FROZEN_SOURCE_IMAGES = Object.freeze([
   [
     ".github/workflows/docs-admission-authority-evolution-v1.yml",
-    "8437f647e1ea0ea2f4778427cb09446b837c8af7"
+    "8437f647e1ea0ea2f4778427cb09446b837c8af7",
   ],
-  [
-    ".github/workflows/docs-source-successor-v1.yml",
-    "6805fa96bc0401ca18a3a4f2c8f4d1d77a9ee672"
-  ],
+  [".github/workflows/docs-source-successor-v1.yml", "6805fa96bc0401ca18a3a4f2c8f4d1d77a9ee672"],
   [
     ".github/workflows/runtime-admission-source-successor-v2.yml",
-    "b2654f77458cd1d0cbeb308baed6a4bb2aae4898"
+    "b2654f77458cd1d0cbeb308baed6a4bb2aae4898",
   ],
   [
     ".github/workflows/runtime-admission-source-successor-v4.yml",
-    "d14ab3a29080212bb1fd8ef74b5ae02407e30250"
+    "d14ab3a29080212bb1fd8ef74b5ae02407e30250",
   ],
-  [
-    "scripts/check-docs-source-successor-v1.mts",
-    "36cb752a50b8a0d7f83c813ed17cec775cdd79bb"
-  ],
-  [
-    "scripts/check-docs-source-successor-v1.test.mts",
-    "281032ebb0afecd5bb425f7f4018c99b20ee6635"
-  ],
-  [
-    "scripts/check-docs-verifier-authority.mts",
-    "55c462acdc808bff8b032dce9819de48a02e5e3b"
-  ],
-  [
-    "scripts/check-docs-verifier-authority.test.mts",
-    "c34697abc079e0a161fb3872a8a9acb07e951ded"
-  ],
+  ["scripts/check-docs-source-successor-v1.mts", "36cb752a50b8a0d7f83c813ed17cec775cdd79bb"],
+  ["scripts/check-docs-source-successor-v1.test.mts", "281032ebb0afecd5bb425f7f4018c99b20ee6635"],
+  ["scripts/check-docs-verifier-authority.mts", "55c462acdc808bff8b032dce9819de48a02e5e3b"],
+  ["scripts/check-docs-verifier-authority.test.mts", "c34697abc079e0a161fb3872a8a9acb07e951ded"],
   [
     "scripts/docs-admission-authority-evolution-v1.test.mjs",
-    "3ba881a3c1fbaf10c798f7870e06c84e3ce1d326"
+    "3ba881a3c1fbaf10c798f7870e06c84e3ce1d326",
   ],
-  [
-    "scripts/docs-quality-source-successor-v2.ts",
-    "767e4c4b530fdfad8356e299709be08f3237fdb0"
-  ],
+  ["scripts/docs-quality-source-successor-v2.ts", "767e4c4b530fdfad8356e299709be08f3237fdb0"],
   [
     "scripts/docs-quality-source-successor-v3-target.ts",
-    "f0b15b0ec460171a7b9a7b39d005cd897888634e"
+    "f0b15b0ec460171a7b9a7b39d005cd897888634e",
   ],
-  [
-    "scripts/docs-quality-source-successor-v3.ts",
-    "bd0072b49306a78069be10bbe34bacff5ac457cc"
-  ],
+  ["scripts/docs-quality-source-successor-v3.ts", "bd0072b49306a78069be10bbe34bacff5ac457cc"],
   [
     "scripts/runtime-admission-source-successor-v2.test.ts",
-    "f01ef4c5e88b5213637a1c2cf835f3c99ecac73d"
+    "f01ef4c5e88b5213637a1c2cf835f3c99ecac73d",
   ],
-  [
-    "scripts/runtime-admission-source-successor-v2.ts",
-    "989db73819975b12d672fe9da994748dcba6c8be"
-  ],
+  ["scripts/runtime-admission-source-successor-v2.ts", "989db73819975b12d672fe9da994748dcba6c8be"],
   [
     "scripts/runtime-admission-source-successor-v4.test.ts",
-    "41947395c12cffa9282fe24e36928cd491f48f90"
+    "41947395c12cffa9282fe24e36928cd491f48f90",
   ],
-  [
-    "scripts/runtime-admission-source-successor-v4.ts",
-    "ef337dd70d45e6ca645050d5a5a31b12f1fa3658"
-  ],
-  [
-    "tsconfig.docs-source-successor.json",
-    "ecf8d54bde8cd0bc1e5bb030963cf2bd8fde0602"
-  ],
+  ["scripts/runtime-admission-source-successor-v4.ts", "ef337dd70d45e6ca645050d5a5a31b12f1fa3658"],
+  ["tsconfig.docs-source-successor.json", "ecf8d54bde8cd0bc1e5bb030963cf2bd8fde0602"],
   [
     "tsconfig.runtime-admission-source-successor-v2.json",
-    "43a64e9d461a5b260dd42f38ebc6d961c6d526bc"
+    "43a64e9d461a5b260dd42f38ebc6d961c6d526bc",
   ],
   [
     "tsconfig.runtime-admission-source-successor-v4.json",
-    "8e065e35afb67c3001a67c60b18c1fd055bbdf37"
-  ]
+    "8e065e35afb67c3001a67c60b18c1fd055bbdf37",
+  ],
 ] as const);
 export const SOURCE_INPUTS = Object.freeze([
   "scripts/runtime-admission-source-successor-v6.ts",
@@ -189,11 +159,11 @@ export const SOURCE_INPUTS = Object.freeze([
   SOURCE_WORKFLOW,
   "tsconfig.runtime-admission-source-successor-v6.json",
 ]);
+// The retained evidence helper and workflow stay with frozen V4, including its
+// exact historical allowances. Only these new helpers have no retained owner.
 export const CURRENT_RUNTIME_INPUTS = Object.freeze([
   "scripts/docs-b304-registry-incident.ts",
   "scripts/docs-b304-recovery-staging.ts",
-  "scripts/verify-docs-cohort-evidence.mjs",
-  ".github/workflows/docs-admission-evidence.yml",
 ]);
 export const HISTORICAL_DATA_INPUTS = Object.freeze([
   "governance/organization-repository-inventory.json",
@@ -1616,7 +1586,12 @@ export async function checkSourceSuccessor(
       "scripts/check-docs-verifier-authority.test.mts",
       ...PREVIOUS_INSTALL_PATHS,
     ]);
-    assertPreserved(base, head, [...PREVIOUS_SOURCE_INPUTS, ...SOURCE_INPUTS, ...INSTALL_PATHS], true);
+    assertPreserved(
+      base,
+      head,
+      [...PREVIOUS_SOURCE_INPUTS, ...SOURCE_INPUTS, ...INSTALL_PATHS],
+      true,
+    );
     return "bounded-retirement-and-b304-source-installation";
   }
   if (head.entries.has(CANARY_WORKFLOW)) {
@@ -1638,7 +1613,11 @@ export async function checkSourceSuccessor(
   const { checkOrdinarySourceOwners } =
     await import("./runtime-admission-source-successor-v6-owners.ts");
   const result = await checkOrdinarySourceOwners(
-    evidence, baseManifest, baseLock, sourceSHA, admissionSnapshot,
+    evidence,
+    baseManifest,
+    baseLock,
+    sourceSHA,
+    admissionSnapshot,
   );
   assertPreserved(
     base,
@@ -1917,8 +1896,14 @@ export async function collectSourceEvidence(
     firstDefaultBranch ??= branch;
     return JSON.stringify({
       pull: snapshot,
-      repository: [controller.id, controller.full_name, controller.default_branch,
-        controller.archived, controller.disabled, controller.fork],
+      repository: [
+        controller.id,
+        controller.full_name,
+        controller.default_branch,
+        controller.archived,
+        controller.disabled,
+        controller.fork,
+      ],
       defaultBranch: [branch.name, branch.protected, object(branch.commit).sha],
       main: mainRaw,
       identity: identityRaw,

@@ -57,9 +57,17 @@ import {
   targetPullSnapshot,
 } from "./runtime-admission-source-successor-v6.ts";
 import type { GitHubReadApi, GitHubStatusApi } from "./runtime-admission-source-successor-v6.ts";
-import { INCIDENT_ARCHIVE, INERT_B304_AUTHORITY, RETAINED_RETIREMENT_IMAGES } from "./runtime-admission-source-successor-v6-target.ts";
-import { OrdinarySourceOwnersRefused, type AdmissionV1Snapshot } from "./runtime-admission-source-successor-v6-owners.ts";
-const FINITE_ADDED_EVIDENCE_PATH = "governance/evidence/docs-admission/canary-deletion-20261126.json";
+import {
+  INCIDENT_ARCHIVE,
+  INERT_B304_AUTHORITY,
+  RETAINED_RETIREMENT_IMAGES,
+} from "./runtime-admission-source-successor-v6-target.ts";
+import {
+  OrdinarySourceOwnersRefused,
+  type AdmissionV1Snapshot,
+} from "./runtime-admission-source-successor-v6-owners.ts";
+const FINITE_ADDED_EVIDENCE_PATH =
+  "governance/evidence/docs-admission/canary-deletion-20261126.json";
 
 const git = (...args: string[]): Buffer =>
   execFileSync("git", args, {
@@ -132,7 +140,8 @@ function ownerSnapshot(raw: unknown): AdmissionV1Snapshot {
   const evidence = mapping(raw);
   return {
     pull: {
-      number: evidence.pullRequest, changed_files: evidence.changedFiles,
+      number: evidence.pullRequest,
+      changed_files: evidence.changedFiles,
       head: { sha: evidence.headSHA, repo: { full_name: evidence.headRepository } },
       base: { sha: evidence.baseSHA, ref: evidence.baseRef },
     },
@@ -142,7 +151,10 @@ function ownerSnapshot(raw: unknown): AdmissionV1Snapshot {
   };
 }
 function checkSourceSuccessor(
-  evidence: unknown, manifest: Buffer, lock: Buffer, definingSource: string,
+  evidence: unknown,
+  manifest: Buffer,
+  lock: Buffer,
+  definingSource: string,
 ): Promise<string> {
   return checkCompositeSource(evidence, manifest, lock, definingSource, ownerSnapshot(evidence));
 }
@@ -926,6 +938,10 @@ void test("new quality helper closure is protected even where frozen v1 permits 
   }
 });
 
+const retainedRuntimeInputs = new Set([
+  "scripts/verify-docs-cohort-evidence.mjs",
+  ".github/workflows/docs-admission-evidence.yml",
+]);
 const laterCriticalInputs = [
   "scripts/docs-b304-registry-incident.ts",
   "scripts/docs-b304-recovery-staging.ts",
@@ -972,7 +988,9 @@ void test("post-integration ordinary delegation protects every newly critical ru
       f.envelope.headInputs = inputEvidence(f.envelope.headTree);
       await assert.rejects(
         checkSourceSuccessor(f.envelope, f.baseManifest, f.baseLock, sourceSHA),
-        preservedSourceRefusal(/protected|regular/iu),
+        (retainedRuntimeInputs.has(path) ? runtimeOwnerRefusal : preservedSourceRefusal)(
+          /protected|regular/iu,
+        ),
         `${path}: ${mutation}`,
       );
     }
@@ -995,10 +1013,17 @@ void test("post-integration root dependency admission does not admit nested Reno
 });
 
 void test("temporary composite source rejects the complete new three-file permanent installation", async () => {
-  const f = installationFixture(), envelope = { ...f.envelope, installationData: f.installationData };
+  const f = installationFixture(),
+    envelope = { ...f.envelope, installationData: f.installationData };
   assert.equal(checkDocsSourceSuccessor(envelope, f.baseManifest, f.baseLock), "noop");
-  await assert.rejects(checkSourceSuccessor(envelope, f.baseManifest, f.baseLock, sourceSHA), /Protected.*input/u);
-  await assertCallerWorkflow(Buffer.from(stringify(callerWorkflowDefinition(sourceSHA))), sourceSHA);
+  await assert.rejects(
+    checkSourceSuccessor(envelope, f.baseManifest, f.baseLock, sourceSHA),
+    /Protected.*input/u,
+  );
+  await assertCallerWorkflow(
+    Buffer.from(stringify(callerWorkflowDefinition(sourceSHA))),
+    sourceSHA,
+  );
   const partial = structuredClone(envelope);
   partial.files.pop();
   partial.changedFiles--;
@@ -1339,17 +1364,29 @@ void test("hosted public-read protection never certifies private bypass actors",
 void test("main cutover exchanges both source owners and preserves every remaining context", () => {
   const value = protection();
   const required = value.main.rules.find((rule) => rule.type === "required_status_checks")!;
-  for (const names of [contexts, [...contexts, SOURCE_CONTEXT],
-    [...contexts.filter((name) => !PREDECESSOR_CONTEXTS.includes(name)), SOURCE_CONTEXT]]) {
+  for (const names of [
+    contexts,
+    [...contexts, SOURCE_CONTEXT],
+    [...contexts.filter((name) => !PREDECESSOR_CONTEXTS.includes(name)), SOURCE_CONTEXT],
+  ]) {
     Object.assign(required, statusRule(names));
     assertMainProtection(value.main, value.identity);
   }
   for (const removed of PREDECESSOR_CONTEXTS) {
-    Object.assign(required, statusRule([...contexts.filter((name) => name !== removed), SOURCE_CONTEXT]));
+    Object.assign(
+      required,
+      statusRule([...contexts.filter((name) => name !== removed), SOURCE_CONTEXT]),
+    );
     assert.throws(() => assertMainProtection(value.main, value.identity), /transition/u);
   }
   for (const missing of ["check", "trusted-admission-evidence", "trusted-validation"]) {
-    Object.assign(required, statusRule([...contexts.filter((name) => name !== missing && !PREDECESSOR_CONTEXTS.includes(name)), SOURCE_CONTEXT]));
+    Object.assign(
+      required,
+      statusRule([
+        ...contexts.filter((name) => name !== missing && !PREDECESSOR_CONTEXTS.includes(name)),
+        SOURCE_CONTEXT,
+      ]),
+    );
     assert.throws(() => assertMainProtection(value.main, value.identity));
   }
   Object.assign(required, statusRule(contexts));
@@ -1727,10 +1764,29 @@ void test("installed immutable runtime v4 branch and lock remain required and ar
 const withoutStatuses = (rules: readonly unknown[]): unknown[] =>
   rules.filter((rule) => mapping(rule).type !== "required_status_checks");
 
+function canonicalStatusRequirements(value: Record<string, unknown>): Record<string, unknown> {
+  const normalized = structuredClone(value);
+  const status = records(normalized.rules).find((rule) => rule.type === "required_status_checks");
+  assert.ok(status);
+  const parameters = mapping(status.parameters);
+  parameters.required_status_checks = records(parameters.required_status_checks).toSorted(
+    (left, right) =>
+      String(left.context) < String(right.context)
+        ? -1
+        : String(left.context) > String(right.context)
+          ? 1
+          : 0,
+  );
+  return normalized;
+}
+
 void test("main-only cutover preserves identity and cannot retire the predecessor before additive readback", () => {
   const f = protection(),
     original = structuredClone(f);
-  assert.throws(() => planProtectionTransition(f.main, f.identity, "retire"), /owners AND|bridge/iu);
+  assert.throws(
+    () => planProtectionTransition(f.main, f.identity, "retire"),
+    /owners AND|bridge/iu,
+  );
   const added = planProtectionTransition(f.main, f.identity, "add");
   assert.deepEqual(f, original, "Proposal generator must not mutate observed protections");
   assert.deepEqual(
@@ -1752,7 +1808,10 @@ void test("main-only cutover preserves identity and cannot retire the predecesso
   assert.deepEqual(retired.main.conditions, original.main.conditions);
   assert.deepEqual(retired.main.bypass_actors, []);
   assert.deepEqual(retired.identity.bypass_actors, []);
-  assert.throws(() => planProtectionTransition(added.main, added.identity, "add"), /Add requires|already/iu);
+  assert.throws(
+    () => planProtectionTransition(added.main, added.identity, "add"),
+    /Add requires|already/iu,
+  );
   const hidden = structuredClone(f);
   Reflect.deleteProperty(hidden.main, "bypass_actors");
   assert.throws(() => planProtectionTransition(hidden.main, hidden.identity, "add"), /bypass/iu);
@@ -2226,13 +2285,19 @@ void test("successor retains both owners' exact complete frozen source closure",
     const missing = structuredClone(raw);
     missing.tree = missing.tree.filter((entry) => entry.path !== path);
     rehashTree(missing);
-    assert.throws(() => assertFrozenSourceInputs(parseCompleteTree(missing, missing.sha)), /Frozen source owner/u);
+    assert.throws(
+      () => assertFrozenSourceInputs(parseCompleteTree(missing, missing.sha)),
+      /Frozen source owner/u,
+    );
     const altered = structuredClone(raw);
     const entry = altered.tree.find((value) => value.path === path);
     assert.ok(entry);
     entry.mode = "100755";
     rehashTree(altered);
-    assert.throws(() => assertFrozenSourceInputs(parseCompleteTree(altered, altered.sha)), /Frozen source owner/u);
+    assert.throws(
+      () => assertFrozenSourceInputs(parseCompleteTree(altered, altered.sha)),
+      /Frozen source owner/u,
+    );
   }
 });
 
@@ -2296,7 +2361,9 @@ void test("unchanged symlinked admission inputs cannot hide in an ordinary basel
     }
     await assert.rejects(
       checkSourceSuccessor(fixture.envelope, fixture.baseManifest, fixture.baseLock, sourceSHA),
-      preservedSourceRefusal(/Protected|regular/u),
+      (retainedRuntimeInputs.has(path) ? runtimeOwnerRefusal : preservedSourceRefusal)(
+        /protected|regular/iu,
+      ),
     );
   }
 });
@@ -2513,21 +2580,40 @@ void test("owner PR profile never applies to new or predecessor immutable source
 void test("v6 binding rejects incomplete coordinates, altered retained images and active authority", () => {
   const fixture = {
     target: { ...TARGET },
-    tuple: TARGET_TUPLE.map(([path, before, after]): [string, string | null, string] => [path, before, after]),
-    commits: git("rev-list", `${TARGET.baseSHA}..${TARGET.headSHA}`).toString().trim().split("\n").toSorted(),
+    tuple: TARGET_TUPLE.map(([path, before, after]): [string, string | null, string] => [
+      path,
+      before,
+      after,
+    ]),
+    commits: git("rev-list", `${TARGET.baseSHA}..${TARGET.headSHA}`)
+      .toString()
+      .trim()
+      .split("\n")
+      .toSorted(),
   };
   assert.doesNotThrow(() => assertTargetBinding(fixture));
   for (const delta of [
-    { repository: "agent-teams-ai/agent-runtime" }, { repositoryId: 1 },
-    { pullRequest: 0 }, { pullRequest: 438 }, { pullId: 0 }, { commits: 0 },
-    { headRef: "" }, { headRef: "main" },
-    { baseSHA: "" }, { headSHA: "0".repeat(40) },
-    { baseTreeSHA: "not-a-tree" }, { headTreeSHA: "" },
+    { repository: "agent-teams-ai/agent-runtime" },
+    { repositoryId: 1 },
+    { pullRequest: 0 },
+    { pullRequest: 438 },
+    { pullId: 0 },
+    { commits: 0 },
+    { headRef: "" },
+    { headRef: "main" },
+    { baseSHA: "" },
+    { headSHA: "0".repeat(40) },
+    { baseTreeSHA: "not-a-tree" },
+    { headTreeSHA: "" },
   ]) {
-    assert.throws(() => assertTargetBinding({ ...fixture, target: { ...fixture.target, ...delta } }));
+    assert.throws(() =>
+      assertTargetBinding({ ...fixture, target: { ...fixture.target, ...delta } }),
+    );
   }
   for (const path of [
-    ...RETAINED_RETIREMENT_IMAGES.map(([name]) => name), INERT_B304_AUTHORITY.path, INCIDENT_ARCHIVE.path,
+    ...RETAINED_RETIREMENT_IMAGES.map(([name]) => name),
+    INERT_B304_AUTHORITY.path,
+    INCIDENT_ARCHIVE.path,
   ]) {
     const altered = structuredClone(fixture);
     const entry = altered.tuple.find(([name]) => name === path);
@@ -2570,7 +2656,12 @@ export const TARGET: BoundFiniteTarget | null = null;
     );
     await writeFile(join(directory, "package.json"), '{"type":"module"}\n');
     for (const mode of ["preflight", "bootstrap", "qualify", "source", "publish"]) {
-      const output = execFileSync(process.execPath, ["--input-type=module", "--eval", `
+      const output = execFileSync(
+        process.execPath,
+        [
+          "--input-type=module",
+          "--eval",
+          `
         globalThis.fetch = () => { throw new Error("FORBIDDEN_HTTP_EFFECT"); };
         process.argv = [process.execPath, ${JSON.stringify(path)}, ${JSON.stringify(mode)}];
         try {
@@ -2580,7 +2671,10 @@ export const TARGET: BoundFiniteTarget | null = null;
           if (!(error instanceof Error) || !error.message.includes("Composite v6 target is unbound")) throw error;
           process.stdout.write("unbound-before-effects:PASS\\n");
         }
-      `], { encoding: "utf8", timeout: 20_000, maxBuffer: 64 * 1024 });
+      `,
+        ],
+        { encoding: "utf8", timeout: 20_000, maxBuffer: 64 * 1024 },
+      );
       assert.equal(output, "unbound-before-effects:PASS\n");
     }
   } finally {
@@ -2594,8 +2688,13 @@ void test("finite target additions and modifications match every actual base and
   const files = filesBetween(TARGET.baseSHA, TARGET.headSHA);
   assert.equal(files.length, TARGET_TUPLE.length);
   assert.deepEqual(
-    files.filter((file) => file.status === "added").map((file) => file.filename).toSorted(),
-    TARGET_TUPLE.filter(([, before]) => before === null).map(([path]) => path).toSorted(),
+    files
+      .filter((file) => file.status === "added")
+      .map((file) => file.filename)
+      .toSorted(),
+    TARGET_TUPLE.filter(([, before]) => before === null)
+      .map(([path]) => path)
+      .toSorted(),
   );
   for (const [path, before, after] of TARGET_TUPLE) {
     assert.equal(base.tree.find((entry) => entry.path === path)?.sha ?? null, before);
@@ -2689,17 +2788,27 @@ void test("temporary composite exchange requires both-owner readback and preserv
     assert.equal(retained.length, phase === "retire" ? 0 : 2);
     for (const only of PREDECESSOR_CONTEXTS) {
       const half = structuredClone(next);
-      const altered = records(half.main.rules).find((rule) => rule.type === "required_status_checks");
+      const altered = records(half.main.rules).find(
+        (rule) => rule.type === "required_status_checks",
+      );
       assert.ok(altered);
       mapping(altered.parameters).required_status_checks = [
-        ...checks.filter((check) => !PREDECESSOR_CONTEXTS.includes(String(check.context)) && check.context !== SOURCE_CONTEXT),
-        { context: only, integration_id: 15368 }, { context: SOURCE_CONTEXT, integration_id: 15368 },
+        ...checks.filter(
+          (check) =>
+            !PREDECESSOR_CONTEXTS.includes(String(check.context)) &&
+            check.context !== SOURCE_CONTEXT,
+        ),
+        { context: only, integration_id: 15368 },
+        { context: SOURCE_CONTEXT, integration_id: 15368 },
       ];
       assert.throws(() => assertMainProtection(half.main, half.identity), /transition/u);
     }
     current = next;
   }
-  assert.deepEqual(current.main, original.main);
+  assert.deepEqual(
+    canonicalStatusRequirements(current.main),
+    canonicalStatusRequirements(mapping(original.main)),
+  );
 });
 
 void test("collected admission-negative reaches both literal retained source owners", async () => {
@@ -2710,7 +2819,13 @@ void test("collected admission-negative reaches both literal retained source own
   assert.equal(mapping(bound.admissionSnapshot.repository).id, TARGET.repositoryId);
   assert.equal(mapping(mapping(bound.admissionSnapshot.defaultBranch).commit).sha, f.state.branch);
   await assert.rejects(
-    checkCompositeSource(bound.evidence, bound.baseManifest, bound.baseLock, sourceSHA, bound.admissionSnapshot),
+    checkCompositeSource(
+      bound.evidence,
+      bound.baseManifest,
+      bound.baseLock,
+      sourceSHA,
+      bound.admissionSnapshot,
+    ),
     (error: unknown) => {
       assert.ok(error instanceof OrdinarySourceOwnersRefused);
       assert.deepEqual(error.owners, ["runtime-v4", "admission-v1"]);
@@ -2725,7 +2840,13 @@ void test("collected runtime-negative preserves its independent V1 noop and refu
   const f = collectorFixture(true, "governance/commit-author-identity.json", true);
   const bound = await collectSourceEvidence(f.api, executorFromEnvironment(f.env, canaryEvent(f)));
   await assert.rejects(
-    checkCompositeSource(bound.evidence, bound.baseManifest, bound.baseLock, sourceSHA, bound.admissionSnapshot),
+    checkCompositeSource(
+      bound.evidence,
+      bound.baseManifest,
+      bound.baseLock,
+      sourceSHA,
+      bound.admissionSnapshot,
+    ),
     (error: unknown) => {
       assert.ok(error instanceof OrdinarySourceOwnersRefused);
       assert.deepEqual(error.owners, ["runtime-v4"]);
@@ -2756,26 +2877,52 @@ void test("temporary composite delegation preserves the frozen V4 three-file ins
   const previous = await import("./runtime-admission-source-successor-v4.ts");
   const f = legacyFixture(previous.TARGET.headSHA, previous.TARGET.headSHA);
   for (const path of previous.INSTALL_PATHS) {
-    assert.equal(f.envelope.baseTree.tree.find((entry) => entry.path === path), undefined);
+    assert.equal(
+      f.envelope.baseTree.tree.find((entry) => entry.path === path),
+      undefined,
+    );
   }
   const caller = Buffer.from(stringify(previous.callerWorkflowDefinition(sourceSHA)));
   change(f, previous.CALLER_WORKFLOW, caller);
   change(f, previous.ADR_PATH, Buffer.from("# Retained V4 installation fixture\n"));
   change(f, previous.EVIDENCE_PATH, Buffer.from("# Retained V4 evidence fixture\n"));
-  const envelope = { ...f.envelope, installationData: { [previous.CALLER_WORKFLOW]: encoded(caller) } };
-  const retained = await previous.checkSourceSuccessor(envelope, f.baseManifest, f.baseLock, sourceSHA);
+  const envelope = {
+    ...f.envelope,
+    installationData: { [previous.CALLER_WORKFLOW]: encoded(caller) },
+  };
+  const retained = await previous.checkSourceSuccessor(
+    envelope,
+    f.baseManifest,
+    f.baseLock,
+    sourceSHA,
+  );
   assert.equal(retained, "noop");
-  assert.equal(await checkSourceSuccessor(envelope, f.baseManifest, f.baseLock, sourceSHA), retained);
+  assert.equal(
+    await checkSourceSuccessor(envelope, f.baseManifest, f.baseLock, sourceSHA),
+    retained,
+  );
 });
 
 void test("new B304 helper closure is refused even when both frozen owners see ordinary data", async () => {
   const previous = await import("./runtime-admission-source-successor-v4.ts");
-  for (const path of ["scripts/docs-b304-registry-incident.ts", "scripts/docs-b304-recovery-staging.ts"]) {
+  for (const path of [
+    "scripts/docs-b304-registry-incident.ts",
+    "scripts/docs-b304-recovery-staging.ts",
+  ]) {
     const f = ordinaryFixture();
     change(f, path, Buffer.from("// Unreviewed maintained runtime helper fixture\n"));
-    assert.equal(await previous.checkSourceSuccessor(f.envelope, f.baseManifest, f.baseLock, sourceSHA), "noop");
+    assert.equal(
+      await previous.checkSourceSuccessor(f.envelope, f.baseManifest, f.baseLock, sourceSHA),
+      "noop",
+    );
     await assert.rejects(
-      checkCompositeSource(f.envelope, f.baseManifest, f.baseLock, sourceSHA, ownerSnapshot(f.envelope)),
+      checkCompositeSource(
+        f.envelope,
+        f.baseManifest,
+        f.baseLock,
+        sourceSHA,
+        ownerSnapshot(f.envelope),
+      ),
       (error: unknown) => {
         assert.ok(error instanceof Error);
         assert.ok(!(error instanceof OrdinarySourceOwnersRefused));

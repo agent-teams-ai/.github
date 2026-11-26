@@ -5,7 +5,10 @@ import { lstatSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { Script } from "node:vm";
 import { parse } from "yaml";
-import type { AdmissionV1Mode, AdmissionV1Snapshot } from "./runtime-admission-source-successor-v6-owners.ts";
+import type {
+  AdmissionV1Mode,
+  AdmissionV1Snapshot,
+} from "./runtime-admission-source-successor-v6-owners.ts";
 import { requireTargetBinding } from "./runtime-admission-source-successor-v6-target.ts";
 
 const git = (...args: string[]): Buffer =>
@@ -44,32 +47,14 @@ const mapping = (value: unknown): Record<string, unknown> => {
 const frozenSources = [
   [
     ".github/workflows/docs-admission-authority-evolution-v1.yml",
-    "8437f647e1ea0ea2f4778427cb09446b837c8af7"
+    "8437f647e1ea0ea2f4778427cb09446b837c8af7",
   ],
-  [
-    "scripts/check-docs-source-successor-v1.mts",
-    "36cb752a50b8a0d7f83c813ed17cec775cdd79bb"
-  ],
-  [
-    "scripts/check-docs-verifier-authority.mts",
-    "55c462acdc808bff8b032dce9819de48a02e5e3b"
-  ],
-  [
-    "scripts/docs-quality-source-successor-v2.ts",
-    "767e4c4b530fdfad8356e299709be08f3237fdb0"
-  ],
-  [
-    "scripts/docs-quality-source-successor-v3.ts",
-    "bd0072b49306a78069be10bbe34bacff5ac457cc"
-  ],
-  [
-    "scripts/runtime-admission-source-successor-v2.ts",
-    "989db73819975b12d672fe9da994748dcba6c8be"
-  ],
-  [
-    "scripts/runtime-admission-source-successor-v4.ts",
-    "ef337dd70d45e6ca645050d5a5a31b12f1fa3658"
-  ]
+  ["scripts/check-docs-source-successor-v1.mts", "36cb752a50b8a0d7f83c813ed17cec775cdd79bb"],
+  ["scripts/check-docs-verifier-authority.mts", "55c462acdc808bff8b032dce9819de48a02e5e3b"],
+  ["scripts/docs-quality-source-successor-v2.ts", "767e4c4b530fdfad8356e299709be08f3237fdb0"],
+  ["scripts/docs-quality-source-successor-v3.ts", "bd0072b49306a78069be10bbe34bacff5ac457cc"],
+  ["scripts/runtime-admission-source-successor-v2.ts", "989db73819975b12d672fe9da994748dcba6c8be"],
+  ["scripts/runtime-admission-source-successor-v4.ts", "ef337dd70d45e6ca645050d5a5a31b12f1fa3658"],
 ] as const;
 for (const [path, blob] of frozenSources) {
   const url = new URL(`../${path}`, import.meta.url);
@@ -84,24 +69,31 @@ const {
   OrdinarySourceOwnersRefused,
 } = await import("./runtime-admission-source-successor-v6-owners.ts");
 
-const literalWorkflow = readFileSync(new URL(`../${FROZEN_ADMISSION_V1.path}`, import.meta.url), "utf8");
+const literalWorkflow = readFileSync(
+  new URL(`../${FROZEN_ADMISSION_V1.path}`, import.meta.url),
+  "utf8",
+);
 const workflow: unknown = parse(literalWorkflow);
-const steps = mapping(mapping(mapping(workflow).jobs)["trusted-admission-authority-evolution-v1"]).steps;
-assert.ok(Array.isArray(steps));
-function readLiteralScript(): string {
-  const script = mapping(mapping(steps[0]).with).script;
+const steps = mapping(
+  mapping(mapping(workflow).jobs)["trusted-admission-authority-evolution-v1"],
+).steps;
+function readLiteralScript(rawSteps: unknown): string {
+  assert.ok(Array.isArray(rawSteps));
+  const script = mapping(mapping(rawSteps[0]).with).script;
   assert.equal(typeof script, "string");
   assert.ok(typeof script === "string");
   return script;
 }
-const literalScript = readLiteralScript();
+const literalScript = readLiteralScript(steps);
 
 function v1Fixture() {
-  const files: Changed[] = [{
-    filename: FROZEN_ADMISSION_V1.target,
-    status: "modified",
-    sha: "1bf455f2ca5bf97440e62b2ff4eaa6c36aa2212b",
-  }];
+  const files: Changed[] = [
+    {
+      filename: FROZEN_ADMISSION_V1.target,
+      status: "modified",
+      sha: "1bf455f2ca5bf97440e62b2ff4eaa6c36aa2212b",
+    },
+  ];
   return {
     pull: {
       number: 77,
@@ -118,26 +110,33 @@ type V1Fixture = ReturnType<typeof v1Fixture>;
 async function literalV1Outcome(snapshot: AdmissionV1Snapshot) {
   const outputs = new Map<string, unknown>();
   let failed = false;
-  const result: unknown = new Script(`(async () => {\n${literalScript}\n})()`).runInNewContext({
-    context: {
-      payload: { pull_request: snapshot.pull },
-      repo: { owner: "agent-teams-ai", repo: ".github" },
-    },
-    github: {
-      paginate: async () => snapshot.files,
-      rest: {
-        pulls: { listFiles: () => null },
-        repos: {
-          get: async () => ({ data: snapshot.repository }),
-          getBranch: async () => ({ data: snapshot.defaultBranch }),
+  const result: unknown = new Script(`(async () => {\n${literalScript}\n})()`).runInNewContext(
+    {
+      context: {
+        payload: { pull_request: snapshot.pull },
+        repo: { owner: "agent-teams-ai", repo: ".github" },
+      },
+      github: {
+        paginate: async () => snapshot.files,
+        rest: {
+          pulls: { listFiles: () => null },
+          repos: {
+            get: async () => ({ data: snapshot.repository }),
+            getBranch: async () => ({ data: snapshot.defaultBranch }),
+          },
+        },
+      },
+      core: {
+        setFailed: () => {
+          failed = true;
+        },
+        setOutput: (name: string, value: unknown) => {
+          outputs.set(name, value);
         },
       },
     },
-    core: {
-      setFailed: () => { failed = true; },
-      setOutput: (name: string, value: unknown) => { outputs.set(name, value); },
-    },
-  }, { timeout: 1000 });
+    { timeout: 1000 },
+  );
   await result;
   return { failed, mode: outputs.get("mode") };
 }
@@ -150,37 +149,119 @@ function typedV1Outcome(snapshot: AdmissionV1Snapshot) {
 }
 
 void test("unbound composite target cannot select a collection or publication target", () => {
-  assert.throws(() => requireTargetBinding(null), /target is unbound; collection and publication are forbidden/u);
+  assert.throws(
+    () => requireTargetBinding(null),
+    /target is unbound; collection and publication are forbidden/u,
+  );
 });
 
 void test("typed admission owner preserves the literal frozen V1 algorithm", async (t) => {
   const cases: readonly [string, (snapshot: V1Fixture) => void, AdmissionV1Mode | undefined][] = [
     ["forward", () => {}, "forward"],
-    ["rollback", (s) => { s.files[0]!.sha = "e3f0f3d2e065b7c0ae324481a3056b7955a0702d"; }, "rollback"],
-    ["ordinary data", (s) => { s.files[0]!.filename = "governance/docs-b304-registry-recovery.json"; }, "noop"],
-    ["ordinary owner does not inspect target-only metadata", (s) => {
-      s.files[0]!.filename = "README.md";
-      s.pull.head.repo.full_name = "fixture/fork";
-      s.defaultBranch.commit.sha = "c".repeat(40);
-    }, "noop"],
-    ["zero changed count", (s) => { s.pull.changed_files = 0; }, undefined],
-    ["incomplete file census", (s) => { s.pull.changed_files = 2; }, undefined],
-    ["duplicate filename", (s) => { s.files.push({ ...s.files[0]! }); s.pull.changed_files = 2; }, undefined],
-    ["foreign target", (s) => { s.pull.head.repo.full_name = "fixture/fork"; }, undefined],
-    ["unreviewed target blob", (s) => { s.files[0]!.sha = "d".repeat(40); }, undefined],
-    ["added verifier", (s) => { s.files[0]!.status = "added"; }, undefined],
-    ["target rename", (s) => { s.files[0]!.previous_filename = "scripts/prior.mjs"; }, undefined],
-    ["rename away from target", (s) => {
-      s.files[0]!.previous_filename = FROZEN_ADMISSION_V1.target;
-      s.files[0]!.filename = "scripts/other.mjs";
-      s.files[0]!.status = "renamed";
-    }, undefined],
-    ["mixed verifier change", (s) => {
-      s.files.push({ filename: "README.md", status: "modified", sha: "c".repeat(40) });
-      s.pull.changed_files = 2;
-    }, undefined],
-    ["wrong default branch", (s) => { s.pull.base.ref = "other"; }, undefined],
-    ["stale default head", (s) => { s.defaultBranch.commit.sha = "c".repeat(40); }, undefined],
+    [
+      "rollback",
+      (s) => {
+        s.files[0]!.sha = "e3f0f3d2e065b7c0ae324481a3056b7955a0702d";
+      },
+      "rollback",
+    ],
+    [
+      "ordinary data",
+      (s) => {
+        s.files[0]!.filename = "governance/docs-b304-registry-recovery.json";
+      },
+      "noop",
+    ],
+    [
+      "ordinary owner does not inspect target-only metadata",
+      (s) => {
+        s.files[0]!.filename = "README.md";
+        s.pull.head.repo.full_name = "fixture/fork";
+        s.defaultBranch.commit.sha = "c".repeat(40);
+      },
+      "noop",
+    ],
+    [
+      "zero changed count",
+      (s) => {
+        s.pull.changed_files = 0;
+      },
+      undefined,
+    ],
+    [
+      "incomplete file census",
+      (s) => {
+        s.pull.changed_files = 2;
+      },
+      undefined,
+    ],
+    [
+      "duplicate filename",
+      (s) => {
+        s.files.push({ ...s.files[0]! });
+        s.pull.changed_files = 2;
+      },
+      undefined,
+    ],
+    [
+      "foreign target",
+      (s) => {
+        s.pull.head.repo.full_name = "fixture/fork";
+      },
+      undefined,
+    ],
+    [
+      "unreviewed target blob",
+      (s) => {
+        s.files[0]!.sha = "d".repeat(40);
+      },
+      undefined,
+    ],
+    [
+      "added verifier",
+      (s) => {
+        s.files[0]!.status = "added";
+      },
+      undefined,
+    ],
+    [
+      "target rename",
+      (s) => {
+        s.files[0]!.previous_filename = "scripts/prior.mjs";
+      },
+      undefined,
+    ],
+    [
+      "rename away from target",
+      (s) => {
+        s.files[0]!.previous_filename = FROZEN_ADMISSION_V1.target;
+        s.files[0]!.filename = "scripts/other.mjs";
+        s.files[0]!.status = "renamed";
+      },
+      undefined,
+    ],
+    [
+      "mixed verifier change",
+      (s) => {
+        s.files.push({ filename: "README.md", status: "modified", sha: "c".repeat(40) });
+        s.pull.changed_files = 2;
+      },
+      undefined,
+    ],
+    [
+      "wrong default branch",
+      (s) => {
+        s.pull.base.ref = "other";
+      },
+      undefined,
+    ],
+    [
+      "stale default head",
+      (s) => {
+        s.defaultBranch.commit.sha = "c".repeat(40);
+      },
+      undefined,
+    ],
   ];
   for (const [name, mutate, mode] of cases) {
     await t.test(name, async () => {
@@ -203,9 +284,14 @@ const legacyInputs = [
   "tsconfig.docs-source-successor.json",
 ];
 const inputEvidence = (tree: RawTree): Record<string, Entry | null> =>
-  Object.fromEntries(legacyInputs.map((path) => [path, tree.tree.find((entry) => entry.path === path) ?? null]));
+  Object.fromEntries(
+    legacyInputs.map((path) => [path, tree.tree.find((entry) => entry.path === path) ?? null]),
+  );
 const encoded = (bytes: Buffer) => ({
-  sha: hash("blob", bytes), size: bytes.length, encoding: "base64", content: bytes.toString("base64"),
+  sha: hash("blob", bytes),
+  size: bytes.length,
+  encoding: "base64",
+  content: bytes.toString("base64"),
 });
 function ordinaryFixture() {
   // Real immutable baseline bytes; later synthetic leaves are comparator TEST data,
@@ -217,16 +303,26 @@ function ordinaryFixture() {
   const baseManifest = git("show", `${revision}:package.json`);
   const baseLock = git("show", `${revision}:pnpm-lock.yaml`);
   const coordinates = {
-    pullRequest: 77, repository: "agent-teams-ai/.github", baseSHA: revision,
-    headSHA: revision, sourceSHA: revision, baseRef: "main", defaultBranch: "main",
-    headRepository: "agent-teams-ai/.github", changedFiles: 0,
+    pullRequest: 77,
+    repository: "agent-teams-ai/.github",
+    baseSHA: revision,
+    headSHA: revision,
+    sourceSHA: revision,
+    baseRef: "main",
+    defaultBranch: "main",
+    headRepository: "agent-teams-ai/.github",
+    changedFiles: 0,
   };
   const envelope = {
     ...coordinates,
     base: "5abed741aff64506d0e9f87f76541a4e93af7e4a",
     reviewTarget: "96cb95a89ca4a133fbb626133eb3ac6289938ff7",
-    paginationComplete: true, files, baseTree, headTree,
-    baseInputs: inputEvidence(baseTree), headInputs: inputEvidence(headTree),
+    paginationComplete: true,
+    files,
+    baseTree,
+    headTree,
+    baseInputs: inputEvidence(baseTree),
+    headInputs: inputEvidence(headTree),
     headData: { "package.json": encoded(baseManifest), "pnpm-lock.yaml": encoded(baseLock) },
     live: { ...coordinates, state: "open" },
   };
@@ -293,7 +389,9 @@ function change(f: OrdinaryFixture, path: string, bytes: Buffer): void {
   f.envelope.sourceSHA = f.envelope.headSHA;
   f.envelope.changedFiles = f.envelope.files.length;
   Object.assign(f.envelope.live, {
-    headSHA: f.envelope.headSHA, sourceSHA: f.envelope.headSHA, changedFiles: f.envelope.changedFiles,
+    headSHA: f.envelope.headSHA,
+    sourceSHA: f.envelope.headSHA,
+    changedFiles: f.envelope.changedFiles,
   });
   rehashTree(f.envelope.headTree);
   f.envelope.headInputs = inputEvidence(f.envelope.headTree);
@@ -302,7 +400,8 @@ function admissionFor(f: OrdinaryFixture): AdmissionV1Snapshot {
   const e = f.envelope;
   return {
     pull: {
-      number: e.pullRequest, changed_files: e.changedFiles,
+      number: e.pullRequest,
+      changed_files: e.changedFiles,
       head: { sha: e.headSHA, repo: { full_name: e.headRepository } },
       base: { ref: e.baseRef, sha: e.baseSHA },
     },
@@ -329,26 +428,43 @@ void test("frozen owners leave isolated B304 data to its separately qualified st
 
 void test("runtime protected-input control rejects while V1 independently observes noop", async () => {
   const f = ordinaryFixture();
-  change(f, "governance/commit-author-identity.json", Buffer.concat([
-    git("show", "b88a08c8131b8c98650318eb374a5fd2840bed46:governance/commit-author-identity.json"),
-    Buffer.from("\n"),
-  ]));
+  change(
+    f,
+    "governance/commit-author-identity.json",
+    Buffer.concat([
+      git(
+        "show",
+        "b88a08c8131b8c98650318eb374a5fd2840bed46:governance/commit-author-identity.json",
+      ),
+      Buffer.from("\n"),
+    ]),
+  );
   assert.equal(checkAdmissionV1Owner(admissionFor(f)), "noop");
-  await assert.rejects(checkBoth(f), (error: unknown) =>
-    error instanceof OrdinarySourceOwnersRefused &&
-      JSON.stringify(error.owners) === JSON.stringify(["runtime-v4"]));
+  await assert.rejects(
+    checkBoth(f),
+    (error: unknown) =>
+      error instanceof OrdinarySourceOwnersRefused &&
+      JSON.stringify(error.owners) === JSON.stringify(["runtime-v4"]),
+  );
 });
 
 void test("admission protected-input control evaluates both rejecting owners", async () => {
   const f = ordinaryFixture();
-  change(f, FROZEN_ADMISSION_V1.target, Buffer.concat([
-    git("show", `b88a08c8131b8c98650318eb374a5fd2840bed46:${FROZEN_ADMISSION_V1.target}`),
-    Buffer.from("\n"),
-  ]));
+  change(
+    f,
+    FROZEN_ADMISSION_V1.target,
+    Buffer.concat([
+      git("show", `b88a08c8131b8c98650318eb374a5fd2840bed46:${FROZEN_ADMISSION_V1.target}`),
+      Buffer.from("\n"),
+    ]),
+  );
   assert.throws(() => checkAdmissionV1Owner(admissionFor(f)), /exact reviewed verifier/u);
-  await assert.rejects(checkBoth(f), (error: unknown) =>
-    error instanceof OrdinarySourceOwnersRefused &&
-      JSON.stringify(error.owners) === JSON.stringify(["runtime-v4", "admission-v1"]));
+  await assert.rejects(
+    checkBoth(f),
+    (error: unknown) =>
+      error instanceof OrdinarySourceOwnersRefused &&
+      JSON.stringify(error.owners) === JSON.stringify(["runtime-v4", "admission-v1"]),
+  );
 });
 
 void test("ordinary owner evidence cannot borrow a different head or a benign file census", async () => {
@@ -359,7 +475,10 @@ void test("ordinary owner evidence cannot borrow a different head or a benign fi
     if (field === "head") {
       mapping(mapping(mismatched.pull).head).sha = "c".repeat(40);
     } else {
-      mismatched = { ...mismatched, files: [{ filename: "README.md", status: "modified", sha: "c".repeat(40) }] };
+      mismatched = {
+        ...mismatched,
+        files: [{ filename: "README.md", status: "modified", sha: "c".repeat(40) }],
+      };
     }
     await assert.rejects(checkBoth(f, mismatched), /different heads|different files/u);
   }

@@ -64,7 +64,8 @@ export function checkAdmissionV1Owner(snapshot: AdmissionV1Snapshot): AdmissionV
     return "noop";
   }
   const head = mapping(pull.head);
-  const headRepository = head.repo === null || head.repo === undefined ? undefined : mapping(head.repo);
+  const headRepository =
+    head.repo === null || head.repo === undefined ? undefined : mapping(head.repo);
   assert.equal(
     headRepository?.full_name,
     "agent-teams-ai/.github",
@@ -128,8 +129,16 @@ export async function checkOrdinarySourceOwners(
   const base = mapping(pull.base);
   const repository = mapping(admissionSnapshot.repository);
   assert.equal(pull.number, bound.pullRequest, "Ordinary owners received different PR identities.");
-  assert.equal(pull.changed_files, bound.changedFiles, "Ordinary owners received different counts.");
-  assert.deepEqual(admissionSnapshot.files, bound.files, "Ordinary owners received different files.");
+  assert.equal(
+    pull.changed_files,
+    bound.changedFiles,
+    "Ordinary owners received different counts.",
+  );
+  assert.deepEqual(
+    admissionSnapshot.files,
+    bound.files,
+    "Ordinary owners received different files.",
+  );
   assert.equal(head.sha, bound.headSHA, "Ordinary owners received different heads.");
   assert.equal(mapping(head.repo).full_name, bound.headRepository);
   assert.equal(base.sha, bound.baseSHA, "Ordinary owners received different bases.");
@@ -142,9 +151,7 @@ export async function checkOrdinarySourceOwners(
     "Ordinary owners received a stale current-main observation.",
   );
   const results = await Promise.allSettled([
-    Promise.resolve().then(() =>
-      checkFrozenRuntimeV4(evidence, baseManifest, baseLock, sourceSHA),
-    ),
+    Promise.resolve().then(() => checkFrozenRuntimeV4(evidence, baseManifest, baseLock, sourceSHA)),
     Promise.resolve().then(() => checkAdmissionV1Owner(admissionSnapshot)),
   ] as const);
   const owners: OrdinarySourceOwner[] = [];
