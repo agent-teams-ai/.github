@@ -15,7 +15,7 @@ execution, the canonical test runner, and their typed tests. Legacy JavaScript r
 untyped; `typedCoverage: false` still describes the repository honestly.
 
 `pnpm quality:doctor` reports installed tool pins. `pnpm quality:typecheck`
-uses public `stack-toolchain typecheck` on the unchanged nine-entry strict
+uses public `stack-toolchain typecheck` on the owning strict
 `tsconfig.tooling.json`; ordinary success stops after tsrs. Bun and the pinned
 TypeScript checker selected by Stack's public toolchain manifest are sequential fallbacks only for unavailable engines
 or recognized engine failures. Project diagnostics stop the command.
@@ -39,17 +39,16 @@ maintained census. The four exact frozen live verifier/source-successor files
 listed in `retainedAuthoritySources` retain exact authority blobs under
 ADR-0012 and the existing native historical checks. They are classified separately
 from current maintained lint/format inputs; they remain in the independent source
-census and the unchanged native test scopes. The nine-entry main strict project directly
+census and the unchanged native test scopes. The owning main strict project directly
 includes the verifier pair; the separately retained `tsconfig.docs-source-successor.json`
 lists all four, but is not claimed as a new command in `pnpm check`.
-`scripts/verify-docs-admission-change.mjs` has a separate format-only retained
-identity: Git blob `f3db341a5d9fc5ec74c9c3379153940db99177c0`, owned by the live
-`trusted-admission-authority-evolution-v1` required workflow. That workflow admits
-only one helper file at two exact historical forward/rollback blobs; formatting
-it in this multi-file migration is not admitted. The helper retains its exact
-main bytes and stays in the 31-file lint census, source boundaries and native
-tests. Only the 97-file formatter roster classifies it separately; it is live
-authority, not generated or unused code.
+The bounded b304 registry-incident candidate changes
+`scripts/verify-docs-admission-change.mjs` through its separate protected-source
+successor. The previously retained format-only blob
+`f3db341a5d9fc5ec74c9c3379153940db99177c0` remains historical; the changed helper
+joins the ordinary maintained formatter roster. The four immutable retained
+source blobs above are unchanged. This candidate does not activate its own
+source authority or bypass the installed admission-evolution workflow.
 The gate rejects extra exclusions, dropped maintained files and hidden ignore
 files. Formatting debt remains pending; the candidate does not weaken it.
 
@@ -107,17 +106,17 @@ no `check:changed` or `check:fast` scripts. Full qualification also requires
 `pnpm check` and a successful frozen install including native prerequisites.
 Historical SHA receipts are unchanged; current-input evidence is separate.
 
-| Installed mechanism                                                            | Applicability and enforcement                                                                                                                                                                                                                                                                                               |
-| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Public Node preset and source boundaries                                       | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries`                                                                                                                                                                                                                                        |
-| Source census and exact selection                                              | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser                                                                                                                                                                                                     |
-| Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets                                                                                                                                                                      |
-| Strict typed tooling                                                           | Active only for the nine explicit `.mts`/`.ts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes public Stack read-only checking with the manifest-owned TypeScript fallback with independently pinned Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
-| Mandatory Node execution                                                       | Fail closed on proposed published Foundation 3.0.0: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck                                                                                                                 |
-| Registry and development-only admission                                        | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only`                                                                                                                                                                                                                      |
-| SDK growth authority                                                           | N/A: no SDK owner or inventory; no grant activation or release eligibility claim                                                                                                                                                                                                                                            |
-| Scaffolding, plugins and native production quality                             | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary                                                                                                                                                                       |
-| Executable specifications, contracts, governance and documentation             | Existing consumer-owned validators and complete tests remain required by `pnpm check`; the versioned pure input-proof contract has its own behavioral tests; no new documentation admission                                                                                                                                 |
+| Installed mechanism                                                            | Applicability and enforcement                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Public Node preset and source boundaries                                       | Active on all declared tooling roots: `pnpm quality:lint`, `pnpm quality:boundaries`                                                                                                                                                                                                                                     |
+| Source census and exact selection                                              | Active: `node scripts/check-quality-scope.mjs`, `pnpm quality:scope`; installed boundary fixtures reach the real parser                                                                                                                                                                                                  |
+| Production source coverage, typed quality and default unknown-assertion bridge | N/A for production: no production roots; installed quality classification excludes development-owned tooling. No bridge admissions or weakened budgets                                                                                                                                                                   |
+| Strict typed tooling                                                           | Active for the owning explicit `.mts`/`.ts` entries in `tsconfig.tooling.json`: `pnpm quality:typecheck` invokes public Stack read-only checking with the manifest-owned TypeScript fallback with independently pinned Node 24 types 24.19.1, strict checking, no emit, no JS admission and no library-check suppression |
+| Mandatory Node execution                                                       | Fail closed on proposed published Foundation 3.0.0: `pnpm test:critical`; eight exact identities, including the nested positive control, pass; exact contract and file selection also bound by the precheck                                                                                                              |
+| Registry and development-only admission                                        | `pnpm exec agent-teams-foundation assert-registry`, `pnpm exec agent-teams-foundation assert-dev-only`                                                                                                                                                                                                                   |
+| SDK growth authority                                                           | N/A: no SDK owner or inventory; no grant activation or release eligibility claim                                                                                                                                                                                                                                         |
+| Scaffolding, plugins and native production quality                             | N/A: no declared consumer owners/prerequisites. Renovate's existing RE2 dependency is an installation prerequisite, not a new native product boundary                                                                                                                                                                    |
+| Executable specifications, contracts, governance and documentation             | Existing consumer-owned validators and complete tests remain required by `pnpm check`; the versioned pure input-proof contract has its own behavioral tests; no new documentation admission                                                                                                                              |
 
 The retained Consumer Module Standard has no accepting Central ADR or local
 content pin to migrate. The reviewed source-packet delta is evidence only;
@@ -125,7 +124,7 @@ Foundation installation does not adopt Get Modular or change architecture.
 
 ## Bounded lint execution
 
-`scripts/run-quality-lint.mjs` keeps the consumer's independent 31-file maintained census
+`scripts/run-quality-lint.mjs` keeps the consumer's independently derived maintained census
 and exact Oxlint debug-selection agreement, then calls Stack's public
 `runCommand({ command: "lint", ... })`. The existing 120-second quality budget
 is supplied explicitly. Stack owns executable resolution, installed native
@@ -140,7 +139,7 @@ now carries the actual Stack configuration and registers its additional
 disposable inputs in both censuses. Its complete positive/diagnostic-batch
 qualification remains required after the adoption debt is resolved.
 
-The nine strict compiler entries, exact mandatory identities, existing complete
+The owning strict compiler project, exact mandatory identities, existing complete
 test partitions and all immutable historical files remain. This proposal does
 not establish process-tree supervision of arbitrary descendants, new production
 ownership or Docs Cohort admission.
@@ -240,107 +239,132 @@ actual Git and tampered Actions trials remain for the two real adapters.
 
 ### Documentation merge timing: native owner route (2026-11-25 UTC)
 
-The owner requested immediate publication to main or merge without waiting for
-checks, at least for documentation; a server-enforced docs-only gate was not
-requested. Central's protected no-wait route remains **unmet**. The current
-identity audit and immutable admission source require no bypass; their scoped
-compatibility change and qualified source transition must precede installation.
-No supported, authenticated settings-write channel is available in the observed session.
-Research's authorized direct-main route already works. Publishing this record
-does not activate the proposed Central exception.
+Owner direction was recorded on 2026-11-25. On 2026-11-26 the ten native
+owner grants were installed and read back by the owner. The compatible policy,
+immutable v4 source, installed Central caller and permanent v4 enforcement
+remain in place. Installation and export validation are recorded in the
+[dated owner-grant report](../governance/evidence/docs-source-successor/native-owner-grants-20261126.md).
+A subsequent Central owner PR merge bypassed a still-unsatisfied required
+check, as recorded by the GitHub rule suite. Both resulting-main CI runs passed.
+The [dated owner-grant report](../governance/evidence/docs-source-successor/native-owner-grants-20261126.md)
+distinguishes this proof from an earlier merge that did not establish bypass.
+This is one practical Central qualification, not six repository E2E trials.
+The [dated permanent-enforcement and deferred-delivery evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-permanent-owner-delivery-20261126.md)
+records the completed work, rejecting canaries, required-check blocking
+observations, subsequent hosted checks and the steps deferred at that observation.
 
-Read-only observation at Central `3d0a134e326f22ff867b418d64554167287638c8`:
-[Protect main](https://github.com/agent-teams-ai/.github/rules/19979783) and
-[commit identity](https://github.com/agent-teams-ai/.github/rules/24363205) require
-six current-head contexts from integration `15368`, with strict current-base
-checks and no bypass actors; the current actor's bypass result is `never`.
-The owner has repository admin permission; `allow_auto_merge` is false.
+Central requires `runtime-admission-source-successor-v4`. Its main caller pins
+immutable source `72fa7a8af02e9ba7904c912f0bbb457254381002`. The compatible policy
+and audit were merged in [PR #423](https://github.com/agent-teams-ai/.github/pull/423)
+as `e35df6a3fcf4d5e33d0f79b5b27c3a3e454b5d56`; the three-file installation was
+merged in [PR #428](https://github.com/agent-teams-ai/.github/pull/428) as
+`7ad5abbf5a8dade79f91f3e6f06481070b966a9e`. The permanent transition retained
+Central's other App `15368` contexts, strict and creation enforcement, PR
+protections and immutable source locks. Runtime v2's source, caller and
+historical records remain. Here v4 names the governance admission mechanism;
+it does not establish Agent Runtime v3, live extension updates or product-scale
+qualification.
 
-GitHub supports [individual users on repository rulesets](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/).
-The minimal proposal adds exactly
-`{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`
-to `bypass_actors` in both rulesets `19979783` and `24363205`, preserving every
-other setting, rule, required context, issuer and branch condition. The
-[REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
-supports this individual-user, PR-only grant; no separate writer platform is a
-prerequisite. `always`, `exempt` and admin-role-wide grants are outside this proposal.
+The installed entry is exactly
+`{"actor_id":13103045,"actor_type":"User","bypass_mode":"pull_request"}`.
+It permits the authorized owner to merge an eligible reviewed PR while checks
+are pending, subject to the applicable GitHub rules and the assigned scope. GitHub applies
+this grant to matching PRs for that account; it does not enforce a documentation
+content boundary. The configured mode is `pull_request`; the actual owner-reader
+result was `pull_requests_only` for each of the ten rulesets.
 
-The same read-only proposal covers only the six protected repositories in this
-assigned documentation delivery. These are proposed additions, not applied settings:
-
-| Repository                 | Rulesets receiving the proposed User PR-only entry | Existing state to preserve                                               |
-| -------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
-| `.github`                  | `19979783`, `24363205`                             | All other fields and immutable source locks                              |
-| `engineering-foundation`   | `19979782`, `24372286`                             | All other fields and actors                                              |
-| `agent-runtime`            | `24363207`                                         | Existing User `13103045 / always` in `19979781`; history rule `26556591` |
-| `agent-teams-platform`     | `24363204`                                         | All other fields and actors                                              |
-| `agent-teams-orchestrator` | `19979784`, `24363212`                             | All other fields and actors                                              |
-| `extension-foundation`     | `20807525`, `24363213`                             | All other fields and actors                                              |
+| Repository                 | Installed target rulesets | Existing state outside the grant                                          |
+| -------------------------- | ------------------------- | ------------------------------------------------------------------------- |
+| `.github`                  | `19979783`, `24363205`    | Final v4-only source requirement; other main protections and source locks |
+| `engineering-foundation`   | `19979782`, `24372286`    | Other fields and actors, including CodeQL App `57789`                     |
+| `agent-runtime`            | `24363207`                | Existing User `13103045 / always` in `19979781`; history rule `26556591`  |
+| `agent-teams-platform`     | `24363204`                | Other fields and actors                                                   |
+| `agent-teams-orchestrator` | `19979784`, `24363212`    | Other fields and actors                                                   |
+| `extension-foundation`     | `20807525`, `24363213`    | Other fields and actors                                                   |
 
 Research receives no new grant. Other repositories require their own observed
-proposal. Re-read every live configuration before applying any change.
+proposal. The dated report records the seven-repository preservation comparison.
+Before grant use, verify the current actor, exact PR head/base,
+complete source commit identities and applicable live rules.
 
-The grant technically covers the entire matching ruleset and any matching PR
-merged by that account; GitHub does not enforce a docs-content boundary on it.
-Its use remains limited to specifically assigned, reviewed documentation and
-any wider delivery scope explicitly authorized by the owner. It does not
+The native owner route remains limited to specifically assigned, reviewed
+documentation and any wider delivery scope explicitly authorized by the owner. It does not
 authorize agents to choose more work, bypass known substantive findings,
 perform releases or push directly to protected main. Other actors retain the
 existing required gates. Ongoing and postmerge verification still completes;
-early merge does not report pending or omitted tests as successful.
+early merge must not report pending or omitted tests as successful.
 
-The canonical identity policy currently has `ruleset.bypass_actors: []` and the
-audit compares it exactly. The bounded compatibility change must keep that
-installation default and accept only the exact optional owner entry on the six
-named repositories; other actors, modes, repositories and rule drift still reject.
-The onboarding writer continues to create the default no-bypass rule and preserve
-existing rules. This compatibility is not a bypass installer or an identity-check
-exemption. The local legacy JavaScript correction and its tests do not establish
-strict TypeScript coverage or hosted admission.
+The canonical identity policy retains `ruleset.bypass_actors: []` as its
+installation default. The compatible audit also accepts only the exact optional
+owner PR-only profile on the six named repositories. Policy acceptance does not
+install that profile. Other actors, modes, repositories and rule drift still
+reject. Onboarding creates the no-bypass default and preserves existing rules;
+it does not install the grant. Immutable source locks retain no bypass.
 
-Changing the policy is itself protected. The installed runtime-v2 source
-`6863c4b6e9f17b3a668e0afb9ff33cb9046788d0` delegates to frozen owners that reject
-changes to `governance/commit-author-identity.json`; the
-[permanent cutover record](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v2-cutover.md)
-contains the actual rejecting canary #402. Its owner-full protection proof also
-requires no bypass on Central's two main rulesets. Existing finite successor
-targets do not authorize this new change. Use the existing
-[source-successor procedure](decisions/0016-bounded-runtime-admission-source-successor-v2.md)
-with a separately reviewed source and exact compatibility tuple. Preserve all
-previous source locks, callers, accepted ADRs and historical evidence. A hosted
-public-read response that omits private bypass fields is not an owner-full proof.
+At the dated identity-compatibility observation `2026-11-26T01:55:38Z`, all six
+current identity callers resolved to the same reusable workflow bytes.
+That implementation reads current central policy and the caller template from
+one observed main revision, rechecks their blobs before success, and does not
+execute a frozen CLI audit or read ruleset bypass actors. Those observed
+consumer pins required no upgrade for the compatible policy. Settings readback
+must use the current compatible audit; the older CLI audit at a historical
+consumer pin is not the implementation executed by its reusable identity job.
+The current identity export and exact v4 source export passed against the actual
+owner-full after snapshots, as recorded in the dated report.
 
-The prepared application sequence is:
+For each eligible assigned PR, follow the existing
+[owner merge route](../GOVERNANCE.md#github-plugin-merge-route): freshly verify
+User/777genius, the non-draft owner PR, reviewed head/base and complete commit
+list; resolve blocking findings; preserve exact head matching, squash
+attribution and the complete reviewed message. Use a supported authenticated
+ordinary single-PR merge surface. The installed exception applies only within the assigned scope; do not infer practical early
+merge qualification from installation alone.
 
-1. Re-read the current actor, PR head/base, source identity and effective rules;
-   verify owner account `13103045` and each current repository ruleset.
-2. Review and qualify the bounded policy/audit change and its new trusted source.
-   Use the existing immutable-source lock and add-before-retire cutover protocol,
-   including exact-target positive and rejecting canaries and actual required
-   blocking proof. Keep a source requirement throughout the transition. Install
-   the compatible policy, audit and source before adding grants; preserve all
-   unrelated contexts, issuers and protections. Source locks retain no bypass.
-3. Through authenticated GitHub settings or the official ruleset API with
-   Administration write, add only that User entry to each live configuration.
-   Read back each complete ruleset, verify the intended entry and preserved fields,
-   and run the compatible identity audit and owner-full source protection proof.
-4. For the eligible assigned PR, verify its reviewed head and base again and use
-   the ordinary guarded merge route. If its wrapper lacks the permitted bypass,
-   use the official [asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
-   as the authorized actor with exact `sha`, `merge_method: "squash"`,
-   `merge_action: "direct_merge"` and `bypass_rules: true`; preserve required attribution.
-5. Follow the returned operation to an actual merged result; acceptance or an
-   enqueued result is not a merge. Confirm final main parent/tree, author and
-   committer, then finish that repository's existing postmerge checks on that commit.
+The [official asynchronous merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously)
+is separately unqualified and deferred here; it is not a fallback for current
+delivery. That API can merge every open downstack PR when its target belongs
+to a stack. An exact target `sha` does not restrict the operation to that one PR.
+A future stacked route would require explicit assignment and complete review
+of the entire affected PR set, plus separate qualification of the merge
+transport, its authorization, attribution and result verification. Whole-set
+review alone does not qualify the transport. Do not substitute an asynchronous
+or stacked route for the ordinary route, or claim a connector accepts
+unsupported inputs.
 
-The concrete access prerequisite is an official authenticated settings-write
-channel for the new source lock, reviewed context transition and scoped grants.
-The fast-documentation preference is already given and needs no renewed approval.
-Code, tests, source preparation, independent review and ordinary documentation
-delivery can proceed independently of that access. No secrets belong in chat.
-This record does not claim that the compatibility source, grants or early merge
-were installed or qualified. Local test success and a settings proposal are
-preparation evidence, not a completed cutover or E2E result.
+Follow the actual operation to a merged result. An accepted request or queued
+operation is not a merge. Verify main parent/tree, actual author and committer,
+full message and issue references. Finish the existing ongoing and postmerge
+checks on the resulting main commit and report their outcomes separately.
+
+An early merge or a metadata edit on a closed PR can leave an open-PR snapshot
+or admission job collecting evidence for a closed target or changed metadata.
+Record its actual outcome and reason alongside the resulting main checks;
+a closed-target rejection is not successful validation. Do not rerun a closed
+target solely to seek a green open-PR guard. Investigate any unrelated failure
+through the existing route.
+
+**Historical preparation observation — 2026-11-25.** At that time Central's
+protected no-wait route was unmet: the then-current audit and immutable source
+required no bypass, and the session had no authenticated settings-write channel.
+Research's authorized direct-main route already worked. The read-only
+observation at Central `3d0a134e326f22ff867b418d64554167287638c8` found
+[Protect main](https://github.com/agent-teams-ai/.github/rules/19979783) and
+[commit identity](https://github.com/agent-teams-ai/.github/rules/24363205)
+requiring six current-head contexts from integration `15368`, strict
+current-base checks, empty bypass lists and actor result `never`. The owner had
+repository admin permission; `allow_auto_merge` was false. Those values describe
+that historical observation, not a new full settings audit or a grant readback.
+
+The retained [v2 cutover record](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v2-cutover.md)
+records source `6863c4b6e9f17b3a668e0afb9ff33cb9046788d0` and the actual
+rejecting policy canary #402. The [ADR-0018 installation snapshot](decisions/0018-bounded-runtime-admission-source-successor-v4.md)
+and its [evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-installation.md)
+remain unchanged; the earlier dated observation records subsequent installation,
+permanent enforcement, hosted results and the then-deferred grants. Public responses
+omitting private bypass fields are not owner-full observations. The original
+[individual-user ruleset support](https://github.blog/changelog/2026-05-07-repository-rulesets-user-bypass-and-branch-renaming/)
+and [REST schema](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10#update-a-repository-ruleset)
+references remain applicable to the native grant.
 
 | Optional alternative                 | Timing and remaining work                                                                                                                                                                                                                                                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -417,8 +441,8 @@ pass actual required CI. No new build script is authorized by this change.
 ## Runtime and admission integration recovery
 
 This integration retains Foundation 3.0.0 and Stack 0.1.1 ownership. Its strict
-program includes 21 entries and its maintained type-aware lint census includes
-43 files. Historical authority sources and the four process/test helpers remain
+program includes 26 entries and its maintained type-aware lint census includes
+48 files. Historical authority sources and the four process/test helpers remain
 byte-identical to the installed main basis.
 
 The metadata-only compiler preflight follows the real Stack and Foundation
@@ -431,3 +455,47 @@ The old PR390 activation tuple is historical, not applicable to installed v3.
 New protected compiler/admission/toolchain inputs require a separately reviewed
 finite successor, fresh positive/negative qualification and an add-before-retire
 transition. This functional candidate does not activate its own authority.
+
+## Bounded b304 registry incident preparation
+
+The separate `scripts/docs-b304-registry-incident.ts` mechanism, typed
+`docs-b304-recovery-staging.ts` boundary and three TypeScript test entries join
+the real strict, lint and formatter censuses.
+The existing admission verifier, evidence reader and Actions materializer retain
+small entry-point adapters; their legacy JavaScript remains untyped. The existing
+workflow and quality-census tests keep only localized static-host assertions.
+Substantive new incident proof and pending-result validation live in TypeScript.
+
+The proposed capability covers only the exact audited canary-retirement policy
+image and the one pinned Runtime registry-parser incident. It cannot select a
+new Runtime or EF Cohort, advance an observation, accept qualification or report
+consumer semantics as successful. Historical evidence for every admitted
+consumer remains mandatory. The existing changed-row current-admission scope
+is unchanged; the retirement's changed global counts already require the full
+current fleet audit.
+
+A later separately qualified installation must supply the real base-owned,
+bounded authority and proof. Source preparation carries no active record and
+cannot authorize same-PR authority. Both existing source controls still apply
+until their separately reviewed successors are qualified and cut over. Legacy
+and Platform incident contracts and the eight mandatory test identities remain
+unchanged.
+
+The B304 data boundary has disjoint archive, staging and policy modes. An archive
+adds only its fixed inert proof JSON; staging changes only the installed null
+authority to one active record using an already merged ancestor proof. The
+source-owned shared kernel verifies complete Runtime evidence and the real
+separate policy operation without creating or consuming an operation capability.
+Full Git trees and current controller/operation PR rereads precede the final
+owner-authority and process-clock checks. Full base checkout history is required
+for immutable ancestor reads; no candidate code executes.
+
+A restrictive active-to-revoked transition preserves every other record field.
+It requires the current human owner of the revocation PR to retain repository
+admin permission, but does not require the expired incident, old comment or old
+approver to remain usable. Revocation never extends, rebinds, reactivates or
+removes the record. Archive, activation and revocation all report consumer
+semantics and qualification as unverified. Changes to either new executable
+helper are rejected before the ordinary code-only no-op, so later source changes
+still require a separately qualified source transition after restoring the
+predecessor controls. Legacy and Platform authority/proof staging remains denied.

@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { validateSchema } from "./governance-schema.ts";
 import {
   createRepositoryRegistrationReader,
+  projectCurrentRepositoryInventory,
   projectRepositoryRegistrations,
 } from "./repository-registration.ts";
 export { parseRepositoryRegistrationJson } from "./repository-registration.ts";
@@ -957,7 +958,9 @@ export function validateGovernanceReferences(
   const inventoryByRepository = new Map(
     inventoryRecords.map((record) => [record.repository, record]),
   );
-  const activeInventory = inventoryRecords.filter(({ archived }) => !archived);
+  const activeInventory = projectCurrentRepositoryInventory(inventoryRecords, docsRecords).filter(
+    ({ archived }) => !archived,
+  );
   const archivedInventory = inventoryRecords.filter(({ archived }) => archived);
   const deletedProtocolById = new Map(
     docsProtocol.repositories

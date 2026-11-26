@@ -2549,9 +2549,11 @@ test("unrelated exact policy operation retains ADR-0008 reporting for authentic 
 
 // In-memory successor of the genuine stable31 origin; never a registered Cohort.
 async function generation3AdmissionFixture() {
-  const registry = JSON.parse(await readFile(REGISTRY_PATH));
+  // Keep both complete documents on the pre-append snapshot for the fixed October clock.
+  const fixtureRevision = "7ad5abbf5a8dade79f91f3e6f06481070b966a9e";
+  const registry = JSON.parse(await readAdmissionBaseFile(REGISTRY_PATH, fixtureRevision));
   const origin = registry.cohorts.find((record) => record.cohort_id === "docs-2026-10-03-stable31");
-  const sourcePolicy = JSON.parse(await readFile(POLICY_PATH));
+  const sourcePolicy = JSON.parse(await readAdmissionBaseFile(POLICY_PATH, fixtureRevision));
   const row = structuredClone(
     sourcePolicy.repositories.find((entry) => entry.repository === "agent-teams-ai/agent-runtime"),
   );

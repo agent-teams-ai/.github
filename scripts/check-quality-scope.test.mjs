@@ -72,8 +72,22 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 47);
+  assert.equal(paths.length, 57);
   assert.ok(paths.includes("scripts/verify-docs-admission-change.mjs"));
+  assert.ok(paths.includes("scripts/docs-b304-registry-incident.ts"));
+  assert.ok(paths.includes("scripts/docs-b304-registry-incident.test.ts"));
+  assert.ok(paths.includes("scripts/docs-b304-admission-integration.test.ts"));
+  assert.ok(paths.includes("scripts/docs-b304-recovery-staging.ts"));
+  assert.ok(paths.includes("scripts/docs-b304-recovery-staging.test.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v2.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v2.test.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v4.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v4.test.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v6.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v6.test.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v6-target.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v6-owners.ts"));
+  assert.ok(paths.includes("scripts/runtime-admission-source-successor-v6-owners.test.ts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.mts"));
   assert.ok(paths.includes("scripts/qualification-input-proof.test.mts"));
   assert.ok(paths.includes("scripts/docs-portable-authority-r322.mjs"));
@@ -100,27 +114,6 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/validate-renovate.test.ts"));
   assert.ok(paths.includes("scripts/validate-renovate-abi.probe.ts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
-});
-
-test("source v4 and its tests are in the real strict and lint census without expanding frozen exclusions", () => {
-  const census = assertQualityAdoption(accepted);
-  const lintPaths = deriveLintPaths(census, accepted.profile);
-  for (const path of [
-    "scripts/runtime-admission-source-successor-v4.ts",
-    "scripts/runtime-admission-source-successor-v4.test.ts",
-  ]) {
-    assert.ok(accepted.toolingTsconfig.include.includes(path));
-    assert.ok(lintPaths.includes(path));
-    assert.ok(!accepted.profile.retainedAuthoritySources.some((entry) => entry.path === path));
-    const changed = structuredClone(accepted);
-    changed.toolingTsconfig.include = changed.toolingTsconfig.include.filter(
-      (entry) => entry !== path,
-    );
-    assert.throws(() => assertQualityAdoption(changed));
-  }
-  for (const entry of accepted.profile.retainedAuthoritySources) {
-    assert.ok(!lintPaths.includes(entry.path));
-  }
 });
 
 test("single root Stack pin accepts a matching future identity as binding proof only", () => {
@@ -350,8 +343,11 @@ const mutations = {
   "a copied compiler profile release": (value) => {
     value.profile.typedTooling.compiler = "7.0.2";
   },
-  "a changed format-only admission authority blob": (value) => {
-    value.formatRetainedAuthorityBlobs[0].gitBlob = "1".repeat(40);
+  "an undeclared format-only admission authority identity": (value) => {
+    value.formatRetainedAuthorityBlobs.push({
+      path: "scripts/verify-docs-admission-change.mjs",
+      gitBlob: "1".repeat(40),
+    });
   },
   "an expanded format-only retained authority set": (value) => {
     value.profile.formatRetainedAuthoritySources.push({
@@ -359,10 +355,12 @@ const mutations = {
       gitBlob: "1".repeat(40),
     });
   },
-  "a missing format-only retained authority identity": (value) => {
-    value.profile.formatRetainedAuthoritySources.pop();
+  "the maintained admission source removed from formatting": (value) => {
+    value.toolchainConfig.format.paths = value.toolchainConfig.format.paths.filter(
+      (path) => path !== "scripts/verify-docs-admission-change.mjs",
+    );
   },
-  "the format-only authority removed from lint": (value) => {
+  "the maintained admission authority removed from lint": (value) => {
     value.toolchainConfig.lint.paths = value.toolchainConfig.lint.paths.filter(
       (path) => path !== "scripts/verify-docs-admission-change.mjs",
     );
@@ -426,6 +424,11 @@ const mutations = {
   ) => {
     value.toolchainConfig.format.paths = value.toolchainConfig.format.paths.filter(
       (path) => path !== "governance/docs-protocol-policy-v2.schema.json",
+    );
+  },
+  "dropping the bounded admission workflow formatter input": (value) => {
+    value.toolchainConfig.format.paths = value.toolchainConfig.format.paths.filter(
+      (path) => path !== ".github/workflows/docs-admission-evidence.yml",
     );
   },
   "a dropped formatter input": (value) => {
