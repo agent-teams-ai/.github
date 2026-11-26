@@ -46,3 +46,41 @@ early merge or postmerge CI. The prior
 retains its historical observations. The native grant is not restricted to
 Markdown by GitHub; use is limited to explicitly assigned, reviewed
 documentation or a broader scope separately authorized by the owner.
+
+## First practical merge observation
+
+[PR #435](https://github.com/agent-teams-ai/.github/pull/435) merged at
+`2026-11-26T15:21:10Z` by `777genius`, with reviewed head
+`d317c3f7cd55ccb7575bd85c9fa4d6776e33562c`, base and resulting sole parent
+`5d8bc6ab30d401d5282d830a700673a463bf4f88`, resulting commit
+`8abe1f803939d93372a150f3a68fb1c2097b1242`, and tree
+`d34bf34fd1cb1dd21e913a2a9cbe1ff3f73924a6` matching the reviewed head. Its
+GitHub-linked owner author used `iliyazelenkog@gmail.com`; GitHub was the
+committer. The full squash message was:
+
+```text
+docs: record native owner grant readbacks
+
+Record the ten installed native owner PR-only grants, owner readbacks, preservation comparison and existing validator results. Update maintained guidance while retaining the earlier historical evidence.
+```
+
+Genuine v4 [run 45847358642/1](https://github.com/agent-teams-ai/.github/actions/runs/45847358642/attempts/1),
+job `140004380489`, on that head was still executing at merge. Its qualifier
+subsequently failed `Live protected main moved` at `15:23:30Z`, and its
+publisher failed `Invalid live source PR metadata` at `15:23:46Z`. These are
+actual failures on the closed target; they were not retried. An earlier v4
+[run 45847301244/1](https://github.com/agent-teams-ai/.github/actions/runs/45847301244/attempts/1)
+had already published success at `15:20:39Z`. The latest identity pending
+status at `15:20:41Z` became success at `15:20:45Z`, before merge.
+
+GitHub rule suite `5390755376` recorded `pass`, including both required-check
+rules, rather than a bypass. This observation establishes that one genuine
+applicable v4 execution remained running, but does not establish that the
+owner exception bypassed a blocking required check. Practical bypass
+qualification remained outstanding at this cutoff.
+
+The resulting main passed [Node 26 CI 45848232698/1](https://github.com/agent-teams-ai/.github/actions/runs/45848232698/attempts/1)
+and [Node 24 compatibility 45848232407/1](https://github.com/agent-teams-ai/.github/actions/runs/45848232407/attempts/1),
+both on exact resulting SHA `8abe1f803939d93372a150f3a68fb1c2097b1242`.
+This is a Central observation, not separate E2E qualification of the other five
+repositories.
