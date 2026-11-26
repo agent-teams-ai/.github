@@ -5,8 +5,12 @@ architecture standards. It does not own product-specific architecture.
 
 For new owned production repositories and explicit older opt-ins, start at
 [new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap).
-Install its explicit FMS, Foundation and CI configuration; GitHub does not
-automatically inherit those artifacts or required checks.
+Prepare the complete applicable module, engineering and extension/update
+foundation before broad product implementation. Use its capability inventory,
+concrete feature journeys and qualified dependency gates; do not reduce the
+foundation to a Core/Assembly starter or install every tool without a real use.
+Then establish the explicit FMS, Foundation and CI configuration. GitHub does
+not automatically inherit those artifacts or required checks.
 
 For every assigned task, follow the [task-scope boundary](docs/engineering-quality-standard.md#task-scope-and-obvious-corrections).
 A plan or open decision does not assign additional work to an agent.
