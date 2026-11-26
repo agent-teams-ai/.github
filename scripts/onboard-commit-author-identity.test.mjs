@@ -26,17 +26,17 @@ const template = files[templatePath].toString();
 const clone = (value) => structuredClone(value);
 const blob = (bytes) =>
   createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
-const canonical = (id = 20, inherited = false) => ({
+const canonical = (id = 20, inherited = false, repository = repo) => ({
   ...clone(policy.ruleset),
   id,
   source_type: inherited ? "Organization" : "Repository",
-  source: inherited ? "agent-teams-ai" : repo,
+  source: inherited ? "agent-teams-ai" : repository,
 });
-const otherRule = (id) => ({
+const otherRule = (id, repository = repo) => ({
   id,
   name: `Other ${id}`,
   source_type: "Repository",
-  source: repo,
+  source: repository,
   target: "branch",
   enforcement: "active",
   bypass_actors: [],
@@ -48,9 +48,9 @@ const otherRule = (id) => ({
     },
   ],
 });
-function fixture() {
+function fixture(requestedRepository = repo) {
   const metadata = (name) => ({
-    id: name === repo ? 10 : 11,
+    id: name === requestedRepository ? 10 : 11,
     full_name: name,
     owner: { login: "agent-teams-ai", type: "Organization" },
     default_branch: "main",
@@ -58,7 +58,8 @@ function fixture() {
     disabled: false,
   });
   const f = {
-    repository: metadata(repo),
+    requestedRepository,
+    repository: metadata(requestedRepository),
     central: metadata(central),
     head,
     authority,
@@ -72,7 +73,7 @@ function fixture() {
       default_workflow_permissions: "read",
       can_approve_pull_request_reviews: false,
     },
-    rules: [otherRule(1)],
+    rules: [otherRule(1, requestedRepository)],
     caller: Buffer.from(template.replace("CENTRAL_REVISION", pin)),
     authorityFiles: { ...files },
     target: files[implementationPath],
@@ -93,7 +94,7 @@ function fixture() {
       return clone(f.organizationPermissions);
     }
     const isCentral = route.startsWith(`repos/${central}/`) || route === `repos/${central}`;
-    const root = `repos/${isCentral ? central : repo}`,
+    const root = `repos/${isCentral ? central : requestedRepository}`,
       metadata = isCentral ? f.central : f.repository;
     if (route === root) {
       if (!isCentral) {
@@ -149,7 +150,12 @@ function fixture() {
     }
     if (route === `${root}/rulesets`) {
       if (method === "POST") {
-        const rule = { ...clone(options.body), id: 900, source_type: "Repository", source: repo };
+        const rule = {
+          ...clone(options.body),
+          id: 900,
+          source_type: "Repository",
+          source: requestedRepository,
+        };
         f.rules.push(rule);
         await f.afterWrite?.(call);
         if (f.uncertain === method) {
@@ -176,9 +182,10 @@ function fixture() {
 }
 const mutations = (f) => f.calls.filter((call) => call.method !== "GET");
 const run = (f, apply = true) =>
-  onboardIdentity(["--repo", repo, "--expected-head", head, ...(apply ? ["--apply"] : [])], {
-    gh: f.gh,
-  });
+  onboardIdentity(
+    ["--repo", f.requestedRepository, "--expected-head", head, ...(apply ? ["--apply"] : [])],
+    { gh: f.gh },
+  );
 async function refused(f, pattern) {
   const result = await run(f);
   assert.equal(result.outcome, "refused");
@@ -296,6 +303,157 @@ test("one exact inherited rule beyond page one is an idempotent no-op", async ()
   assert.equal(result.identity_ruleset_id, 200);
   assert.deepEqual(mutations(f), []);
   assert.equal(result.preserved_ruleset_ids.length, 102);
+});
+
+// Optional compatibility is read-only: neither current [] nor an approved existing actor is rewritten.
+test("scoped owner PR rules and current defaults are onboarding no-ops", async () => {
+  for (const repository of policy.owner_pr_bypass.repositories.filter((name) => name !== central)) {
+    for (const bypassActors of [[], [policy.owner_pr_bypass.actor]]) {
+      const f = fixture(repository);
+      f.permissions.can_approve_pull_request_reviews = false;
+      f.rules.push({ ...canonical(20, false, repository), bypass_actors: clone(bypassActors) });
+      const before = clone(f.rules);
+      const plan = await run(f, false);
+      assert.equal(plan.outcome, "dry_run");
+      assert.deepEqual(plan.changes, []);
+      const result = await run(f);
+      assert.equal(result.outcome, "configured_not_live_qualification");
+      assert.deepEqual(f.rules, before);
+      assert.deepEqual(mutations(f), []);
+    }
+  }
+});
+
+test("new scoped identity rules still use the no-bypass default", async () => {
+  const f = fixture("agent-teams-ai/agent-runtime");
+  f.permissions.can_approve_pull_request_reviews = false;
+  const result = await run(f);
+  assert.equal(result.outcome, "configured_not_live_qualification");
+  assert.deepEqual(
+    mutations(f).map(({ method, body }) => ({ method, body })),
+    [{ method: "POST", body: policy.ruleset }],
+  );
+  assert.deepEqual(f.rules.find((rule) => rule.name === policy.ruleset.name).bypass_actors, []);
+});
+
+test("Runtime Protect main always bypass is preserved outside the dedicated identity rule", async () => {
+  const repository = "agent-teams-ai/agent-runtime";
+  const f = fixture(repository);
+  f.permissions.can_approve_pull_request_reviews = false;
+  f.rules = [
+    {
+      ...otherRule(19979781, repository),
+      name: "Protect main",
+      bypass_actors: [{ actor_id: 13103045, actor_type: "User", bypass_mode: "always" }],
+    },
+    canonical(24363207, false, repository),
+  ];
+  const before = clone(f.rules);
+  const result = await run(f);
+  assert.equal(result.outcome, "configured_not_live_qualification");
+  assert.equal(result.identity_ruleset_id, 24363207);
+  assert.deepEqual(f.rules, before);
+  assert.deepEqual(mutations(f), []);
+});
+
+test("scoped compatibility refuses unapproved actors and rule drift before any write", async () => {
+  const runtime = "agent-teams-ai/agent-runtime";
+  for (const [repository, mutate] of [
+    [
+      repo,
+      (rule) => {
+        rule.source = repo;
+      },
+    ],
+    [
+      "agent-teams-ai/engineering-research",
+      (rule) => {
+        rule.source = "agent-teams-ai/engineering-research";
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.bypass_actors[0].actor_id = 1;
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.bypass_actors[0].bypass_mode = "always";
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.bypass_actors[0].bypass_mode = "exempt";
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.bypass_actors.push(clone(policy.owner_pr_bypass.actor));
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.source_type = "Organization";
+        rule.source = "agent-teams-ai";
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.conditions.ref_name.include = ["~ALL"];
+      },
+    ],
+    [
+      runtime,
+      (rule) => {
+        rule.rules[0].parameters.required_status_checks[0].context = "other";
+      },
+    ],
+  ]) {
+    const f = fixture(repository);
+    const rule = {
+      ...canonical(20, false, repository),
+      bypass_actors: [clone(policy.owner_pr_bypass.actor)],
+    };
+    mutate(rule);
+    f.rules.push(rule);
+    await refused(f, /Identity rule/u);
+  }
+});
+
+// The optional observed shape does not authorize adding it during an unrelated administration operation.
+test("onboarding rejects an unrequested approved bypass in a new-rule response", async () => {
+  const f = fixture("agent-teams-ai/agent-runtime");
+  f.permissions.can_approve_pull_request_reviews = false;
+  f.afterWrite = (call) => {
+    if (call.method === "POST") {
+      f.rules.find((rule) => rule.id === 900).bypass_actors = [clone(policy.owner_pr_bypass.actor)];
+    }
+  };
+  const result = await run(f);
+  assert.equal(result.outcome, "partial_application");
+  assert.match(result.error, /Identity rule/u);
+  assert.equal(mutations(f).length, 1);
+});
+
+test("scoped compatibility does not mask existing-rule drift during permission updates", async () => {
+  const repository = "agent-teams-ai/agent-runtime";
+  const f = fixture(repository);
+  f.rules.push(canonical(20, false, repository));
+  f.afterWrite = (call) => {
+    if (call.method === "PUT") {
+      f.rules.find((rule) => rule.id === 20).bypass_actors = [clone(policy.owner_pr_bypass.actor)];
+    }
+  };
+  const result = await run(f);
+  assert.equal(result.outcome, "partial_application");
+  assert.match(result.error, /Existing protections changed/u);
+  assert.equal(mutations(f).length, 1);
 });
 
 // Break caught: only the actual human owner may activate settings, including an otherwise idempotent apply.

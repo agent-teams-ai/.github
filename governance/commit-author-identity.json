@@ -7,6 +7,17 @@
     "email": "iliyazelenkog@gmail.com"
   },
   "actions_workflow_permissions": { "can_approve_pull_request_reviews": false },
+  "owner_pr_bypass": {
+    "repositories": [
+      "agent-teams-ai/.github",
+      "agent-teams-ai/engineering-foundation",
+      "agent-teams-ai/extension-foundation",
+      "agent-teams-ai/agent-runtime",
+      "agent-teams-ai/agent-teams-platform",
+      "agent-teams-ai/agent-teams-orchestrator"
+    ],
+    "actor": { "actor_id": 13103045, "actor_type": "User", "bypass_mode": "pull_request" }
+  },
   "ruleset": {
     "name": "Commit author identity",
     "target": "branch",
