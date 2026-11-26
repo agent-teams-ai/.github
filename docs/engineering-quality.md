@@ -265,14 +265,14 @@ are pending. GitHub applies this grant to matching PRs for that account; it does
 not enforce a documentation-content boundary. The configured mode is
 `pull_request`; the observed owner's API result is `pull_requests_only`.
 
-| Repository | Rulesets with the observed User PR-only entry | Existing state retained |
-| --- | --- | --- |
-| `.github` | `19979783`, `24363205` | Final v4-only source requirement; other main protections and source locks |
-| `engineering-foundation` | `19979782`, `24372286` | Other fields and actors |
-| `agent-runtime` | `24363207` | Existing User `13103045 / always` in `19979781`; history rule `26556591` |
-| `agent-teams-platform` | `24363204` | Other fields and actors |
-| `agent-teams-orchestrator` | `19979784`, `24363212` | Other fields and actors |
-| `extension-foundation` | `20807525`, `24363213` | Other fields and actors |
+| Repository                 | Rulesets with the observed User PR-only entry | Existing state retained                                                   |
+| -------------------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `.github`                  | `19979783`, `24363205`                        | Final v4-only source requirement; other main protections and source locks |
+| `engineering-foundation`   | `19979782`, `24372286`                        | Other fields and actors                                                   |
+| `agent-runtime`            | `24363207`                                    | Existing User `13103045 / always` in `19979781`; history rule `26556591`  |
+| `agent-teams-platform`     | `24363204`                                    | Other fields and actors                                                   |
+| `agent-teams-orchestrator` | `19979784`, `24363212`                        | Other fields and actors                                                   |
+| `extension-foundation`     | `20807525`, `24363213`                        | Other fields and actors                                                   |
 
 Research receives no new grant. Other repositories require their own observed
 proposal. Before use, verify the current actor, exact PR head/base, complete
