@@ -245,10 +245,11 @@ owner grants were installed and read back by the owner. The compatible policy,
 immutable v4 source, installed Central caller and permanent v4 enforcement
 remain in place. Installation and export validation are recorded in the
 [dated owner-grant report](../governance/evidence/docs-source-successor/native-owner-grants-20261126.md).
-A first Central merge and resulting-main checks are recorded in the dated
-report. Its required checks had already passed, so it does not establish that
-the owner exception bypassed a blocking check; that qualification remained
-outstanding at the recorded cutoff.
+A subsequent Central owner PR merge bypassed a still-unsatisfied required
+check, as recorded by the GitHub rule suite. Both resulting-main CI runs passed.
+The [dated owner-grant report](../governance/evidence/docs-source-successor/native-owner-grants-20261126.md)
+distinguishes this proof from an earlier merge that did not establish bypass.
+This is one practical Central qualification, not six repository E2E trials.
 The [dated permanent-enforcement and deferred-delivery evidence](../governance/evidence/docs-source-successor/runtime-admission-source-successor-v4-permanent-owner-delivery-20261126.md)
 records the completed work, rejecting canaries, required-check blocking
 observations, subsequent hosted checks and the steps deferred at that observation.
