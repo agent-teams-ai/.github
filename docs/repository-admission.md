@@ -44,6 +44,137 @@ Foundation owns portable validation mechanisms; the repository owns its domain,
 topology, adoption decision and exact gates. This is organization onboarding
 policy, not a second general-purpose quality engine or an installable package.
 
+### Prepare the complete applicable foundation
+
+Owner clarification, 2026-11-27: a small business MVP does not reduce its shared
+foundation to a Core/Assembly example. Before broad greenfield implementation,
+design the complete applicable module and engineering foundation, including
+known extension/update and target boundaries. Reuse the
+[ecosystem ownership map](architecture/ecosystem-vision.md#ecosystem-ownership-map)
+and each library's existing plan instead of writing a second product roadmap
+here. Existing accepted pins and immutable standards change through an explicit
+consumer migration, not by following a moving upstream branch.
+
+This preparation belongs in the repository's existing architecture/adoption
+record. Identify useful feature journeys, semantic owners, source and package
+boundaries, canonical state and authority, owned versus borrowed resources,
+deployment/target profiles, compatibility and recovery. Give every applicable
+capability a concrete use or qualification profile, exact source/artifact,
+dependencies, positive/refusing evidence, owner and current state. Review the
+whole available inventory, including target-dependent work; unsupported or
+pending is a state to resolve before use, not a success stub or silent omission.
+
+| Foundation area | Coverage to design and qualify | Canonical mechanism owner |
+| --- | --- | --- |
+| Module composition and contracts | Both object/raw validation where inputs require them; descriptors, complete capability maps and parity; entries/groups, explicit alternatives and ordered many; completed/independent profiles; prepared templates and borrowed inputs | [Get Modular public package guides and CMS](https://github.com/agent-teams-ai/get-modular#packages) |
+| Ownership and communication | Resources acquisition/cleanup/scopes/debt; Observation snapshots/watch/load for latest state; typed commands/hooks; occurrence and durable-work contracts with their own completion semantics | [Get Modular consumer route](https://github.com/agent-teams-ai/get-modular/blob/main/docs/guides/consumer-quickstart.md) and actual feature/event owners |
+| Construction and conformance | Ordinary Promise construction and applicable native Effect profile; module isolation, contract suites, independent wiring, namespaces/layout and lifetime evidence; private lifecycle candidates retain their real availability/adoption state | [Get Modular package contracts](https://github.com/agent-teams-ai/get-modular#packages); shared update owner for generation work |
+| Feature and source architecture | Full FMS profile, real layer/module roles, nested visibility and curated republication, direct-parent assembly, type/load dependencies and rejecting source checks | [Immutable FMS](architecture/feature-module-standard/README.md), shared Foundation mechanism and consumer policy |
+| Engineering and agent tools | Review every available capability: declarations/source coverage, quality/suppression, contracts/executable specifications, public API/release/security, agent/quality routing, documentation and scaffolding; activate applicable mechanisms against actual sources | [Engineering Foundation](https://github.com/agent-teams-ai/engineering-foundation#readme) and [tool catalog](development-tools.md) |
+| Toolchain and artifact closure | Strict maintained TypeScript and tests, effective compiler/tool dependencies, installed public exports, peers and physical identity; selected Node/Bun/native profiles and honest frozen install evidence | [Stack owning guide](development-tools.md#stack-toolchain) and the [source-language rule](engineering-quality-standard.md#typescript-for-javascript-runtimes) |
+| Extensions and complete updates | Typed contributions, verified artifact/import closure and trust; durable installation, state custody, whole-operation lifetime, generation affinity, publication/CAS/unknown reconciliation, retirement and rollback | [Extension Foundation](https://github.com/agent-teams-ai/extension-foundation#readme), [Live Module Updates](https://github.com/agent-teams-ai/live-module-updates#readme) and product authority/state owners |
+| Execution and presentation targets | Browser/Desktop/native/isolated profiles, protected receivers, resource limits and physical stop where promised; headless behavior remains usable without optional presentation | Actual target/executor owners and the [headless/UI design](https://github.com/agent-teams-ai/live-module-updates/blob/main/docs/architecture/headless-plugins-and-ui.md) |
+
+Use all applicable mechanisms, not every package in every module. Pure helpers
+remain direct code; state-free modules need no stores and borrow-only modules
+need no artificial cleanup authority. A portable library may expose an optional
+GM adapter without coupling its core to GM, a renderer or a Host. Native Effect
+and ordinary Promise carriers have different construction/resource contracts;
+ordinary Conformance tests do not automatically qualify native entries.
+
+This organization-owned bootstrap does not impose organization registration,
+credentials, catalogs, managed Docs or Foundation runtime dependencies on an
+ordinary external library consumer. Foundation remains development-only.
+Universal tools retain their portable independent entrypoints; organization
+policy and product adapters are explicit opt-ins. Review applicability without
+inventing an empty package or a new parser, module framework, broker, verifier
+or update engine to imitate a shared owner.
+
+### Qualify concrete feature journeys
+
+Start with useful representative behavior and independent expected results,
+not an empty graph or a test per generated module. Select journeys matching the
+claimed capability and target; record justified N/A for a genuinely unrelated
+mechanism. Known required targets retain a named implementation track and gate.
+
+1. **Portable feature and actual composition.** Exercise a substantive feature
+   with real state or behavior, alternative implementations and meaningful
+   required/optional/ordered-many choices. Reuse it through independently wired
+   test Hosts with their own drivers, adapters and lifetime owners when claiming
+   portability; two configurations of one Host are not that evidence. Include
+   nested private-child/republication refusal and an independently authored
+   wiring/contract oracle. A production application's availability is not a
+   prerequisite for shared-library qualification.
+2. **Instances, communication and work.** Construct concurrent instances with
+   explicit borrowed inputs, useful commands/hooks and appropriate latest-state
+   observation. Witness invalid wiring before effects, callback reentry,
+   cancellation during acquisition, held asynchronous work and original-close
+   cleanup/debt. Coalescing, stale-query suppression and bounded waiting must
+   not lose durable occurrences or falsely claim physical completion.
+3. **Native construction where applicable.** Exercise real resource acquisition,
+   typed failure, defects, interruption, provider sharing, input lifetime and
+   stream consumption/finalization through installed native exports. A Promise
+   wrapper or lazy result escaping a closed scope cannot supply native proof.
+4. **Extension and update closure.** For a promised extension/update profile,
+   qualify an artifact that delivers useful behavior: install/use/disable/uninstall
+   and restart reconciliation while preserving owner data,
+   authorized A-to-B replacement with coherent retained A work, stale receiver
+   refusal, unknown publication reconciliation and exact-instance retirement.
+   Reuse actual shared mechanisms. An API sketch, requested stop or signed
+   artifact alone does not prove durable installation, safe update or isolation.
+5. **Actual target and growth envelope.** Execute the selected process/browser/
+   desktop/isolation boundary and realistic failure/restore paths. Measure source,
+   compilation, group/graph and execution dimensions separately at the project's
+   intended scale. Re-run the difficult relevant shape; another green fixture
+   does not close its failure. A process or Worker is placement, not containment.
+
+Upgrading the foundation or its update coordinator requires an outer deployment
+Host or native Supervisor recovery owner. Qualify controlled restart/recovery
+of that closure while preserving unresolved attempts and journals; ordinary
+feature cutover cannot certify the coordinator's own replacement.
+
+Use the smallest sufficient test layer for each credible failure and guarantee,
+with rejecting controls that would catch a broken implementation. Reuse shared
+conformance suites and existing witnesses; do not duplicate them per entry or
+impose test-LOC, test-count or one-test-per-file quotas. Tests that merely repeat
+the implementation and large canned fixtures do not establish independent proof.
+Keep the consumer's real required gates and the
+[risk-proportionate verification rule](engineering-quality-standard.md#change-workflow-and-evidence).
+
+### Discover artifacts and record readiness
+
+Inspect current owning source, public package guides, accepted decisions, open
+work and release evidence before selecting a cohort. Dated catalog versions are
+availability observations, not ceilings. An unpublished mechanism may be built
+and packed from an immutable reviewed source for isolated qualification now.
+Retain source/build/archive identity, resolved peers, frozen dependency closure
+and installed public-root tests; a version string or workspace-only run cannot
+authenticate those facts. Production adoption follows the consumer's compatible
+distribution/admission route or a reviewed successor with equivalent evidence.
+Never report local candidate bytes as a released registry artifact.
+
+Before launching development tooling, inspect its effective compiler dependency
+closure against the current TypeScript rule, including eagerly loaded embedded
+compilers. A newer root compiler does not upgrade an old tool's private compiler.
+Resolve an incompatible closure through the actual shared tool/adoption owner;
+do not bypass its preflight, weaken source coverage or replace the tool locally.
+Historical inert evidence remains distinct from maintained/executed tooling.
+
+Keep full design, configured bootstrap, qualified common mechanisms, exact-profile
+execution readiness and full required-foundation completion separate. Broad
+product expansion needs the reviewed complete design and qualified applicable
+foundation. A dependent target requires its entire qualified closure before use;
+pending targets remain visible until their actual exits pass. A static/common
+pass cannot claim live-update, browser, desktop or hostile-code readiness. The
+checker below still reports only `configured_not_qualified` and does not inspect
+or enforce this full semantic journey.
+
+Hand the next agent concrete owned work: capability, allowed paths, prerequisites,
+actual artifacts, failure cases, evidence location and real commands. State
+remaining shared-owner gaps, current gates and rollout/rollback obligations.
+Do not turn this checklist into another roadmap or reopen an already accepted
+choice merely because a dated navigation document has fallen behind.
+
 ### Supported configuration contract
 
 The first checker supports JavaScript/TypeScript projects with an exact
@@ -81,7 +212,9 @@ classification obligations.
    when the package is pinned only as a root development dependency. This is
    configuration recognition, not verification of installed dependency bytes
    or the execution of a native gate. Unknown releases and weakening overrides
-   remain failures; additional toolchains require a reviewed adapter.
+   remain failures; additional toolchains require a reviewed adapter. The named
+   release is the recognizer's supported configuration, not a latest-release
+   claim or a prohibition on qualifying an immutable newer source cohort above.
 
 3. The profile identifies the immutable standard's ID, version, canonical path,
    content digest and nonzero source commit. Declare production, application and

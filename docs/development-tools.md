@@ -9,18 +9,38 @@ agents to the tool owner; it does not activate a package or certify a consumer.
 
 | Need                                                                                                         | Owner and guide                                                                                  | Availability                                                                                       |
 | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Reusable repository validation, source boundaries, quality coverage, governance and quality-gate composition | [Engineering Foundation README](https://github.com/agent-teams-ai/engineering-foundation#readme) | Existing tooling; use the exact released version and capabilities adopted by the target repository |
-| New owned repository configuration and explicit FMS/Foundation/CI bootstrap | [New repository bootstrap](repository-admission.md#new-repository-bootstrap) | Central source checker and inputless reusable workflow; supported JS/TS pnpm/Bun configuration only, never qualification |
+| Reusable repository validation, source boundaries, quality coverage, governance and quality-gate composition | [Engineering Foundation README](https://github.com/agent-teams-ai/engineering-foundation#readme) | Released tooling and separately reviewed source candidates; the consumer owns its exact cohort and capability activation |
+| Complete applicable foundation preparation and new owned repository FMS/Foundation/CI bootstrap | [New repository bootstrap](repository-admission.md#new-repository-bootstrap) | Full capability review and concrete feature journeys; central checker recognizes supported JS/TS pnpm/Bun configuration only, never semantic qualification |
 | Node/Bun process execution as an explicit mechanism                                                          | [node-or-bun README](https://github.com/agent-teams-ai/node-or-bun#readme)                       | Published mechanism; verify its current support matrix and the consumer's exact pin                |
-| Versioned tools, technical presets and commands for JS/TS checking, linting, formatting and compilation      | [Stack Toolchain](#stack-toolchain)                                                              | Published supported `0.1.1`; consumer adoption remains explicit                                    |
+| Versioned tools, technical presets and commands for JS/TS checking, linting, formatting and compilation      | [Stack Toolchain](#stack-toolchain)                                                              | Dated supported-release observation below; discover the current exact compatible cohort before adoption |
 
 Start with the target repository's AGENTS.md, README, scripts and accepted
-profiles. Follow the owning tool guide, verify its released version, and apply
-the repository's adoption procedure. Prefer an appropriate existing shared tool
-over a consumer-local copy. Continue using the repository's supported tooling
-until a replacement has a qualified supported release and is explicitly adopted.
+profiles. Follow the owning tool guide, inspect current source/release evidence,
+and apply the repository's adoption procedure. Prefer an appropriate existing shared tool
+over a consumer-local copy. Explicitly reviewed immutable source artifacts may
+be qualified through the [bootstrap artifact route](repository-admission.md#discover-artifacts-and-record-readiness),
+including before npm publication. Production changes still need exact compatible
+artifacts and the consumer's actual distribution/adoption gates; discovery does
+not silently migrate working tooling or relax a checker's recognized contract.
+
+Review the owning Foundation capability inventory in full, rather than selecting
+only an easy initial check. Record each capability's real applicability, owner,
+source/configuration coverage, blocking commands and evidence state in the
+consumer's existing profile. A pending target keeps a concrete implementation
+track; a justified N/A needs no placeholder package. This catalog does not make
+all Foundation capabilities or organization policy mandatory for independent
+external projects. For runtime/module/extension mechanisms, the
+[canonical bootstrap coverage](repository-admission.md#prepare-the-complete-applicable-foundation)
+routes to Get Modular, Extension Foundation, LMU and actual product owners.
 
 ## Stack Toolchain
+
+The following tuple and release-specific behavior are retained dated evidence,
+not the newest-version authority or a compatibility ceiling. Before new work,
+read the [current owning package guide](https://github.com/agent-teams-ai/engineering-foundation/tree/main/packages/stack-toolchain),
+discover available releases/source and qualify one exact compatible cohort.
+Keep historical receipts and the consumer's accepted pins unchanged until its
+reviewed migration; recognizer support and artifact availability are separate.
 
 Status observed on 2026-10-25: `stack-toolchain@0.1.1` is a qualified supported
 public release on [npm](https://www.npmjs.com/package/stack-toolchain/v/0.1.1),

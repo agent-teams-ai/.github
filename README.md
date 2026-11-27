@@ -81,8 +81,9 @@ of its current conformance.
 - `docs/decisions/` - accepted organization governance decisions.
 - `docs/organization-security-baseline.md` - live-default snapshot, transfer
   handling, and plan-tier exceptions.
-- [Repository admission](docs/repository-admission.md) - reviewed onboarding for new owned
-  repositories, starting with [new repository bootstrap](docs/repository-admission.md#new-repository-bootstrap)
+- [Repository admission](docs/repository-admission.md) - start new owned repositories
+  with [complete foundation preparation and repository bootstrap](docs/repository-admission.md#new-repository-bootstrap):
+  concrete qualification journeys, explicit configured/adopted/qualified states,
   and the [central commit identity route](docs/repository-admission.md#commit-identity-onboarding).
 - `SUPPORT.md` - support routing.
 - `CODE_OF_CONDUCT.md` - community conduct policy.
