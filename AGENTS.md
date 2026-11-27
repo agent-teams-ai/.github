@@ -1,5 +1,7 @@
 # Agent Navigation
 
+Use the [documentation map](docs/README.md) to select the applicable organization policy, standard or evidence.
+
 This repository owns organization-wide defaults and immutable shared
 architecture standards. It does not own product-specific architecture.
 
