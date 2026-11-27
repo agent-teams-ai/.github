@@ -215,7 +215,7 @@ scaffolds or runtime imports just for symmetry.
 
 ```mermaid
 flowchart LR
-  CD[Consumer domain] --> CP[Consumer application ports]
+  CP[Consumer application ports] --> CD[Consumer domain]
   CA[Consumer infrastructure] --> CP
   CA --> LIB[Selected Sync Foundation entry]
   LIB --> CORE[Portable shared contracts if needed]
@@ -236,8 +236,7 @@ flowchart LR
 
 Compile-time rule: an arrow means dependency, not ownership transfer. In this
 illustration domain/application are consumer-owned; domain must not import
-application ports. The CD-to-CP arrow is semantic use-case direction only,
-and the application imports its own domain. All concrete adapters import
+application ports. The application imports its own domain. All concrete adapters import
 only appropriate narrow contracts and the selected upstream library. No
 adapter imports unrelated engine packages. GM may wire factories at the
 outer Host; core must remain independently usable with plain composition.
