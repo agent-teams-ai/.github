@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 
 // Source-owned finite binding. This module has no I/O or authority transport.
-// Actual reviewed/native-green PR455 tuple. Mutable preparation remains unpublished;
-// hosted collection separately requires Ready and fresh immutable-source/protection evidence.
+// Actual observed PR455 tuple; mutable preparation is not qualification.
+// Hosted collection separately requires Ready and fresh immutable-source/protection evidence.
 export interface FiniteTarget {
   readonly repository: "agent-teams-ai/.github";
   readonly repositoryId: 1316243981;
@@ -68,11 +68,11 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
     pullRequest: 455,
     pullId: 5520339333,
     headRef: "fix/docs-runtime-policy31",
-    baseSHA: "8ff187a87857dc47c629ad0dda3e91d75cef743e",
-    headSHA: "553e489a8a087b46b731a484e9d4beb5cc01b4e1",
-    baseTreeSHA: "a8b5f40da307d9dfa12f77219c3f42912433ecb4",
-    headTreeSHA: "97116242d2fe2116c9a081f2361c2d66ce3a2dcb",
-    commits: 3,
+    baseSHA: "bf29bf90a8d0dfe3282de37f1150a76f89bc003a",
+    headSHA: "2099109548b97a38c8b52631370199d450926afd",
+    baseTreeSHA: "6b3c5e88df99b2a060b341f4e9beb53d13dcc890",
+    headTreeSHA: "cc304b0b342d86192640d3e23fef76391e50bf81",
+    commits: 4,
   },
   tuple: [
     [
@@ -188,6 +188,7 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
     ],
   ],
   commits: [
+    "2099109548b97a38c8b52631370199d450926afd",
     "553e489a8a087b46b731a484e9d4beb5cc01b4e1",
     "8b5b601dd864d04d9de3b3cfada6f16728a81b17",
     "b04f2c0ea41583094076ddaea1ce51e4ca109f5c",
