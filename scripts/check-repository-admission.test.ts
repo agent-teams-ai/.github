@@ -519,6 +519,10 @@ void test("coverage v5 refuses stale, ambiguous or incomplete topology without l
   }
 });
 
+function stackCompileRoute(projects: readonly string[]): string {
+  return projects.map((path) => `stack-toolchain compile --project ${path}`).join(" && ");
+}
+
 void test("coverage v5 accepts the exact newer LMU graph with all standalone compiler projects", async () => {
   const { files, source } = await modernFixture();
   const manifest = manifestFrom(files);
@@ -546,15 +550,13 @@ void test("coverage v5 accepts the exact newer LMU graph with all standalone com
       json({ extends: "./tsconfig.quality.json", include: ["packages/**/*.ts"] }),
     );
   }
-  const route = (selected: string[]) =>
-    selected.map((path) => `stack-toolchain compile --project ${path}`).join(" && ");
   const setManifest = (typecheck: string, graph = devDependencies) => {
     files.set(
       "package.json",
       json({ ...manifest, devDependencies: graph, scripts: { ...manifest.scripts, typecheck } }),
     );
   };
-  setManifest(route(projects));
+  setManifest(stackCompileRoute(projects));
   const accepted = await checkRepositoryAdmission(source);
   assert.deepEqual(accepted.issues, []);
   assert.equal(accepted.status, "configured_not_qualified");
@@ -563,7 +565,7 @@ void test("coverage v5 accepts the exact newer LMU graph with all standalone com
   }
   setManifest("stack-toolchain typecheck");
   assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
-  setManifest(route(projects.slice(0, -1)));
+  setManifest(stackCompileRoute(projects.slice(0, -1)));
   assert.ok(
     (await checkRepositoryAdmission(source)).issues.some((entry) =>
       entry.message.includes("actual strict compiler/build"),
@@ -576,7 +578,11 @@ void test("coverage v5 accepts the exact newer LMU graph with all standalone com
     "@agent-teams/feature-module-standard": "0.4.3",
     "stack-toolchain": "0.3.1",
   };
-  const names = Object.keys(previous) as (keyof typeof previous)[];
+  const names = [
+    "@agent-teams/engineering-foundation",
+    "@agent-teams/feature-module-standard",
+    "stack-toolchain",
+  ] as const;
   for (let mask = 1; mask < 7; mask += 1) {
     const mixed = { ...devDependencies };
     for (const [index, name] of names.entries()) {
@@ -584,7 +590,7 @@ void test("coverage v5 accepts the exact newer LMU graph with all standalone com
         mixed[name] = previous[name];
       }
     }
-    setManifest(route(projects), mixed);
+    setManifest(stackCompileRoute(projects), mixed);
     const rejected = await checkRepositoryAdmission(source);
     assert.equal(rejected.status, "incomplete", JSON.stringify(mixed));
     assert.ok(
