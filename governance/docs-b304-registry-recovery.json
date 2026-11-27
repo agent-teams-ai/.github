@@ -2,7 +2,7 @@
   "schema_version": 1,
   "authorization": {
     "id": "b304-deleted-canary-retirement-20261127",
-    "state": "active",
+    "state": "revoked",
     "valid_from": "2026-11-27T02:29:24Z",
     "expires_at": "2026-11-28T02:29:24Z",
     "controller": {
