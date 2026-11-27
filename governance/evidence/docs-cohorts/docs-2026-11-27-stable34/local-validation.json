@@ -1,0 +1,68 @@
+{
+  "evidenceClass": "local-preparation-validation",
+  "qualified": false,
+  "cohortId": "docs-2026-11-27-stable34",
+  "observedAt": "2026-11-27T00:13:39.847Z",
+  "runtime": {
+    "node": "v26.11.1",
+    "platform": "linux",
+    "architecture": "x64"
+  },
+  "sourceRevision": "89b5d7c512d9c4b5ae63709857a0d71cb2e6d178",
+  "unchangedAuthoritySourceSha256": {
+    "scripts/docs-cohort-policy.mjs": "sha256:2b97617b5c8e056dffb03d9285e394a5c7f67c72ffe26cf5781b962929e9b560",
+    "scripts/verify-docs-cohort-evidence.mjs": "sha256:1573c7cde1db985bfe1f4da7f1d86297bb40d18180a9277d01528bf378b59a71",
+    "governance/docs-qualified-cohorts.schema.json": "sha256:ea719a83bdc805701c3f3b89db6077e933196d6ad8332acd32c0d4c3115e330a"
+  },
+  "inputs": {
+    "registrySha256": "sha256:534fa2098dda6711fb4a54fb41b932a6503646c57f70c476c850b239f931c547",
+    "candidateInputDigest": "sha256:df2fb2ea3b83a4affc5603d57d780b14ecdd492d66c9531694a3a9dbbd419243",
+    "recordDigest": "sha256:5c9422c13bcadf3854801a2124c2cbec26f46372ecc3fac7068d5cc79aa6bfd6",
+    "eventDigest": "sha256:4d55d807be357f7886e167c15f8f877b146d9f1bdfc40ae62e6ab71c726c87d0"
+  },
+  "results": {
+    "officialSchemaLifecycleAndDigests": "PASS",
+    "officialAppendOnly": "PASS",
+    "previousRecords": 45,
+    "previousEvents": 189,
+    "priorRegistryBytesExactlyReproduced": true,
+    "newRecords": 1,
+    "newEvents": 1,
+    "candidateState": "PUBLISHED_UNQUALIFIED",
+    "candidateSelectionRejectedForOrchestrator": true,
+    "candidateSelectionRejectedForExtensionFoundation": true,
+    "cohortTests": {
+      "command": "node --test scripts/docs-cohort-v2.test.mjs scripts/docs-cohort-policy.test.mjs",
+      "exitCode": 0,
+      "tests": 111,
+      "passed": 111,
+      "failed": 0,
+      "skipped": 0,
+      "outputSha256": "sha256:0ff50b32c7453bfe51ca74237501b143b1b5cc8e583a891fa3961ff87453b638"
+    },
+    "fmsRegistry": {
+      "command": "node tools/feature-module-standard/check.mjs",
+      "exitCode": 0
+    },
+    "fmsTests": {
+      "command": "node --test tools/feature-module-standard/check.test.mjs",
+      "exitCode": 0,
+      "tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "outputSha256": "sha256:fad9045af4b1ba4b641e63743eda9790d312a37473c817fbbe0e8c2a15fb7c55"
+    },
+    "diffWhitespace": "PASS"
+  },
+  "notClaimed": {
+    "fullLiveVerifier": true,
+    "signatureAudit": true,
+    "sourceWorkflowProvenanceVerification": true,
+    "hostedTrustedQualification": true,
+    "fullRepositoryCheck": true,
+    "consumerActivation": true,
+    "defaultBranchDelivery": true
+  },
+  "remainingOperation": "Run unchanged verifyDocsCohortEvidence for this exact record with actual fresh signature install/audit, real provenance/workflow reads, published-content verification and full closure checks; then require base-owned hosted final-head verification. Current CLI gh has no authenticated session; real anonymous public REST is available through the existing helper adapter interface. No false API or signature result may substitute."
+}

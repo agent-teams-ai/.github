@@ -57,8 +57,8 @@ import {
   TARGET,
   TARGET_TUPLE,
   targetPullSnapshot,
-} from "./runtime-admission-source-successor-v8.ts";
-import type { GitHubReadApi, GitHubStatusApi } from "./runtime-admission-source-successor-v8.ts";
+} from "./runtime-admission-source-successor-v9.ts";
+import type { GitHubReadApi, GitHubStatusApi } from "./runtime-admission-source-successor-v9.ts";
 
 const git = (...args: string[]): Buffer =>
   execFileSync("git", args, {
@@ -948,7 +948,7 @@ void test("post-integration root dependency admission does not admit nested Reno
   }
 });
 
-void test("temporary V8 cannot introduce a permanent three-file caller installation", async () => {
+void test("temporary V9 cannot introduce a permanent three-file caller installation", async () => {
   const f = installationFixture(),
     envelope = { ...f.envelope, installationData: f.installationData };
   assert.equal(checkDocsSourceSuccessor(envelope, f.baseManifest, f.baseLock), "noop");
@@ -1908,10 +1908,10 @@ void test("the defining workflow runs only source-owned code, frozen installs an
       );
       const setupIndex = steps.indexOf(setup);
       const preflightIndex = steps.findIndex(
-        (step) => step.run === "node scripts/runtime-admission-source-successor-v8.ts preflight",
+        (step) => step.run === "node scripts/runtime-admission-source-successor-v9.ts preflight",
       );
       const metadataIndex = steps.findIndex(
-        (step) => step.run === "node scripts/runtime-admission-source-successor-v8.ts bootstrap",
+        (step) => step.run === "node scripts/runtime-admission-source-successor-v9.ts bootstrap",
       );
       const nodeIndex = steps.findIndex(
         (step) => typeof step.uses === "string" && step.uses.startsWith("actions/setup-node@"),
@@ -1954,11 +1954,11 @@ void test("the defining workflow runs only source-owned code, frozen installs an
     qualifySteps.some(
       (step) =>
         step.run ===
-        "node scripts/compiler-floor.ts\npnpm exec stack-toolchain compile --project tsconfig.runtime-admission-source-successor-v8.json\n",
+        "node scripts/compiler-floor.ts\npnpm exec stack-toolchain compile --project tsconfig.runtime-admission-source-successor-v9.json\n",
     ),
   );
   const bootstrap = qualifySteps.findIndex(
-    (step) => step.run === "node scripts/runtime-admission-source-successor-v8.ts bootstrap",
+    (step) => step.run === "node scripts/runtime-admission-source-successor-v9.ts bootstrap",
   );
   const rootInstall = qualifySteps.findIndex(
     (step) => step.run === "pnpm install --frozen-lockfile",
@@ -1986,7 +1986,7 @@ void test("the defining workflow runs only source-owned code, frozen installs an
   );
   const full = qualifySteps.findIndex((step) => step.run === "pnpm check");
   const binding = qualifySteps.findIndex(
-    (step) => step.run === "node scripts/runtime-admission-source-successor-v8.ts qualify",
+    (step) => step.run === "node scripts/runtime-admission-source-successor-v9.ts qualify",
   );
   assert.ok(
     full > childBuild && binding > full,
@@ -2020,14 +2020,14 @@ void test("a valid-metadata Bot PR revokes a previously shared success through p
 void test("the full central test route reaches the actual dedicated strict successor compiler and exact census", async () => {
   const project = JSON.parse(
     await readFile(
-      new URL("../tsconfig.runtime-admission-source-successor-v8.json", import.meta.url),
+      new URL("../tsconfig.runtime-admission-source-successor-v9.json", import.meta.url),
       "utf8",
     ),
   ) as unknown;
   const files = [
-    "scripts/runtime-admission-source-successor-v8.ts",
-    "scripts/runtime-admission-source-successor-v8.test.ts",
-    "scripts/runtime-admission-source-successor-v8-target.ts",
+    "scripts/runtime-admission-source-successor-v9.ts",
+    "scripts/runtime-admission-source-successor-v9.test.ts",
+    "scripts/runtime-admission-source-successor-v9-target.ts",
   ];
   assert.deepEqual(project, { extends: "./tsconfig.tooling.json", include: files });
   const owner = createRequire(
@@ -2038,7 +2038,7 @@ void test("the full central test route reaches the actual dedicated strict succe
   const args = [
     join(dirname(owner.resolve("typescript/package.json")), "bin/tsc"),
     "--project",
-    "tsconfig.runtime-admission-source-successor-v8.json",
+    "tsconfig.runtime-admission-source-successor-v9.json",
   ];
   const options = {
     cwd: new URL("../", import.meta.url),
@@ -2071,8 +2071,8 @@ void test("the full central test route reaches the actual dedicated strict succe
     compiled
       .filter(
         (path) =>
-          path.includes("/scripts/runtime-admission-source-successor-v8.") ||
-          path.includes("/scripts/runtime-admission-source-successor-v8-target."),
+          path.includes("/scripts/runtime-admission-source-successor-v9.") ||
+          path.includes("/scripts/runtime-admission-source-successor-v9-target."),
       )
       .map((path) => path.slice(path.indexOf("/scripts/") + 1))
       .toSorted(),
@@ -2357,7 +2357,7 @@ void test("unchanged symlinked admission inputs cannot hide in an ordinary basel
   }
 });
 
-void test("restoration reinstates runtime v4 before retiring temporary v8 requirement", () => {
+void test("restoration reinstates runtime v4 before retiring temporary v9 requirement", () => {
   const baseline = protection();
   let state = { main: mapping(baseline.main), identity: mapping(baseline.identity) };
   for (const phase of ["add", "retire", "restore", "install", "add", "retire"] as const) {
@@ -2566,7 +2566,7 @@ void test("owner PR profile never applies to new or predecessor immutable source
   }
 });
 
-void test("v8 target binding rejects unfinished or broadened runtime-support publication coordinates", () => {
+void test("v9 target binding rejects unfinished or broadened runtime-support publication coordinates", () => {
   // These synthetic values exercise the pure structural guard only. Hosted
   // entry points always use source-owned TARGET and never accept this fixture.
   const tuple: [string, string | null, string][] = FINITE_TARGET_PATHS.map((path) => [
@@ -2633,14 +2633,14 @@ void test("v8 target binding rejects unfinished or broadened runtime-support pub
   }
 });
 
-void test("v8 unbound typed binding fails during module loading before hosted effects", async () => {
+void test("v9 unbound typed binding fails during module loading before hosted effects", async () => {
   assertTargetBinding();
   const source = await readFile(
-    new URL("./runtime-admission-source-successor-v8.ts", import.meta.url),
+    new URL("./runtime-admission-source-successor-v9.ts", import.meta.url),
     "utf8",
   );
   const binding = await readFile(
-    new URL("./runtime-admission-source-successor-v8-target.ts", import.meta.url),
+    new URL("./runtime-admission-source-successor-v9-target.ts", import.meta.url),
     "utf8",
   );
   const unboundBinding = binding.replace(
@@ -2653,16 +2653,16 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
 // END OBSERVED FINITE TARGET BINDING`,
   );
   assert.notEqual(unboundBinding, binding, "The actual typed binding must be present");
-  const directory = await mkdtemp(join(tmpdir(), "unbound-source-v8-"));
+  const directory = await mkdtemp(join(tmpdir(), "unbound-source-v9-"));
   try {
-    const path = join(directory, "runtime-admission-source-successor-v8.ts");
+    const path = join(directory, "runtime-admission-source-successor-v9.ts");
     await writeFile(path, source);
     await writeFile(
-      join(directory, "runtime-admission-source-successor-v8-target.ts"),
+      join(directory, "runtime-admission-source-successor-v9-target.ts"),
       unboundBinding,
     );
     await writeFile(join(directory, "package.json"), '{"type":"module"}\n');
-    await assert.rejects(import(pathToFileURL(path).href), /Unbound v8 target/u);
+    await assert.rejects(import(pathToFileURL(path).href), /Unbound v9 target/u);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -2833,7 +2833,7 @@ void test("ordinary and dependency decisions agree with actual installed runtime
   }
 });
 
-void test("temporary RuntimeV8 delegation preserves the frozen V4 three-file installation", async () => {
+void test("temporary RuntimeV9 delegation preserves the frozen V4 three-file installation", async () => {
   const previous = await import("./runtime-admission-source-successor-v4.ts");
   const f = legacyFixture(previous.TARGET.headSHA, previous.TARGET.headSHA);
   for (const path of previous.INSTALL_PATHS) {
@@ -2863,11 +2863,11 @@ void test("temporary RuntimeV8 delegation preserves the frozen V4 three-file ins
   );
 });
 
-void test("temporary V8 source files cannot be added to ordinary main", async () => {
+void test("temporary V9 source files cannot be added to ordinary main", async () => {
   const previous = await import("./runtime-admission-source-successor-v4.ts");
   for (const path of SOURCE_INPUTS) {
     const f = ordinaryFixture();
-    change(f, path, Buffer.from("// Unreviewed V8 authority installation fixture\n"));
+    change(f, path, Buffer.from("// Unreviewed V9 authority installation fixture\n"));
     assert.equal(
       await previous.checkSourceSuccessor(f.envelope, f.baseManifest, f.baseLock, sourceSHA),
       "noop",

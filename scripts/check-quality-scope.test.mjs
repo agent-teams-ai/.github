@@ -130,13 +130,13 @@ test("source v4 and its tests are in the real strict and lint census without exp
   }
 });
 
-test("source v8, target binding and tests are in the real strict and lint census without expanding frozen exclusions", () => {
+test("source v9, target binding and tests are in the real strict and lint census without expanding frozen exclusions", () => {
   const census = assertQualityAdoption(accepted);
   const lintPaths = deriveLintPaths(census, accepted.profile);
   for (const path of [
-    "scripts/runtime-admission-source-successor-v8.ts",
-    "scripts/runtime-admission-source-successor-v8.test.ts",
-    "scripts/runtime-admission-source-successor-v8-target.ts",
+    "scripts/runtime-admission-source-successor-v9.ts",
+    "scripts/runtime-admission-source-successor-v9.test.ts",
+    "scripts/runtime-admission-source-successor-v9-target.ts",
   ]) {
     assert.ok(accepted.toolingTsconfig.include.includes(path));
     assert.ok(lintPaths.includes(path));

@@ -12,7 +12,7 @@ import {
   type BoundFiniteTarget,
   FINITE_TARGET_PATHS,
   requireBoundFiniteTarget,
-} from "./runtime-admission-source-successor-v8-target.ts";
+} from "./runtime-admission-source-successor-v9-target.ts";
 
 // Fails closed at module evaluation if no actual independently reviewed target is bound.
 const finiteBinding = requireBoundFiniteTarget();
@@ -21,13 +21,13 @@ export const TARGET_TUPLE = finiteBinding.tuple;
 export const TARGET_COMMITS = finiteBinding.commits;
 export { FINITE_ADDED_TARGET_PATHS, FINITE_TARGET_PATHS };
 
-export const SOURCE_REF = "refs/heads/governance/runtime-admission-source-successor-v8";
-export const SOURCE_WORKFLOW = ".github/workflows/runtime-admission-source-successor-v8.yml";
-export const SOURCE_CONTEXT = "runtime-admission-source-successor-v8";
-export const CALLER_WORKFLOW = ".github/workflows/runtime-admission-source-successor-v8-caller.yml";
-export const ADR_PATH = "docs/decisions/runtime-admission-source-successor-v8.md";
+export const SOURCE_REF = "refs/heads/governance/runtime-admission-source-successor-v9";
+export const SOURCE_WORKFLOW = ".github/workflows/runtime-admission-source-successor-v9.yml";
+export const SOURCE_CONTEXT = "runtime-admission-source-successor-v9";
+export const CALLER_WORKFLOW = ".github/workflows/runtime-admission-source-successor-v9-caller.yml";
+export const ADR_PATH = "docs/decisions/runtime-admission-source-successor-v9.md";
 export const EVIDENCE_PATH =
-  "governance/evidence/docs-source-successor/runtime-admission-source-successor-v8-installation.md";
+  "governance/evidence/docs-source-successor/runtime-admission-source-successor-v9-installation.md";
 export const PREVIOUS_INSTALL_PATHS = Object.freeze([
   ".github/workflows/runtime-admission-source-successor-v4-caller.yml",
   "docs/decisions/0018-bounded-runtime-admission-source-successor-v4.md",
@@ -63,10 +63,10 @@ export const PREVIOUS_SOURCE_INPUTS = Object.freeze([
   ".github/workflows/docs-quality-source-successor-v2.yml",
   "tsconfig.docs-quality-source-successor-v2.json",
 ]);
-export const CANARY_WORKFLOW = ".github/workflows/runtime-admission-source-v8-canary.yml";
+export const CANARY_WORKFLOW = ".github/workflows/runtime-admission-source-v9-canary.yml";
 export const CANARY_REFS = Object.freeze([
-  "refs/heads/qualification/runtime-admission-positive-v8",
-  "refs/heads/qualification/runtime-admission-negative-v8",
+  "refs/heads/qualification/runtime-admission-positive-v9",
+  "refs/heads/qualification/runtime-admission-negative-v9",
 ]);
 export const INSTALL_PATHS = Object.freeze([CALLER_WORKFLOW, ADR_PATH, EVIDENCE_PATH]);
 export const LEGACY_INPUTS = Object.freeze([
@@ -149,11 +149,11 @@ export const FROZEN_SOURCE_IMAGES = Object.freeze([
   ],
 ] as const);
 export const SOURCE_INPUTS = Object.freeze([
-  "scripts/runtime-admission-source-successor-v8.ts",
-  "scripts/runtime-admission-source-successor-v8.test.ts",
-  "scripts/runtime-admission-source-successor-v8-target.ts",
+  "scripts/runtime-admission-source-successor-v9.ts",
+  "scripts/runtime-admission-source-successor-v9.test.ts",
+  "scripts/runtime-admission-source-successor-v9-target.ts",
   SOURCE_WORKFLOW,
-  "tsconfig.runtime-admission-source-successor-v8.json",
+  "tsconfig.runtime-admission-source-successor-v9.json",
 ]);
 export const HISTORICAL_DATA_INPUTS = Object.freeze([
   "governance/organization-repository-inventory.json",
@@ -1303,7 +1303,7 @@ export function callerWorkflowDefinition(sourceSHA: string): object {
     statuses: "write",
   };
   return {
-    name: "Trusted Runtime and Admission Source Successor V8",
+    name: "Trusted Runtime and Admission Source Successor V9",
     on: { pull_request_target: { types: ["opened", "synchronize", "reopened", "edited"] } },
     permissions,
     jobs: {
@@ -1320,7 +1320,7 @@ export function canaryWorkflowDefinition(sourceSHA: string): object {
     statuses: "write",
   };
   return {
-    name: "Runtime and Admission Source Canary V8",
+    name: "Runtime and Admission Source Canary V9",
     on: { push: { branches: CANARY_REFS.map((ref) => ref.slice("refs/heads/".length)) } },
     permissions,
     jobs: {
@@ -2099,7 +2099,7 @@ export async function publishSourceSuccessor(
       context: SOURCE_CONTEXT,
       state,
       target_url: `https://github.com/${TARGET.repository}/actions/runs/${input.runId}/attempts/${input.runAttempt}`,
-      description: `Protected runtime/admission successor v8: ${state}`,
+      description: `Protected runtime/admission successor v9: ${state}`,
     });
   try {
     await status("pending");

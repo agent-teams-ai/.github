@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 // Source-owned finite binding. This module has no I/O or authority transport.
-// Actual observed PR455 tuple; mutable preparation is not qualification.
+// Actual observed PR455 tuple after stable34; mutable preparation is not qualification.
 // Hosted collection separately requires Ready and fresh immutable-source/protection evidence.
 export interface FiniteTarget {
   readonly repository: "agent-teams-ai/.github";
@@ -68,11 +68,11 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
     pullRequest: 455,
     pullId: 5520339333,
     headRef: "fix/docs-runtime-policy31",
-    baseSHA: "046492c51aab39cb74bbd9119ab7e9be85c169de",
-    headSHA: "a97745c1d1092f4a7f4978ce3257fce5e3223f91",
-    baseTreeSHA: "6c9e0e247187eb085f145c27a03f340e6a6be1b8",
-    headTreeSHA: "471d873fc1fe8efa38b05a68d8e1561f55a4c480",
-    commits: 5,
+    baseSHA: "dedf5b7bd04f051c7f5327f832c8125af7bf9bef",
+    headSHA: "c14cb0cb732853c66b9aa3685618354853df415b",
+    baseTreeSHA: "d6d91bd81296d25fcc5f6f069e831c6b752a78e3",
+    headTreeSHA: "fdee4094d958a17e5717977d08c1849ff8959b44",
+    commits: 6,
   },
   tuple: [
     [
@@ -193,6 +193,7 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
     "8b5b601dd864d04d9de3b3cfada6f16728a81b17",
     "a97745c1d1092f4a7f4978ce3257fce5e3223f91",
     "b04f2c0ea41583094076ddaea1ce51e4ca109f5c",
+    "c14cb0cb732853c66b9aa3685618354853df415b",
   ],
 } satisfies BoundFiniteTarget);
 // END OBSERVED FINITE TARGET BINDING
@@ -303,7 +304,7 @@ export function requireBoundFiniteTarget(
     binding.state === "unbound"
   ) {
     throw new Error(
-      "Unbound v8 target: real reviewed PR455 and complete native qualification are required.",
+      "Unbound v9 target: real reviewed PR455 and complete native qualification are required.",
     );
   }
   assertFiniteTargetBinding(binding);
