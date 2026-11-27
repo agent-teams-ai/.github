@@ -1381,6 +1381,42 @@ for (const [policyVersion, nodeRange, nodeVersion] of [
     const root = await mkdtemp(join(tmpdir(), "docs-generation3-consumer-receipt-"));
     t.after(() => rm(root, { recursive: true, force: true }));
     const input = cohortV3Fixture(policyVersion);
+    if (policyVersion === "3.1.0") {
+      // Retain the synthetic qualification fixture, with the actual closure's
+      // two optional locators whose locale and ordinal key order differs.
+      const actualClosure = JSON.parse(
+        await readFile(
+          new URL(
+            "../governance/docs-runtime-closures/sha256-7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475.json",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      const lock = cohortV2Lock();
+      const names = ["@typescript/typescript-linux-arm64", "@typescript/typescript-linux-arm"];
+      for (const name of names) {
+        const locator = `${name}@7.0.2`;
+        lock.packages[locator] = actualClosure.pnpmLock.packages[locator];
+        lock.snapshots[locator] = actualClosure.pnpmLock.snapshots[locator];
+      }
+      lock.snapshots["@agent-teams/engineering-foundation@1.0.0-rc.1"].optionalDependencies =
+        Object.fromEntries(names.map((name) => [name, "7.0.2"]));
+      const record = input.registry.cohorts.at(-1);
+      const closure = docsRuntimeClosureV2Evidence(lock, record.packages);
+      record.runtime_closure = closure.authority;
+      record.record_digest = cohortRecordDigest(record);
+      const path = "architecture/foundation/docs-consumer-integration.json";
+      const profile = JSON.parse(input.files[path]);
+      profile.cohort.recordDigest = record.record_digest;
+      profile.cohort.runtime.runtimeClosure.digest = closure.authority.digest;
+      input.files[path] = `${JSON.stringify(profile)}\n`;
+      input.files["architecture/foundation/docs-protocol-managed-state.json"] = `${JSON.stringify(
+        canonicalManagedProjection(profile, profile.cohort, profile.repository),
+      )}\n`;
+      input.files["pnpm-lock.yaml"] = stringifyYaml(lock);
+      input.runtimeClosureSources = { [closure.authority.projection_path]: closure.source };
+    }
     const authorization = authorizeConsumerGate(input);
     assert.deepEqual(
       authorization.qualificationAuthority.registryRecord,
@@ -1409,10 +1445,22 @@ for (const [policyVersion, nodeRange, nodeVersion] of [
     const authorizationPath = join(root, "authorization.json");
     const evidencePath = join(root, "install-evidence.json");
     const receiptPath = join(root, "receipt.json");
+    const authorizationCanonical = (value) => {
+      if (Array.isArray(value)) {
+        return `[${value.map(authorizationCanonical).join(",")}]`;
+      }
+      if (value !== null && typeof value === "object") {
+        return `{${Object.entries(value)
+          .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+          .map(([key, entry]) => `${JSON.stringify(key)}:${authorizationCanonical(entry)}`)
+          .join(",")}}`;
+      }
+      return JSON.stringify(value);
+    };
     const installEvidence = {
       schemaVersion: 1,
       authorizationDigest: digest(
-        canonical({
+        authorizationCanonical({
           domain: "agent-teams.docs-consumer-gate-authorization/v1",
           body: authorization,
         }),
@@ -1421,7 +1469,7 @@ for (const [policyVersion, nodeRange, nodeVersion] of [
     };
     const writeAuthorization = async (value = authorization) => {
       const authorizationDigest = digest(
-        canonical({
+        authorizationCanonical({
           domain: "agent-teams.docs-consumer-gate-authorization/v1",
           body: value,
         }),
@@ -1524,6 +1572,26 @@ for (const [policyVersion, nodeRange, nodeVersion] of [
         ],
         { env: { ...process.env, GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "1" } },
       );
+    if (policyVersion === "3.1.0") {
+      // The real authorizer's reader must accept this same digest before the
+      // separate receipt CLI binds it; no test-only hash substitutes for it.
+      const writerBoundary = await execute(
+        process.execPath,
+        [new URL("./verify-docs-consumer-gate.mjs", import.meta.url).pathname, "verify-checkout"],
+        {
+          env: {
+            ...process.env,
+            AUTHORIZATION_PATH: authorizationPath,
+            CONSUMER_CHECKOUT: consumer,
+            CALLER_REPOSITORY_ID: String(authorization.repositoryId),
+            GITHUB_REPOSITORY: authorization.repository,
+            GITHUB_SHA: authorization.callerSha,
+          },
+        },
+      );
+      assert.equal(writerBoundary.stderr, "");
+      assert.match(writerBoundary.stdout, /centrally authorized immutable caller snapshot/u);
+    }
     const passed = await run();
     assert.equal(passed.stderr, "");
     assert.match(
@@ -1531,6 +1599,25 @@ for (const [policyVersion, nodeRange, nodeVersion] of [
       /Cohort generation 3 authorized consumer qualification receipt is bound/u,
     );
     assert.match(passed.stdout, /central CANARY remains unsatisfied/u);
+    if (policyVersion === "3.1.0") {
+      const localeDigest = digest(
+        canonical({
+          domain: "agent-teams.docs-consumer-gate-authorization/v1",
+          body: authorization,
+        }),
+      );
+      assert.notEqual(localeDigest, installEvidence.authorizationDigest);
+      await writeFile(
+        authorizationPath,
+        canonical({ authorization, authorizationDigest: localeDigest }),
+      );
+      await writeFile(
+        evidencePath,
+        canonical({ ...installEvidence, authorizationDigest: localeDigest }),
+      );
+      await assert.rejects(() => run(), /Cohort central authorization is not exact/u);
+      await writeAuthorization();
+    }
     const verifiedReceipt = JSON.parse(await readFile(receiptPath, "utf8"));
     assert.deepEqual(Object.keys(verifiedReceipt.runtime).toSorted(), [
       "node",

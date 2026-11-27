@@ -72,7 +72,7 @@ test("actual tracked source census distinguishes tooling, tests, and authority d
 test("actual derived tooling paths exactly match Oxlint debug selection", async () => {
   const census = assertQualityAdoption(accepted);
   const paths = deriveLintPaths(census, accepted.profile);
-  assert.equal(paths.length, 50);
+  assert.equal(paths.length, 63);
   assert.ok(paths.includes("scripts/verify-docs-admission-change.mjs"));
   assert.ok(paths.includes("scripts/docs-b304-registry-incident.ts"));
   assert.ok(paths.includes("scripts/docs-b304-registry-incident.test.ts"));
@@ -107,6 +107,55 @@ test("actual derived tooling paths exactly match Oxlint debug selection", async 
   assert.ok(paths.includes("scripts/validate-renovate.test.ts"));
   assert.ok(paths.includes("scripts/validate-renovate-abi.probe.ts"));
   assert.deepEqual(await selectOxlintFiles(paths), paths);
+});
+
+test("source v4 and its tests are in the real strict and lint census without expanding frozen exclusions", () => {
+  const census = assertQualityAdoption(accepted);
+  const lintPaths = deriveLintPaths(census, accepted.profile);
+  for (const path of [
+    "scripts/runtime-admission-source-successor-v4.ts",
+    "scripts/runtime-admission-source-successor-v4.test.ts",
+  ]) {
+    assert.ok(accepted.toolingTsconfig.include.includes(path));
+    assert.ok(lintPaths.includes(path));
+    assert.ok(!accepted.profile.retainedAuthoritySources.some((entry) => entry.path === path));
+    const changed = structuredClone(accepted);
+    changed.toolingTsconfig.include = changed.toolingTsconfig.include.filter(
+      (entry) => entry !== path,
+    );
+    assert.throws(() => assertQualityAdoption(changed));
+  }
+  for (const entry of accepted.profile.retainedAuthoritySources) {
+    assert.ok(!lintPaths.includes(entry.path));
+  }
+});
+
+test("sources v9, v10 and v11, target bindings and tests are in the real strict and lint census without expanding frozen exclusions", () => {
+  const census = assertQualityAdoption(accepted);
+  const lintPaths = deriveLintPaths(census, accepted.profile);
+  for (const path of [
+    "scripts/runtime-admission-source-successor-v9.ts",
+    "scripts/runtime-admission-source-successor-v9.test.ts",
+    "scripts/runtime-admission-source-successor-v9-target.ts",
+    "scripts/runtime-admission-source-successor-v10.ts",
+    "scripts/runtime-admission-source-successor-v10.test.ts",
+    "scripts/runtime-admission-source-successor-v10-target.ts",
+    "scripts/runtime-admission-source-successor-v11.ts",
+    "scripts/runtime-admission-source-successor-v11.test.ts",
+    "scripts/runtime-admission-source-successor-v11-target.ts",
+  ]) {
+    assert.ok(accepted.toolingTsconfig.include.includes(path));
+    assert.ok(lintPaths.includes(path));
+    assert.ok(!accepted.profile.retainedAuthoritySources.some((entry) => entry.path === path));
+    const changed = structuredClone(accepted);
+    changed.toolingTsconfig.include = changed.toolingTsconfig.include.filter(
+      (entry) => entry !== path,
+    );
+    assert.throws(() => assertQualityAdoption(changed));
+  }
+  for (const entry of accepted.profile.retainedAuthoritySources) {
+    assert.ok(!lintPaths.includes(entry.path));
+  }
 });
 
 test("single root Stack pin accepts a matching future identity as binding proof only", () => {
