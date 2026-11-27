@@ -493,8 +493,31 @@ export function docsCohortV2ExecutionEnvelopeDigest(envelopeBody) {
 }
 
 function authorizationDigest(authorization) {
+  // Match the authorizer's ordinal ordering without changing the existing
+  // record, event, receipt, or execution-envelope digest domains.
+  function canonicalAuthorization(value) {
+    if (value === null || typeof value === "boolean" || typeof value === "string") {
+      return JSON.stringify(value);
+    }
+    if (typeof value === "number") {
+      if (!Number.isSafeInteger(value)) {
+        fail("Canonical JSON accepts only safe integers.");
+      }
+      return JSON.stringify(value);
+    }
+    if (Array.isArray(value)) {
+      return `[${value.map(canonicalAuthorization).join(",")}]`;
+    }
+    if (!exactObject(value)) {
+      fail("Value is not canonical JSON.");
+    }
+    return `{${Object.entries(value)
+      .toSorted(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalAuthorization(entry)}`)
+      .join(",")}}`;
+  }
   return sha256(
-    canonicalJson({
+    canonicalAuthorization({
       domain: "agent-teams.docs-consumer-gate-authorization/v1",
       body: authorization,
     }),
