@@ -12246,6 +12246,40 @@
       "canary_evidence": [],
       "previous_event_digest": "sha256:96b307b1c602947520ee7591f81d263eb1a815683de18a9d493106ab0e73ddd3",
       "event_digest": "sha256:4d55d807be357f7886e167c15f8f877b146d9f1bdfc40ae62e6ab71c726c87d0"
+    },
+    {
+      "sequence": 191,
+      "cohort_id": "docs-2026-11-27-stable34",
+      "state": "VERIFIED",
+      "effective_at": "2026-11-27T00:19:37Z",
+      "support_until": null,
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/qualification.json",
+        "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/publication.json",
+        "https://github.com/agent-teams-ai/.github/actions/runs/45915980788/attempts/1",
+        "https://github.com/agent-teams-ai/.github/actions/runs/45915980788/job/140235182988",
+        "https://github.com/agent-teams-ai/.github/blob/d15604c4eb082ceed06c6b5852357f7644a62ce0/governance/docs-qualified-cohorts.json"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:4d55d807be357f7886e167c15f8f877b146d9f1bdfc40ae62e6ab71c726c87d0",
+      "event_digest": "sha256:12f350896381f496958245001cd46da0d548ea82bc62756d2bce1006626860a8"
+    },
+    {
+      "sequence": 192,
+      "cohort_id": "docs-2026-11-27-stable34",
+      "state": "QUALIFIED",
+      "effective_at": "2026-11-27T00:19:37Z",
+      "support_until": null,
+      "evidence_references": [
+        "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/qualification.json",
+        "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/publication.json",
+        "https://github.com/agent-teams-ai/.github/actions/runs/45915980788/attempts/1",
+        "https://github.com/agent-teams-ai/.github/actions/runs/45915980788/job/140235182988",
+        "https://github.com/agent-teams-ai/.github/blob/d15604c4eb082ceed06c6b5852357f7644a62ce0/governance/docs-qualified-cohorts.json"
+      ],
+      "canary_evidence": [],
+      "previous_event_digest": "sha256:12f350896381f496958245001cd46da0d548ea82bc62756d2bce1006626860a8",
+      "event_digest": "sha256:6458aefb7ae73696aa5f3513868bb2ece0848a5af2488497eb1bbceb275e56c3"
     }
   ]
 }
