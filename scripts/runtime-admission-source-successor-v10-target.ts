@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 // Source-owned finite binding. This module has no I/O or authority transport.
-// Actual observed ready PR467 receipt-correction tuple; mutable preparation is not qualification.
+// Prepared refreshed PR467 tuple; mutable preparation is not qualification.
 // Hosted collection separately requires Ready and fresh immutable-source/protection evidence.
 export interface FiniteTarget {
   readonly repository: "agent-teams-ai/.github";
@@ -43,11 +43,11 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
     pullRequest: 467,
     pullId: 5524611730,
     headRef: "fix/docs-receipt-authorization-order-20261127",
-    baseSHA: "d167b2360524474240a43e3ff70e35eb94e109c7",
-    headSHA: "611cd2a78d1f9104dbf46bab69c3ff0e30ac6d8f",
-    baseTreeSHA: "12323593a924522f4c053278c8cf036290e29919",
-    headTreeSHA: "31561be538b5dc4b4aa02e53278047d79ff4dbaa",
-    commits: 1,
+    baseSHA: "283c9b8d79580b48be5b1b8d6a94a09b9543185b",
+    headSHA: "be1c81ec749aa62ddf524424ccd19284c5043a0e",
+    baseTreeSHA: "b835f11c1433c562d3575e7d351697d4cc44f572",
+    headTreeSHA: "f20bbd64ec8e35caf614a80fc02e6717dc03bd12",
+    commits: 2,
   },
   tuple: [
     [
@@ -61,7 +61,10 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
       "1720cb51da26b4ddfc1f14b855f81cfdfceb8f90",
     ],
   ],
-  commits: ["611cd2a78d1f9104dbf46bab69c3ff0e30ac6d8f"],
+  commits: [
+    "611cd2a78d1f9104dbf46bab69c3ff0e30ac6d8f",
+    "be1c81ec749aa62ddf524424ccd19284c5043a0e",
+  ],
 } satisfies BoundFiniteTarget);
 // END OBSERVED FINITE TARGET BINDING
 

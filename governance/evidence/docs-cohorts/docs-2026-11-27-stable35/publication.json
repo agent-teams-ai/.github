@@ -1,0 +1,27 @@
+{
+  "evidenceClass": "observed-published-cohort-candidate",
+  "qualified": false,
+  "assembledAt": "2026-11-27T08:08:43.111Z",
+  "source": {
+    "repository": "agent-teams-ai/.github",
+    "revision": "c58f93aabf78c92308b90ceb6b93e207f2bec5d9",
+    "tree": "2745d00ed283a9d921fc9b5feab25fb518145f2c",
+    "registryBlob": "5a99b48c754c0e55caa070daed6043f3f0c81bcd"
+  },
+  "candidateInputPath": "governance/evidence/docs-cohorts/docs-2026-11-27-stable35/candidate-input.json",
+  "candidateInputDigest": "sha256:9e5f2f19bb14b98526672af89b8accdc1ffef3ce999e9cb41ea51ab702fb71c6",
+  "recordDigest": "sha256:978a8113172e41d6960a577b8e567cea40c469a02cfae750ad754b1cfdfeed68",
+  "initialEventDigest": "sha256:9d78dc2fda74baf393fc51d1536799a76f4cb611893fb05f7eaf93660b408825",
+  "latestActualPublication": "2026-11-27T07:56:28.697Z",
+  "runtimeClosure": {
+    "schema_version": 2,
+    "domain": "agent-teams.docs-runtime-closure/v2",
+    "package_manager": "pnpm@11.20.0",
+    "lockfile_version": "9.0",
+    "package_count": 88,
+    "projection_path": "governance/docs-runtime-closures/sha256-7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475.json",
+    "digest": "sha256:7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475",
+    "exactSourceSha256": "sha256:7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475"
+  },
+  "scope": "Actual publication observations only. Full base-owned live evidence verification, VERIFIED and QUALIFIED lifecycle events, consumer transition, actual default-branch qualification and CANARY remain separate."
+}
