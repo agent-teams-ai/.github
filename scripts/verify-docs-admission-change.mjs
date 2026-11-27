@@ -440,3 +440,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     JSON.stringify(await verifyDocsAdmissionChange({ policy, exceptions, inventory, execution })),
   );
 }
+
+// Runtime admission V9 negative canary: protected source bytes must be refused.
