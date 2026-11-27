@@ -19,10 +19,20 @@ accepted ADRs, published contracts and Feature Module Standard pins keep their
 authority under [governance boundaries](../GOVERNANCE.md). A newer central
 revision requires reviewed local adoption where it changes an accepted choice.
 
-Exact runtime, package, native-binary and container versions belong to the
-consumer's manifests, lockfiles and accepted adoption records. This reference
-does not upgrade them or select moving `latest` tags. A selected technology,
-working prototype and qualified production profile are separate claims.
+Read the [Technology Stack Catalog](technology-stack.md) and its
+[backend version section](backend-stack-versions.md) before selecting
+or updating an applicable backend dependency. It records exact recommended
+candidates, release channels, dated upstream evidence, existing qualifications
+and explicit exceptions. Check the newest eligible upstream release at the
+point of use; the catalog is a starting point, not a version ceiling.
+
+Consumer manifests, lockfiles and accepted adoption records remain the
+authority for reproducible installations. Upgrade through reviewed,
+risk-appropriate qualification, never a floating `latest` tag or a silent
+global version switch. A selected technology, working prototype and qualified
+production profile are separate claims. The
+[observed repository version dashboard](https://github.com/agent-teams-ai/.github/issues/473)
+shows actual source pins separately from recommended candidates.
 
 ## Selected responsibilities
 
