@@ -19,7 +19,8 @@ accepted ADRs, published contracts and Feature Module Standard pins keep their
 authority under [governance boundaries](../GOVERNANCE.md). A newer central
 revision requires reviewed local adoption where it changes an accepted choice.
 
-Read the [shared version catalog](backend-stack-versions.md) before selecting
+Read the [Technology Stack Catalog](technology-stack.md) and its
+[backend version section](backend-stack-versions.md) before selecting
 or updating an applicable backend dependency. It records exact recommended
 candidates, release channels, dated upstream evidence, existing qualifications
 and explicit exceptions. Check the newest eligible upstream release at the

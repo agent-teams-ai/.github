@@ -1,44 +1,10 @@
-# Backend stack version catalog
+# Backend versions — Technology Stack Catalog
 
 Owner direction proposed on 2026-11-27. This is the shared version-selection
 reference for the technologies in [Backend Stack](backend-stack.md), not a
-fleet lockfile or a production admission record.
-
-## How agents choose a version
-
-1. Read the target repository's applicable architecture, current manifest,
-   lockfile and accepted dependency decisions. Read this catalog and its
-   linked evidence before adding or changing an applicable dependency.
-2. At the start of the change, query the official registry or release channel.
-   Verify the newest published eligible version, release date, provenance,
-   engine and peer requirements, security advisories and compatibility.
-   A recorded version is a reference point, not a maximum. Prefer the
-   newest compatible release within the selected channel and scope.
-3. The ordinary channel is stable/GA. Use a newer major for a greenfield
-   consumer after relevant qualification. For existing deployments, review
-   compatibility, migrations and rollback before changing a major. A
-   pre-release is eligible only for an explicitly selected channel or
-   documented owner decision; never select a random alpha, beta or
-   commit-suffixed build because it sorts higher. Drizzle 1.0 RC and the
-   embedded PostgreSQL wrapper have explicit provisional directions below.
-4. Reuse the latest applicable cross-repository evidence, without confusing
-   a published version or historical probe with current qualification.
-   Qualify the exact package family, compiler/runtime and real affected
-   behavior. Do not downgrade strictness or conceal dependency failures.
-   If the newest candidate fails, record the exact failing tuple, diagnostics
-   and reason, then try the newest compatible supported candidate or retain
-   the accepted contingency. No unrelated feature or release is blocked by
-   an optional speculative upgrade.
-5. Pin the exact selected versions in the consumer's existing package manager
-   and lockfile. Do not commit floating registry tags, regenerate released
-   migrations, or modify an unrelated consumer automatically. Group coupled
-   packages in one compatible update. Apply existing security, admission,
-   Docs Cohort, FMS and review rules; this catalog creates no exception.
-6. When a shared candidate or evidence changes, update this catalog through
-   one scoped central PR linking the authoritative result. Reference it from
-   consumer adoption records instead of copying a new competing version
-   table. Consumer pins remain independently reviewable and may converge
-   gradually.
+fleet lockfile or a production admission record. Follow the common
+[Technology Stack Catalog rules](technology-stack.md#how-agents-choose-a-version)
+for all version selections.
 
 ## Recommended candidates and evidence
 
