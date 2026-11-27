@@ -1,0 +1,85 @@
+{
+  "evidenceClass": "preparatory-published-cohort-candidate",
+  "qualified": false,
+  "cohortId": "docs-2026-11-27-orchestrator-v2",
+  "state": "PUBLISHED_UNQUALIFIED",
+  "preparedAt": "2026-11-27T05:54:48Z",
+  "base": {
+    "repository": "agent-teams-ai/.github",
+    "revision": "997f24396598f93cf1b03bb26436a5ec7686ddef",
+    "registryBlob": "e55bb02132820fea14545db7f336374716436149",
+    "registrySha256": "sha256:843d19141fbd45b2078e75e16c19c11e9fb42a4d2acb2a2254b8cdbe618c71b6"
+  },
+  "candidateInputPath": "governance/evidence/docs-cohorts/docs-2026-11-27-orchestrator-v2/candidate-input.json",
+  "candidateInputDigest": "sha256:f53f049391711e3ef7434ba4ca638441fbf0835db4da82179be052bd536e4991",
+  "recordDigest": "sha256:db8d4e1cf8295e4760186a9fcfb31b22b3cf2cb0d876923ba6b382b0ec6b9e7e",
+  "eventDigest": "sha256:af418b10dbbf640b24a7c3cb579c35cbc4cd2782248f9b20a9ddbfa2c1681880",
+  "publicationTimeSemantics": "The initial lifecycle time is the exact latest actual package publication retained from stable34. It is not the new preparation or workflow merge time.",
+  "historicalPublicationAttribution": {
+    "cohortId": "docs-2026-11-27-stable34",
+    "recordDigest": "sha256:5c9422c13bcadf3854801a2124c2cbec26f46372ecc3fac7068d5cc79aa6bfd6",
+    "candidate": {
+      "path": "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/candidate-input.json",
+      "bytes": 18360,
+      "sha256": "sha256:df2fb2ea3b83a4affc5603d57d780b14ecdd492d66c9531694a3a9dbbd419243",
+      "gitBlob": "bc3f92d359a62394ad622edd42dbcf393c8bd7e3"
+    },
+    "publication": {
+      "path": "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/publication.json",
+      "bytes": 7744,
+      "sha256": "sha256:a6cfca34e64462943842fea40be1162513bb411aab6889fa178057f60bf5ed9b",
+      "gitBlob": "ba6c6c4313c33955840f867871ef5acb900c4943"
+    },
+    "attribution": "Exact published package, signature, policy, asset and closure assertions are retained from stable34. This preparation performs no fresh signature, provenance, closure or hosted qualification verification."
+  },
+  "suppliedObservations": {
+    "observationClass": "supplied-github-api-responses-and-exact-file-bytes",
+    "independentNetworkReadByBuilder": false,
+    "mergedPullRequest": {
+      "number": 455,
+      "state": "closed",
+      "merged": true,
+      "merged_at": "2026-11-27T05:50:58Z",
+      "merge_commit_sha": "997f24396598f93cf1b03bb26436a5ec7686ddef",
+      "response": {
+        "bytes": 25114,
+        "sha256": "sha256:188a5a5f02e687ef23576da4ba3a05fe4d9b2f7066019c170fba8aa9999c1f15",
+        "gitBlob": "78fcf9fcbd273fc1b0d257e6825a8eaa51e20229"
+      }
+    },
+    "currentMain": {
+      "name": "main",
+      "protected": true,
+      "revision": "997f24396598f93cf1b03bb26436a5ec7686ddef",
+      "response": {
+        "bytes": 7268,
+        "sha256": "sha256:be2f98994d16440d6b26bfc68ace7c365fdc5c78b75b6332ad05f61e8dc93683",
+        "gitBlob": "a2f207ff5663a612554a8c3781beeb7a536cfe70"
+      }
+    },
+    "reusableWorkflow": {
+      "repository": "agent-teams-ai/.github",
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "997f24396598f93cf1b03bb26436a5ec7686ddef",
+      "blobSha": "714af12998ef140dd55a2ec3057f67775586cfd7",
+      "bytes": 18230,
+      "sha256": "sha256:cc36eceaf389094577e81e42070ada08eba92bdae4fdb78666428578dbac75dd",
+      "gitBlob": "714af12998ef140dd55a2ec3057f67775586cfd7"
+    }
+  },
+  "verificationScope": {
+    "signatureAuditExecuted": false,
+    "sourceWorkflowProvenanceVerificationExecuted": false,
+    "unchangedFullLiveVerifierCompleted": false,
+    "hostedTrustedQualificationCompleted": false,
+    "consumerCanaryExecuted": false,
+    "finalCandidateChecksCompleted": false,
+    "defaultBranchDeliveryClaimed": false
+  },
+  "pending": [
+    "Unchanged trusted base-owned full live verifier for this exact new record, including actual protected-main ancestry and current workflow-blob equality.",
+    "Actual successful hosted validation before any VERIFIED or QUALIFIED lifecycle append; final-head native and trusted checks before ordinary merge.",
+    "Separate desired-only Orchestrator selection, physical retained-controller lifecycle, consumer final-head and actual-main qualification.",
+    "Actual observed policy and CANARY evidence after consumer main succeeds; no recommendation change."
+  ]
+}

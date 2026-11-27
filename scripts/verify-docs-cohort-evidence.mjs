@@ -20,6 +20,7 @@ import {
 import { loadJson } from "./governance-policy.mjs";
 import { POLICY_PATH, verifyRecoveryIncident } from "./docs-legacy-admission-recovery.mjs";
 import { PLATFORM_RECOVERY } from "./docs-platform-admission-recovery.mjs";
+import { isB304RegistryIncidentSource, requireB304Pending } from "./docs-b304-registry-incident.ts";
 
 const execFileAsync = promisify(execFile);
 const SHA256_DIGEST = /^sha256:[0-9a-f]{64}$/u;
@@ -1173,6 +1174,13 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
       const { stdout } = await command("gh", ["api", `repos/${repository}/actions/runs/${runId}`]);
       return JSON.parse(stdout);
     },
+    getWorkflowRunAttempt: async (repository, runId, attempt) => {
+      const { stdout } = await command("gh", [
+        "api",
+        `repos/${repository}/actions/runs/${runId}/attempts/${attempt}`,
+      ]);
+      return JSON.parse(stdout);
+    },
     readRepositoryFile: async (repository, filePath, revision) => {
       const { stdout } = await command("gh", [
         "api",
@@ -1484,6 +1492,16 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
             head,
           );
         } else if (
+          matches.at(-1)?.conclusion === "failure" &&
+          overrides.b304Recovery &&
+          isB304RegistryIncidentSource(entry, head)
+        ) {
+          rowResult = requireB304Pending(
+            await overrides.b304Recovery.verify(entry, head, adapters),
+            entry,
+            head,
+          );
+        } else if (
           matches.length === 1 &&
           matches[0].conclusion === "failure" &&
           overrides.recovery
@@ -1630,6 +1648,12 @@ export async function verifyDocsAdmissionEvidence(policy, registry, schema, over
     if (pending.repository_id === 1319378484 && overrides.platformRecovery) {
       requirePlatformPending(
         await overrides.platformRecovery.verify(entry, pending.source_head, platformAdapters),
+        entry,
+        pending.source_head,
+      );
+    } else if (overrides.b304Recovery && isB304RegistryIncidentSource(entry, pending.source_head)) {
+      requireB304Pending(
+        await overrides.b304Recovery.verify(entry, pending.source_head, adapters),
         entry,
         pending.source_head,
       );

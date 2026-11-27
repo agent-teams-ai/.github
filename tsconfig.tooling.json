@@ -33,6 +33,13 @@
     "scripts/repository-bootstrap-observation.test.ts",
     "scripts/validate-renovate.ts",
     "scripts/validate-renovate.test.ts",
-    "scripts/validate-renovate-abi.probe.ts"
+    "scripts/validate-renovate-abi.probe.ts",
+    "scripts/docs-b304-registry-incident.ts",
+    "scripts/docs-b304-registry-incident.test.ts",
+    "scripts/docs-b304-admission-integration.test.ts",
+    "scripts/docs-b304-recovery-staging.ts",
+    "scripts/docs-b304-recovery-staging.test.ts",
+    "scripts/docs-managed-runtime-policy.ts",
+    "scripts/docs-managed-runtime-policy.test.ts"
   ]
 }

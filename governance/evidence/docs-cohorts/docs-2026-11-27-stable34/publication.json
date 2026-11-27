@@ -1,0 +1,167 @@
+{
+  "evidenceClass": "preparatory-published-cohort-candidate",
+  "qualified": false,
+  "cohortId": "docs-2026-11-27-stable34",
+  "state": "PUBLISHED_UNQUALIFIED",
+  "preparedAt": "2026-11-27T00:10:27.650Z",
+  "base": {
+    "repository": "agent-teams-ai/.github",
+    "revision": "89b5d7c512d9c4b5ae63709857a0d71cb2e6d178",
+    "tree": "9c0f91b0e0e962964d5486d685b7f4d8c52ccd23",
+    "registryBlob": "10a07154e9361bfc148bab9ecb2ca1155325824d",
+    "retainedPublicationRecord": "docs-2026-11-26-stable33",
+    "retainedPublicationRecordDigest": "sha256:7dc72dd4aa1039d9dcef7f151f8627d1527c7ea71a45932f912461052e1de623"
+  },
+  "candidateInputPath": "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/candidate-input.json",
+  "candidateInputDigest": "sha256:df2fb2ea3b83a4affc5603d57d780b14ecdd492d66c9531694a3a9dbbd419243",
+  "recordDigest": "sha256:5c9422c13bcadf3854801a2124c2cbec26f46372ecc3fac7068d5cc79aa6bfd6",
+  "eventDigest": "sha256:4d55d807be357f7886e167c15f8f877b146d9f1bdfc40ae62e6ab71c726c87d0",
+  "observations": {
+    "candidateInputPath": "governance/evidence/docs-cohorts/docs-2026-11-27-stable34/candidate-input.json",
+    "candidateInputDigest": "sha256:df2fb2ea3b83a4affc5603d57d780b14ecdd492d66c9531694a3a9dbbd419243",
+    "candidateInputContains": "Authenticated consumer identity, full live public package metadata and exact live runtime-closure result are retained once in candidate-input.json.",
+    "livePublicationTimes": {
+      "observedAt": "2026-11-27T00:12:55.873Z",
+      "registry": "https://registry.npmjs.org/",
+      "packages": [
+        {
+          "name": "@agent-teams/repository-mutation",
+          "version": "0.5.2",
+          "publishedAt": "2026-11-26T12:19:37.492Z",
+          "matched": true
+        },
+        {
+          "name": "@agent-teams/document-authoring",
+          "version": "0.3.9",
+          "publishedAt": "2026-11-26T12:25:07.116Z",
+          "matched": true
+        },
+        {
+          "name": "@agent-teams/docs-protocol",
+          "version": "0.6.9",
+          "publishedAt": "2026-11-26T12:26:37.182Z",
+          "matched": true
+        },
+        {
+          "name": "@agent-teams/docs-protocol-agent-teams",
+          "version": "0.7.1",
+          "publishedAt": "2026-11-26T12:34:25.801Z",
+          "matched": true
+        },
+        {
+          "name": "@agent-teams/engineering-foundation",
+          "version": "4.0.2",
+          "publishedAt": "2026-11-26T12:44:20.353Z",
+          "matched": true
+        }
+      ]
+    }
+  },
+  "verificationScope": {
+    "publishedVersionsAndSrisMatched": true,
+    "exactRuntimeClosureReproduced": true,
+    "signatureAuditExecuted": false,
+    "sourceWorkflowProvenanceVerificationExecuted": false,
+    "unchangedFullLiveVerifierCompleted": false,
+    "hostedTrustedQualificationCompleted": false,
+    "consumerCanaryExecuted": false,
+    "publishedTimesMatched": true
+  },
+  "pending": [
+    "Fresh unchanged full live package/provenance/signature/workflow verification for this exact record.",
+    "Independent record and source review, ordinary final-head native CI and base-owned trusted live checks before merge.",
+    "Append VERIFIED and QUALIFIED only from genuine successful observations; preserve this PUBLISHED_UNQUALIFIED evidence.",
+    "Central Runtime retirement lane #441 must complete before this registry delta merges.",
+    "Separate Orchestrator desired selection, retained-controller physical migration, hosted qualification, ordinary merge and default-branch evidence.",
+    "Observed policy binding and CANARY promotion require genuine successful merged-source evidence."
+  ],
+  "historicalProvenanceAttribution": {
+    "meaning": "All five record provenance.signature_verified=true values retain the existing immutable stable33 publication/signature assertions for the identical package versions and SRIs. They do not assert that this stable34 preparation performed a new signature audit or obtained hosted qualification.",
+    "sourceCohort": "docs-2026-11-26-stable33",
+    "sourceRecordDigest": "sha256:7dc72dd4aa1039d9dcef7f151f8627d1527c7ea71a45932f912461052e1de623",
+    "immutableEvidence": {
+      "publication.json": {
+        "revision": "89b5d7c512d9c4b5ae63709857a0d71cb2e6d178",
+        "path": "governance/evidence/docs-cohorts/docs-2026-11-26-stable33/publication.json",
+        "blob": "b6757d5dba1e04ec975f0a78076fcc005953a996",
+        "sha256": "sha256:f14db8a23a6686fcb1e441b7c1c25535e5cc9a1341c6d4bd73e33a9771ed1c70"
+      },
+      "qualification.json": {
+        "revision": "89b5d7c512d9c4b5ae63709857a0d71cb2e6d178",
+        "path": "governance/evidence/docs-cohorts/docs-2026-11-26-stable33/qualification.json",
+        "blob": "a66a9bdf16348cdcd0f6997664064a8eaeb4abad",
+        "sha256": "sha256:a79b7b2a370abb776373a615e2bc350cd6bc2c10f590a5f1785980752208b8a2"
+      }
+    },
+    "originalVerifiedSignaturesInput": {
+      "bytes": 212440,
+      "digest": "sha256:c2fed1d7f9a84621064bc3c1bacafc1de5370c34b34a6eec8d652ed1b163b00b"
+    },
+    "originalCollector": {
+      "runId": 45827542992,
+      "runAttempt": 1,
+      "revision": "7ecf13790190c5a3d6b0d0a1c5b3a050abb43c04",
+      "artifactId": 15120867486,
+      "artifactDigest": "sha256:6d06c07b089e265e7ecb3634ae0eeee2796e69e38b02a3210fc33d60b0e1167e"
+    },
+    "freshAuthenticatedMetadataReads": {
+      "observationClass": "fresh-authenticated-metadata-read-of-existing-publication-and-qualification",
+      "transport": "connected GitHub fetch GET and fetch_workflow_run_jobs",
+      "newStable34QualificationClaimed": false,
+      "observations": [
+        {
+          "id": 45830178769,
+          "run_attempt": 1,
+          "head_sha": "57475ca38f1fd1f337d01d18fcb304ca790c414f",
+          "head_branch": "chore/docs-cohort-gen3-20261126",
+          "path": ".github/workflows/docs-cohort-append-only.yml",
+          "event": "pull_request_target",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/agent-teams-ai/.github/actions/runs/45830178769",
+          "updated_at": "2026-11-26T13:33:46Z",
+          "repository": {
+            "id": 1316243981,
+            "full_name": "agent-teams-ai/.github"
+          }
+        },
+        {
+          "id": 45816094753,
+          "run_attempt": 1,
+          "head_sha": "da1868240b96113582b508b0c15341c477d6334b",
+          "head_branch": "main",
+          "path": ".github/workflows/release.yml",
+          "event": "push",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "updated_at": "2026-11-26T12:48:56Z",
+          "repository": {
+            "id": 1316243988,
+            "full_name": "agent-teams-ai/engineering-foundation"
+          }
+        },
+        {
+          "id": 139944594827,
+          "run_id": 45830178769,
+          "name": "trusted-validation",
+          "status": "completed",
+          "conclusion": "success",
+          "liveVerifierStep": {
+            "name": "Verify live evidence for every appended Cohort record or event",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11
+          },
+          "emergencyStep": {
+            "name": "Validate negative emergency append without network dependencies",
+            "status": "completed",
+            "conclusion": "skipped",
+            "number": 9
+          }
+        }
+      ]
+    },
+    "scopeBoundary": "The existing successful stable33 run validates only its original record. A fresh unchanged full live verifier and base-owned hosted checks must verify this actual stable34 record before VERIFIED/QUALIFIED events or merge."
+  }
+}

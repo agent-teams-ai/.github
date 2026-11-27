@@ -409,8 +409,20 @@ neither installs a required-check rule nor certifies current consumer success.
 
 ## Inventory and drift
 
-The checked-in inventory and policy must contain exactly the same active
-repository identities. Source provenance, governance ownership, repository
+The current inventory projection and policy must contain exactly the same active
+repository identities. The dated inventory remains unchanged when a later
+owner-reviewed policy records a confirmed deletion: only a non-archived record
+with the exact same repository ID and full name is omitted from the current
+projection. Historical ledger and security checks still use the original
+inventory. A missing policy row, a different ID or name, and an archived or
+transferred lifecycle cannot suppress an inventory identity.
+
+A retirement must cite authoritative provider evidence, such as the exact
+GitHub repository-deletion audit event. An inaccessible repository or HTTP 404
+alone does not establish deletion. The live observer reports drift if a retired
+identity still exists, or if an unregistered repository reuses its name. This projection
+does not refresh the dated census, complete a pending registration, or grant
+qualification. Source provenance, governance ownership, repository
 lifecycle, docs role, and admission are separate fields. Archived, transferred,
 and deleted repository IDs remain historical tombstones, including when a new
 repository later reuses the same name. This catches omissions in a reviewed

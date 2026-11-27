@@ -9,15 +9,18 @@ receipt, production record, policy publication, or release claim.
 
 ## Authorized current identity
 
-- Policy identity: `agent-teams.docs-protocol-current-policy`, version `3.0.0`.
+- Policy identity: `agent-teams.docs-protocol-current-policy`, closed versions
+  `3.0.0` and `3.1.0` under [ADR-0019](../decisions/0019-bounded-docs-policy31-runtime.md).
 - Authorized policy/schema metadata: policy generation `3`, schema generation `3`.
 - Cohort digest domain: `agent-teams.docs-qualified-cohort/v3`.
 - Cohort schema: generation `3`.
 - Current managed lane: `node-26-managed-qualified`.
-- Node range: `>=26.0.0 <27`.
+- Policy `3.0.0` retains Node range `>=26.0.0 <27`; policy `3.1.0` requires
+  the patched floor `>=26.12.1 <27`.
 - pnpm range: `>=11.17.0 <12`.
-- Exact observed qualification tuple: Node `26.11.1`, pnpm `11.20.0`,
-  platform `linux`, architecture `x64`.
+- Exact qualification tuple: policy `3.0.0` requires Node `26.11.1`; policy
+  `3.1.0` requires Node `26.12.1`. Both require pnpm `11.20.0`, Linux x64.
+  Cross-paired versions/ranges/runtimes and all other policy versions reject.
 - Runtime closure identity: domain `agent-teams.docs-runtime-closure/v2`,
   package manager `pnpm@11.20.0`, lockfile version `9.0`.
 - Package closure: exactly five existing package coordinates and exactly seven
@@ -113,8 +116,13 @@ blob and its exact trusted-qualification role/condition. Historical generation
 `2` runners retain their literal old step name. Current generation `3` requires
 `Run Cohort v2 or v3 qualification through the trusted base-owned runner`;
 a successful step with a similar name or an unselected successful alternative
-is insufficient. Source preparation on Node `24.21.0` cannot establish the
-physical Node `26.11.1` / pnpm `11.20.0` / Linux x64 qualification.
+is insufficient. The current reusable validator bootstrap uses patched Node `24.22.3`. Its
+trusted authorizer emits the exact Node version only after validating the
+record selected by committed managed state. Qualification and semantic jobs
+consume that closed output; desired rollout policy and caller/environment
+inputs cannot select a runtime. Historical none/legacy/generation 2 lanes
+retain Node `24.21.0`, policy `3.0.0` retains `26.11.1`, and policy `3.1.0`
+selects `26.12.1`. Validator preparation is not physical managed qualification.
 
 After receipt verification and successful controller stability, the existing
 trusted job may retain exactly the nonsecret qualification receipt and install

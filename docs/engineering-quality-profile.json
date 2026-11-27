@@ -59,7 +59,14 @@
       "scripts/repository-bootstrap-observation.test.ts",
       "scripts/validate-renovate.ts",
       "scripts/validate-renovate.test.ts",
-      "scripts/validate-renovate-abi.probe.ts"
+      "scripts/validate-renovate-abi.probe.ts",
+      "scripts/docs-b304-registry-incident.ts",
+      "scripts/docs-b304-registry-incident.test.ts",
+      "scripts/docs-b304-admission-integration.test.ts",
+      "scripts/docs-b304-recovery-staging.ts",
+      "scripts/docs-b304-recovery-staging.test.ts",
+      "scripts/docs-managed-runtime-policy.ts",
+      "scripts/docs-managed-runtime-policy.test.ts"
     ],
     "compilerManifest": "stack-toolchain/toolchain-manifest.json"
   },
@@ -81,10 +88,5 @@
       "gitBlob": "c34697abc079e0a161fb3872a8a9acb07e951ded"
     }
   ],
-  "formatRetainedAuthoritySources": [
-    {
-      "path": "scripts/verify-docs-admission-change.mjs",
-      "gitBlob": "f3db341a5d9fc5ec74c9c3379153940db99177c0"
-    }
-  ]
+  "formatRetainedAuthoritySources": []
 }

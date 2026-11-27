@@ -35,8 +35,8 @@
     }
   },
   "admission": {
-    "expected_repository_count": 11,
-    "owned_repository_count": 11,
+    "expected_repository_count": 10,
+    "owned_repository_count": 10,
     "external_repository_count": 0,
     "fork_source_count": 0,
     "new_owned_repository_status": "pending_classification",
@@ -202,16 +202,16 @@
       "admission_status": "admitted",
       "exact_package_version": "0.6.2",
       "exact_foundation_version": "1.7.2",
-      "cohort_binding_status": "bound",
-      "desired_cohort_id": "docs-2026-10-03-stable31",
-      "desired_cohort_generation": 2,
+      "cohort_binding_status": "rollout_pending",
+      "desired_cohort_id": "docs-2026-11-27-orchestrator-v3",
+      "desired_cohort_generation": 3,
       "v3_qualification_coordinates": {
-        "profile_schema_version": 3,
-        "cohort_schema_version": 2,
-        "managed_state_schema_version": 2,
-        "receipt_schema_version": 3,
+        "profile_schema_version": 4,
+        "cohort_schema_version": 3,
+        "managed_state_schema_version": 3,
+        "receipt_schema_version": 1,
         "execution_envelope_schema_version": 1,
-        "evidence_class": "cohort-v2-supporting-canary"
+        "evidence_class": "cohort-v3-supporting-canary"
       },
       "observed_cohort_id": "docs-2026-10-03-stable31",
       "observed_cohort_generation": 2,
@@ -377,7 +377,7 @@
         "parent_repository": null
       },
       "governance_ownership": "organization_owned",
-      "repository_lifecycle": "active",
+      "repository_lifecycle": "deleted",
       "docs_role": "consumer",
       "protocol_required": true,
       "admission_status": "admitted",

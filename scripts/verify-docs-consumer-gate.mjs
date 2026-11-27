@@ -26,6 +26,7 @@ import {
   validateDocsQualifiedCohorts,
 } from "./docs-cohort-policy.mjs";
 import { installedPackageTreeDigest } from "./verify-docs-cohort-v2-receipt.mjs";
+import { docsQualificationNodeVersion } from "./docs-managed-runtime-policy.ts";
 
 const CONTROLLER_REPOSITORY = "agent-teams-ai/.github";
 const REUSABLE_WORKFLOW_PATH = ".github/workflows/docs-protocol-check.yml";
@@ -1753,9 +1754,13 @@ async function authorizeCommand() {
   const envelope = { authorization, authorizationDigest: authorizationDigest(authorization) };
   await writeFile(process.env.AUTHORIZATION_PATH, `${canonicalJson(envelope)}\n`, { mode: 0o600 });
   if (process.env.GITHUB_OUTPUT) {
+    const qualificationNodeVersion = docsQualificationNodeVersion(
+      authorization.qualificationProfile,
+      authorization.qualificationAuthority?.policyIdentity,
+    );
     await writeFile(
       process.env.GITHUB_OUTPUT,
-      `qualification-profile=${authorization.qualificationProfile}\n`,
+      `qualification-profile=${authorization.qualificationProfile}\nqualification-node-version=${qualificationNodeVersion}\n`,
       { flag: "a" },
     );
   }
