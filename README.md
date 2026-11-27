@@ -53,6 +53,7 @@ of its current conformance.
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
 - [CI/CD practices](docs/ci-cd-practices.md) - reducing repeated PR/merge jobs safely, with fail-closed evidence and concrete antipatterns.
 - [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
+- [Technology Stack Catalog](docs/technology-stack.md) - shared technology choices, exact version candidates, freshness policy and the [observed repository dashboard](https://github.com/agent-teams-ai/.github/issues/473).
 
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.
@@ -135,3 +136,5 @@ interaction workflow and pins both `uses` and `runtime_ref` to the same immutabl
 release commit. It preserves organization event filters, discussion variables,
 and secret mappings without copying checkout, setup, or runtime steps.
 Organization-wide community health, repository policy, and dependency automation configuration.
+
+See the [organization documentation map](docs/README.md) for task-oriented navigation.

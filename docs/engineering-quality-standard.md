@@ -149,6 +149,14 @@ For the greenfield delivery order, intended consumers, and shared-library
 ownership map, read the [Foundation-first ecosystem vision](architecture/ecosystem-vision.md).
 That route does not change an adopted standard, release gate, or accepted ADR.
 
+## Evolution-ready architecture
+
+Apply the [evolution-ready architecture guide](architecture/evolution-readiness.md)
+to applicable new or substantially changed boundaries: independent replacement
+by default, stronger live-update and other capability profiles only when
+qualified. Reuse its owner and evidence routes. This is common authoring
+practice, not a silent FMS/CMS migration, runtime dependency or blanket gate.
+
 ## Language selection and runtime boundaries
 
 Owner direction recorded on 2026-10-22: TypeScript remains the main application
@@ -519,9 +527,12 @@ evaluate three options for every routine implementation detail.
    security, observability and a clear extension path. Avoid speculative
    infrastructure, empty scaffolding and unrelated refactors.
 3. Use the repository's package manager and dependency policy. When adding or
-   upgrading a dependency, verify its current stable release, compatibility and
-   provenance. Retain approved versions, lockfiles and integrity evidence;
-   freshness alone does not authorize an unrelated upgrade of a pinned protocol.
+   upgrading a dependency, verify the newest eligible release, compatibility
+   and provenance. For shared technologies, start from the
+   [Technology Stack Catalog](technology-stack.md), including explicitly selected
+   pre-release channels and their qualification requirements. Retain exact
+   approved versions, lockfiles and integrity evidence; freshness alone does
+   not authorize an unrelated upgrade of a pinned protocol.
 4. Test the changed contract and credible failure modes. Choose unit, property,
    integration, concurrency, migration or E2E tests according to the risk.
    Include rejecting fixtures for new enforced boundaries. Do not add tests
@@ -575,7 +586,7 @@ opens a PR with `gh` before a failed-run rerun/current-input attestation.
 | --- | --- |
 | Feature ownership, layers and dependency mechanisms | [Feature Module Standard index](architecture/feature-module-standard/README.md), [v1](architecture/feature-module-standard/v1.md) and [v1.1](architecture/feature-module-standard/v1.1.md); the consumer's local adoption profile owns its exact scope |
 | Get Modular construction and consumer adoption, when applicable | [Consumer Module Standard](https://github.com/agent-teams-ai/get-modular/blob/main/docs/architecture/common-assembly.md#consumer-module-standard); use the consumer's reviewed pin |
-| Shared backend technology responsibilities | [Backend stack reference](backend-stack.md); apply the consumer's explicit adoption and product decisions, with frontend choices kept separate |
+| Shared technology choices and version selection | [Technology Stack Catalog](technology-stack.md); use the owning section and explicit consumer adoption. [Backend stack reference](backend-stack.md) owns backend responsibilities |
 | Reusable development tooling, purpose and availability | [Development tools catalog](development-tools.md), then the owning package README; [Engineering Foundation](https://github.com/agent-teams-ai/engineering-foundation) owns shared implementation, and consumer profiles own applicability and actual commands |
 | Commit and PR authorship | [Maintained owner policy](../GOVERNANCE.md#commit-and-pull-request-authorship) and [canonical identity/status rule](../governance/commit-author-identity.json); preserve external human authorship |
 | Contributions and decisions | [Contribution rules](../CONTRIBUTING.md) and [governance boundaries](../GOVERNANCE.md) |
