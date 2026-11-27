@@ -1,0 +1,35 @@
+# Temporary read-only incident observation; never a source/admission proof.
+name: Observe repository Actions API budget
+
+on:
+  push:
+    branches:
+      - chore/actions-api-budget-observation-20261127
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Read the current Actions token quota without consuming primary quota
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          response_body="$(mktemp)"
+          response_headers="$(mktemp)"
+          trap 'rm -f "$response_body" "$response_headers"' EXIT
+          response_code="$(curl --silent --show-error --connect-timeout 10 --max-time 30 \
+            --dump-header "$response_headers" --output "$response_body" --write-out '%{http_code}' \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/rate_limit)"
+          printf 'HTTP %s\n' "$response_code"
+          awk 'tolower($0) ~ /^(date|x-ratelimit-(limit|remaining|reset|used|resource)|retry-after):/ { print }' "$response_headers"
+          test "$response_code" = 200
+          jq '{resources: {core: .resources.core}, rate: .rate}' "$response_body"
