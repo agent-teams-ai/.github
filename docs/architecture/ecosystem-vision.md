@@ -298,6 +298,11 @@ all code through one global generic type/DI graph. Keep static composition
 plans distinct from per-operation resources. Evaluate the current supported
 Get Modular descriptor-union evidence before proposing compiler changes.
 
+The [evolution-ready architecture guide](evolution-readiness.md) extends the
+above topics with scoped applicability, static authoring defaults, reuse
+owners and deterministic/behavioral qualification routes. It expands no
+selected product profile by publication.
+
 ## Review, evidence and owner decisions
 
 Engineering Research should organize evidence, useful patterns, antipatterns,

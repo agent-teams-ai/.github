@@ -11,3 +11,6 @@
 - [Native and AOT readiness](../engineering-quality-standard.md#native-and-aot-readiness) -
   common practices for low-cost portability and real target qualification;
   [scoped delivery plan](native-readiness-plan.md) with owner follow-ups.
+
+- [Evolution-ready architecture](evolution-readiness.md) - common authoring
+  direction, conditional capability profiles, reuse owners and testable claims.
