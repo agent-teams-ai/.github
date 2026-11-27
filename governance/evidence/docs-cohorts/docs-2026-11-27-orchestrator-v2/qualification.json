@@ -1,0 +1,125 @@
+{
+  "cohort_id": "docs-2026-11-27-orchestrator-v2",
+  "status": "proposed",
+  "evidenceClass": "proposed-lifecycle-append-from-hosted-trusted-validation",
+  "recordDigest": "sha256:db8d4e1cf8295e4760186a9fcfb31b22b3cf2cb0d876923ba6b382b0ec6b9e7e",
+  "candidateDigest": "sha256:f53f049391711e3ef7434ba4ca638441fbf0835db4da82179be052bd536e4991",
+  "runtimeClosureDigest": "sha256:aa79cc15300790ba1f76413a93b60c0a0c51d2854e7c90b0195bba0d12198bbf",
+  "verifiedEventDigest": "sha256:ae53d06fd3eb446b1d93799cd5c489db7fe2dbb3eaf0392c27677f24dc7be197",
+  "qualificationEventDigest": "sha256:5c28c8ec8590be1b0fd5717cd884c4d2e0f769c03c209c8ee134da2556ef3c0a",
+  "proposedEvents": [
+    {
+      "sequence": 194,
+      "state": "VERIFIED",
+      "effective_at": "2026-11-27T06:01:15Z",
+      "event_digest": "sha256:ae53d06fd3eb446b1d93799cd5c489db7fe2dbb3eaf0392c27677f24dc7be197"
+    },
+    {
+      "sequence": 195,
+      "state": "QUALIFIED",
+      "effective_at": "2026-11-27T06:01:15Z",
+      "event_digest": "sha256:5c28c8ec8590be1b0fd5717cd884c4d2e0f769c03c209c8ee134da2556ef3c0a"
+    }
+  ],
+  "timeSemantics": "Both proposed lifecycle events use the actual completion time of the selected trusted A job. Sequence 194 then 195 orders the states; this records one execution and does not claim completed final B checks.",
+  "publicationSource": {
+    "revision": "fa7df6ed4dd90513446e4709ae6a529c5cfe8a2d",
+    "tree": "0686e7038363a6c1d98b7c3f927f31df99e26f65",
+    "path": "governance/evidence/docs-cohorts/docs-2026-11-27-orchestrator-v2/publication.json",
+    "publicationSha256": "sha256:732c4122814ad98d44d257fc0da5d43f6b033b9b5d44d78a731b12ebb795ad85",
+    "registrySha256": "sha256:54d9811b0b76dd93f0cae48c25657964782df5b786086ed13b5098f2cf40cbed",
+    "publicationEventDigest": "sha256:af418b10dbbf640b24a7c3cb579c35cbc4cd2782248f9b20a9ddbfa2c1681880"
+  },
+  "hostedValidation": {
+    "source": "Authenticated exact run-attempt, complete one-job attempt response, selected Actions check and decoded job logs independently read after completion.",
+    "repository": "agent-teams-ai/.github",
+    "repositoryId": 1316243981,
+    "pullRequest": 463,
+    "workflowId": 335855222,
+    "workflowPath": ".github/workflows/docs-cohort-append-only.yml",
+    "workflowRunId": 45949092872,
+    "workflowRunAttempt": 1,
+    "event": "pull_request_target",
+    "status": "completed",
+    "conclusion": "success",
+    "providerRunHead": "fa7df6ed4dd90513446e4709ae6a529c5cfe8a2d",
+    "providerJobHead": "fa7df6ed4dd90513446e4709ae6a529c5cfe8a2d",
+    "testedCandidate": "fa7df6ed4dd90513446e4709ae6a529c5cfe8a2d",
+    "executionCheckoutBase": "997f24396598f93cf1b03bb26436a5ec7686ddef",
+    "jobId": 140340523081,
+    "jobName": "trusted-validation",
+    "checkRunId": 140340523081,
+    "integrationId": 15368,
+    "startedAt": "2026-11-27T06:00:28Z",
+    "completedAt": "2026-11-27T06:01:15Z",
+    "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45949092872/attempts/1",
+    "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45949092872/job/140340523081",
+    "mode": "full",
+    "modeEvidence": "Trusted base dependency installation, structural validation and live-verification steps completed successfully; emergency-only step skipped.",
+    "changedCohorts": 1,
+    "structuralStep": {
+      "name": "Validate untrusted head with trusted base code",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 10,
+      "started_at": "2026-11-27T06:00:54Z",
+      "completed_at": "2026-11-27T06:00:55Z"
+    },
+    "liveStep": {
+      "name": "Verify live evidence for every appended Cohort record or event",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 11,
+      "started_at": "2026-11-27T06:00:55Z",
+      "completed_at": "2026-11-27T06:01:11Z"
+    },
+    "logEvidence": {
+      "checkout": "2026-11-27T06:00:36.3168246Z   ref: 997f24396598f93cf1b03bb26436a5ec7686ddef",
+      "candidate": "2026-11-27T06:00:55.2058008Z   DOCS_COHORT_EVIDENCE_REF: fa7df6ed4dd90513446e4709ae6a529c5cfe8a2d",
+      "structural": "2026-11-27T06:00:55.1912735Z Qualified Docs Cohort head is schema-valid, lifecycle-valid, digest-bound, and append-only against the trusted base.",
+      "live": "2026-11-27T06:01:11.3590095Z Qualified Docs Cohort live evidence verified for 1 changed Cohort(s)."
+    },
+    "rawDigests": {
+      "run": {
+        "utf8Bytes": 13767,
+        "sha256": "58313ee34b430357a7d86e628aee5d3961d4a6748e7db8d84a6289c0407c2fdb"
+      },
+      "jobs": {
+        "utf8Bytes": 4135,
+        "sha256": "74cf647ae618cae3a295888e8c7eced0c3883b14fb6b795dbb024f235610471e"
+      },
+      "decodedLog": {
+        "utf8Bytes": 34791,
+        "sha256": "b2455ba4921a9d2b94fa57106f564359044e7c2ed65bfa0f387f975438c98f22"
+      },
+      "selectedCheckCollectionPage": {
+        "utf8Bytes": 358924,
+        "sha256": "b4666011de1b6b3ab78632e231735001a789d60c0a4078d4ebc34a9300024ac6"
+      }
+    },
+    "trustedSources": {
+      "revision": "997f24396598f93cf1b03bb26436a5ec7686ddef",
+      "workflowSha256": "sha256:a3c9b67042268e0fdc1a847017e8a5de634375c80aee7ef79939ae0e92fb08bf",
+      "verifierSha256": "sha256:66094fbc09227fa65a1b26206b2605bc02a754f89eaa6dbc2a1f3569ca766108",
+      "schemaSha256": "sha256:de8fa946051ecc45fba5305dfddc41f03bf7584eb9806f71686c396b652080f1"
+    }
+  },
+  "verificationScope": "The actual unchanged base-owned A verifier executed the full live path for this exact successor record, including fresh installed-package signature/provenance verification, published manifests/assets, full runtime closure and immutable workflow binding. This records that completed A observation. Final B checks, protected-main delivery, Orchestrator migration and CANARY remain separate.",
+  "canaryRepositories": [
+    {
+      "repository_id": 1310245598,
+      "repository": "agent-teams-ai/agent-teams-orchestrator"
+    }
+  ],
+  "canaryExecuted": false,
+  "consumerFinalChecksCompleted": false,
+  "defaultBranchDeliveryClaimed": false,
+  "finalCandidateChecksCompleted": false,
+  "pending": [
+    "Independent final B data/evidence review and every ordinary final-head native and base-owned trusted live check before merge.",
+    "Separate Orchestrator desired-only selection in #459, actual retained-controller fault/resume and original/committed rollback, and final forward migration.",
+    "Integrate the real managed result with PR111; complete final-head CI, ordinary merge and actual consumer-main qualification.",
+    "Advance observed policy and CANARY only from genuine successful merged-source evidence; no recommendation or fleet rollout is proposed."
+  ],
+  "historicalPreparationBoundary": "The unchanged candidate-input.json and publication.json describe the earlier PUBLISHED_UNQUALIFIED preparation. Their fresh-verification flags remain false as an immutable historical capture. This qualification file records the subsequently completed genuine full A validation. The proposed lifecycle events do not establish final B success, protected-main admission or consumer activation."
+}
