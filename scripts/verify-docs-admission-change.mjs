@@ -229,3 +229,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   need(policy && exceptions && inventory && execution, "Trusted admission verification requires materialized policy, exceptions, inventory and execution paths.");
   console.log(JSON.stringify(await verifyDocsAdmissionChange({ policy, exceptions, inventory, execution })));
 }
+
+// V7 admission-owner rejection canary.
