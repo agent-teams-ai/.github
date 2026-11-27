@@ -22,6 +22,7 @@ jobs:
       workflow-repository: ${{ steps.authority.outputs.workflow-repository }}
       workflow-file-path: ${{ steps.authority.outputs.workflow-file-path }}
       qualification-profile: ${{ steps.authorization.outputs.qualification-profile }}
+      qualification-node-version: ${{ steps.authorization.outputs.qualification-node-version }}
     env:
       TRUSTED_GOVERNANCE_ROOT: ${{ github.workspace }}/.trusted/governance
       AUTHORIZATION_PATH: ${{ github.workspace }}/.trusted/docs-gate-authorization.json
@@ -100,7 +101,7 @@ jobs:
       - name: Set up Node for trusted tooling
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.21.0
+          node-version: 24.22.3
           cache: pnpm
           cache-dependency-path: ${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml
 
@@ -159,7 +160,7 @@ jobs:
       - name: Set up Node for trusted tooling
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.21.0
+          node-version: 24.22.3
           cache: pnpm
           cache-dependency-path: ${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml
       - name: Install only base-owned validator dependencies
@@ -245,7 +246,7 @@ jobs:
       - name: Set up Node for trusted qualification tooling
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}
+          node-version: ${{ needs.trusted-authorize.outputs.qualification-node-version }}
           cache: pnpm
           cache-dependency-path: ${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml
       - name: Install only base-owned qualification verifier dependencies
@@ -360,7 +361,7 @@ jobs:
       - name: Set up Node for repository semantic gate
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}
+          node-version: ${{ needs.trusted-authorize.outputs.qualification-node-version }}
           cache: pnpm
       - name: Install consumer dependencies in the untrusted context
         run: pnpm install --frozen-lockfile

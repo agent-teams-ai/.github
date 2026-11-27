@@ -155,11 +155,11 @@ test("admission execution fixtures retain legacy, old v2, and current generation
     assert.equal(matching.length, 1);
     assert.equal(matching[0].if, condition);
   }
-  assert.match(
+  assert.equal(
     steps.find((step) => step.name === "Set up Node for trusted qualification tooling").with[
       "node-version"
     ],
-    /cohort-v3.*26\.11\.1.*24\.21\.0/u,
+    "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
   );
   const registry = JSON.parse(await readFile(REGISTRY_PATH));
   const pinnedV2 = registry.cohorts.find((row) => row.cohort_id === "docs-2026-09-08-stable15");

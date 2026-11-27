@@ -221,8 +221,13 @@ function fixture() {
   return { registry, record, closure };
 }
 
-function gen3Fixture() {
+function gen3Fixture(policyVersion = "3.0.0") {
   const base = fixture();
+  const runtime = structuredClone(DOCS_COHORT_V3_CURRENT_RUNTIME);
+  if (policyVersion === "3.1.0") {
+    runtime.node = ">=26.12.1 <27";
+    runtime.qualificationRuntime.nodeVersion = "26.12.1";
+  }
   const registry = structuredClone(base.registry);
   const record = structuredClone(base.record);
   Object.assign(record, {
@@ -231,7 +236,7 @@ function gen3Fixture() {
     candidate_digest: `sha256:${"d".repeat(64)}`,
     policy_identity: {
       id: "agent-teams.docs-protocol-current-policy",
-      version: "3.0.0",
+      version: policyVersion,
       digest: `sha256:${"e".repeat(64)}`,
     },
     schemas: {
@@ -245,14 +250,14 @@ function gen3Fixture() {
       foundation_envelope: 5,
     },
     runtime: {
-      selected_lane: DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane,
-      node: DOCS_COHORT_V3_CURRENT_RUNTIME.node,
-      pnpm: DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
+      selected_lane: runtime.selectedLane,
+      node: runtime.node,
+      pnpm: runtime.pnpm,
       qualification_runtime: {
-        node_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.nodeVersion,
-        pnpm_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.pnpmVersion,
-        platform: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.platform,
-        architecture: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.architecture,
+        node_version: runtime.qualificationRuntime.nodeVersion,
+        pnpm_version: runtime.qualificationRuntime.pnpmVersion,
+        platform: runtime.qualificationRuntime.platform,
+        architecture: runtime.qualificationRuntime.architecture,
       },
     },
     evidence_references: ["test:cohort-v3-inert-fixture"],
@@ -286,6 +291,65 @@ function acceptsConsumerPolicy(value) {
   const validate = new Ajv2020({ allErrors: true, strict: true }).compile(consumerPolicySchema);
   return validate(value);
 }
+
+test("policy3.1 admits only its correlated patched range and physical tuple", () => {
+  const { registry, record } = gen3Fixture("3.1.0");
+  assert.doesNotThrow(() =>
+    validateDocsQualifiedCohorts(registry, schema, { asOf: FIXTURE_AS_OF }),
+  );
+  const projection = qualifiedCohortProjection(registry, record.cohort_id, { asOf: FIXTURE_AS_OF });
+  assert.equal(projection.runtime.policy.version, "3.1.0");
+  assert.equal(projection.runtime.node, ">=26.12.1 <27");
+  assert.deepEqual(projection.runtime.qualificationRuntime, {
+    nodeVersion: "26.12.1",
+    pnpmVersion: "11.20.0",
+    platform: "linux",
+    architecture: "x64",
+  });
+  assert.deepEqual(registry.cohorts.slice(0, historicalV1.cohorts.length), historicalV1.cohorts);
+  assert.deepEqual(registry.events.slice(0, historicalV1.events.length), historicalV1.events);
+  for (const mutate of [
+    (value) => {
+      value.policy_identity.version = "3.0.0";
+    },
+    (value) => {
+      value.policy_identity.version = "3.1.1";
+    },
+    (value) => {
+      value.runtime.node = ">=26.0.0 <27";
+    },
+    (value) => {
+      value.runtime.qualification_runtime.node_version = "26.11.1";
+    },
+    (value) => {
+      value.runtime.qualification_runtime.pnpm_version = "11.20.1";
+    },
+    (value) => {
+      value.runtime.qualification_runtime.architecture = "arm64";
+    },
+  ]) {
+    const invalid = gen3Fixture("3.1.0");
+    mutate(invalid.record);
+    invalid.record.record_digest = cohortRecordDigest(invalid.record);
+    for (const validationSchema of [
+      schema,
+      { $schema: "https://json-schema.org/draft/2020-12/schema", type: "object" },
+    ]) {
+      assert.throws(
+        () =>
+          validateDocsQualifiedCohorts(invalid.registry, validationSchema, { asOf: FIXTURE_AS_OF }),
+        /JSON Schema|policy identity|managed Node 26 lane|qualification tuple/u,
+      );
+    }
+  }
+  const historical = gen3Fixture();
+  historical.record.runtime.qualification_runtime.node_version = "26.12.1";
+  historical.record.record_digest = cohortRecordDigest(historical.record);
+  assert.throws(
+    () => validateDocsQualifiedCohorts(historical.registry, schema, { asOf: FIXTURE_AS_OF }),
+    /JSON Schema/u,
+  );
+});
 
 test("coexists with byte-immutable v1 and dispatches only on the explicit v2 discriminator", () => {
   const { registry, record } = fixture();
