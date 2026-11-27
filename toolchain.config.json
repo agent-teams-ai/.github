@@ -2,9 +2,7 @@
   "schemaVersion": 1,
   "profile": "typescript-node",
   "typecheck": {
-    "projects": [
-      "tsconfig.tooling.json"
-    ]
+    "projects": ["tsconfig.tooling.json"]
   },
   "lint": {
     "config": "oxlint.json",
@@ -19,6 +17,11 @@
       "scripts/check-reviewrouter-workflow.mjs",
       "scripts/compiler-floor.test.ts",
       "scripts/compiler-floor.ts",
+      "scripts/docs-b304-admission-integration.test.ts",
+      "scripts/docs-b304-recovery-staging.test.ts",
+      "scripts/docs-b304-recovery-staging.ts",
+      "scripts/docs-b304-registry-incident.test.ts",
+      "scripts/docs-b304-registry-incident.ts",
       "scripts/docs-cohort-policy.mjs",
       "scripts/docs-legacy-admission-recovery.mjs",
       "scripts/docs-managed-runtime-policy.test.ts",
@@ -58,12 +61,14 @@
   },
   "format": {
     "paths": [
+      ".github/workflows/docs-admission-evidence.yml",
       ".github/workflows/docs-protocol-check.yml",
       "docs/engineering-quality-profile.json",
       "docs/engineering-quality-source-policy.yaml",
       "docs/engineering-quality.md",
       "docs/governance/docs-gen3-current-policy-mapping.md",
       "foundation.config.yaml",
+      "governance/docs-b304-registry-recovery.json",
       "governance/docs-protocol-policy-v2.schema.json",
       "oxlint.json",
       "package.json",
@@ -87,6 +92,11 @@
       "scripts/docs-admission-inventory-cutover-v1.test.mjs",
       "scripts/docs-admission-recovery.test.mjs",
       "scripts/docs-admission-workflow.test.mjs",
+      "scripts/docs-b304-admission-integration.test.ts",
+      "scripts/docs-b304-recovery-staging.test.ts",
+      "scripts/docs-b304-recovery-staging.ts",
+      "scripts/docs-b304-registry-incident.test.ts",
+      "scripts/docs-b304-registry-incident.ts",
       "scripts/docs-central-pr224-inverse-v1.test.mjs",
       "scripts/docs-central-pr224-transition-v1.test.mjs",
       "scripts/docs-central-recovery-transition.test.mjs",
@@ -157,6 +167,7 @@
       "scripts/validate-renovate-abi.probe.ts",
       "scripts/validate-renovate.test.ts",
       "scripts/validate-renovate.ts",
+      "scripts/verify-docs-admission-change.mjs",
       "scripts/verify-docs-cohort-evidence.mjs",
       "scripts/verify-docs-cohort-v2-receipt.mjs",
       "scripts/verify-docs-consumer-gate.mjs",

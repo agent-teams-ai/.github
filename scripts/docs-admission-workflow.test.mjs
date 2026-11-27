@@ -17,6 +17,9 @@ import {
 } from "./verify-docs-admission-change.mjs";
 
 const INVENTORY_PATH = "governance/organization-repository-inventory.json";
+const B304_AUTHORITY_PATH = "governance/docs-b304-registry-recovery.json";
+const B304_PROOF_PATH = "governance/evidence/docs-b304-registry-recovery/runtime-20261126.json";
+const MANAGED_RUNTIME_PATH = "scripts/docs-managed-runtime-policy.ts";
 
 const workflow = await readFile(
   new URL("../.github/workflows/docs-admission-evidence.yml", import.meta.url),
@@ -116,6 +119,7 @@ async function fixture(mutate = () => {}) {
       [POLICY_PATH]: `synthetic:${POLICY_PATH}`,
       [EXCEPTIONS_PATH]: `synthetic:${EXCEPTIONS_PATH}`,
       [INVENTORY_PATH]: `synthetic:${INVENTORY_PATH}`,
+      [B304_AUTHORITY_PATH]: '{"schema_version":1,"authorization":null}',
       "README.md": "unchanged",
     },
     mutateTree: () => {},
@@ -158,9 +162,17 @@ async function fixture(mutate = () => {}) {
         getBranch: async () => ({ data: { commit: { sha: state.branch } } }),
         getContent: async ({ path: filePath, ref }) => {
           assert.equal(ref, pull.head.sha);
-          assert.ok([POLICY_PATH, EXCEPTIONS_PATH, INVENTORY_PATH].includes(filePath));
+          assert.ok(
+            [
+              POLICY_PATH,
+              EXCEPTIONS_PATH,
+              INVENTORY_PATH,
+              B304_AUTHORITY_PATH,
+              B304_PROOF_PATH,
+            ].includes(filePath),
+          );
           state.contentCalls++;
-          const content = Buffer.from(`synthetic:${filePath}`);
+          const content = Buffer.from(state.headFiles[filePath]);
           if (state.contentCalls === 2) state.afterMaterialize();
           return {
             data: {
@@ -344,6 +356,42 @@ const mutations = {
     s.files.push({ filename: "scripts/docs-legacy-admission-recovery.mjs", status: "modified" });
     s.context.payload.pull_request.changed_files++;
   },
+  "mixed B304 executable authority": (s) => {
+    s.files.push({ filename: "scripts/docs-b304-registry-incident.ts", status: "modified" });
+    s.context.payload.pull_request.changed_files++;
+  },
+  "B304 executable-only source change before noop": (s) => {
+    s.files = [{ filename: "scripts/docs-b304-recovery-staging.ts", status: "modified" }];
+  },
+  "B304 executable rename away before noop": (s) => {
+    s.files = [
+      {
+        filename: "scripts/other.ts",
+        previous_filename: "scripts/docs-b304-registry-incident.ts",
+        status: "renamed",
+      },
+    ];
+  },
+  "B304 authority addition without admission data": (s) => {
+    s.files = [{ filename: "governance/docs-b304-registry-recovery.json", status: "added" }];
+  },
+  "B304 proof page without the immutable addition": (s) => {
+    s.files = [
+      {
+        filename: "governance/evidence/docs-b304-registry-recovery/runtime-20261126.json",
+        status: "added",
+      },
+    ];
+  },
+  "B304 authority rename away without admission data": (s) => {
+    s.files = [
+      {
+        filename: "docs/inert.json",
+        previous_filename: "governance/docs-b304-registry-recovery.json",
+        status: "renamed",
+      },
+    ];
+  },
   fork: (s) => {
     s.context.payload.pull_request.head.repo = { id: 99, full_name: "fork/central" };
   },
@@ -399,6 +447,40 @@ for (const [label, mutate] of Object.entries(mutations)) {
   });
 }
 
+for (const [label, files] of [
+  ["modification", [{ filename: MANAGED_RUNTIME_PATH, status: "modified" }]],
+  ["addition", [{ filename: MANAGED_RUNTIME_PATH, status: "added" }]],
+  ["deletion", [{ filename: MANAGED_RUNTIME_PATH, status: "removed" }]],
+  [
+    "rename away",
+    [{ filename: "scripts/other.ts", previous_filename: MANAGED_RUNTIME_PATH, status: "renamed" }],
+  ],
+  [
+    "rename into",
+    [{ filename: MANAGED_RUNTIME_PATH, previous_filename: "scripts/other.ts", status: "renamed" }],
+  ],
+  [
+    "mixed admission data",
+    [
+      { filename: POLICY_PATH, status: "modified" },
+      { filename: MANAGED_RUNTIME_PATH, status: "modified" },
+    ],
+  ],
+]) {
+  test(`materializer rejects managed runtime ${label} before no-op or data modes`, async () => {
+    const result = await fixture((state) => {
+      state.files = files;
+      state.context.payload.pull_request.changed_files = files.length;
+    });
+    assert.deepEqual(result.failures, [
+      "Protected Docs executable source changes require a separately qualified source transition before any no-op or data mode.",
+    ]);
+    assert.equal(result.outputs.has("mode"), false);
+    assert.equal(result.writes.size, 0);
+    assert.equal(result.contentCalls, 0);
+  });
+}
+
 test("ordinary code-only no-op is not reported as trusted recovery", async () => {
   const result = await fixture((s) => {
     s.files = [{ filename: "scripts/docs-legacy-admission-recovery.mjs", status: "added" }];
@@ -408,6 +490,10 @@ test("ordinary code-only no-op is not reported as trusted recovery", async () =>
   assert.equal(result.writes.size, 0);
   assert.equal(result.contentCalls, 0);
   assert.match(workflow, /ref: \$\{\{ github.event.pull_request.base.sha \}\}/u);
+  assert.match(
+    workflow,
+    /ref: \$\{\{ github.event.pull_request.base.sha \}\}\n\s+fetch-depth: 0\n\s+persist-credentials: false/u,
+  );
   assert.match(workflow, /DOCS_ADMISSION_EXECUTION_PATH:/u);
   assert.match(workflow, /DOCS_ADMISSION_INVENTORY_PATH:/u);
   assert.match(
@@ -451,3 +537,31 @@ test("inert pending receipt by itself supplies neither an admission tuple nor ex
   assert.equal(result.writes.size, 0);
   assert.equal(result.contentCalls, 0);
 });
+
+for (const [mode, filePath, status, content] of [
+  ["archive", B304_PROOF_PATH, "added", '{"inert":"unverified"}'],
+  [
+    "stage",
+    B304_AUTHORITY_PATH,
+    "modified",
+    '{"schema_version":1,"authorization":{"state":"active"}}',
+  ],
+]) {
+  test(`materializer routes only the exact B304 ${mode} bytes to base-owned typed verification`, async () => {
+    const result = await fixture((state) => {
+      state.headFiles[POLICY_PATH] = "prior-policy";
+      state.headFiles[filePath] = content;
+      state.files = [{ filename: filePath, status, sha: recoveryBlob(Buffer.from(content)) }];
+    });
+    assert.deepEqual(result.failures, []);
+    assert.equal(result.outputs.get("mode"), mode);
+    assert.equal(result.writes.size, 2);
+    assert.equal(result.outputs.has("policy-path"), false);
+    assert.equal(result.writes.get(result.outputs.get("candidate-path")).toString(), content);
+    const execution = JSON.parse(result.writes.get(result.outputs.get("execution-path")));
+    assert.deepEqual(execution.changed_files, [filePath]);
+    assert.equal(execution.base, result.context.payload.pull_request.base.sha);
+    assert.match(workflow, /run: node scripts\/docs-b304-recovery-staging.ts/u);
+    assert.match(workflow, /fetch-depth: 0/u);
+  });
+}

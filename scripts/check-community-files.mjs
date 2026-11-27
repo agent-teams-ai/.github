@@ -216,7 +216,8 @@ export function validateDocsProtocolWorkflow(workflow) {
           "workflow-repository": "${{ steps.authority.outputs.workflow-repository }}",
           "workflow-file-path": "${{ steps.authority.outputs.workflow-file-path }}",
           "qualification-profile": "${{ steps.authorization.outputs.qualification-profile }}",
-          "qualification-node-version": "${{ steps.authorization.outputs.qualification-node-version }}",
+          "qualification-node-version":
+            "${{ steps.authorization.outputs.qualification-node-version }}",
         },
         env: {
           TRUSTED_GOVERNANCE_ROOT: "${{ github.workspace }}/.trusted/governance",
@@ -410,8 +411,7 @@ export function validateDocsProtocolWorkflow(workflow) {
             name: "Set up Node for trusted qualification tooling",
             uses: node,
             with: {
-              "node-version":
-                "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
+              "node-version": "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
               cache: "pnpm",
               "cache-dependency-path": "${{ env.TRUSTED_GOVERNANCE_ROOT }}/pnpm-lock.yaml",
             },
@@ -536,8 +536,7 @@ export function validateDocsProtocolWorkflow(workflow) {
             name: "Set up Node for repository semantic gate",
             uses: node,
             with: {
-              "node-version":
-                "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
+              "node-version": "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
               cache: "pnpm",
             },
           },

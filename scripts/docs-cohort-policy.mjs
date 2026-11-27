@@ -2,7 +2,10 @@ import { createHash } from "node:crypto";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
-import { DOCS_COHORT_V3_RETAINED_RUNTIME, docsCohortV3Runtime } from "./docs-managed-runtime-policy.ts";
+import {
+  DOCS_COHORT_V3_RETAINED_RUNTIME,
+  docsCohortV3Runtime,
+} from "./docs-managed-runtime-policy.ts";
 
 const TERMINAL_STATES = new Set(["SUPPORT_ENDED", "WITHDRAWN"]);
 const BLOCKED_STATES = new Set(["SUPPORT_ENDED", "SUSPENDED", "WITHDRAWN"]);

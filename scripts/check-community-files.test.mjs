@@ -105,13 +105,21 @@ test("rejects caller-controlled workflow inputs and secret capability", () => {
 });
 
 test("requires the authorizer's closed runtime output for both executable consumer jobs", () => {
-  assert.equal(workflow.jobs["trusted-authorize"].outputs["qualification-node-version"],
-    "${{ steps.authorization.outputs.qualification-node-version }}");
+  assert.equal(
+    workflow.jobs["trusted-authorize"].outputs["qualification-node-version"],
+    "${{ steps.authorization.outputs.qualification-node-version }}",
+  );
   for (const job of ["trusted-qualification", "docs-protocol-check"]) {
-    for (const selector of ["26.12.1", "${{ inputs.node }}", "${{ env.NODE_VERSION }}",
-      "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.12.1' || '24.21.0' }}"]) {
+    for (const selector of [
+      "26.12.1",
+      "${{ inputs.node }}",
+      "${{ env.NODE_VERSION }}",
+      "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.12.1' || '24.21.0' }}",
+    ]) {
       const changed = clone(workflow);
-      changed.jobs[job].steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with["node-version"] = selector;
+      changed.jobs[job].steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with[
+        "node-version"
+      ] = selector;
       assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
     }
   }

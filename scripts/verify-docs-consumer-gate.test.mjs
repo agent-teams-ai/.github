@@ -952,85 +952,96 @@ test("authorizes Cohort v2 only through its explicit selected generation authori
   );
 });
 
-for (const [policyVersion, expectedNode] of [["3.0.0", "26.11.1"], ["3.1.0", "26.12.1"]]) {
-test(`authorizes synthetic policy ${policyVersion} with its selected runtime and exact managed state`, () => {
-  const input = cohortV3Fixture(policyVersion);
-  const authorization = authorizeConsumerGate(input);
-  assert.equal(authorization.schemaVersion, 3);
-  assert.equal(docsQualificationNodeVersion(authorization.qualificationProfile, authorization.qualificationAuthority.policyIdentity), expectedNode);
-  assert.equal(authorization.qualificationProfile, "cohort-v3");
-  assert.equal(authorization.qualificationPackageManager, "pnpm@11.20.0");
-  assert.equal(authorization.expectedPackages.length, 5);
-  assert.deepEqual(authorization.qualificationAuthority.qualificationReceipt, {
-    namespace: "docs-protocol-cohort-v3-qualification-receipt/v1",
-    schemaVersion: 1,
-    profileSchemaVersion: 4,
-    cohortSchemaVersion: 3,
-    managedStateSchemaVersion: 3,
-    checkCount: 11,
-  });
-  assert.deepEqual(
-    input.policy.repositories[0].v3_qualification_coordinates,
-    GENERATION3_COORDINATES,
-  );
-  assert.deepEqual(
-    authorization.qualificationAuthority.registryRecord,
-    input.registry.cohorts.at(-1),
-  );
-  assert.equal(
-    authorization.qualificationAuthority.recordDigest,
-    input.registry.cohorts.at(-1).record_digest,
-  );
-  assert.equal(
-    authorization.qualificationAuthority.recordDigest,
-    cohortRecordDigest(authorization.qualificationAuthority.registryRecord),
-  );
-
-  const profile = JSON.parse(input.files["architecture/foundation/docs-consumer-integration.json"]);
-  const managed = JSON.parse(
-    input.files["architecture/foundation/docs-protocol-managed-state.json"],
-  );
-  const cohort = profile.cohort;
-  const body = {
-    schemaVersion: 3,
-    cohortId: cohort.cohortId,
-    cohortAuthority: {
-      channel: cohort.channel,
-      recordDigest: cohort.recordDigest,
-      qualificationEventDigest: cohort.qualificationEventDigest,
-      eligibleAfter: cohort.eligibleAfter,
-      upgradeFrom: cohort.upgradeFrom,
-      rollbackTo: cohort.rollbackTo,
-      candidateDigest: cohort.candidateDigest,
-    },
-    repository: profile.repository,
-    packages: cohort.packages,
-    schemas: cohort.schemas,
-    runtime: cohort.runtime,
-    profilePath: profile.profilePath,
-    skillPath: profile.skillPath,
-    callerWorkflowPath: profile.callerWorkflowPath,
-    managedStatePath: profile.managedStatePath,
-    assets: {
-      ...cohort.assets,
-      agentsRouteDigest: digest(
-        `<!-- agent-teams-docs:route/v1 begin -->\nUse [${profile.skillPath}](${profile.skillPath}) for documentation.\n<!-- agent-teams-docs:route/v1 end -->`,
+for (const [policyVersion, expectedNode] of [
+  ["3.0.0", "26.11.1"],
+  ["3.1.0", "26.12.1"],
+]) {
+  test(`authorizes synthetic policy ${policyVersion} with its selected runtime and exact managed state`, () => {
+    const input = cohortV3Fixture(policyVersion);
+    const authorization = authorizeConsumerGate(input);
+    assert.equal(authorization.schemaVersion, 3);
+    assert.equal(
+      docsQualificationNodeVersion(
+        authorization.qualificationProfile,
+        authorization.qualificationAuthority.policyIdentity,
       ),
-      docsScriptsDigest: digest(
-        canonical(
-          Object.fromEntries(
-            ["check", "doctor", "find", "info", "new", "recover"].map((command) => [
-              `docs:${command}`,
-              `agent-teams-docs ${command} --consumer . --profile ${profile.profilePath}`,
-            ]),
+      expectedNode,
+    );
+    assert.equal(authorization.qualificationProfile, "cohort-v3");
+    assert.equal(authorization.qualificationPackageManager, "pnpm@11.20.0");
+    assert.equal(authorization.expectedPackages.length, 5);
+    assert.deepEqual(authorization.qualificationAuthority.qualificationReceipt, {
+      namespace: "docs-protocol-cohort-v3-qualification-receipt/v1",
+      schemaVersion: 1,
+      profileSchemaVersion: 4,
+      cohortSchemaVersion: 3,
+      managedStateSchemaVersion: 3,
+      checkCount: 11,
+    });
+    assert.deepEqual(
+      input.policy.repositories[0].v3_qualification_coordinates,
+      GENERATION3_COORDINATES,
+    );
+    assert.deepEqual(
+      authorization.qualificationAuthority.registryRecord,
+      input.registry.cohorts.at(-1),
+    );
+    assert.equal(
+      authorization.qualificationAuthority.recordDigest,
+      input.registry.cohorts.at(-1).record_digest,
+    );
+    assert.equal(
+      authorization.qualificationAuthority.recordDigest,
+      cohortRecordDigest(authorization.qualificationAuthority.registryRecord),
+    );
+
+    const profile = JSON.parse(
+      input.files["architecture/foundation/docs-consumer-integration.json"],
+    );
+    const managed = JSON.parse(
+      input.files["architecture/foundation/docs-protocol-managed-state.json"],
+    );
+    const cohort = profile.cohort;
+    const body = {
+      schemaVersion: 3,
+      cohortId: cohort.cohortId,
+      cohortAuthority: {
+        channel: cohort.channel,
+        recordDigest: cohort.recordDigest,
+        qualificationEventDigest: cohort.qualificationEventDigest,
+        eligibleAfter: cohort.eligibleAfter,
+        upgradeFrom: cohort.upgradeFrom,
+        rollbackTo: cohort.rollbackTo,
+        candidateDigest: cohort.candidateDigest,
+      },
+      repository: profile.repository,
+      packages: cohort.packages,
+      schemas: cohort.schemas,
+      runtime: cohort.runtime,
+      profilePath: profile.profilePath,
+      skillPath: profile.skillPath,
+      callerWorkflowPath: profile.callerWorkflowPath,
+      managedStatePath: profile.managedStatePath,
+      assets: {
+        ...cohort.assets,
+        agentsRouteDigest: digest(
+          `<!-- agent-teams-docs:route/v1 begin -->\nUse [${profile.skillPath}](${profile.skillPath}) for documentation.\n<!-- agent-teams-docs:route/v1 end -->`,
+        ),
+        docsScriptsDigest: digest(
+          canonical(
+            Object.fromEntries(
+              ["check", "doctor", "find", "info", "new", "recover"].map((command) => [
+                `docs:${command}`,
+                `agent-teams-docs ${command} --consumer . --profile ${profile.profilePath}`,
+              ]),
+            ),
           ),
         ),
-      ),
-    },
-    workflow: cohort.workflow,
-  };
-  assert.deepEqual(managed, { ...body, stateDigest: managedStateDigest(body, 3) });
-});
+      },
+      workflow: cohort.workflow,
+    };
+    assert.deepEqual(managed, { ...body, stateDigest: managedStateDigest(body, 3) });
+  });
 }
 
 test("rejects generation3 profile, schema, generation, policy, and physical-canary mixes", () => {
@@ -1365,237 +1376,261 @@ for (const [policyVersion, nodeRange, nodeVersion] of [
   ["3.0.0", ">=26.0.0 <27", "26.11.1"],
   ["3.1.0", ">=26.12.1 <27", "26.12.1"],
 ]) {
-test(`closed synthetic policy ${policyVersion} receipt CLI admits exact fields and rejects targeted drift`, async (t) => {
-  // Synthetic closed DocsAgent receipt fixture; public-package proof remains a later E2E.
-  const root = await mkdtemp(join(tmpdir(), "docs-generation3-consumer-receipt-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const input = cohortV3Fixture(policyVersion);
-  const authorization = authorizeConsumerGate(input);
-  assert.deepEqual(
-    authorization.qualificationAuthority.registryRecord,
-    input.registry.cohorts.at(-1),
-  );
-  assert.equal(
-    authorization.qualificationAuthority.recordDigest,
-    cohortRecordDigest(authorization.qualificationAuthority.registryRecord),
-  );
-  const consumer = join(root, "consumer");
-  for (const [path, source] of Object.entries(input.files)) {
-    await mkdir(dirname(join(consumer, path)), { recursive: true });
-    await writeFile(join(consumer, path), source);
-  }
-  const install = join(root, "install");
-  const installedPackages = [];
-  for (const expected of authorization.expectedPackages) {
-    const packageRoot = join(install, "node_modules", ...expected.name.split("/"));
-    await mkdir(packageRoot, { recursive: true });
-    await writeFile(
-      join(packageRoot, "package.json"),
-      JSON.stringify({ name: expected.name, version: expected.version }),
+  test(`closed synthetic policy ${policyVersion} receipt CLI admits exact fields and rejects targeted drift`, async (t) => {
+    // Synthetic closed DocsAgent receipt fixture; public-package proof remains a later E2E.
+    const root = await mkdtemp(join(tmpdir(), "docs-generation3-consumer-receipt-"));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const input = cohortV3Fixture(policyVersion);
+    const authorization = authorizeConsumerGate(input);
+    assert.deepEqual(
+      authorization.qualificationAuthority.registryRecord,
+      input.registry.cohorts.at(-1),
     );
-    installedPackages.push({ ...expected, treeDigest: await installedTreeDigest(packageRoot) });
-  }
-  const authorizationPath = join(root, "authorization.json");
-  const evidencePath = join(root, "install-evidence.json");
-  const receiptPath = join(root, "receipt.json");
-  const installEvidence = {
-    schemaVersion: 1,
-    authorizationDigest: digest(
-      canonical({
-        domain: "agent-teams.docs-consumer-gate-authorization/v1",
-        body: authorization,
-      }),
-    ),
-    packages: installedPackages,
-  };
-  const writeAuthorization = async (value = authorization) => {
-    const authorizationDigest = digest(
-      canonical({
-        domain: "agent-teams.docs-consumer-gate-authorization/v1",
-        body: value,
-      }),
+    assert.equal(
+      authorization.qualificationAuthority.recordDigest,
+      cohortRecordDigest(authorization.qualificationAuthority.registryRecord),
     );
-    await writeFile(authorizationPath, canonical({ authorization: value, authorizationDigest }));
-    await writeFile(evidencePath, canonical({ ...installEvidence, authorizationDigest }));
-  };
-  const authority = authorization.qualificationAuthority;
-  const record = authority.registryRecord;
-  const packageByName = new Map(authorization.expectedPackages.map((entry) => [entry.name, entry]));
-  const body = {
-    schemaVersion: 1,
-    namespace: "docs-protocol-cohort-v3-qualification-receipt/v1",
-    cohortAdmissible: true,
-    profileSchemaVersion: 4,
-    cohort: {
-      schemaVersion: 3,
-      cohortId: authority.cohortId,
-      recordDigest: authority.recordDigest,
-      qualificationEventDigest: authority.qualificationEvent.event_digest,
-      candidateDigest: record.candidate_digest,
-    },
-    packages: [
-      ["repositoryMutation", "@agent-teams/repository-mutation"],
-      ["documentAuthoring", "@agent-teams/document-authoring"],
-      ["docsProtocol", "@agent-teams/docs-protocol"],
-      ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
-      ["engineeringFoundation", "@agent-teams/engineering-foundation"],
-    ].map(([key, name]) => {
-      const expected = packageByName.get(name);
-      return { key, name, version: expected.version, integrity: expected.integrity };
-    }),
-    schemas: { consumerIntegration: 4, managedState: 3, qualificationReceipt: 1, docsProtocol: 1 },
-    policy: {
-      id: "agent-teams.docs-protocol-current-policy",
-      version: policyVersion,
-      sourceDigest: record.policy_identity.digest,
-    },
-    runtime: {
-      selectedLane: DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane,
-      node: nodeRange,
-      pnpm: DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
-      qualificationRuntime: { nodeVersion, pnpmVersion: "11.20.0", platform: "linux", architecture: "x64" },
-      runtimeClosure: {
-        domain: record.runtime_closure.domain,
-        digest: record.runtime_closure.digest,
+    const consumer = join(root, "consumer");
+    for (const [path, source] of Object.entries(input.files)) {
+      await mkdir(dirname(join(consumer, path)), { recursive: true });
+      await writeFile(join(consumer, path), source);
+    }
+    const install = join(root, "install");
+    const installedPackages = [];
+    for (const expected of authorization.expectedPackages) {
+      const packageRoot = join(install, "node_modules", ...expected.name.split("/"));
+      await mkdir(packageRoot, { recursive: true });
+      await writeFile(
+        join(packageRoot, "package.json"),
+        JSON.stringify({ name: expected.name, version: expected.version }),
+      );
+      installedPackages.push({ ...expected, treeDigest: await installedTreeDigest(packageRoot) });
+    }
+    const authorizationPath = join(root, "authorization.json");
+    const evidencePath = join(root, "install-evidence.json");
+    const receiptPath = join(root, "receipt.json");
+    const installEvidence = {
+      schemaVersion: 1,
+      authorizationDigest: digest(
+        canonical({
+          domain: "agent-teams.docs-consumer-gate-authorization/v1",
+          body: authorization,
+        }),
+      ),
+      packages: installedPackages,
+    };
+    const writeAuthorization = async (value = authorization) => {
+      const authorizationDigest = digest(
+        canonical({
+          domain: "agent-teams.docs-consumer-gate-authorization/v1",
+          body: value,
+        }),
+      );
+      await writeFile(authorizationPath, canonical({ authorization: value, authorizationDigest }));
+      await writeFile(evidencePath, canonical({ ...installEvidence, authorizationDigest }));
+    };
+    const authority = authorization.qualificationAuthority;
+    const record = authority.registryRecord;
+    const packageByName = new Map(
+      authorization.expectedPackages.map((entry) => [entry.name, entry]),
+    );
+    const body = {
+      schemaVersion: 1,
+      namespace: "docs-protocol-cohort-v3-qualification-receipt/v1",
+      cohortAdmissible: true,
+      profileSchemaVersion: 4,
+      cohort: {
+        schemaVersion: 3,
+        cohortId: authority.cohortId,
+        recordDigest: authority.recordDigest,
+        qualificationEventDigest: authority.qualificationEvent.event_digest,
+        candidateDigest: record.candidate_digest,
       },
-    },
-    checks: [
-      "profile-v4",
-      "cohort-v3",
-      "cohort-assets",
-      "five-package-closure",
-      "exact-package-versions",
-      "exact-package-integrities",
-      "schema-bindings-4-3-1-qualification-receipt-1",
-      "runtime-closure-digest",
-      "policy-identity-source-digest",
-      "selected-lane-runtime",
-      "observed-node-runtime",
-    ],
-  };
-  const writeReceipt = (value = body) =>
-    writeFile(receiptPath, canonical({ ...value, receiptDigest: digest(receiptCanonical(value)) }));
-  await writeAuthorization();
-  await writeReceipt();
-  const execute = promisify(execFile);
-  const run = (callerSha = authorization.callerSha) =>
-    execute(
-      process.execPath,
-      [
-        new URL("./verify-docs-cohort-v2-receipt.mjs", import.meta.url).pathname,
-        "--consumer",
-        consumer,
-        "--install-root",
-        install,
-        "--authorization",
-        authorizationPath,
-        "--install-evidence",
-        evidencePath,
-        "--receipt",
-        receiptPath,
-        "--caller-sha",
-        callerSha,
-      ],
-      { env: { ...process.env, GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "1" } },
-    );
-  const passed = await run();
-  assert.equal(passed.stderr, "");
-  assert.match(
-    passed.stdout,
-    /Cohort generation 3 authorized consumer qualification receipt is bound/u,
-  );
-  assert.match(passed.stdout, /central CANARY remains unsatisfied/u);
-  const verifiedReceipt = JSON.parse(await readFile(receiptPath, "utf8"));
-  assert.deepEqual(Object.keys(verifiedReceipt.runtime).toSorted(), [
-    "node",
-    "pnpm",
-    "qualificationRuntime",
-    "runtimeClosure",
-    "selectedLane",
-  ]);
-  assert.equal("observedHostRuntime" in verifiedReceipt.runtime, false);
-  const source2 = input.registry.cohorts[0];
-  const sourceQualification = input.registry.events.find(
-    (event) => event.cohort_id === source2.cohort_id && event.state === "QUALIFIED",
-  );
-  assert.throws(
-    () =>
-      verifyDocsCohortV2SupportingEvidence({
-        receipt: verifiedReceipt,
-        record: source2,
-        qualificationEvent: sourceQualification,
+      packages: [
+        ["repositoryMutation", "@agent-teams/repository-mutation"],
+        ["documentAuthoring", "@agent-teams/document-authoring"],
+        ["docsProtocol", "@agent-teams/docs-protocol"],
+        ["docsProtocolAgentTeams", "@agent-teams/docs-protocol-agent-teams"],
+        ["engineeringFoundation", "@agent-teams/engineering-foundation"],
+      ].map(([key, name]) => {
+        const expected = packageByName.get(name);
+        return { key, name, version: expected.version, integrity: expected.integrity };
       }),
-    /closed admissible v3 receipt/u,
-  );
+      schemas: {
+        consumerIntegration: 4,
+        managedState: 3,
+        qualificationReceipt: 1,
+        docsProtocol: 1,
+      },
+      policy: {
+        id: "agent-teams.docs-protocol-current-policy",
+        version: policyVersion,
+        sourceDigest: record.policy_identity.digest,
+      },
+      runtime: {
+        selectedLane: DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane,
+        node: nodeRange,
+        pnpm: DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
+        qualificationRuntime: {
+          nodeVersion,
+          pnpmVersion: "11.20.0",
+          platform: "linux",
+          architecture: "x64",
+        },
+        runtimeClosure: {
+          domain: record.runtime_closure.domain,
+          digest: record.runtime_closure.digest,
+        },
+      },
+      checks: [
+        "profile-v4",
+        "cohort-v3",
+        "cohort-assets",
+        "five-package-closure",
+        "exact-package-versions",
+        "exact-package-integrities",
+        "schema-bindings-4-3-1-qualification-receipt-1",
+        "runtime-closure-digest",
+        "policy-identity-source-digest",
+        "selected-lane-runtime",
+        "observed-node-runtime",
+      ],
+    };
+    const writeReceipt = (value = body) =>
+      writeFile(
+        receiptPath,
+        canonical({ ...value, receiptDigest: digest(receiptCanonical(value)) }),
+      );
+    await writeAuthorization();
+    await writeReceipt();
+    const execute = promisify(execFile);
+    const run = (callerSha = authorization.callerSha) =>
+      execute(
+        process.execPath,
+        [
+          new URL("./verify-docs-cohort-v2-receipt.mjs", import.meta.url).pathname,
+          "--consumer",
+          consumer,
+          "--install-root",
+          install,
+          "--authorization",
+          authorizationPath,
+          "--install-evidence",
+          evidencePath,
+          "--receipt",
+          receiptPath,
+          "--caller-sha",
+          callerSha,
+        ],
+        { env: { ...process.env, GITHUB_RUN_ID: "123", GITHUB_RUN_ATTEMPT: "1" } },
+      );
+    const passed = await run();
+    assert.equal(passed.stderr, "");
+    assert.match(
+      passed.stdout,
+      /Cohort generation 3 authorized consumer qualification receipt is bound/u,
+    );
+    assert.match(passed.stdout, /central CANARY remains unsatisfied/u);
+    const verifiedReceipt = JSON.parse(await readFile(receiptPath, "utf8"));
+    assert.deepEqual(Object.keys(verifiedReceipt.runtime).toSorted(), [
+      "node",
+      "pnpm",
+      "qualificationRuntime",
+      "runtimeClosure",
+      "selectedLane",
+    ]);
+    assert.equal("observedHostRuntime" in verifiedReceipt.runtime, false);
+    const source2 = input.registry.cohorts[0];
+    const sourceQualification = input.registry.events.find(
+      (event) => event.cohort_id === source2.cohort_id && event.state === "QUALIFIED",
+    );
+    assert.throws(
+      () =>
+        verifyDocsCohortV2SupportingEvidence({
+          receipt: verifiedReceipt,
+          record: source2,
+          qualificationEvent: sourceQualification,
+        }),
+      /closed admissible v3 receipt/u,
+    );
 
-  const wrongGenerationAuthorization = structuredClone(authorization);
-  const wrongGenerationRecord = wrongGenerationAuthorization.qualificationAuthority.registryRecord;
-  wrongGenerationRecord.cohort_generation = 2;
-  wrongGenerationRecord.record_digest = cohortRecordDigest(wrongGenerationRecord);
-  wrongGenerationAuthorization.qualificationAuthority.recordDigest =
-    wrongGenerationRecord.record_digest;
-  await writeAuthorization(wrongGenerationAuthorization);
-  await writeReceipt({
-    ...body,
-    cohort: { ...body.cohort, recordDigest: wrongGenerationRecord.record_digest },
+    const wrongGenerationAuthorization = structuredClone(authorization);
+    const wrongGenerationRecord =
+      wrongGenerationAuthorization.qualificationAuthority.registryRecord;
+    wrongGenerationRecord.cohort_generation = 2;
+    wrongGenerationRecord.record_digest = cohortRecordDigest(wrongGenerationRecord);
+    wrongGenerationAuthorization.qualificationAuthority.recordDigest =
+      wrongGenerationRecord.record_digest;
+    await writeAuthorization(wrongGenerationAuthorization);
+    await writeReceipt({
+      ...body,
+      cohort: { ...body.cohort, recordDigest: wrongGenerationRecord.record_digest },
+    });
+    await assert.rejects(() => run(), /generation or full record digest/u);
+
+    const partialRecordAuthorization = structuredClone(authorization);
+    delete partialRecordAuthorization.qualificationAuthority.registryRecord.packages;
+    await writeAuthorization(partialRecordAuthorization);
+    await writeReceipt();
+    await assert.rejects(() => run(), /generation or full record digest/u);
+
+    const assetForgeryAuthorization = structuredClone(authorization);
+    const assetForgeryRecord = assetForgeryAuthorization.qualificationAuthority.registryRecord;
+    assetForgeryRecord.assets.skill.package = "@agent-teams/docs-protocol";
+    assetForgeryRecord.record_digest = cohortRecordDigest(assetForgeryRecord);
+    assetForgeryAuthorization.qualificationAuthority.recordDigest =
+      assetForgeryRecord.record_digest;
+    await writeAuthorization(assetForgeryAuthorization);
+    await writeReceipt({
+      ...body,
+      cohort: { ...body.cohort, recordDigest: assetForgeryRecord.record_digest },
+    });
+    await assert.rejects(() => run(), /assets are not exact/u);
+    await writeAuthorization();
+    await writeReceipt();
+
+    const packageForgery = structuredClone(body);
+    packageForgery.packages[0].version = "0.0.0";
+    await writeReceipt(packageForgery);
+    await assert.rejects(() => run(), /coordinate .* is not exact/u);
+
+    const runtimeForgery = structuredClone(body);
+    runtimeForgery.runtime.qualificationRuntime.pnpmVersion = "11.20.1";
+    await writeReceipt(runtimeForgery);
+    await assert.rejects(() => run(), /runtime/iu);
+
+    const crossPolicyReceipt = structuredClone(body);
+    crossPolicyReceipt.policy.version = policyVersion === "3.0.0" ? "3.1.0" : "3.0.0";
+    await writeReceipt(crossPolicyReceipt);
+    await assert.rejects(() => run(), /policy|runtime/iu);
+    const crossRuntimeReceipt = structuredClone(body);
+    crossRuntimeReceipt.runtime.qualificationRuntime.nodeVersion =
+      nodeVersion === "26.11.1" ? "26.12.1" : "26.11.1";
+    await writeReceipt(crossRuntimeReceipt);
+    await assert.rejects(() => run(), /runtime/iu);
+
+    const closureForgery = structuredClone(body);
+    closureForgery.runtime.runtimeClosure.digest = `sha256:${"d".repeat(64)}`;
+    await writeReceipt(closureForgery);
+    await assert.rejects(() => run(), /runtime/iu);
+    await writeReceipt();
+
+    await writeFile(
+      join(install, "node_modules", "@agent-teams", "repository-mutation", "drift.txt"),
+      "changed\n",
+    );
+    await assert.rejects(
+      () => run(),
+      /installed package bytes changed after trusted verification/u,
+    );
+    await rm(join(install, "node_modules", "@agent-teams", "repository-mutation", "drift.txt"));
+
+    await writeFile(
+      join(consumer, "pnpm-lock.yaml"),
+      `${input.files["pnpm-lock.yaml"]}\n# drift\n`,
+    );
+    await assert.rejects(() => run(), /Authorized checkout file changed after qualification/u);
   });
-  await assert.rejects(() => run(), /generation or full record digest/u);
-
-  const partialRecordAuthorization = structuredClone(authorization);
-  delete partialRecordAuthorization.qualificationAuthority.registryRecord.packages;
-  await writeAuthorization(partialRecordAuthorization);
-  await writeReceipt();
-  await assert.rejects(() => run(), /generation or full record digest/u);
-
-  const assetForgeryAuthorization = structuredClone(authorization);
-  const assetForgeryRecord = assetForgeryAuthorization.qualificationAuthority.registryRecord;
-  assetForgeryRecord.assets.skill.package = "@agent-teams/docs-protocol";
-  assetForgeryRecord.record_digest = cohortRecordDigest(assetForgeryRecord);
-  assetForgeryAuthorization.qualificationAuthority.recordDigest = assetForgeryRecord.record_digest;
-  await writeAuthorization(assetForgeryAuthorization);
-  await writeReceipt({
-    ...body,
-    cohort: { ...body.cohort, recordDigest: assetForgeryRecord.record_digest },
-  });
-  await assert.rejects(() => run(), /assets are not exact/u);
-  await writeAuthorization();
-  await writeReceipt();
-
-  const packageForgery = structuredClone(body);
-  packageForgery.packages[0].version = "0.0.0";
-  await writeReceipt(packageForgery);
-  await assert.rejects(() => run(), /coordinate .* is not exact/u);
-
-  const runtimeForgery = structuredClone(body);
-  runtimeForgery.runtime.qualificationRuntime.pnpmVersion = "11.20.1";
-  await writeReceipt(runtimeForgery);
-  await assert.rejects(() => run(), /runtime/iu);
-
-  const crossPolicyReceipt = structuredClone(body);
-  crossPolicyReceipt.policy.version = policyVersion === "3.0.0" ? "3.1.0" : "3.0.0";
-  await writeReceipt(crossPolicyReceipt);
-  await assert.rejects(() => run(), /policy|runtime/iu);
-  const crossRuntimeReceipt = structuredClone(body);
-  crossRuntimeReceipt.runtime.qualificationRuntime.nodeVersion = nodeVersion === "26.11.1" ? "26.12.1" : "26.11.1";
-  await writeReceipt(crossRuntimeReceipt);
-  await assert.rejects(() => run(), /runtime/iu);
-
-  const closureForgery = structuredClone(body);
-  closureForgery.runtime.runtimeClosure.digest = `sha256:${"d".repeat(64)}`;
-  await writeReceipt(closureForgery);
-  await assert.rejects(() => run(), /runtime/iu);
-  await writeReceipt();
-
-  await writeFile(
-    join(install, "node_modules", "@agent-teams", "repository-mutation", "drift.txt"),
-    "changed\n",
-  );
-  await assert.rejects(() => run(), /installed package bytes changed after trusted verification/u);
-  await rm(join(install, "node_modules", "@agent-teams", "repository-mutation", "drift.txt"));
-
-  await writeFile(join(consumer, "pnpm-lock.yaml"), `${input.files["pnpm-lock.yaml"]}\n# drift\n`);
-  await assert.rejects(() => run(), /Authorized checkout file changed after qualification/u);
-});
 }
 
 test("trusted v3 runner binds profile, lock, install evidence, and adapter bytes before import", async () => {
@@ -2795,8 +2830,7 @@ test("declares the exact Node runtime before every owned Docs installation", asy
         "trusted-structural": "24.22.3",
         "trusted-qualification":
           "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
-        "docs-protocol-check":
-          "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
+        "docs-protocol-check": "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
       },
     ],
     ["docs-cohort-append-only.yml", { "trusted-validation": "24.21.0" }],
@@ -3021,68 +3055,77 @@ function generation3RolloutPair(policyVersion = "3.0.0") {
   return { source, target, row, origin };
 }
 
-for (const [policyVersion, expectedNode] of [["3.0.0", "26.11.1"], ["3.1.0", "26.12.1"]]) {
-test(`pending policy ${policyVersion} rollout and rollback retain the actual selected runtime`, () => {
-  const { source, target, row, origin } = generation3RolloutPair(policyVersion);
-  const check = (input, generation) => {
-    const result = authorizeConsumerGate(input);
-    assert.equal(result.qualificationProfile, `cohort-v${generation}`);
-    assert.equal(docsQualificationNodeVersion(result.qualificationProfile, result.qualificationAuthority.policyIdentity), generation === 3 ? expectedNode : "24.21.0");
-    assert.equal(result.qualificationAuthority.registryRecord.cohort_generation, generation);
-    assert.equal(
-      result.qualificationAuthority.schemas.consumer_integration,
-      generation === 3 ? 4 : 3,
-    );
-    return result;
-  };
-  const targetCoordinates = structuredClone(row.v3_qualification_coordinates);
-  const sourceCoordinates = cohortV2Fixture().policy.repositories[0].v3_qualification_coordinates;
-  // Initial bound2, then both real source2 and target3 during a single rollout row.
-  source.policy.repositories[0] = {
-    ...row,
-    cohort_binding_status: "bound",
-    desired_cohort_id: origin.cohort_id,
-    desired_cohort_generation: 2,
-    v3_qualification_coordinates: sourceCoordinates,
-  };
-  check(source, 2);
-  source.policy.repositories[0] = structuredClone(row);
-  check(source, 2);
-  check(target, 3);
-  assert.deepEqual(source.policy.repositories[0].v3_qualification_coordinates, targetCoordinates);
-  // A claimed observed3 cannot authorize the still-committed source2 bytes.
-  source.policy.repositories[0].observed_cohort_generation = 3;
-  assert.throws(() => check(source, 2), /explicitly match|generation/u);
-  source.policy.repositories[0] = structuredClone(row);
-  const bound3 = {
-    ...row,
-    cohort_binding_status: "bound",
-    observed_cohort_id: row.desired_cohort_id,
-    observed_cohort_generation: 3,
-  };
-  target.policy.repositories[0] = bound3;
-  check(target, 3);
-  // Rollback target coordinates are2 while a still-committed source3 retains a v3 receipt/runtime.
-  const rollback = {
-    ...row,
-    desired_cohort_id: origin.cohort_id,
-    desired_cohort_generation: 2,
-    observed_cohort_id: row.desired_cohort_id,
-    observed_cohort_generation: 3,
-    v3_qualification_coordinates: sourceCoordinates,
-  };
-  source.policy.repositories[0] = structuredClone(rollback);
-  target.policy.repositories[0] = structuredClone(rollback);
-  check(target, 3);
-  check(source, 2);
-  target.policy.repositories[0].v3_qualification_coordinates = targetCoordinates;
-  assert.throws(() => check(target, 3), /exact Cohort v2 qualification coordinates/u);
-  source.policy.repositories[0] = {
-    ...rollback,
-    cohort_binding_status: "bound",
-    observed_cohort_id: origin.cohort_id,
-    observed_cohort_generation: 2,
-  };
-  check(source, 2);
-});
+for (const [policyVersion, expectedNode] of [
+  ["3.0.0", "26.11.1"],
+  ["3.1.0", "26.12.1"],
+]) {
+  test(`pending policy ${policyVersion} rollout and rollback retain the actual selected runtime`, () => {
+    const { source, target, row, origin } = generation3RolloutPair(policyVersion);
+    const check = (input, generation) => {
+      const result = authorizeConsumerGate(input);
+      assert.equal(result.qualificationProfile, `cohort-v${generation}`);
+      assert.equal(
+        docsQualificationNodeVersion(
+          result.qualificationProfile,
+          result.qualificationAuthority.policyIdentity,
+        ),
+        generation === 3 ? expectedNode : "24.21.0",
+      );
+      assert.equal(result.qualificationAuthority.registryRecord.cohort_generation, generation);
+      assert.equal(
+        result.qualificationAuthority.schemas.consumer_integration,
+        generation === 3 ? 4 : 3,
+      );
+      return result;
+    };
+    const targetCoordinates = structuredClone(row.v3_qualification_coordinates);
+    const sourceCoordinates = cohortV2Fixture().policy.repositories[0].v3_qualification_coordinates;
+    // Initial bound2, then both real source2 and target3 during a single rollout row.
+    source.policy.repositories[0] = {
+      ...row,
+      cohort_binding_status: "bound",
+      desired_cohort_id: origin.cohort_id,
+      desired_cohort_generation: 2,
+      v3_qualification_coordinates: sourceCoordinates,
+    };
+    check(source, 2);
+    source.policy.repositories[0] = structuredClone(row);
+    check(source, 2);
+    check(target, 3);
+    assert.deepEqual(source.policy.repositories[0].v3_qualification_coordinates, targetCoordinates);
+    // A claimed observed3 cannot authorize the still-committed source2 bytes.
+    source.policy.repositories[0].observed_cohort_generation = 3;
+    assert.throws(() => check(source, 2), /explicitly match|generation/u);
+    source.policy.repositories[0] = structuredClone(row);
+    const bound3 = {
+      ...row,
+      cohort_binding_status: "bound",
+      observed_cohort_id: row.desired_cohort_id,
+      observed_cohort_generation: 3,
+    };
+    target.policy.repositories[0] = bound3;
+    check(target, 3);
+    // Rollback target coordinates are2 while a still-committed source3 retains a v3 receipt/runtime.
+    const rollback = {
+      ...row,
+      desired_cohort_id: origin.cohort_id,
+      desired_cohort_generation: 2,
+      observed_cohort_id: row.desired_cohort_id,
+      observed_cohort_generation: 3,
+      v3_qualification_coordinates: sourceCoordinates,
+    };
+    source.policy.repositories[0] = structuredClone(rollback);
+    target.policy.repositories[0] = structuredClone(rollback);
+    check(target, 3);
+    check(source, 2);
+    target.policy.repositories[0].v3_qualification_coordinates = targetCoordinates;
+    assert.throws(() => check(target, 3), /exact Cohort v2 qualification coordinates/u);
+    source.policy.repositories[0] = {
+      ...rollback,
+      cohort_binding_status: "bound",
+      observed_cohort_id: origin.cohort_id,
+      observed_cohort_generation: 2,
+    };
+    check(source, 2);
+  });
 }

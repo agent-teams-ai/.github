@@ -1,10 +1,7 @@
 {
   "schemaVersion": "consumer-quality-profile-v1",
   "status": "active-foundation",
-  "languages": [
-    "javascript",
-    "typescript"
-  ],
+  "languages": ["javascript", "typescript"],
   "sourceRoots": {
     "tooling": [
       "scripts/**/*.mjs",
@@ -27,13 +24,8 @@
   },
   "lint": {
     "configPath": "oxlint.json",
-    "includedRoles": [
-      "tooling"
-    ],
-    "includedExtensions": [
-      ".mts",
-      ".ts"
-    ]
+    "includedRoles": ["tooling"],
+    "includedExtensions": [".mts", ".ts"]
   },
   "toolchain": {
     "node": "26.11.1",
@@ -68,6 +60,11 @@
       "scripts/validate-renovate.ts",
       "scripts/validate-renovate.test.ts",
       "scripts/validate-renovate-abi.probe.ts",
+      "scripts/docs-b304-registry-incident.ts",
+      "scripts/docs-b304-registry-incident.test.ts",
+      "scripts/docs-b304-admission-integration.test.ts",
+      "scripts/docs-b304-recovery-staging.ts",
+      "scripts/docs-b304-recovery-staging.test.ts",
       "scripts/docs-managed-runtime-policy.ts",
       "scripts/docs-managed-runtime-policy.test.ts"
     ],
@@ -91,10 +88,5 @@
       "gitBlob": "c34697abc079e0a161fb3872a8a9acb07e951ded"
     }
   ],
-  "formatRetainedAuthoritySources": [
-    {
-      "path": "scripts/verify-docs-admission-change.mjs",
-      "gitBlob": "f3db341a5d9fc5ec74c9c3379153940db99177c0"
-    }
-  ]
+  "formatRetainedAuthoritySources": []
 }

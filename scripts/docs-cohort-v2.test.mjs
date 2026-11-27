@@ -294,36 +294,61 @@ function acceptsConsumerPolicy(value) {
 
 test("policy3.1 admits only its correlated patched range and physical tuple", () => {
   const { registry, record } = gen3Fixture("3.1.0");
-  assert.doesNotThrow(() => validateDocsQualifiedCohorts(registry, schema, { asOf: FIXTURE_AS_OF }));
+  assert.doesNotThrow(() =>
+    validateDocsQualifiedCohorts(registry, schema, { asOf: FIXTURE_AS_OF }),
+  );
   const projection = qualifiedCohortProjection(registry, record.cohort_id, { asOf: FIXTURE_AS_OF });
   assert.equal(projection.runtime.policy.version, "3.1.0");
   assert.equal(projection.runtime.node, ">=26.12.1 <27");
   assert.deepEqual(projection.runtime.qualificationRuntime, {
-    nodeVersion: "26.12.1", pnpmVersion: "11.20.0", platform: "linux", architecture: "x64",
+    nodeVersion: "26.12.1",
+    pnpmVersion: "11.20.0",
+    platform: "linux",
+    architecture: "x64",
   });
   assert.deepEqual(registry.cohorts.slice(0, historicalV1.cohorts.length), historicalV1.cohorts);
   assert.deepEqual(registry.events.slice(0, historicalV1.events.length), historicalV1.events);
   for (const mutate of [
-    (value) => { value.policy_identity.version = "3.0.0"; },
-    (value) => { value.policy_identity.version = "3.1.1"; },
-    (value) => { value.runtime.node = ">=26.0.0 <27"; },
-    (value) => { value.runtime.qualification_runtime.node_version = "26.11.1"; },
-    (value) => { value.runtime.qualification_runtime.pnpm_version = "11.20.1"; },
-    (value) => { value.runtime.qualification_runtime.architecture = "arm64"; },
+    (value) => {
+      value.policy_identity.version = "3.0.0";
+    },
+    (value) => {
+      value.policy_identity.version = "3.1.1";
+    },
+    (value) => {
+      value.runtime.node = ">=26.0.0 <27";
+    },
+    (value) => {
+      value.runtime.qualification_runtime.node_version = "26.11.1";
+    },
+    (value) => {
+      value.runtime.qualification_runtime.pnpm_version = "11.20.1";
+    },
+    (value) => {
+      value.runtime.qualification_runtime.architecture = "arm64";
+    },
   ]) {
     const invalid = gen3Fixture("3.1.0");
     mutate(invalid.record);
     invalid.record.record_digest = cohortRecordDigest(invalid.record);
-    for (const validationSchema of [schema, { $schema: "https://json-schema.org/draft/2020-12/schema", type: "object" }]) {
-      assert.throws(() => validateDocsQualifiedCohorts(invalid.registry, validationSchema,
-        { asOf: FIXTURE_AS_OF }), /JSON Schema|policy identity|managed Node 26 lane|qualification tuple/u);
+    for (const validationSchema of [
+      schema,
+      { $schema: "https://json-schema.org/draft/2020-12/schema", type: "object" },
+    ]) {
+      assert.throws(
+        () =>
+          validateDocsQualifiedCohorts(invalid.registry, validationSchema, { asOf: FIXTURE_AS_OF }),
+        /JSON Schema|policy identity|managed Node 26 lane|qualification tuple/u,
+      );
     }
   }
   const historical = gen3Fixture();
   historical.record.runtime.qualification_runtime.node_version = "26.12.1";
   historical.record.record_digest = cohortRecordDigest(historical.record);
-  assert.throws(() => validateDocsQualifiedCohorts(historical.registry, schema,
-    { asOf: FIXTURE_AS_OF }), /JSON Schema/u);
+  assert.throws(
+    () => validateDocsQualifiedCohorts(historical.registry, schema, { asOf: FIXTURE_AS_OF }),
+    /JSON Schema/u,
+  );
 });
 
 test("coexists with byte-immutable v1 and dispatches only on the explicit v2 discriminator", () => {

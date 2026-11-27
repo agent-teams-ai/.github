@@ -133,6 +133,53 @@ export function projectRepositoryRegistrations<I, D>(
   };
 }
 
+// This view applies current lifecycle decisions without rewriting dated inputs.
+// Only active-to-deleted retirement is projected; historical validation stays raw.
+export function projectCurrentRepositoryInventory<
+  I extends Pick<InventoryRepository, "repository" | "id" | "archived">,
+>(
+  inventoryRecords: readonly I[],
+  docsRecords: readonly Pick<
+    DocsRepository,
+    "repository" | "repository_id" | "repository_lifecycle"
+  >[],
+): I[] {
+  assert.ok(
+    inventoryRecords.every(
+      (record) =>
+        Number.isSafeInteger(record.id) &&
+        record.id > 0 &&
+        record.repository.length > 0 &&
+        typeof record.archived === "boolean",
+    ) &&
+      new Set(inventoryRecords.map((record) => record.id)).size === inventoryRecords.length &&
+      new Set(inventoryRecords.map((record) => record.repository)).size === inventoryRecords.length,
+    "Current inventory projection requires valid, unambiguous inventory identities.",
+  );
+  const activeDocs = docsRecords.filter((record) => record.repository_lifecycle === "active");
+  assert.ok(
+    docsRecords.every(
+      (record) =>
+        Number.isSafeInteger(record.repository_id) &&
+        record.repository_id > 0 &&
+        record.repository.length > 0 &&
+        ["active", "archived", "transferred", "deleted"].includes(record.repository_lifecycle),
+    ) &&
+      new Set(docsRecords.map((record) => record.repository_id)).size === docsRecords.length &&
+      new Set(activeDocs.map((record) => record.repository)).size === activeDocs.length,
+    "Current inventory projection requires valid, unambiguous Docs identities and lifecycle states.",
+  );
+  const docsById = new Map(docsRecords.map((record) => [record.repository_id, record]));
+  return inventoryRecords.filter((record) => {
+    const docs = docsById.get(record.id);
+    return (
+      record.archived ||
+      docs?.repository_lifecycle !== "deleted" ||
+      docs.repository !== record.repository
+    );
+  });
+}
+
 function validateRegistrations(
   value: unknown,
   schema: unknown,

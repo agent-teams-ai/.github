@@ -13,12 +13,15 @@ necessary producer, Central, release and consumer prerequisite changes. This
 decision records that bounded continuation. It grants no qualification result,
 ruleset change, Cohort selection or consumer adoption from local source edits.
 
-Central base `89b5d7c512d9c4b5ae63709857a0d71cb2e6d178` admits generation 3
+Initial Central base `89b5d7c512d9c4b5ae63709857a0d71cb2e6d178` admits generation 3
 only with semantic policy 3.0.0 and exact qualification Node 26.11.1. The producer
 successor targets patched Node 26.12.1 with controller Node 24.22.3. Changing
 the one existing runtime constant would reinterpret historical records and
 receipts, while allowing arbitrary 3.x versions would remove the closed policy
 boundary. Preserve the old semantic contract and admit one explicit successor.
+The implementation integrates protected main
+`9d8aa752886c00d5b3d9154e0b6c00e65a4e33cc` and retains all of PR441's
+separate B304 source, strict quality entries and admission routes.
 
 ## Decision
 
@@ -27,10 +30,10 @@ seven dependency edges, closure v2, profile 4, managed state 3 and receipt 1.
 Policy identity remains `agent-teams.docs-protocol-current-policy` with the
 actual nonzero digest of normal producer policy bytes.
 
-| Policy version | Node range | Exact qualification runtime |
-| --- | --- | --- |
-| 3.0.0 | `>=26.0.0 <27` | Node 26.11.1, pnpm 11.20.0, Linux x64 |
-| 3.1.0 | `>=26.12.1 <27` | Node 26.12.1, pnpm 11.20.0, Linux x64 |
+| Policy version | Node range      | Exact qualification runtime           |
+| -------------- | --------------- | ------------------------------------- |
+| 3.0.0          | `>=26.0.0 <27`  | Node 26.11.1, pnpm 11.20.0, Linux x64 |
+| 3.1.0          | `>=26.12.1 <27` | Node 26.12.1, pnpm 11.20.0, Linux x64 |
 
 Both use `node-26-managed-qualified` and pnpm range `>=11.17.0 <12`.
 The schema and semantic validator reject cross-paired versions, ranges and
@@ -73,6 +76,23 @@ readbacks. Coordinate with active Central work before that transition. Keep
 historical owners, their original source bytes and ordinary/data rejection
 routes. No source lock, immutable branch or ruleset is changed by this patch.
 
+The already protected `docs-admission-evidence.yml` owns the new helper's
+continuing source boundary. After complete paginated changed-file evidence,
+its existing pre-no-op executable guard rejects changes to the helper through
+either current or previous filename, before code-only, archive, staging or
+admission-data modes. Both B304 executable entries remain protected. The helper
+also joins the existing mixed-data authority set and imports only Node's built-in
+assertion module, so no unlisted executable dependency is introduced.
+
+The current base does not yet list this helper. This support tuple still needs
+the independently qualified finite Runtime source transition for its changed
+protected workflow and existing validators; it does not admit itself. After
+the source merge and restored predecessor requirements, a real helper-only
+negative canary must fail required `trusted-admission-evidence`, while an
+ordinary code-only positive canary succeeds. This verifies continuing helper
+ownership without adding another permanent Runtime framework. Future helper
+source changes remain rejected until separately qualified source evolution.
+
 ## Verification and limits
 
 Require positive tests of both exact policies, rejecting cross-pairs even with
@@ -80,6 +100,9 @@ recomputed record/receipt digests, preserved legacy projection bytes, and
 selected-record runtime output during pending upgrades and rollbacks. Keep the
 four-job capability split and exact workflow allowlist. The new helper and its
 test belong to the existing strict compiler, lint census and test runner.
+The materializer tests execute its real workflow script and reject helper
+modification, addition, deletion, both rename directions and mixed-data changes
+before any no-op or candidate-byte read. Preserve ordinary no-op and B304 cases.
 Run the complete current native Central gates after focused checks and an
 independent implementation review; re-observe moving main before delivery.
 
