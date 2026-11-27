@@ -1,3 +1,4 @@
+// Qualification-only negative for the base-owned protected-source guard.
 import assert from "node:assert/strict";
 
 export interface DocsManagedRuntime {
