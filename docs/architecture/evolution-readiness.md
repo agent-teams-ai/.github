@@ -166,3 +166,8 @@ offline or distributed profiles. Measure friction, dependencies, startup,
 memory and operational costs alongside correctness. Stop where existing
 mechanisms already prove the invariant. No new repository, package, runtime
 code or mandatory CI gate is selected by this planning delivery.
+
+See the [bounded library delivery plan](evolution-library-delivery-plan.md)
+for proposed placement, dependency direction, first profiles, falsifying
+fixtures, incremental sizing and delivery sequence. It selects no new package
+or implementation by publication.
