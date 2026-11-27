@@ -1595,7 +1595,12 @@ export async function checkSourceSuccessor(
   const { checkSourceSuccessor: checkFrozenV4 } =
     await import("./runtime-admission-source-successor-v4.ts");
   const decision = await checkFrozenV4(evidence, baseManifest, baseLock, sourceSHA);
-  assertPreserved(base, head, [...SOURCE_INPUTS, ...INSTALL_PATHS], true);
+  assertPreserved(
+    base,
+    head,
+    [...PREVIOUS_SOURCE_INPUTS, ...SOURCE_INPUTS, ...INSTALL_PATHS],
+    true,
+  );
   return decision;
 }
 

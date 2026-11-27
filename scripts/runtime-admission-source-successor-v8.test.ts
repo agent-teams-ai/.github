@@ -2204,7 +2204,8 @@ void test("pre-query bootstrap rejects custom/global hooks and config dependenci
 
 void test("pre-query bootstrap binds every root and child install-control blob before starting pnpm", async (t) => {
   const f = await bootstrapFixture(t),
-    checkout = join(f.directory, "checkout");
+    checkout = join(f.directory, "checkout"),
+    sourceRevision = git("rev-parse", "HEAD").toString().trim();
   execFileSync(
     "git",
     ["clone", "--shared", "--no-checkout", new URL("../", import.meta.url).pathname, checkout],
@@ -2212,9 +2213,9 @@ void test("pre-query bootstrap binds every root and child install-control blob b
   );
   const fixtureGit = (...args: string[]): string =>
     execFileSync("git", args, { cwd: checkout, encoding: "utf8", timeout: 20_000 }).trim();
-  fixtureGit("checkout", "--detach", TARGET.headSHA);
+  fixtureGit("checkout", "--detach", sourceRevision);
   const root = pathToFileURL(`${checkout}/`);
-  await qualifyBootstrap(TARGET.headSHA, root, { ...f.environment, PATH: process.env.PATH ?? "" });
+  await qualifyBootstrap(sourceRevision, root, { ...f.environment, PATH: process.env.PATH ?? "" });
   await assert.rejects(readFile(f.marker), { code: "ENOENT" });
   for (const path of BOOTSTRAP_INPUTS) {
     const target = join(checkout, path),
@@ -2237,7 +2238,7 @@ void test("pre-query bootstrap binds every root and child install-control blob b
       qualifyBootstrap(fixtureGit("rev-parse", "HEAD"), root, f.environment),
       /install control differs/u,
     );
-    fixtureGit("reset", "--hard", TARGET.headSHA);
+    fixtureGit("reset", "--hard", sourceRevision);
   }
   await assert.rejects(readFile(f.marker), { code: "ENOENT" });
 });
