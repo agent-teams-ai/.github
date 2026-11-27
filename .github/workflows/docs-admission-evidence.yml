@@ -52,6 +52,7 @@ jobs:
               "scripts/docs-legacy-admission-recovery.mjs",
               "scripts/docs-b304-registry-incident.ts",
               "scripts/docs-b304-recovery-staging.ts",
+              "scripts/docs-managed-runtime-policy.ts",
               "scripts/verify-docs-cohort-evidence.mjs",
               "scripts/docs-cohort-policy.mjs",
               "scripts/governance-policy.mjs"
@@ -75,11 +76,12 @@ jobs:
               return;
             }
             const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
-            const b304Executable = new Set([
-              "scripts/docs-b304-registry-incident.ts", "scripts/docs-b304-recovery-staging.ts"
+            const protectedDocsExecutable = new Set([
+              "scripts/docs-b304-registry-incident.ts", "scripts/docs-b304-recovery-staging.ts",
+              "scripts/docs-managed-runtime-policy.ts"
             ]);
-            if (changed.some((file) => allPaths(file).some((entry) => b304Executable.has(entry)))) {
-              core.setFailed("B304 executable source changes require a separately qualified source transition before any no-op or data mode.");
+            if (changed.some((file) => allPaths(file).some((entry) => protectedDocsExecutable.has(entry)))) {
+              core.setFailed("Protected Docs executable source changes require a separately qualified source transition before any no-op or data mode.");
               return;
             }
             const changesAdmission = changed.some((file) =>

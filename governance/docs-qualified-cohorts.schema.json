@@ -257,6 +257,64 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["cohort_generation", "cohort_id", "channel", "candidate_digest", "policy_identity", "packages", "dependency_edges", "reusable_workflow", "schemas", "assets", "runtime", "runtime_closure", "eligible_after", "upgrade_from", "rollback_to", "canary_repositories", "evidence_references", "record_digest"],
+      "oneOf": [
+        {
+          "properties": {
+            "policy_identity": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "const": "3.0.0"
+                }
+              }
+            },
+            "runtime": {
+              "type": "object",
+              "properties": {
+                "node": {
+                  "const": ">=26.0.0 <27"
+                },
+                "qualification_runtime": {
+                  "type": "object",
+                  "properties": {
+                    "node_version": {
+                      "const": "26.11.1"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "policy_identity": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "const": "3.1.0"
+                }
+              }
+            },
+            "runtime": {
+              "type": "object",
+              "properties": {
+                "node": {
+                  "const": ">=26.12.1 <27"
+                },
+                "qualification_runtime": {
+                  "type": "object",
+                  "properties": {
+                    "node_version": {
+                      "const": "26.12.1"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
       "properties": {
         "cohort_generation": { "const": 3 },
         "cohort_id": { "$ref": "#/$defs/cohortId" },
@@ -268,7 +326,7 @@
           "required": ["id", "version", "digest"],
           "properties": {
             "id": { "const": "agent-teams.docs-protocol-current-policy" },
-            "version": { "const": "3.0.0" },
+            "version": { "enum": ["3.0.0", "3.1.0"] },
             "digest": { "$ref": "#/$defs/sha256" }
           }
         },
@@ -336,14 +394,14 @@
               "enum": ["node-24-production-default", "node-26-managed-qualified"],
               "const": "node-26-managed-qualified"
             },
-            "node": { "const": ">=26.0.0 <27" },
+            "node": { "enum": [">=26.0.0 <27", ">=26.12.1 <27"] },
             "pnpm": { "const": ">=11.17.0 <12" },
             "qualification_runtime": {
               "type": "object",
               "additionalProperties": false,
               "required": ["node_version", "pnpm_version", "platform", "architecture"],
               "properties": {
-                "node_version": { "const": "26.11.1" },
+                "node_version": { "enum": ["26.11.1", "26.12.1"] },
                 "pnpm_version": { "const": "11.20.0" },
                 "platform": { "const": "linux" },
                 "architecture": { "const": "x64" }

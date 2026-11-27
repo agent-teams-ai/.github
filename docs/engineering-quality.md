@@ -499,3 +499,31 @@ semantics and qualification as unverified. Changes to either new executable
 helper are rejected before the ordinary code-only no-op, so later source changes
 still require a separately qualified source transition after restoring the
 predecessor controls. Legacy and Platform authority/proof staging remains denied.
+
+## Bounded policy 3.1 runtime source support
+
+The selected strict program now has 28 entries and the maintained lint census
+has 50 files. `scripts/docs-managed-runtime-policy.ts` and its test join the
+existing compiler project, lint and format census, and native test runner. They
+own only the closed policy 3.0.0/3.1.0 runtime mapping and trusted workflow Node
+selection. Existing registry, receipt and workflow adapters retain their legacy
+JavaScript format for these localized call-site changes; those adapters remain
+outside the strict TypeScript program and are not newly claimed as typed.
+Migrating their unrelated parsing and network responsibilities would expand this
+bounded change. The new responsibility itself is strictly typechecked.
+
+The helper has positive historical/patched cases and rejecting unknown-policy,
+cross-paired tuple, missing authority and caller/environment selector tests.
+Existing integration fixtures exercise both receipt policies and pending
+upgrade/rollback source selection. The four-job capability split, immutable
+archives, registry data and historical digest domains remain owned by their
+existing gates. ADR-0019 records protected-source admission and actual package
+qualification as separate delivery requirements; local success does not satisfy
+them.
+
+The existing base-owned admission materializer also guards the new executable
+helper before code-only no-op or any data mode, including both rename paths.
+Its existing B304 guard entries remain unchanged. Actual source delivery must
+qualify that continuing boundary with a helper-only rejecting canary after
+restoring predecessor source controls. This source support does not create a
+permanent replacement Runtime framework or authorize its own installation.

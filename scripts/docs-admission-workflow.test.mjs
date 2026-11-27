@@ -19,6 +19,7 @@ import {
 const INVENTORY_PATH = "governance/organization-repository-inventory.json";
 const B304_AUTHORITY_PATH = "governance/docs-b304-registry-recovery.json";
 const B304_PROOF_PATH = "governance/evidence/docs-b304-registry-recovery/runtime-20261126.json";
+const MANAGED_RUNTIME_PATH = "scripts/docs-managed-runtime-policy.ts";
 
 const workflow = await readFile(
   new URL("../.github/workflows/docs-admission-evidence.yml", import.meta.url),
@@ -443,6 +444,40 @@ for (const [label, mutate] of Object.entries(mutations)) {
     assert.ok(result.failures.length, label);
     assert.equal(result.outputs.has("mode"), false);
     assert.equal(result.writes.size, 0);
+  });
+}
+
+for (const [label, files] of [
+  ["modification", [{ filename: MANAGED_RUNTIME_PATH, status: "modified" }]],
+  ["addition", [{ filename: MANAGED_RUNTIME_PATH, status: "added" }]],
+  ["deletion", [{ filename: MANAGED_RUNTIME_PATH, status: "removed" }]],
+  [
+    "rename away",
+    [{ filename: "scripts/other.ts", previous_filename: MANAGED_RUNTIME_PATH, status: "renamed" }],
+  ],
+  [
+    "rename into",
+    [{ filename: MANAGED_RUNTIME_PATH, previous_filename: "scripts/other.ts", status: "renamed" }],
+  ],
+  [
+    "mixed admission data",
+    [
+      { filename: POLICY_PATH, status: "modified" },
+      { filename: MANAGED_RUNTIME_PATH, status: "modified" },
+    ],
+  ],
+]) {
+  test(`materializer rejects managed runtime ${label} before no-op or data modes`, async () => {
+    const result = await fixture((state) => {
+      state.files = files;
+      state.context.payload.pull_request.changed_files = files.length;
+    });
+    assert.deepEqual(result.failures, [
+      "Protected Docs executable source changes require a separately qualified source transition before any no-op or data mode.",
+    ]);
+    assert.equal(result.outputs.has("mode"), false);
+    assert.equal(result.writes.size, 0);
+    assert.equal(result.contentCalls, 0);
   });
 }
 

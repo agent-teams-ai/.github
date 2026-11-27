@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 
 import Ajv2020 from "ajv/dist/2020.js";
 
+import {
+  DOCS_COHORT_V3_RETAINED_RUNTIME,
+  docsCohortV3Runtime,
+} from "./docs-managed-runtime-policy.ts";
+
 const TERMINAL_STATES = new Set(["SUPPORT_ENDED", "WITHDRAWN"]);
 const BLOCKED_STATES = new Set(["SUPPORT_ENDED", "SUSPENDED", "WITHDRAWN"]);
 const RUNTIME_CLOSURE_PACKAGE_MANAGER = "pnpm@11.18.0";
@@ -46,17 +51,8 @@ export const DOCS_COHORT_V2_DEPENDENCY_EDGES = Object.freeze([
     to: "@agent-teams/repository-mutation",
   }),
 ]);
-export const DOCS_COHORT_V3_CURRENT_RUNTIME = Object.freeze({
-  selectedLane: "node-26-managed-qualified",
-  node: ">=26.0.0 <27",
-  pnpm: ">=11.17.0 <12",
-  qualificationRuntime: Object.freeze({
-    nodeVersion: "26.11.1",
-    pnpmVersion: "11.20.0",
-    platform: "linux",
-    architecture: "x64",
-  }),
-});
+// Preserve this existing export for callers that explicitly construct historical 3.0.0 data.
+export const DOCS_COHORT_V3_CURRENT_RUNTIME = DOCS_COHORT_V3_RETAINED_RUNTIME;
 const NEXT_STATES = new Map([
   ["PUBLISHED_UNQUALIFIED", new Set(["VERIFIED", "WITHDRAWN"])],
   ["VERIFIED", new Set(["COOLDOWN", "QUALIFIED", "WITHDRAWN"])],
@@ -631,25 +627,20 @@ function validateCohortRecord(record) {
       /^sha256:(?!0{64}$)[0-9a-f]{64}$/u.test(record.candidate_digest),
       `${record.cohort_id} candidateDigest must remain a retained nonzero digest field.`,
     );
+    const runtime = docsCohortV3Runtime(record.policy_identity);
     assert(
-      record.policy_identity.id === "agent-teams.docs-protocol-current-policy" &&
-        record.policy_identity.version === "3.0.0" &&
-        /^sha256:(?!0{64}$)[0-9a-f]{64}$/u.test(record.policy_identity.digest),
-      `${record.cohort_id} must bind the exact policy identity with a nonzero source digest.`,
-    );
-    assert(
-      record.runtime.selected_lane === DOCS_COHORT_V3_CURRENT_RUNTIME.selectedLane &&
-        record.runtime.node === DOCS_COHORT_V3_CURRENT_RUNTIME.node &&
-        record.runtime.pnpm === DOCS_COHORT_V3_CURRENT_RUNTIME.pnpm,
+      record.runtime.selected_lane === runtime.selectedLane &&
+        record.runtime.node === runtime.node &&
+        record.runtime.pnpm === runtime.pnpm,
       `${record.cohort_id} must use the current managed Node 26 lane and exact ranges.`,
     );
     assert(
       canonicalJson(record.runtime.qualification_runtime) ===
         canonicalJson({
-          node_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.nodeVersion,
-          pnpm_version: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.pnpmVersion,
-          platform: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.platform,
-          architecture: DOCS_COHORT_V3_CURRENT_RUNTIME.qualificationRuntime.architecture,
+          node_version: runtime.qualificationRuntime.nodeVersion,
+          pnpm_version: runtime.qualificationRuntime.pnpmVersion,
+          platform: runtime.qualificationRuntime.platform,
+          architecture: runtime.qualificationRuntime.architecture,
         }),
       `${record.cohort_id} qualification tuple must be exact; a runtime range cannot substitute for it.`,
     );

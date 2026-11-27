@@ -203,7 +203,7 @@
       "exact_package_version": "0.6.2",
       "exact_foundation_version": "1.7.2",
       "cohort_binding_status": "rollout_pending",
-      "desired_cohort_id": "docs-2026-11-27-stable34",
+      "desired_cohort_id": "docs-2026-11-27-orchestrator-v2",
       "desired_cohort_generation": 3,
       "v3_qualification_coordinates": {
         "profile_schema_version": 4,

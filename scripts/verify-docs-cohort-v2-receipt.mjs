@@ -3,6 +3,7 @@ import { lstat, opendir, readFile, realpath } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
 
 import { cohortRecordDigest } from "./docs-cohort-policy.mjs";
+import { docsCohortV3Runtime } from "./docs-managed-runtime-policy.ts";
 
 const SHA = /^(?!0{40}$)[0-9a-f]{40}$/u;
 const DIGEST = /^sha256:(?!0{64}$)[0-9a-f]{64}$/u;
@@ -39,12 +40,6 @@ const CHECKS_V3 = Object.freeze([
   "selected-lane-runtime",
   "observed-node-runtime",
 ]);
-const QUALIFICATION_RUNTIME_V3 = Object.freeze({
-  nodeVersion: "26.11.1",
-  pnpmVersion: "11.20.0",
-  platform: "linux",
-  architecture: "x64",
-});
 
 function fail(message) {
   throw new Error(message);
@@ -361,15 +356,11 @@ function verifyDocsCohortV3Receipt({ receipt, executionEnvelope, record, qualifi
   ) {
     fail("Qualification receipt Cohort v3 assets are not exact nonzero bindings.");
   }
-  const expectedRuntime = {
-    selectedLane: "node-26-managed-qualified",
-    node: ">=26.0.0 <27",
-    pnpm: ">=11.17.0 <12",
-    qualificationRuntime: QUALIFICATION_RUNTIME_V3,
-  };
+  const expectedRuntime = docsCohortV3Runtime(record.policy_identity);
+  const qualificationRuntime = expectedRuntime.qualificationRuntime;
   const expectedPolicy = {
     id: "agent-teams.docs-protocol-current-policy",
-    version: "3.0.0",
+    version: record.policy_identity.version,
     sourceDigest: record.policy_identity?.digest,
   };
   if (
@@ -440,10 +431,10 @@ function verifyDocsCohortV3Receipt({ receipt, executionEnvelope, record, qualifi
     ]) ||
     canonicalJson(record.runtime.qualification_runtime) !==
       canonicalJson({
-        node_version: QUALIFICATION_RUNTIME_V3.nodeVersion,
-        pnpm_version: QUALIFICATION_RUNTIME_V3.pnpmVersion,
-        platform: QUALIFICATION_RUNTIME_V3.platform,
-        architecture: QUALIFICATION_RUNTIME_V3.architecture,
+        node_version: qualificationRuntime.nodeVersion,
+        pnpm_version: qualificationRuntime.pnpmVersion,
+        platform: qualificationRuntime.platform,
+        architecture: qualificationRuntime.architecture,
       }) ||
     !exactKeys(record.runtime_closure, [
       "schema_version",
