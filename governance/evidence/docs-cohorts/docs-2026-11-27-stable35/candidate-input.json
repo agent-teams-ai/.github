@@ -1,0 +1,272 @@
+{
+  "evidenceClass": "preparatory-published-cohort-candidate",
+  "qualified": false,
+  "assembledAt": "2026-11-27T08:08:43.111Z",
+  "source": {
+    "repository": "agent-teams-ai/.github",
+    "revision": "c58f93aabf78c92308b90ceb6b93e207f2bec5d9",
+    "tree": "2745d00ed283a9d921fc9b5feab25fb518145f2c",
+    "registryBlob": "5a99b48c754c0e55caa070daed6043f3f0c81bcd"
+  },
+  "consumerObservation": {
+    "observationClass": "live-public-repository-metadata",
+    "repository": "agent-teams-ai/extension-foundation",
+    "repositoryId": 1333298097,
+    "defaultBranch": "main",
+    "sourceRevision": "8c16e5dbf24d8a09d9f33fe7c3ee8f38bf74599c"
+  },
+  "proposedRecord": {
+    "cohort_generation": 3,
+    "cohort_id": "docs-2026-11-27-stable35",
+    "channel": "stable",
+    "policy_identity": {
+      "id": "agent-teams.docs-protocol-current-policy",
+      "version": "3.1.0",
+      "digest": "sha256:18db0135d1d6191ef78c1feb243f5dc672aaed9985f52be1a72af4fdd7e9bb4e"
+    },
+    "packages": [
+      {
+        "name": "@agent-teams/repository-mutation",
+        "version": "0.5.2",
+        "role": "transitive",
+        "integrity": "sha512-eK/HsE/1qt+TXzrrbggXykZJXloFZfZD0ZlwdGbm2Jc9O6lAlhu7+w9BdSeryX/vCyMYWeRLv38S/7V717RPMg==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:19:37.492Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2frepository-mutation@0.5.2",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/document-authoring",
+        "version": "0.3.9",
+        "role": "transitive",
+        "integrity": "sha512-a6SOuytNOoKJVW+pp51AUMhrjzTvbYvro6nUuAFqmu0l0G63xkSAnhpwlaPJbHSbSBvoIawm8z+nL8OVMFIY3A==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:25:07.116Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocument-authoring@0.3.9",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/docs-protocol",
+        "version": "0.6.9",
+        "role": "direct",
+        "integrity": "sha512-rZ7Ie43dmN+m8LjCdXt5iqOP5h41M/TWNFg7bwvV05/XuSJrJF4udBLXIReqqVfeqdoYrFNxPbTknKJ30N6aTA==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-26T12:26:37.182Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "da1868240b96113582b508b0c15341c477d6334b",
+          "workflow_run_id": 45816094753,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol@0.6.9",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/docs-protocol-agent-teams",
+        "version": "0.8.0",
+        "role": "direct",
+        "integrity": "sha512-BixlYEalI0/j4auoSLBSBlKJGUXyZeuKS3WI+5nxdiAPg/yyAtKHjhmxuo059YZPn0+R931M0sdpNHRkpgDUDg==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-27T07:51:02.567Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "1b753d04847c1021dd5a485383c4df0714b27be7",
+          "workflow_run_id": 45959824462,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fdocs-protocol-agent-teams@0.8.0",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45959824462",
+          "signature_verified": true
+        }
+      },
+      {
+        "name": "@agent-teams/engineering-foundation",
+        "version": "4.0.3",
+        "role": "direct",
+        "integrity": "sha512-D/q979O6OOhsS3IpkwKwb1wNDcXcJESKbYATz7Gk8biiXYxC2tIGi5S9er/DQDbghOnzrilipKxvTMJZ1GGolg==",
+        "registry": "https://registry.npmjs.org/",
+        "published_at": "2026-11-27T07:56:28.697Z",
+        "provenance": {
+          "source_repository": "agent-teams-ai/engineering-foundation",
+          "source_repository_id": 1316243988,
+          "source_workflow": ".github/workflows/release.yml",
+          "source_commit": "1b753d04847c1021dd5a485383c4df0714b27be7",
+          "workflow_run_id": 45959824462,
+          "workflow_run_attempt": 1,
+          "registry_attestation_url": "https://registry.npmjs.org/-/npm/v1/attestations/@agent-teams%2fengineering-foundation@4.0.3",
+          "workflow_run_url": "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45959824462",
+          "signature_verified": true
+        }
+      }
+    ],
+    "dependency_edges": [
+      {
+        "from": "@agent-teams/document-authoring",
+        "to": "@agent-teams/repository-mutation"
+      },
+      {
+        "from": "@agent-teams/docs-protocol",
+        "to": "@agent-teams/document-authoring"
+      },
+      {
+        "from": "@agent-teams/docs-protocol",
+        "to": "@agent-teams/repository-mutation"
+      },
+      {
+        "from": "@agent-teams/docs-protocol-agent-teams",
+        "to": "@agent-teams/docs-protocol"
+      },
+      {
+        "from": "@agent-teams/docs-protocol-agent-teams",
+        "to": "@agent-teams/repository-mutation"
+      },
+      {
+        "from": "@agent-teams/engineering-foundation",
+        "to": "@agent-teams/document-authoring"
+      },
+      {
+        "from": "@agent-teams/engineering-foundation",
+        "to": "@agent-teams/repository-mutation"
+      }
+    ],
+    "reusable_workflow": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981,
+      "path": ".github/workflows/docs-protocol-check.yml",
+      "revision": "c58f93aabf78c92308b90ceb6b93e207f2bec5d9",
+      "blob_sha": "714af12998ef140dd55a2ec3057f67775586cfd7"
+    },
+    "schemas": {
+      "consumer_integration": 4,
+      "managed_state": 3,
+      "qualification_receipt": 1,
+      "docs_protocol": 1,
+      "foundation_plan": 1,
+      "foundation_journal": 1,
+      "foundation_receipt": 1,
+      "foundation_envelope": 5
+    },
+    "assets": {
+      "skill": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "skills/docs/SKILL.md",
+        "digest": "sha256:a86d8c9b990124f11b50b1c6703e1aeb5e3b981d51f7e8f5c163c4f5b987d7c5"
+      },
+      "caller_workflow": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/docs-protocol.yml",
+        "digest": "sha256:1d4424682157e101f3ae98538a19e59ceeb2fcf8b96687f2694fec77315276ac",
+        "rendered_digest": "sha256:2b3bf81fb85d8fe4cdb72681bb8a90b022509ef2708a130b931f4968cf30aa1f"
+      },
+      "asset_catalog": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/catalog.json",
+        "digest": "sha256:3ec380a1a6dd8534824ba82ff23affba993e19e9cb6b3c5e424ea9973ad686da"
+      },
+      "transition_catalog": {
+        "package": "@agent-teams/docs-protocol-agent-teams",
+        "path": "assets/transition-catalog.json",
+        "digest": "sha256:605fad26bd2c836e0dcf7484910ee62ac3fba7963bc05c90f8a89f813b41cb4a"
+      }
+    },
+    "runtime": {
+      "selected_lane": "node-26-managed-qualified",
+      "node": ">=26.12.1 <27",
+      "pnpm": ">=11.17.0 <12",
+      "qualification_runtime": {
+        "node_version": "26.12.1",
+        "pnpm_version": "11.20.0",
+        "platform": "linux",
+        "architecture": "x64"
+      }
+    },
+    "runtime_closure": {
+      "schema_version": 2,
+      "domain": "agent-teams.docs-runtime-closure/v2",
+      "package_manager": "pnpm@11.20.0",
+      "lockfile_version": "9.0",
+      "package_count": 88,
+      "projection_path": "governance/docs-runtime-closures/sha256-7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475.json",
+      "digest": "sha256:7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475"
+    },
+    "eligible_after": "2026-11-27T07:56:29Z",
+    "upgrade_from": [
+      "docs-2026-10-03-stable31"
+    ],
+    "rollback_to": [
+      "docs-2026-10-03-stable31"
+    ],
+    "canary_repositories": [
+      {
+        "repository_id": 1333298097,
+        "repository": "agent-teams-ai/extension-foundation"
+      }
+    ],
+    "evidence_references": [
+      "governance/evidence/docs-cohorts/docs-2026-11-27-stable35/candidate-input.json",
+      "governance/evidence/docs-cohorts/docs-2026-11-27-stable35/publication.json",
+      "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45816094753/attempts/1",
+      "https://github.com/agent-teams-ai/engineering-foundation/actions/runs/45959824462/attempts/1"
+    ]
+  },
+  "observedRuntime": {
+    "node": "26.12.1",
+    "pnpm": "11.20.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "helper": "scripts/verify-docs-cohort-evidence.mjs#resolvePublishedRuntimeClosure"
+  },
+  "collector": {
+    "selectionDigest": "sha256:83bfa6ddc55dc2583368867d56281422bcdbd12462840b0f933fe26facd38f82",
+    "sources": [
+      {
+        "path": "collector.ts",
+        "sha256": "sha256:bcef9f688db37c56786f00f9e035c45b29759e75ad73431d3f8afbba6a2c1f8c",
+        "bytes": 22127
+      },
+      {
+        "path": "publication.ts",
+        "sha256": "sha256:b8dc5062447942c995caf8d2d435a3511dd9d159509fdc9fb5f3bb1b14aba064",
+        "bytes": 11891
+      },
+      {
+        "path": "io.ts",
+        "sha256": "sha256:a9bbe70caaffc2c1464b7ed222abd4ee04102ae50b4ff7a2f14990ff8d3904c9",
+        "bytes": 5995
+      },
+      {
+        "path": "tsconfig.json",
+        "sha256": "sha256:4bbb9fb30d7cb7273af73e932b110d7b8252407e34d50ec736ea21b654c3e789",
+        "bytes": 535
+      },
+      {
+        "path": "package.json",
+        "sha256": "sha256:1e614fb7acda070f984f6cabd2bdb4e8eeadddff1b4aea342b38ea7a211b1d41",
+        "bytes": 94
+      }
+    ],
+    "guardScope": "Diagnostic Node observation; no claim of blanket inherited guard coverage or consumer E2E."
+  }
+}
