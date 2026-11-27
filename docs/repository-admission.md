@@ -164,11 +164,16 @@ separate claims; do not fabricate a qualified repository record.
 
 ### Coverage v5 and the current Stack adapter
 
-The bounded current adapter recognizes this exact development graph together:
-`@agent-teams/engineering-foundation@4.0.2`,
-`@agent-teams/feature-module-standard@0.4.3` and `stack-toolchain@0.3.1`, with
-root Foundation schema 3 and quality source-coverage schema 5. The retained
-legacy configuration and reviewed Stack 0.1.1 contract remain unchanged.
+The bounded current adapter recognizes either exact development graph below
+with root Foundation schema 3 and quality source-coverage schema 5:
+
+| Engineering Foundation | Feature Module Standard tooling | Stack Toolchain |
+| --- | --- | --- |
+| `4.0.2` | `0.4.3` | `0.3.1` |
+| `4.0.3` | `0.4.4` | `0.4.0` |
+
+The retained legacy configuration and reviewed Stack 0.1.1 contract remain
+unchanged.
 Unknown releases, mixed graphs and duplicate runtime declarations fail closed;
 this recognition does not upgrade Central's own installed tooling.
 

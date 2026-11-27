@@ -687,13 +687,16 @@ export async function checkRepositoryAdmission(source: AdmissionSource): Promise
   const approvedModernGraph =
     modernCoverage &&
     foundation.schemaVersion === 3 &&
-    devDependencies["@agent-teams/engineering-foundation"] === "4.0.2" &&
-    devDependencies["@agent-teams/feature-module-standard"] === "0.4.3" &&
-    devDependencies["stack-toolchain"] === "0.3.1";
+    ((devDependencies["@agent-teams/engineering-foundation"] === "4.0.2" &&
+      devDependencies["@agent-teams/feature-module-standard"] === "0.4.3" &&
+      devDependencies["stack-toolchain"] === "0.3.1") ||
+      (devDependencies["@agent-teams/engineering-foundation"] === "4.0.3" &&
+        devDependencies["@agent-teams/feature-module-standard"] === "0.4.4" &&
+        devDependencies["stack-toolchain"] === "0.4.0"));
   if (modernCoverage && !approvedModernGraph) {
     issue(
       coveragePath ?? "foundation.config.yaml",
-      "Coverage v5 requires the reviewed Foundation 4.0.2, FMS 0.4.3, Stack 0.3.1 and root schema 3 configuration graph.",
+      "Coverage v5 requires the reviewed Foundation/FMS/Stack graph (4.0.2/0.4.3/0.3.1 or 4.0.3/0.4.4/0.4.0) and root schema 3.",
     );
   }
   if (

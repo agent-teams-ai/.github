@@ -519,6 +519,81 @@ void test("coverage v5 refuses stale, ambiguous or incomplete topology without l
   }
 });
 
+void test("coverage v5 accepts the exact newer LMU graph with all standalone compiler projects", async () => {
+  const { files, source } = await modernFixture();
+  const manifest = manifestFrom(files);
+  const projects = [
+    "tsconfig.quality.json",
+    "tsconfig.portable.json",
+    "tsconfig.tools.json",
+    "tsconfig.tests.json",
+  ];
+  const devDependencies = {
+    "@agent-teams/engineering-foundation": "4.0.3",
+    "@agent-teams/feature-module-standard": "0.4.4",
+    "stack-toolchain": "0.4.0",
+  };
+  files.set(
+    "toolchain.config.json",
+    json({
+      ...fixtureDocument(files, "toolchain.config.json"),
+      typecheck: { projects },
+    }),
+  );
+  for (const path of projects.slice(1)) {
+    files.set(
+      path,
+      json({ extends: "./tsconfig.quality.json", include: ["packages/**/*.ts"] }),
+    );
+  }
+  const route = (selected: string[]) =>
+    selected.map((path) => `stack-toolchain compile --project ${path}`).join(" && ");
+  const setManifest = (typecheck: string, graph = devDependencies) => {
+    files.set(
+      "package.json",
+      json({ ...manifest, devDependencies: graph, scripts: { ...manifest.scripts, typecheck } }),
+    );
+  };
+  setManifest(route(projects));
+  const accepted = await checkRepositoryAdmission(source);
+  assert.deepEqual(accepted.issues, []);
+  assert.equal(accepted.status, "configured_not_qualified");
+  for (const path of projects) {
+    assert.ok(accepted.inspected_paths.includes(path));
+  }
+  setManifest("stack-toolchain typecheck");
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+  setManifest(route(projects.slice(0, -1)));
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some((entry) =>
+      entry.message.includes("actual strict compiler/build"),
+    ),
+  );
+
+  // Reject every partial upgrade/downgrade, not only an unknown Stack pin.
+  const previous = {
+    "@agent-teams/engineering-foundation": "4.0.2",
+    "@agent-teams/feature-module-standard": "0.4.3",
+    "stack-toolchain": "0.3.1",
+  };
+  const names = Object.keys(previous) as (keyof typeof previous)[];
+  for (let mask = 1; mask < 7; mask += 1) {
+    const mixed = { ...devDependencies };
+    for (const [index, name] of names.entries()) {
+      if ((mask & (1 << index)) !== 0) {
+        mixed[name] = previous[name];
+      }
+    }
+    setManifest(route(projects), mixed);
+    const rejected = await checkRepositoryAdmission(source);
+    assert.equal(rejected.status, "incomplete", JSON.stringify(mixed));
+    assert.ok(
+      rejected.issues.some((entry) => entry.message.includes("reviewed Foundation")),
+      JSON.stringify(mixed),
+    );
+  }
+});
+
 void test("coverage v5 requires the reviewed development graph and effective native compiler route", async () => {
   for (const [name, version] of [
     ["@agent-teams/engineering-foundation", "4.0.1"],
