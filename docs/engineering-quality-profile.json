@@ -1,7 +1,10 @@
 {
   "schemaVersion": "consumer-quality-profile-v1",
   "status": "active-foundation",
-  "languages": ["javascript", "typescript"],
+  "languages": [
+    "javascript",
+    "typescript"
+  ],
   "sourceRoots": {
     "tooling": [
       "scripts/**/*.mjs",
@@ -24,8 +27,13 @@
   },
   "lint": {
     "configPath": "oxlint.json",
-    "includedRoles": ["tooling"],
-    "includedExtensions": [".mts", ".ts"]
+    "includedRoles": [
+      "tooling"
+    ],
+    "includedExtensions": [
+      ".mts",
+      ".ts"
+    ]
   },
   "toolchain": {
     "node": "26.11.1",
@@ -59,7 +67,9 @@
       "scripts/repository-bootstrap-observation.test.ts",
       "scripts/validate-renovate.ts",
       "scripts/validate-renovate.test.ts",
-      "scripts/validate-renovate-abi.probe.ts"
+      "scripts/validate-renovate-abi.probe.ts",
+      "scripts/docs-managed-runtime-policy.ts",
+      "scripts/docs-managed-runtime-policy.test.ts"
     ],
     "compilerManifest": "stack-toolchain/toolchain-manifest.json"
   },

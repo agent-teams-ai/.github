@@ -2,7 +2,9 @@
   "schemaVersion": 1,
   "profile": "typescript-node",
   "typecheck": {
-    "projects": ["tsconfig.tooling.json"]
+    "projects": [
+      "tsconfig.tooling.json"
+    ]
   },
   "lint": {
     "config": "oxlint.json",
@@ -19,6 +21,8 @@
       "scripts/compiler-floor.ts",
       "scripts/docs-cohort-policy.mjs",
       "scripts/docs-legacy-admission-recovery.mjs",
+      "scripts/docs-managed-runtime-policy.test.ts",
+      "scripts/docs-managed-runtime-policy.ts",
       "scripts/docs-platform-admission-recovery.mjs",
       "scripts/docs-portable-authority-r322.mjs",
       "scripts/governance-policy.mjs",
@@ -103,6 +107,8 @@
       "scripts/docs-isolated-qualification-cutover-v1.test.mjs",
       "scripts/docs-legacy-admission-recovery.mjs",
       "scripts/docs-legacy-admission-recovery.test.mjs",
+      "scripts/docs-managed-runtime-policy.test.ts",
+      "scripts/docs-managed-runtime-policy.ts",
       "scripts/docs-node24-launcher-v1.test.mjs",
       "scripts/docs-platform-admission-recovery.mjs",
       "scripts/docs-platform-admission-recovery.test.mjs",

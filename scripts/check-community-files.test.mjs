@@ -104,6 +104,22 @@ test("rejects caller-controlled workflow inputs and secret capability", () => {
   assert.throws(() => validateDocsProtocolWorkflow(withSecret, YAML.stringify(withSecret)));
 });
 
+test("requires the authorizer's closed runtime output for both executable consumer jobs", () => {
+  assert.equal(workflow.jobs["trusted-authorize"].outputs["qualification-node-version"],
+    "${{ steps.authorization.outputs.qualification-node-version }}");
+  for (const job of ["trusted-qualification", "docs-protocol-check"]) {
+    for (const selector of ["26.12.1", "${{ inputs.node }}", "${{ env.NODE_VERSION }}",
+      "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.12.1' || '24.21.0' }}"]) {
+      const changed = clone(workflow);
+      changed.jobs[job].steps.find((step) => step.uses?.startsWith("actions/setup-node@")).with["node-version"] = selector;
+      assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
+    }
+  }
+  const changed = clone(workflow);
+  changed.jobs["trusted-authorize"].outputs["qualification-node-version"] = "${{ inputs.node }}";
+  assert.throws(() => validateDocsProtocolWorkflow(changed), /allowlist/u);
+});
+
 test("rejects semantic commands in OIDC and changed authority", () => {
   const trustedGate = clone(workflow);
   trustedGate.jobs["trusted-authorize"].steps.push({
@@ -188,9 +204,9 @@ test("dispatches none, legacy, Cohort v2, and generation3 while preserving v2 No
       .env,
     { DOCS_COHORT_PNPM_EXECUTABLE: "pnpm" },
   );
-  assert.match(
+  assert.equal(
     byName.get("Set up Node for trusted qualification tooling").with["node-version"],
-    /cohort-v3.*26\.11\.1.*24\.21\.0/u,
+    "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
   );
   assert.match(
     byName.get("Bind Cohort v2 or v3 authorized consumer receipt without asserting central CANARY")
@@ -207,7 +223,7 @@ test("dispatches none, legacy, Cohort v2, and generation3 while preserving v2 No
     semantic.steps.find((step) => step.name === "Set up Node for repository semantic gate").with[
       "node-version"
     ],
-    "${{ needs.trusted-authorize.outputs.qualification-profile == 'cohort-v3' && '26.11.1' || '24.21.0' }}",
+    "${{ needs.trusted-authorize.outputs.qualification-node-version }}",
   );
 });
 

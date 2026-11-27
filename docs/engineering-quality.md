@@ -456,3 +456,24 @@ The old PR390 activation tuple is historical, not applicable to installed v3.
 New protected compiler/admission/toolchain inputs require a separately reviewed
 finite successor, fresh positive/negative qualification and an add-before-retire
 transition. This functional candidate does not activate its own authority.
+
+## Bounded policy 3.1 runtime source support
+
+The selected strict program now has 23 entries and the maintained lint census
+has 45 files. `scripts/docs-managed-runtime-policy.ts` and its test join the
+existing compiler project, lint and format census, and native test runner. They
+own only the closed policy3.0.0/3.1.0 runtime mapping and trusted workflow Node
+selection. Existing registry, receipt and workflow adapters retain their legacy
+JavaScript format for these localized call-site changes; those adapters remain
+outside the strict TypeScript program and are not newly claimed as typed.
+Migrating their unrelated parsing and network responsibilities would expand this
+bounded change. The new responsibility itself is strictly typechecked.
+
+The helper has positive historical/patched cases and rejecting unknown-policy,
+cross-paired tuple, missing authority and caller/environment selector tests.
+Existing integration fixtures exercise both receipt policies and pending
+upgrade/rollback source selection. The four-job capability split, immutable
+archives, registry data and historical digest domains remain owned by their
+existing gates. ADR-0019 records protected-source admission and actual package
+qualification as separate delivery requirements; local success does not satisfy
+them.

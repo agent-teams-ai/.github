@@ -10,7 +10,9 @@
     "erasableSyntaxOnly": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "scripts/qualification-input-proof.mts",
@@ -33,6 +35,8 @@
     "scripts/repository-bootstrap-observation.test.ts",
     "scripts/validate-renovate.ts",
     "scripts/validate-renovate.test.ts",
-    "scripts/validate-renovate-abi.probe.ts"
+    "scripts/validate-renovate-abi.probe.ts",
+    "scripts/docs-managed-runtime-policy.ts",
+    "scripts/docs-managed-runtime-policy.test.ts"
   ]
 }
