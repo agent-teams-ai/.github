@@ -1,0 +1,34 @@
+{
+  "evidenceClass": "preparatory-published-cohort-candidate",
+  "qualified": false,
+  "cohortId": "docs-2026-11-27-orchestrator-v3",
+  "state": "PUBLISHED_UNQUALIFIED",
+  "preparedAt": "2026-11-27T08:12:07.069Z",
+  "base": {
+    "repository": "agent-teams-ai/.github",
+    "revision": "c58f93aabf78c92308b90ceb6b93e207f2bec5d9",
+    "registryBlob": "5a99b48c754c0e55caa070daed6043f3f0c81bcd",
+    "registrySha256": "sha256:e81d745c2fe059dd6418d69bb2b3e921f405a8f49be5f23acfdf87d13c42faf8"
+  },
+  "candidateInputPath": "governance/evidence/docs-cohorts/docs-2026-11-27-orchestrator-v3/candidate-input.json",
+  "candidateInputDigest": "sha256:235e0dbecb12f8af83ea2524a3ebe706385c866637ca49ccbcbf07a540b53110",
+  "recordDigest": "sha256:f61e98c96fcc7beab30b6956312dead50a363c403fd67cdce4d0f18e8e69424c",
+  "eventDigest": "sha256:fe75caa693f4b12c519f96dbeb564bc8c90c196eeab02c7132a3203f387beec1",
+  "publicationTimeSemantics": "Exact latest observed publication timestamp of the five actual packages; preparation time is separate.",
+  "verificationScope": {
+    "actualPublicationObserved": true,
+    "signatureAuditExecuted": true,
+    "sourceWorkflowProvenanceCheckedAgainstActualApi": true,
+    "actualPinnedRuntimeClosureResolved": true,
+    "unchangedFullLiveVerifierCompleted": false,
+    "hostedTrustedQualificationCompleted": false,
+    "consumerCanaryExecuted": false,
+    "defaultBranchDeliveryClaimed": false
+  },
+  "pending": [
+    "Unchanged trusted base-owned full live verification of this exact initial record.",
+    "Actual source-A hosted success, followed by a separately reviewed append of VERIFIED/QUALIFIED and fresh source-B checks.",
+    "Separate desired selection, physical controller migration/recovery, preserved foreign graph and Host integration; actual consumer main checks.",
+    "Actual observed selection and CANARY evidence; no recommendation change."
+  ]
+}
