@@ -519,9 +519,12 @@ evaluate three options for every routine implementation detail.
    security, observability and a clear extension path. Avoid speculative
    infrastructure, empty scaffolding and unrelated refactors.
 3. Use the repository's package manager and dependency policy. When adding or
-   upgrading a dependency, verify its current stable release, compatibility and
-   provenance. Retain approved versions, lockfiles and integrity evidence;
-   freshness alone does not authorize an unrelated upgrade of a pinned protocol.
+   upgrading a dependency, verify the newest eligible release, compatibility
+   and provenance. For shared backend dependencies, start from the
+   [version catalog](backend-stack-versions.md), including explicitly selected
+   pre-release channels and their qualification requirements. Retain exact
+   approved versions, lockfiles and integrity evidence; freshness alone does
+   not authorize an unrelated upgrade of a pinned protocol.
 4. Test the changed contract and credible failure modes. Choose unit, property,
    integration, concurrency, migration or E2E tests according to the risk.
    Include rejecting fixtures for new enforced boundaries. Do not add tests

@@ -53,6 +53,7 @@ of its current conformance.
 - [Development tools catalog](docs/development-tools.md) - tool purpose, when to use it, canonical guides and actual availability, including planned tooling.
 - [CI/CD practices](docs/ci-cd-practices.md) - reducing repeated PR/merge jobs safely, with fail-closed evidence and concrete antipatterns.
 - [Backend stack reference](docs/backend-stack.md) - shared backend technology responsibilities, explicit local adoption and unresolved selections; frontend choices remain separate.
+- [Backend stack version catalog](docs/backend-stack-versions.md) - exact recommended candidates, freshness policy and the [observed repository dashboard](https://github.com/agent-teams-ai/.github/issues/473).
 
 - `AGENTS.md` - agent navigation for immutable standards and local adoption.
 - `CONTRIBUTING.md` - baseline contribution workflow.

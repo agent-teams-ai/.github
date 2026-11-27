@@ -33,9 +33,12 @@ Before choosing or duplicating reusable development tooling, read the
 the owning guide. Check availability and repository adoption before using a tool.
 
 Before choosing backend technologies, read the
-[backend stack reference](docs/backend-stack.md). Apply the target repository's
-explicit adoption and existing decisions; do not install the entire stack or
-change pins merely because a reference exists.
+[backend stack reference](docs/backend-stack.md) and its
+[version catalog](docs/backend-stack-versions.md). Before adding or upgrading
+an applicable dependency, check the latest eligible release in its approved
+channel, reuse existing qualification evidence, and pin the tested version.
+Apply the target repository's explicit adoption and existing decisions; do
+not install the entire stack or change unrelated pins.
 
 For feature-module architecture:
 
