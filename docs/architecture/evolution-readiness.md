@@ -74,11 +74,18 @@ not make empty records for every function. Resolve expensive-to-change public
 contracts, durable schemas, authority models and workflow formats before the
 dependent implementation.
 
+Use existing contracts and layers before adding new ones. A fixed pure helper
+or simple CRUD capability needs no special behavior-version, flag, workload,
+resource or dynamic-lifecycle abstraction unless its actual contract requires
+it. A stronger profile should be additive at the real seam; ordinary consumers
+must not inherit unnecessary dependencies, per-call lookups or I/O. Do not
+create extra interfaces, empty features or generic managers for future use.
+
 | Topic | Applies when | Preserve early | First useful mechanism; no speculative platform |
 | --- | --- | --- | --- |
 | Replaceable composition | Independent implementation or delivery seam | Explicit ports, state/resource owner, stable entrypoint | Static GM where adopted; LMU only for qualified live operation |
 | Versioned behavior | Durable workflow, AI run or changing strategy | Owner-scoped revision references, provenance, resume semantics | Effective behavior at relevant admission/step; no global version object |
-| Continuous evaluation | Output quality is empirical or model/strategy changes | Versioned criteria, cases, results and comparable cost/latency | Existing Task Verification/evaluation ports and offline fixtures; not mandatory for CRUD |
+| Continuous evaluation | Output quality is empirical or model/strategy changes | Versioned criteria, cases, results and comparable cost/latency | Owner-local evaluation/qualification fixtures; Task Verification is an optional task-completion criterion, not the general evaluator |
 | Progressive delivery | Independent installations/cohorts or risk-bearing changes | Desired/observed revisions, stable eligibility, old/new compatibility, stop | Existing owner configuration/deployment policy; optional standard flag adapter |
 | Local-first readiness | Editable user data across devices | Stable IDs, local vs canonical owner, revision/conflict/expiry | Local drafts/cache or logical transfer; CRDT only for specific mergeable data |
 | Workload identity | Service, agent or extension crosses trust boundary | Actor, subject, audience, scope, issuer, expiry/revocation and receiver check | Existing IAM/security ports; evaluate federation/token exchange only where supported |
@@ -91,6 +98,15 @@ do not guarantee reproducible provider behavior: record observed identity
 where available and acknowledge nondeterminism. Eval verdicts are observations,
 not side-effect permission. Shadow evaluation uses read-only or disposable
 bounded environments, not duplicate payments, messages or provider actions.
+Task Verification checks completion of an assigned LLM task; comparison of
+model, prompt, tool or strategy quality is a distinct evaluation concern.
+Do not broaden the existing Task Verification project or assume a shared
+runtime library. Its results may be used as evidence through a narrow adapter.
+
+The detailed offline-first, local LLM and cross-instance sync architecture
+is assigned to a separate workstream. Keep existing authority and logical
+transfer decisions intact while it is designed; no sync implementation is
+selected by this guide.
 
 Offline collaboration never creates a second authoritative writer for grants,
 money, execution or irreversible effects. Logical transfer, physical backup

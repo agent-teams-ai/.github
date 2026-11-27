@@ -18,13 +18,14 @@ No aggregate universal "foundation runtime" or mandatory umbrella package.
 
 | Candidate | Proposed home | Start now |
 | --- | --- | --- |
-| Task verification and evaluation | Existing task-verification research repository; future production package only after explicit promotion | Finish experimental evidence and design public boundary |
+| AI behavior evaluation | Owner-local experiment/qualification first; optional independent library only after shared semantics are established | Design a paired comparison; reuse established evaluation tooling and Task Verification only as an optional evidence adapter |
+| Task Verification (separate existing scope) | Existing task-verification project and its own owner plan | No new implementation or scope expansion in this workstream |
 | Behavior revision evidence | Provisional independent behavior-revisions library | Design and falsify shared semantics in disposable fixtures |
 | Reproducible failure tests | Engineering Foundation; optional development-only capability/test entry | Extend existing fixtures and executable-specification route |
 | Progressive delivery | Product rollout owner; optional rollout-selection library if two matching consumers justify it | Design selection/receipt seam; compare OpenFeature |
 | Workload identity | Existing product security/IAM adapters; optional workload-identity library after shared protocol qualification | Specify trust boundary and supported token profile |
 | Portable data | Product-owned transfer contracts; optional portable-data library for shared mechanical envelope | Design one transfer profile, reuse existing artifact mechanisms |
-| Offline collaboration | Product-owned document adapter; optional collaboration-sync package later | Preserve IDs, conflict semantics and authority; compare established CRDTs |
+| Offline-first and instance synchronization | Separate owner-delegated architecture workstream | Preserve current ownership constraints; do not choose or implement sync mechanisms here |
 | Cross-language execution | Extension Foundation and actual Runtime executor/containment owner | Preserve SPI; separately qualify Wasm/WIT if selected |
 
 Names are provisional design labels, not existing packages or a naming policy.
@@ -33,8 +34,13 @@ reports model-free verification and explicitly does not promise a stable API,
 production suitability or a package release. Review its exact latest source
 and experimental results before choosing a production extraction. Existing
 [research handoff](https://github.com/agent-teams-ai/engineering-research/blob/main/docs/studies/task-verification-handoff-2026-11-22.md)
-remains research evidence. Do not reimplement its scorer, evidence model,
-Gateway integration or reviewer routing simply to create a cleaner package.
+remains research evidence. The owner clarified on 2026-11-27 that its purpose
+is to verify whether an LLM agent completed an assigned task against its
+acceptance criteria. It is not the general AI evaluation engine. Do not
+change that repository's plan, scorer, evidence model, reviewer routing or
+production scope through this workstream. A future behavior evaluation may
+consume a task-completion verdict and its evidence through a narrow adapter;
+there is no implied runtime dependency or authority to approve a rollout.
 
 ## 2. Proposed dependency direction
 
@@ -67,6 +73,27 @@ behavior and compatibility needs justify the public edge.
 
 ## 3. Bounded candidates and falsification
 
+### Applicability threshold: a seam, not a layer quota
+
+Use the existing feature's contract, factory, adapter or owner record first.
+An ordinary fixed helper or simple CRUD action is not a behavior-versioning,
+rollout, federation or live-replacement unit. Do not introduce interfaces
+around pure functions, universal version fields, flag lookups, separate
+resource scopes, or duplicated DTOs solely to satisfy a future capability.
+A pure dependency remains a static import. An independently replaceable
+implementation with real selection belongs at the existing composition seam;
+a resource-owning implementation has explicit acquisition/release; a durable
+or cross-trust operation keeps the applicable owner contract. A stronger
+profile adds only the mechanism and evidence needed for its stated guarantee.
+
+Record the decision once at the existing boundary, not for every file. The
+first fixtures must include an ordinary static consumer with no optional
+profile activated, as well as the useful stronger case. Reject designs that
+introduce an unused production package, per-call lookup, network dependency,
+additional authority or duplicated representation into the ordinary path.
+No architecture-readiness score, mandatory manifest, or central manager is
+introduced. Exact FMS/CMS scope and existing quality gates remain authoritative.
+
 ### A. Behavior revision evidence (first design candidate)
 
 Run Orchestration, Agent Runtime and Review Router need to correlate results
@@ -93,25 +120,42 @@ is checked at the receiver, not frozen by behavior evidence. If both only
 need plain typed references, use the existing local contracts and do not
 create a library.
 
-### B. Evaluation / Task Verification (reuse, do not fork)
+### B. AI behavior evaluation (distinct from Task Verification)
 
-First production candidate, subject to experimental promotion: immutable
-scenario/criterion/evidence contracts, bounded evaluation operation, explicit
-satisfied/violated/unverifiable results, independent deterministic checks,
-typed scorer/evaluator ports and repeatable aggregate metrics. The caller
-owns policy thresholds, dataset access, actual model selection, budget and
-acceptance. Model/Gateway/OCR adapters remain separate. Opaque evidence refs
-and behavior refs do not require another package in the ordinary kernel.
+Task Verification answers whether a concrete assigned task was fulfilled.
+Behavior evaluation answers whether a changed model, prompt, tool contract,
+strategy or implementation performs better under declared test conditions.
+Neither answer implies the other; the evaluated behavior can improve an
+aggregate while failing a particular user's task. Do not expand Task
+Verification into an experiment platform or create another general judge.
 
-First consumers: Review Router review acceptance and Orchestrator task
-verification. Use exact existing Task Verification experiments before
-extracting. Verify evidence binding, unsupported result, malicious/incorrect
-verdict, lost provider response, cancellation, budget cap and original attempt
-identity. Model-free vectors establish mechanics only; any live model
-evaluation requires its own approved profile and measured quality. Shadow
-runs must use read-only or disposable effects. No autonomous merge permission,
-billing authority, general AI framework, universal judge or duplicate model
-router. Keep OpenTelemetry an optional observation adapter, not truth.
+Start with a bounded, development/qualification-only paired comparison:
+the same authorized scenario corpus, baseline and candidate behavior
+references, explicitly declared criterion versions and evaluator identity,
+attempt outcomes, and separate quality, latency and cost observations.
+Retain unknown/incomplete results, sample counts and limitations; do not
+silently discard refusals or average incomparable measurements. Nondeterminism
+requires an explicit repeat/measurement policy rather than a guarantee that
+the same inputs yield identical model outputs. No live inference, spending,
+shadow traffic or automatic deployment is authorized by this planning change.
+
+Reuse existing deterministic tests, recorded outputs and established eval
+tooling before proposing a new library. Task Verification can be an optional
+criterion adapter for the question of task completion; its own project
+retains criterion/evidence/verdict semantics, implementation and delivery.
+Other criteria (e.g. cost, latency or a tool regression) do not depend on it.
+First demonstrate two distinct consumer seams: a Runtime harness/config
+comparison and a Review Router strategy comparison using independently
+defined cases. Keep the corpus, scoring policy, actual provider and budget
+with the consumer. Use recorded or disposable read-only evidence, verify
+baseline/candidate identity, missing observations, invalid criteria and
+duplicate attempts. No model router, universal evaluator service, domain
+authorization, release decision, or mandatory production telemetry.
+
+Only if common mechanical evaluation contracts remain after using existing
+tools should an independently useful library be sized and proposed; do not
+preselect a repository. A future rollout owner may read an authorized
+evaluation result as evidence, never as an effect grant.
 
 ### C. Reproducible failure tests (existing Engineering Foundation)
 
@@ -186,18 +230,20 @@ replay of deleted data. Preserve exactly what was transferred; a digest
 does not authorize reading it. No universal schema, distributed transaction,
 graph database, automatic restore or generic backup service.
 
-### G. Offline collaboration (defer implementation)
+### G. Offline-first and synchronization (delegated, out of scope)
 
-For a real mergeable document or draft, compare [Yjs](https://docs.yjs.dev/)
-and [Automerge Repo](https://automerge.org/docs/reference/repositories/).
-Do not implement a CRDT, network protocol or general database synchronization
-engine. A first product owns document type, schema, edit authority and
-retention. Only proven common document storage/sync adapter and lifecycle
-can become a small collaboration-sync package. Test offline conflicting
-edits, duplicate/reordered updates, reopen, revocation, removal and bounded
-growth. Previously disclosed offline data cannot be remotely erased by
-assertion; define the supported exposure/cleanup contract. Never merge
-payment, grants or runtime dispatch authority by CRDT.
+The owner assigned the broader Local-First/Offline-First, local LLM and
+cross-instance synchronization design to another agent. Retain the
+applicability and single-authority constraints in the common guide and
+existing product ADRs. No new synchronization package, merge policy, CRDT
+selection, offline execution guarantee or source changes are planned here.
+
+Coordinate the portable-data envelope (F) with that workstream before
+selecting a public format: explicit logical transfer remains distinct from
+live replication and backup. Do not delay independent A/C work on that
+design, and do not duplicate the sync architecture or edit the other agent's
+branch. Any proposed transfer mechanism that would also serve synchronization
+must be reconciled with the owning contracts before implementation.
 
 ### H. Cross-language components (defer until a selected profile)
 
@@ -225,18 +271,19 @@ complexity are scored 1–10. For test-only tooling P means tooling code.
 | Candidate | P | T | B | Confidence / reliability / complexity |
 | --- | ---: | ---: | ---: | --- |
 | A Behavior references/validation | 400–900 | 700–1,400 | 250–500 | 6 / 8 / 4 |
-| B Task Verification production slice delta | 1,500–3,000 | 1,500–3,500 | 300–700 | 5 / 7 / 7 |
+| B Paired evaluation fixture (development tooling, not production library) | 0–400 | 300–800 | 150–350 | 5 / 7 / 5 |
 | C Shared failure-test fixtures | 400–1,000 | 500–1,200 | 150–350 | 7 / 8 / 5 |
 | D Rollout selection adapter/kernel | 400–900 | 600–1,300 | 250–500 | 6 / 8 / 5 |
 | E Workload identity adapter | 700–1,500 | 1,000–2,200 | 300–700 | 5 / 7 / 7 |
 | F Portable transfer envelope | 600–1,300 | 900–1,800 | 250–550 | 6 / 8 / 6 |
-| G One collaboration adapter | 700–1,600 | 1,000–2,200 | 250–550 | 4 / 7 / 7 |
+| G Offline-first/sync (delegated) | Not sized here | Not sized here | Not sized here | Not assessed |
 | H One Wasm contribution/Host adapter | 700–1,600 | 1,000–2,500 | 300–800 | 4 / 7 / 8 |
 
 A+C first qualification: P 800–1,900, T 1,200–2,600, B 400–850
-(2,400–5,350 total). B can proceed as a separate owner-led track without
-waiting for A, C or a product. All eight estimates are conditional and not
-an approved backlog; reuse can eliminate a candidate entirely. A completed
+(2,400–5,350 total). B's bounded fixture can proceed independently; no
+Task Verification implementation estimate or general evaluation library
+estimate belongs to this plan. All estimates are conditional and not an
+approved backlog; reuse can eliminate a candidate entirely. A completed
 generic shared component does not include production integration across all
 applications, fleet qualification or every security/runtime profile.
 
@@ -271,19 +318,21 @@ independent change justify it, not a line-count quota.
    product's existing gate. Remove donor copies once parity is demonstrated.
    Keep unrelated product delivery independent.
 
-Early delivery order: inventory and design A/C, continue the existing
-Task Verification evidence track, then choose D/E/F only when their
-dependent consumer contract is approaching. Preserve the G/H seams
-without imposing their runtime costs. Record scope, exact artifacts and
-unsupported claims at each step; no new cross-product manager.
+Early delivery order: inventory and design A/C, design B's paired comparison
+without modifying Task Verification, then choose D/E/F only when their
+dependent consumer contract is approaching. Coordinate F with the separate
+G workstream; preserve H's seam without imposing runtime costs. Record scope,
+exact artifacts and unsupported claims at each step; no cross-product manager.
 
 ## 6. Review disposition and stop conditions
 
 Three self-review lenses applied to this design: dependency cycles and
 ownership; security/authority and durable effects; practical reuse,
 qualification and costs. Not an independent review or E2E result.
-The resulting boundaries explicitly keep eval from authorization, rollout
-from LMU, federation from human account custody, transfer from physical
-backup, CRDT from authority and test simulation from production runtime.
+The resulting boundaries explicitly keep task verification distinct from
+behavior evaluation, eval from authorization, rollout from LMU, federation
+from human account custody, transfer from physical backup, sync from
+authority and test simulation from production runtime. The delegated G
+workstream is not part of this implementation or sizing plan.
 Cancel extraction if a standard adapter or existing owner is sufficient.
 Do not promote a library merely because its folder, schema or test exists.
