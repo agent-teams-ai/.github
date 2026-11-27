@@ -4,7 +4,11 @@ Status: proposed owner direction and design, 2026-11-27. Documentation only.
 This is not an accepted product ADR, immutable FMS/CMS successor, package
 admission, implementation authorization, version pin or qualification receipt.
 Product owner requested readiness now for backend and frontend, reusable
-open-source mechanisms, and independently usable Fully Local products.
+open-source mechanisms, independently usable Fully Local products, multiple
+client platforms and backend databases, and broad user-data recoverability.
+The [library design and expanded technology comparison](sync-foundation-library-design.md)
+refines this proposal with platform/database profiles, optional editor and
+attachment modules, fixture-first package boundaries and repository bootstrap.
 
 ## 1. Existing decisions and scope
 
@@ -109,13 +113,15 @@ PostgreSQL dependency in their portable core.
 
 ## 4. Candidate library: one repository, independent entries
 
-Provisional name: `agent-teams-ai/sync-foundation` (not created).
-Do not create a new repository just to hold empty abstractions. First qualify
-two independent representative hosts and verify no existing owner fits.
-A standalone repo is justified by reusable mechanical semantics and independent
-release/adapter dependencies across products. Start with these responsibilities,
-not necessarily separate npm packages until the actual dependency boundary
-requires it.
+Proposed repository: `agent-teams-ai/sync-foundation` (not created).
+Owner now prefers an independent repository early. Bootstrap documentation and
+admission there when repository creation and organization prerequisites permit;
+no production package admission follows merely from creating the repository.
+Qualify two independently composed representative hosts before extracting
+portable abstractions; verify existing owner boundaries. A standalone repo is
+justified by reusable mechanics and independent release/adapter dependencies.
+Start with these responsibilities, not necessarily separate npm packages until
+actual dependency boundaries require them. See the [library design](sync-foundation-library-design.md).
 
 | Candidate entry | Responsibility | Dependencies |
 | --- | --- | --- |
@@ -124,6 +130,9 @@ requires it.
 | server | Narrow mapping of incoming intents to product callbacks, validated receipts and optional projection helper; no authorization decisions or generic CRUD | core + consumer-supplied ports |
 | powersync | SDK/service connector integration; split web/native/Node entries to isolate native bindings when needed | relevant client/server entry + upstream SDK |
 | automerge (optional successor) | Document API adapter, storage/network integration using upstream Repo | only applicable core contracts + upstream |
+| yjs (optional editor feature) | Text/rich text collaborative sessions using upstream editor bindings and Hocuspocus | only applicable document contracts + upstream |
+| tanstack (optional) | Reactive client collections or API-only durable intents where supported | applicable client contracts + upstream; not a second PowerSync queue |
+| attachments (optional) | Existing artifact/transfer ports and upstream attachment utilities | applicable owner contracts + upstream; no new blob protocol |
 | testing (dev only) | Engine-neutral positive/negative semantic cases, restart/partition and exact packed independent host fixtures | relevant entries and existing conformance |
 | react (only if repeated need) | Thin external-store subscription adapter and presentation-neutral sync status hooks | client + React peer |
 
@@ -153,7 +162,11 @@ Evaluation axes: license for commercial redistribution/self-hosting, no
 mandatory paid service, offline durability and recovery, selective access,
 compatible PostgreSQL ownership, Node/web/mobile portability, long partitions,
 schema evolution, maintenance, operational cost and actual security boundaries.
-Scores below are design-fit estimates, not benchmark results.
+Scores below are design-fit estimates, not benchmark results. The expanded
+[comparison](sync-foundation-library-design.md#2-technology-architecture-choose-by-responsibility-not-one-winner)
+includes TanStack DB, Yjs/Hocuspocus, alternative API-only storage, native
+client support and source-specific maturity. PowerSync is the first relational
+candidate, not a universal backend replication engine.
 
 | Technology | Role / design fit | Decision |
 | --- | --- | --- |
@@ -227,7 +240,12 @@ integration is the first real use, compare Yjs rather than adopting two engines.
 ## 6. Backend authoring requirements now
 
 For each applicable owning feature add a short readiness record (existing
-feature/ADR docs, no new registry):
+feature/ADR docs, no new registry). For every meaningful user-authored or
+irreplaceable data class record its recovery path and sync eligibility,
+including a reason for exclusions. Cover relationships, files and versioned
+settings as well as rows. Replication is selective and authorized; backups
+remain independent. See [coverage policy](sync-foundation-library-design.md#1-design-decision-broad-coverage-selective-replication).
+Minimum seams:
 - stable globally collision-resistant IDs (reuse accepted ID policy; UUIDv7/v4
   are candidates only if no existing choice), immutable origin and explicit
   Target/scope; no local row counter as cross-instance identity;
@@ -441,7 +459,9 @@ Order:
 
 P1/P2 need relevant C/recovery/security negative controls and no-sync L
 fixture; actual local inference, document D, native packaging and federation
-claims require their separate real profile E2E. No mock-only qualification,
+claims require their separate real profile E2E. The expanded library design
+adds API-only database portability, editor, attachment and backup recovery
+oracles, plus explicit browser storage/leadership negative controls. No mock-only qualification,
 unrelated green CI, or counts substituted for assertions. Record exact HEAD,
 artifacts, platform, scenarios, observed effects and failed defect controls.
 A fake provider tests a protocol only. Independent review and protected CI
@@ -463,8 +483,8 @@ remain distinct from design self-review.
 
 Notify active product PRs rather than edit their concurrent branches; owning
 product acceptance and code adoption remain separate. Central index/quality
-files overlap #472/#448/#474, so this draft deliberately adds one independent
-file; no edits to their in-flight files. Product teams should link this exact
+files overlap #472/#448/#474, so this draft deliberately adds two independent architecture
+documents; no edits to their in-flight files. Product teams should link this exact
 proposal, not treat it as already accepted. After central acceptance, link in
 existing architecture index and relevant owner design docs with scoped review.
 
