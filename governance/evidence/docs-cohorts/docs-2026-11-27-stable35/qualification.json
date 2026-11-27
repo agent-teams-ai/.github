@@ -1,0 +1,244 @@
+{
+  "cohort_id": "docs-2026-11-27-stable35",
+  "status": "proposed",
+  "evidenceClass": "proposed-lifecycle-append-from-hosted-trusted-validation",
+  "recordDigest": "sha256:978a8113172e41d6960a577b8e567cea40c469a02cfae750ad754b1cfdfeed68",
+  "candidateDigest": "sha256:9e5f2f19bb14b98526672af89b8accdc1ffef3ce999e9cb41ea51ab702fb71c6",
+  "runtimeClosureDigest": "sha256:7957b8b2b7e20efc6f940b77ca596670d2a8555a9ccf10dc00926ad270eae475",
+  "verifiedEventDigest": "sha256:d2409d53d9a7bc0cb018f28acf3823ff07b80b27b0c8bb779936e04a15b210cc",
+  "qualificationEventDigest": "sha256:90d230ffcc9f2bd71e4bbfa8c6e483195d0e4a36f798fd1b19ae815f823a9892",
+  "proposedEvents": [
+    {
+      "sequence": 200,
+      "state": "VERIFIED",
+      "effective_at": "2026-11-27T11:24:03Z",
+      "event_digest": "sha256:d2409d53d9a7bc0cb018f28acf3823ff07b80b27b0c8bb779936e04a15b210cc"
+    },
+    {
+      "sequence": 201,
+      "state": "QUALIFIED",
+      "effective_at": "2026-11-27T11:24:03Z",
+      "event_digest": "sha256:90d230ffcc9f2bd71e4bbfa8c6e483195d0e4a36f798fd1b19ae815f823a9892"
+    }
+  ],
+  "timeSemantics": "Both ordered events retain one real A1 trusted job completion time. They do not claim two executions or final B checks.",
+  "publicationSource": {
+    "revision": "0a483dff924399820bea9525892954ff7a7d2898",
+    "tree": "5272631a5956f4aa745d0887ee8927f345caaad2",
+    "path": "governance/evidence/docs-cohorts/docs-2026-11-27-stable35/publication.json",
+    "publicationSha256": "sha256:9027fe22a4d6f2396f6737fbe4b3200e7e06ba9b6e2132c16ffa27714644a0bc",
+    "registrySha256": "sha256:afc9c171855615b729443881067e9e1acaef67ef37049ca3861d349a8920746d",
+    "candidateSha256": "sha256:9e5f2f19bb14b98526672af89b8accdc1ffef3ce999e9cb41ea51ab702fb71c6",
+    "publicationEventDigest": "sha256:9d78dc2fda74baf393fc51d1536799a76f4cb611893fb05f7eaf93660b408825"
+  },
+  "hostedValidation": {
+    "source": "Operator-selected authenticated API bodies and complete decoded job log; retained raw bytes independently hashed by this offline assembler.",
+    "repository": "agent-teams-ai/.github",
+    "repositoryId": 1316243981,
+    "pullRequest": 464,
+    "pullRequestId": 5523419637,
+    "workflowId": 335855222,
+    "workflowPath": ".github/workflows/docs-cohort-append-only.yml",
+    "workflowRunId": 45990031412,
+    "workflowRunAttempt": 1,
+    "event": "pull_request_target",
+    "status": "completed",
+    "conclusion": "success",
+    "providerRunHead": "0a483dff924399820bea9525892954ff7a7d2898",
+    "providerJobHead": "0a483dff924399820bea9525892954ff7a7d2898",
+    "providerCheckHead": "0a483dff924399820bea9525892954ff7a7d2898",
+    "testedCandidate": "0a483dff924399820bea9525892954ff7a7d2898",
+    "executionCheckoutBase": "d167b2360524474240a43e3ff70e35eb94e109c7",
+    "jobId": 140475222931,
+    "jobName": "trusted-validation",
+    "checkRunId": 140475222931,
+    "integrationId": 15368,
+    "startedAt": "2026-11-27T11:23:18Z",
+    "completedAt": "2026-11-27T11:24:03Z",
+    "runUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45990031412/attempts/1",
+    "jobUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45990031412/job/140475222931",
+    "checkUrl": "https://github.com/agent-teams-ai/.github/actions/runs/45990031412/job/140475222931",
+    "mode": "full",
+    "changedCohorts": 1,
+    "providerRunPullRequests": [
+      {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/pulls/464",
+        "id": 5523419637,
+        "number": 464,
+        "head": {
+          "ref": "chore/ef-stable35-cohort",
+          "sha": "0a483dff924399820bea9525892954ff7a7d2898",
+          "repo": {
+            "id": 1316243981,
+            "url": "https://api.github.com/repos/agent-teams-ai/.github",
+            "name": ".github"
+          }
+        },
+        "base": {
+          "ref": "main",
+          "sha": "d167b2360524474240a43e3ff70e35eb94e109c7",
+          "repo": {
+            "id": 1316243981,
+            "url": "https://api.github.com/repos/agent-teams-ai/.github",
+            "name": ".github"
+          }
+        }
+      }
+    ],
+    "successfulSteps": [
+      {
+        "name": "Verify trusted package-manager binaries",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 7,
+        "started_at": "2026-11-27T11:23:39Z",
+        "completed_at": "2026-11-27T11:23:40Z"
+      },
+      {
+        "name": "Install trusted base dependencies with Cohort v1 pnpm",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 8,
+        "started_at": "2026-11-27T11:23:40Z",
+        "completed_at": "2026-11-27T11:23:42Z"
+      },
+      {
+        "name": "Validate untrusted head with trusted base code",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10,
+        "started_at": "2026-11-27T11:23:42Z",
+        "completed_at": "2026-11-27T11:23:42Z"
+      },
+      {
+        "name": "Verify live evidence for every appended Cohort record or event",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11,
+        "started_at": "2026-11-27T11:23:42Z",
+        "completed_at": "2026-11-27T11:23:58Z"
+      }
+    ],
+    "emergencyStep": {
+      "name": "Validate negative emergency append without network dependencies",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 9,
+      "started_at": "2026-11-27T11:23:42Z",
+      "completed_at": "2026-11-27T11:23:42Z"
+    },
+    "logEvidence": {
+      "checkout": "2026-11-27T11:23:25.6582005Z   ref: d167b2360524474240a43e3ff70e35eb94e109c7",
+      "candidate": "2026-11-27T11:23:42.8667879Z   DOCS_COHORT_EVIDENCE_REF: 0a483dff924399820bea9525892954ff7a7d2898",
+      "structural": "2026-11-27T11:23:42.8505968Z Qualified Docs Cohort head is schema-valid, lifecycle-valid, digest-bound, and append-only against the trusted base.",
+      "live": "2026-11-27T11:23:58.2941649Z Qualified Docs Cohort live evidence verified for 1 changed Cohort(s)."
+    },
+    "rawCaptures": {
+      "pullRequest": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/pulls/464",
+        "bytes": 21702,
+        "sha256": "sha256:66b83922c8a66d6800c1e60b571b7231d8eec4fc12397ffedaa1417609f4e5a4"
+      },
+      "protectedMain": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/branches/main",
+        "bytes": 5374,
+        "sha256": "sha256:bb8b22b8c12732dde467708c0a354de13f8fb1aebbfdda61d55e971e27cd506f"
+      },
+      "pullFiles": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/pulls/464/files?per_page=100",
+        "bytes": 28724,
+        "sha256": "sha256:3283fa2c5b309fa363f20092877430fdf0c4e1fcf9b1fd1e9b04c81f1c573cc3"
+      },
+      "runAttempt": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/actions/runs/45990031412/attempts/1",
+        "bytes": 13971,
+        "sha256": "sha256:886cd8b274ba7319ecec81a36483c717ef711d5244fd8cedc48f2927c129c1d5"
+      },
+      "jobsAttempt": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/actions/runs/45990031412/attempts/1/jobs?per_page=100",
+        "bytes": 4111,
+        "sha256": "sha256:b3be05b2ee8eb6067a13a283479f40a43f63d80501830ee601e6bd290eeac6fd"
+      },
+      "check": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/check-runs/140475222931",
+        "bytes": 3542,
+        "sha256": "sha256:c1d9d702b5d865b3768748342f40048ac4102f1b27b73390a59e07b2b3ca7e9f"
+      },
+      "decodedJobLog": {
+        "url": "https://api.github.com/repos/agent-teams-ai/.github/actions/jobs/140475222931/logs",
+        "bytes": 34799,
+        "sha256": "sha256:89941f3e245654d0801ff0f285c0bce681e366ad31f8a5760551e6b1a273d2d6"
+      }
+    },
+    "trustedSources": [
+      {
+        "path": ".github/workflows/docs-cohort-append-only.yml",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "c50e7490b7a9d0aba3d80ef09a7b892197614ea5",
+        "sha256": "sha256:a3c9b67042268e0fdc1a847017e8a5de634375c80aee7ef79939ae0e92fb08bf",
+        "bytes": 11516
+      },
+      {
+        "path": "governance/docs-qualified-cohorts.schema.json",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "4ff09c8d88b01798dc1aa650a8e92a33d3b83e8d",
+        "sha256": "sha256:de8fa946051ecc45fba5305dfddc41f03bf7584eb9806f71686c396b652080f1",
+        "bytes": 30303
+      },
+      {
+        "path": "scripts/check-cohort-append-only.mjs",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "0eb0776edd5c2cff591cc67e47709d85c93825a7",
+        "sha256": "sha256:4f43318b687db1c19dc6c35787d312904e5d48388cdb98594bfabfb343511ad7",
+        "bytes": 2996
+      },
+      {
+        "path": "scripts/verify-docs-cohort-evidence.mjs",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "f7e3d76923ad7c853f568c8a5f6dc4da6b8ce32c",
+        "sha256": "sha256:66094fbc09227fa65a1b26206b2605bc02a754f89eaa6dbc2a1f3569ca766108",
+        "bytes": 75954
+      },
+      {
+        "path": "scripts/docs-cohort-policy.mjs",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "95a9b9b50e0d6a648e64e4253b5128b438f88d86",
+        "sha256": "sha256:7f56855e23cb6a1a2e956b6f770b9498dd210abe752e083aee46f31863497f5a",
+        "bytes": 55832
+      },
+      {
+        "path": "scripts/docs-managed-runtime-policy.ts",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "78952c0e45290d00be8a2a89c150496435620f18",
+        "sha256": "sha256:87a6a3f8f1a1afd5154c1438c64d48f7cace2d8a23b2091398e0934ed7d50dd6",
+        "bytes": 2960
+      },
+      {
+        "path": "package.json",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "5ab4bcd5e495d684c9a235c90272b94689dca154",
+        "sha256": "sha256:aec03062f4fdc4fe7e9959249d29249ce614a50ed00e6585d1fa5ee690beb58d",
+        "bytes": 2493
+      },
+      {
+        "path": "pnpm-lock.yaml",
+        "revision": "d167b2360524474240a43e3ff70e35eb94e109c7",
+        "blob": "c624f55d7ef1820c3c176eb2c228f2be7342fb68",
+        "sha256": "sha256:73e67625b6f57f1cbec7d9fdce52768c54460206c415ba46f2fbf3e598c8b749",
+        "bytes": 52446
+      }
+    ],
+    "sourceBoundary": "Complete A1 head/base diff contains only selected inert data; all tracked executable, dependency, schema and workflow source is unchanged."
+  },
+  "canaryRepositories": [
+    {
+      "repository_id": 1333298097,
+      "repository": "agent-teams-ai/extension-foundation"
+    }
+  ],
+  "canaryExecuted": false,
+  "consumerFinalChecksCompleted": false,
+  "defaultBranchDeliveryClaimed": false,
+  "finalCandidateChecksCompleted": false,
+  "verificationScope": "Records the completed genuine full A1 validation of the exact immutable publication candidate. Final B checks, protected-main delivery, EF enrollment, actual consumer adoption and CANARY remain separate."
+}
