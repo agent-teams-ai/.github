@@ -69,32 +69,6 @@ in parallel.
 
 ## Repository synchronization
 
-The [observed repository version dashboard](https://github.com/agent-teams-ai/.github/issues/473)
-is a derived, read-only view, not another version authority. Initial scope:
-Orchestrator, Runtime, Platform, Identity, Account Gateway. It records source
-commit/ref, direct lockfile importer resolutions, native pins where evidenced,
-planned/draft versus merged state and missing or inaccessible evidence.
-Expand the scope to other applicable repositories explicitly; exclude private
-source details from this public dashboard.
-
-Refresh the dashboard daily or on demand by reading the current default
-branch and named active adoption PRs at exact commit SHAs. Use the existing
-repository inventory for discovery, and manifests/lockfiles (or equivalent
-language-native locks) for versions. Do not infer installed or deployed
-versions from a catalog entry. Separate unavailable, absent and not applicable
-states. Update one dashboard in place; retain source links and mark stale
-observations. Flag newer eligible releases, mismatched package families,
-and divergence from the recommendation. Distinguish expected differences
-from pending adoption; report drift, do not automatically block or rewrite
-consumer builds.
-
-Use the existing [Renovate preset](../renovate-config.json) for dependency
-update proposals wherever adopted; preserve managed Docs Cohort exceptions
-and exact version pinning. Where Renovate is not yet installed and verified,
-follow the current security update owner in [Governance](../GOVERNANCE.md).
-The shared dashboard is visibility only, not another dependency updater.
-Foundation's existing workspace dependency declaration capability validates
-local declarations where adopted. No additional mandatory gate, scheduler
-service, shared lockfile, new package manager or fleet-wide forced update is
-introduced. Any future automated enforcement must have concrete adoption,
-deterministic tests and its existing owner.
+Use the common [Technology Stack Catalog synchronization route](technology-stack.md#repository-synchronization)
+for backend and all other technology families. The dashboard and automation are
+shared across the ecosystem; no separate backend version map is maintained.
