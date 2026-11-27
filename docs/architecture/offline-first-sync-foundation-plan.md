@@ -192,10 +192,15 @@ tenant/project scope, ACL predicate, least-privilege publication). Do not expose
 private aggregate tables or credentials. Prefer PostgreSQL-backed service
 storage if qualified; evaluate replication slot/WAL retention, fan-out,
 resnapshot, storage cost, native extension deployment and supported platforms.
-No sync service in L by default. Write path: local intent record with stable
-op ID written atomically with local pending UI state if that capability needs
-both, using a single upstream durable queue or an existing owner durable store
-with a proven adapter, never two competing retry owners. Upload invokes the
+No sync service in L by default. Write path: use a dedicated allowlisted command-intent record with stable op
+ID, not arbitrary edits to projection tables. If the selected upstream SDK
+queue is the sole retry owner, prove that insertion of the uploadable intent
+and the durable optimistic overlay is atomic or that the overlay can be rebuilt
+from the intent after restart. A local-only SDK table is not assumed to upload.
+An existing owner durable store is an alternative only with a proven adapter;
+never use two competing retry owners. A resnapshot, cache clear, schema change
+or sync-stream removal must not silently discard authorized unacknowledged
+intents; prove recovery using the exact SDK or select a different route. Upload invokes the
 existing owning application API, not direct CRUD or logical-replication writeback.
 Map terminal denial/conflict to a durable visible outcome before completing the
 queue entry; unknown/transient outcomes retain original ID and retry/read back.
@@ -277,7 +282,13 @@ On logout, revoke session access, fence old subscriptions/workers by account
 and Target generation; cache and pending work are partitioned by principal,
 Target and scope. Preserve authorized recoverable pending edits or apply
 required erasure policy; never expose one principal's work to the next.
-On reconnection reauthorize before upload/refresh. No silent data transfer.
+For protected cached data define an owner-approved offline access window and
+local unlock policy; lock or withhold protected views when the admitted proof
+expires, including without a connection. An offline client cannot detect a
+new remote revocation before it learns of it; data already copied cannot be
+remotely erased on demand. On reconnection reauthorize before upload/refresh;
+rebind subscriptions to current policy and reject stale credentials at the
+server, not only in the UI. No silent data transfer.
 
 ## 8. Data ownership and merge policy (proposed feature handoff)
 
@@ -373,8 +384,8 @@ runner and two independently wired test Hosts, not an extra framework.
 | Phase / acceptance gate | Production LOC | Test LOC | Complexity / reliability target / confidence (1-10) |
 | --- | ---: | ---: | --- |
 | P0: review plan + owner readiness handoff (docs only) | 0 | 0 | 3 / 8 / 9 |
-| P1: portable boundary + real PowerSync self-hosted projection and durable intent fixture; one Node and one Chromium host | 600-1,100 | 700-1,300 | 6 / 8 / 7 |
-| P2: extract only proven reusable parts, native/mobile adapter qualification for required targets; package install/export isolation | 350-850 | 500-1,000 | 7 / 8 / 6 |
+| P1: portable boundary + real PowerSync self-hosted projection and durable intent fixture; first Node backend + Chromium client | 600-1,100 | 700-1,300 | 6 / 8 / 7 |
+| P2: second independently composed host, extract only proven reusable parts, qualify selected native/mobile targets and package install/export isolation | 350-850 | 500-1,000 | 7 / 8 / 6 |
 | P3: Automerge doc-only long-offline fixture, authenticated relay and independent peer tests, optional package | 350-750 | 450-1,000 | 7 / 8 / 6 |
 | P4: first real product adoption, per narrow data slice (client + server) | 350-900 | 400-900 | 7 / 8 / 6 |
 
@@ -397,8 +408,9 @@ Order:
    SDK + service artifacts, actual durable restart. Compare direct API with
    offline adapter; falsify duplicate/poisoned queue and access leaks.
    Only then choose portable core and actual shared code.
-3. P2: independently wire second host/client with different composition,
-   same semantic tests; prove Node/Chromium packaging and native targets
+3. P2: independently wire a second complete host/client with different
+   composition (not a second import of P1's fixture application), same
+   semantic tests; prove Node/Chromium packaging and native targets
    explicitly selected (Electron, mobile as needed). Test with no sync
    libraries installed for ordinary local host and no mandatory cloud endpoint.
    Extract and release only proven entries, use Foundation package/security
@@ -478,6 +490,10 @@ existing architecture index and relevant owner design docs with scoped review.
 6. E2E and delivery: distinct independent fixtures, real open edition and
    actual local inference for its own scope, negative controls, target-specific
    qualification and conditional LOC. No assertion of tested implementation.
+7. Committed-document read-back: specified the uploadable intent vs local-only
+   table distinction, durable optimistic overlay recovery, protected cache
+   expiry and reauthorization, and clarified P1/P2 independent-host evidence.
+   No new queue or framework introduced.
 
 Remaining decisions before respective phases: first product feature and
 retention horizon, stable selected SDK/service combination and platform matrix,
