@@ -10,21 +10,22 @@ candidate and its first guarantee through the existing owner/adoption route.
 ## 1. Placement decisions
 
 Keep one semantic owner per mechanism and a directed dependency graph. A
-repository is an independent release and maintenance boundary, not a feature
-directory. Prefer existing owners for tightly related mechanisms; a new
-standalone repository is justified by an independently useful public
-contract, a distinct release/trust/runtime boundary, and credible consumers.
-No aggregate universal "foundation runtime" or mandatory umbrella package.
+repository is a source/maintenance boundary; a package is a consumption and
+independently versioned contract boundary. Prefer existing owners first.
+For small new runtime primitives with compatible maintenance and tooling,
+prefer one multi-package workspace. Separate repositories require actual
+ownership, release, trust, runtime or maintenance needs. No aggregate
+universal "foundation runtime" or mandatory umbrella package.
 
 | Candidate | Proposed home | Start now |
 | --- | --- | --- |
 | AI behavior evaluation | Owner-local experiment/qualification first; optional independent library only after shared semantics are established | Design a paired comparison; reuse established evaluation tooling and Task Verification only as an optional evidence adapter |
 | Task Verification (separate existing scope) | Existing task-verification project and its own owner plan | No new implementation or scope expansion in this workstream |
-| Behavior revision evidence | Provisional independent behavior-revisions library | Design and falsify shared semantics in disposable fixtures |
+| Behavior revision evidence | Proposed application-primitives workspace: behavior-revisions package | Materialize only if meaningful common mechanism remains |
 | Reproducible failure tests | Engineering Foundation; optional development-only capability/test entry | Extend existing fixtures and executable-specification route |
-| Progressive delivery | Product rollout owner; optional rollout-selection library if two matching consumers justify it | Design selection/receipt seam; compare OpenFeature |
-| Workload identity | Existing product security/IAM adapters; optional workload-identity library after shared protocol qualification | Specify trust boundary and supported token profile |
-| Portable data | Product-owned transfer contracts; optional portable-data library for shared mechanical envelope | Design one transfer profile, reuse existing artifact mechanisms |
+| Progressive delivery | Product rollout owner; optional rollout-selection package in application-primitives | Design selection/receipt seam; compare OpenFeature |
+| Workload identity | Existing security/IAM adapters; optional workload-identity package in application-primitives if shared semantics qualify | Specify trust boundary; split earlier if security/release ownership demands |
+| Portable data | Product-owned transfer contracts; optional portable-data package in application-primitives | Coordinate one transfer profile with delegated sync; reuse existing artifact mechanisms |
 | Offline-first and instance synchronization | Separate owner-delegated architecture workstream | Preserve current ownership constraints; do not choose or implement sync mechanisms here |
 | Cross-language execution | Extension Foundation and actual Runtime executor/containment owner | Preserve SPI; separately qualify Wasm/WIT if selected |
 
@@ -41,6 +42,103 @@ change that repository's plan, scorer, evidence model, reviewer routing or
 production scope through this workstream. A future behavior evaluation may
 consume a task-completion verdict and its evidence through a narrow adapter;
 there is no implied runtime dependency or authority to approve a rollout.
+
+### 1.1. Proposed multi-package workspace (not an existing repository)
+
+Working name: `agent-teams-ai/application-primitives`. A workspace of
+independently consumable TypeScript packages, not a common business core,
+runtime platform or required SDK. Materialize with the first useful slice;
+do not create empty packages or reserve names by scaffolding.
+
+| Placement | Tradeoff | Recommendation |
+| --- | --- | --- |
+| Repository per small library | Administrative isolation; repeated onboarding, CI and release setup | Only for an actual separate ownership/trust/release need |
+| One aggregate runtime package | Easy installation; couples dependencies and unrelated compatibility | Reject |
+| One workspace, independent package contracts | Shared engineering tooling and atomic related changes; separate consumption and versions | Preferred for these candidates |
+
+The root is private and owns shared tooling only. Each real package has
+its own manifest, version, explicit exports, source ownership, dependencies,
+tests and usage limits. Provisional names: `@agent-teams/behavior-revisions`,
+`@agent-teams/portable-data`, `@agent-teams/rollout-selection`,
+`@agent-teams/workload-identity`. Use one pnpm workspace/lock and current
+admitted Stack/Foundation tooling. Apply FMS and adopted CMS to real
+module/composition boundaries; materialize only necessary layers.
+No root runtime barrel, shared mutable registry, utils dumping ground,
+shared product models or cross-package relative imports. Keep optional
+native/security adapters and test entries outside ordinary pure dependency
+closures, using separate packages when exports/peer isolation is insufficient.
+
+Preserve package name, public contract and owner history when splitting a
+package into a future repository. Use independent versions and the existing
+MVP change/migration policy; do not synchronize versions merely because of
+colocation. Split for actual independent ownership, release, trust, runtime
+or maintenance boundaries, not size alone. Credential adapters may need
+earlier separation; they must not burden unrelated pure packages.
+
+### 1.2. Reuse discriminators from existing owners
+
+- Orchestrator [ADR-0065](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/296173655e886896ebc24c472cf71e4c7f8faa66/docs/decisions/0065-immutable-run-plan-and-work-placement.md)
+  and [ADR-0063](https://github.com/agent-teams-ai/agent-teams-orchestrator/blob/296173655e886896ebc24c472cf71e4c7f8faa66/docs/decisions/0063-typed-run-resilience-policy-snapshot.md)
+  already own immutable plans and policy snapshots. Behavior Revisions may
+  add reference-set validation/comparison, not a second RunPlan or policy
+  store. If typed references suffice, no package.
+- [Runtime v3 plan](https://github.com/agent-teams-ai/agent-runtime/blob/e7fa39a169277089fc10dbe6f679d49f537c9539/docs/architecture/agent-runtime-greenfield-foundation-plan.md)
+  separates wire, capability, durable format, deployment and execution
+  identities. A common reference must preserve those distinct semantics.
+- [Platform installation control](https://github.com/agent-teams-ai/agent-teams-platform/blob/08ab481d123ec6c1f9355c1e02b1381764aff793/docs/architecture/managed-installation-control.md)
+  owns desired/accepted/observed revisions and rollback. Rollout Selection
+  can only supply a shared selection mechanism, not a second controller.
+- [Extension Foundation artifact ADR](https://github.com/agent-teams-ai/extension-foundation/blob/90ae169e3ec4cdacac5042a6384a84fd12f3ac40/docs/decisions/0002-oci-oras-and-cosign-distribution-baseline.md)
+  owns executable distribution, not all user data. Portable Data may
+  reuse compatible standard mechanisms, without another registry.
+- GM already owns composition and Engineering Foundation owns development
+  checks. Do not move their source here. Identity's account boundary and
+  Runtime security remain distinct; credential adapters require matching
+  issuer/receiver semantics.
+
+Do not pre-create generic clocks, UUID, logger, event-envelope, retry,
+repository, receipt or authorization packages because products have
+similarly named concepts. Use existing owners and maintained libraries.
+Receiver idempotency, uncertainty and fencing differ by contract. If a
+genuine common mechanical primitive remains, qualify it under its actual
+owner before extraction. These are review topics, not a new backlog.
+
+### 1.3. Source-first development without waiting for npm
+
+Keep the same public package import in every mode. Inside the workspace
+use explicit workspace dependencies; packing converts those references
+to versions ([pnpm 11 workspace documentation](https://pnpm.io/11.x/workspaces)).
+Do not import another checkout's private source or change application
+imports to GitHub URLs.
+
+| Mode | Use and required evidence |
+| --- | --- |
+| Same workspace | Explicit workspace dependencies and strict package build/typecheck |
+| Cross-repository local iteration | Explicit local checkout/build or isolated packed candidate; no committed absolute paths, mutable branch pins or hidden source aliases |
+| Cross-repository CI qualification | Frozen producer commit/toolchain/lock, build and pack, install exact artifact in clean consumer; retain digest and actual dependency closure |
+| Accepted production dependency | Exact admitted released package, lock and integrity; any alternative source-production mode requires explicit owner acceptance and qualification |
+
+Reuse [LMU's packed-consumer reference](https://github.com/agent-teams-ai/live-module-updates/blob/f38f2e634e7b9e28e4294f1ea8f7ead909e35ab9/tests/qualification/composed-document/README.md)
+and Identity's TEST-candidate approach. Public npm publication is not a
+prerequisite for development or independent TEST integration. Build a
+reviewed immutable source revision or consume a retained verified tarball.
+Record source, version, archive digest and exact dependency closure.
+Reject mismatches and accidental resolution of an older registry version.
+If an unpublished package depends on an unpublished sibling, stage and
+verify the sibling artifact too: workspace conversion alone does not
+resolve external consumers' unpublished dependencies. Do not claim
+cross-platform byte reproducibility or durable evidence from an expiring
+Actions artifact without qualification and a retention/reproduction path.
+
+A Git-SHA dependency is an alternative only after proving that the selected
+package manager installs the correct built public exports and locked
+dependencies for the actual package/profile. Direct monorepo Git source
+imports are not the default distribution mechanism. No custom registry,
+installer or loader is required. Foundation's [local mode](https://github.com/agent-teams-ai/engineering-foundation/blob/main/docs/development/local-mode.md)
+is specific to its released development tooling, not a generic runtime
+package manager. Preserve its registry assertions and current consumer
+admission/release gates. TEST consumption does not admit a production
+dependency.
 
 ## 2. Proposed dependency direction
 
@@ -319,10 +417,14 @@ independent change justify it, not a line-count quota.
    Keep unrelated product delivery independent.
 
 Early delivery order: inventory and design A/C, design B's paired comparison
-without modifying Task Verification, then choose D/E/F only when their
-dependent consumer contract is approaching. Coordinate F with the separate
-G workstream; preserve H's seam without imposing runtime costs. Record scope,
-exact artifacts and unsupported claims at each step; no cross-product manager.
+without modifying Task Verification. If A's independent fixtures demonstrate
+a useful shared mechanism, bootstrap application-primitives with A only and
+prove local and exact packed TEST consumption. If no common mechanism remains,
+do not bootstrap an empty repository. C stays in Engineering Foundation.
+Then select D/E/F only at approaching dependent contracts; coordinate F
+with separate G and retain H with its existing owners. No package is created
+merely to complete the candidate list. Record exact evidence and limits;
+no cross-product manager.
 
 ## 6. Review disposition and stop conditions
 
