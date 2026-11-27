@@ -1,0 +1,47 @@
+name: V10 GitHub API rate observation
+
+on:
+  push:
+    branches: [qualification/runtime-admission-v10-api-observation-20261127]
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    if: ${{ github.repository == 'agent-teams-ai/.github' && github.repository_id == '1316243981' && github.event_name == 'push' && github.event.deleted == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Observe the actual repository Actions token rate limit once
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          observation_root="$(mktemp -d "$RUNNER_TEMP/v10-api-observation.XXXXXXXX")"
+          : > "$observation_root/response.headers"
+          : > "$observation_root/response.json"
+          printf 'repository=%s run=%s attempt=%s revision=%s observed_at=%s\n' \
+            "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_SHA" "$(date -u +%FT%TZ)"
+          set +e
+          http_status="$(curl --disable --silent --show-error --request GET \
+            --connect-timeout 10 --max-time 30 --max-filesize 65536 --retry 0 \
+            --proto '=https' \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --dump-header "$observation_root/response.headers" \
+            --output "$observation_root/response.json" \
+            --write-out '%{http_code}' \
+            'https://api.github.com/rate_limit')"
+          curl_status=$?
+          set -e
+          printf 'curl_exit=%s http_status=%s\n' "$curl_status" "$http_status"
+          sed -nE '/^(HTTP\/|[Dd]ate:|[Xx]-[Rr]ate[Ll]imit-|[Rr]etry-[Aa]fter:|[Xx]-[Gg]it[Hh]ub-[Rr]equest-[Ii][Dd]:)/p' \
+            "$observation_root/response.headers"
+          cat "$observation_root/response.json"
+          printf '\n'
+          test "$curl_status" -eq 0
+          test "$http_status" = 200
