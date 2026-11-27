@@ -61,10 +61,7 @@ export const OBSERVED_FINITE_TARGET_BINDING: FiniteTargetBinding = Object.freeze
       "1720cb51da26b4ddfc1f14b855f81cfdfceb8f90",
     ],
   ],
-  commits: [
-    "611cd2a78d1f9104dbf46bab69c3ff0e30ac6d8f",
-    "be1c81ec749aa62ddf524424ccd19284c5043a0e",
-  ],
+  commits: ["611cd2a78d1f9104dbf46bab69c3ff0e30ac6d8f", "be1c81ec749aa62ddf524424ccd19284c5043a0e"],
 } satisfies BoundFiniteTarget);
 // END OBSERVED FINITE TARGET BINDING
 
