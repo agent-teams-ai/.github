@@ -1,0 +1,61 @@
+name: Observe Actions API quota for Orchestrator migration
+
+on:
+  push:
+    branches:
+      - diagnostics/orchestrator-e2e-api-quota-20261127
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read current installation API quota
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import datetime
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          request = urllib.request.Request(
+              "https://api.github.com/rate_limit",
+              headers={
+                  "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                  "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  "User-Agent": "orchestrator-e2e-quota-observation",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  body = json.load(response)
+                  core = body["resources"]["core"]
+                  print(json.dumps({
+                      "observed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                      "run_id": os.environ["GITHUB_RUN_ID"],
+                      "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                      "repository": os.environ["GITHUB_REPOSITORY"],
+                      "core": {key: core[key] for key in ("limit", "remaining", "used", "reset")},
+                      "reset_at": datetime.datetime.fromtimestamp(core["reset"], datetime.timezone.utc).isoformat(),
+                      "headers": {key: response.headers.get(key) for key in (
+                          "x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset",
+                          "x-ratelimit-resource", "retry-after",
+                      )},
+                  }, sort_keys=True))
+          except urllib.error.HTTPError as error:
+              print(json.dumps({
+                  "status": error.code,
+                  "headers": {key: error.headers.get(key) for key in (
+                      "x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset",
+                      "x-ratelimit-resource", "retry-after",
+                  )},
+              }, sort_keys=True))
+              raise SystemExit(1)
+          PY
