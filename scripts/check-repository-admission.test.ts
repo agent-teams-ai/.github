@@ -545,10 +545,7 @@ void test("coverage v5 accepts the exact newer LMU graph with all standalone com
     }),
   );
   for (const path of projects.slice(1)) {
-    files.set(
-      path,
-      json({ extends: "./tsconfig.quality.json", include: ["packages/**/*.ts"] }),
-    );
+    files.set(path, json({ extends: "./tsconfig.quality.json", include: ["packages/**/*.ts"] }));
   }
   const setManifest = (typecheck: string, graph = devDependencies) => {
     files.set(
