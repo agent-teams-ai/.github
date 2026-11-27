@@ -1,0 +1,50 @@
+# Preparation checks only; this workflow grants no source admission or required status.
+name: Runtime Admission V11 Preparation
+
+on:
+  push:
+    branches:
+      - prep/runtime-admission-source-successor-v11-20261127
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-admission-v11-preparation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Preparation Node ${{ matrix.node-version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["26.11.1", "24.21.0"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          package-manager-cache: false
+      - name: Prove selected Node runtime
+        run: node -e "if (process.version !== 'v${{ matrix.node-version }}') throw Error('Node runtime mismatch')"
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.18.0
+          run_install: false
+          cache: false
+      - name: Install the frozen compatible toolchain
+        run: pnpm install --frozen-lockfile --config.engine-strict=true --strict-peer-dependencies
+      - name: Install the isolated Node 24 Renovate tool without lifecycle scripts
+        run: pnpm --dir tools/renovate-validation install --frozen-lockfile --ignore-scripts
+      - name: Build the allowed native validator dependency with managed Node 24
+        run: pnpm --dir tools/renovate-validation run build:native
+      # The complete route runs strict compilation, lint, the V11 tests and their
+      # dedicated compiler assertion, plus the current and frozen native suites.
+      - name: Run the complete preparation quality and native suite
+        run: pnpm check
