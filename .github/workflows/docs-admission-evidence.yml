@@ -29,6 +29,9 @@ jobs:
             const inventoryPath = "governance/organization-repository-inventory.json";
             const recoveryPath = "governance/docs-admission-recovery.json";
             const platformRecoveryPath = "governance/docs-platform-admission-recovery.json";
+            const b304RecoveryPath = "governance/docs-b304-registry-recovery.json";
+            const b304EvidencePrefix = "governance/evidence/docs-b304-registry-recovery/";
+            const b304ProofPath = b304EvidencePrefix + "runtime-20261126.json";
             const recoveryEvidencePrefix = "governance/evidence/docs-admission-recovery/";
             const allowedData = new Set([policyPath, exceptionsPath, inventoryPath]);
             const allowedEvidence = /^governance\/evidence\/docs-admission\/[a-z0-9][a-z0-9._/-]*\.(?:json|md)$/;
@@ -47,6 +50,8 @@ jobs:
               "governance/code-security-defaults.schema.json",
               "scripts/verify-docs-admission-change.mjs",
               "scripts/docs-legacy-admission-recovery.mjs",
+              "scripts/docs-b304-registry-incident.ts",
+              "scripts/docs-b304-recovery-staging.ts",
               "scripts/verify-docs-cohort-evidence.mjs",
               "scripts/docs-cohort-policy.mjs",
               "scripts/governance-policy.mjs"
@@ -70,15 +75,35 @@ jobs:
               return;
             }
             const allPaths = (file) => [file.filename, file.previous_filename].filter(Boolean);
+            const b304Executable = new Set([
+              "scripts/docs-b304-registry-incident.ts", "scripts/docs-b304-recovery-staging.ts"
+            ]);
+            if (changed.some((file) => allPaths(file).some((entry) => b304Executable.has(entry)))) {
+              core.setFailed("B304 executable source changes require a separately qualified source transition before any no-op or data mode.");
+              return;
+            }
             const changesAdmission = changed.some((file) =>
               allPaths(file).some((entry) => allowedData.has(entry)));
             if (changed.some((file) => allPaths(file).some((entry) =>
-              entry === recoveryPath || entry === platformRecoveryPath ||
-                entry.startsWith(recoveryEvidencePrefix)))) {
+              entry === recoveryPath || entry === platformRecoveryPath || entry.startsWith(recoveryEvidencePrefix)))) {
               core.setFailed("Recovery authority additions, revocations and proof changes require a separately trusted exact staging transition; this data gate cannot authorize them.");
               return;
             }
-            if (!changesAdmission) {
+            const changesB304 = changed.some((file) => allPaths(file).some((entry) =>
+              entry === b304RecoveryPath || entry.startsWith(b304EvidencePrefix)));
+            let mode = "admission";
+            let candidatePath;
+            if (changesB304) {
+              const file = changed[0];
+              if (changed.length !== 1 || changesAdmission || file.previous_filename !== undefined ||
+                  !((file.filename === b304ProofPath && file.status === "added") ||
+                    (file.filename === b304RecoveryPath && file.status === "modified"))) {
+                core.setFailed("B304 archive/staging requires one exact added proof or modified authority file, with no collateral changes.");
+                return;
+              }
+              mode = file.filename === b304ProofPath ? "archive" : "stage";
+              candidatePath = file.filename;
+            } else if (!changesAdmission) {
               core.setOutput("mode", "noop");
               return;
             }
@@ -98,7 +123,7 @@ jobs:
               if (allowedData.has(file.filename)) return file.status !== "modified" || file.previous_filename !== undefined;
               return file.status !== "added" || file.previous_filename !== undefined;
             });
-            if (forbidden.length > 0) {
+            if (mode === "admission" && forbidden.length > 0) {
               core.setFailed("Admission PRs may modify only the exact policy, exception, and inventory data and add inert admission evidence; renames and deletes are forbidden.");
               return;
             }
@@ -220,9 +245,10 @@ jobs:
             const exceptionsOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-exceptions.json");
             const inventoryOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-inventory.json");
             const executionOutput = path.join(process.env.RUNNER_TEMP, "docs-admission-execution.json");
-            const [policy, exceptions, inventory] = await Promise.all([
+            const candidateOutput = path.join(process.env.RUNNER_TEMP, "docs-b304-candidate.json");
+            const values = mode === "admission" ? await Promise.all([
               loadHead(policyPath), loadHead(exceptionsPath), loadHead(inventoryPath)
-            ]);
+            ]) : [await loadHead(candidatePath)];
             await stablePull();
             const finalBranch = await github.rest.repos.getBranch({ owner: context.repo.owner, repo: context.repo.repo,
               branch: controller.data.default_branch });
@@ -236,33 +262,40 @@ jobs:
               changed_files: changed.map((file) => file.filename).sort() };
             need(Number.isSafeInteger(execution.run_attempt) && execution.run_attempt > 0,
               "Invalid trusted GITHUB_RUN_ATTEMPT.");
-            await Promise.all([
-              fs.writeFile(policyOutput, policy, { flag: "wx" }),
-              fs.writeFile(exceptionsOutput, exceptions, { flag: "wx" }),
-              fs.writeFile(inventoryOutput, inventory, { flag: "wx" }),
+            const dataWrites = mode === "admission" ? [
+              fs.writeFile(policyOutput, values[0], { flag: "wx" }),
+              fs.writeFile(exceptionsOutput, values[1], { flag: "wx" }),
+              fs.writeFile(inventoryOutput, values[2], { flag: "wx" })
+            ] : [fs.writeFile(candidateOutput, values[0], { flag: "wx" })];
+            await Promise.all([...dataWrites,
               fs.writeFile(executionOutput, JSON.stringify(execution), { flag: "wx" })
             ]);
-            core.setOutput("mode", "admission");
-            core.setOutput("policy-path", policyOutput);
-            core.setOutput("exceptions-path", exceptionsOutput);
-            core.setOutput("inventory-path", inventoryOutput);
+            core.setOutput("mode", mode);
+            if (mode === "admission") {
+              core.setOutput("policy-path", policyOutput);
+              core.setOutput("exceptions-path", exceptionsOutput);
+              core.setOutput("inventory-path", inventoryOutput);
+            } else {
+              core.setOutput("candidate-path", candidateOutput);
+            }
             core.setOutput("execution-path", executionOutput);
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: steps.materialize.outputs.mode == 'admission'
+        if: contains(fromJSON('["admission","archive","stage"]'), steps.materialize.outputs.mode)
         with:
           ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
-        if: steps.materialize.outputs.mode == 'admission'
+        if: contains(fromJSON('["admission","archive","stage"]'), steps.materialize.outputs.mode)
         with:
           version: 11.18.0
           run_install: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        if: steps.materialize.outputs.mode == 'admission'
+        if: contains(fromJSON('["admission","archive","stage"]'), steps.materialize.outputs.mode)
         with:
           node-version: 24.21.0
           cache: pnpm
-      - if: steps.materialize.outputs.mode == 'admission'
+      - if: contains(fromJSON('["admission","archive","stage"]'), steps.materialize.outputs.mode)
         run: >-
           pnpm install --frozen-lockfile --ignore-scripts
           --ignore-pnpmfile
@@ -276,3 +309,11 @@ jobs:
           DOCS_ADMISSION_INVENTORY_PATH: ${{ steps.materialize.outputs.inventory-path }}
           DOCS_ADMISSION_EXECUTION_PATH: ${{ steps.materialize.outputs.execution-path }}
         run: node scripts/verify-docs-admission-change.mjs
+      - name: Verify bounded B304 archive or staging with trusted base code
+        if: contains(fromJSON('["archive","stage"]'), steps.materialize.outputs.mode)
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_GOVERNANCE_READ_TOKEN || github.token }}
+          DOCS_B304_STAGING_MODE: ${{ steps.materialize.outputs.mode }}
+          DOCS_B304_CANDIDATE_PATH: ${{ steps.materialize.outputs.candidate-path }}
+          DOCS_ADMISSION_EXECUTION_PATH: ${{ steps.materialize.outputs.execution-path }}
+        run: node scripts/docs-b304-recovery-staging.ts

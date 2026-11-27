@@ -105,12 +105,7 @@ const RETAINED_AUTHORITY_SOURCES = [
   },
 ];
 
-const FORMAT_RETAINED_AUTHORITY_SOURCES = [
-  {
-    path: "scripts/verify-docs-admission-change.mjs",
-    gitBlob: "f3db341a5d9fc5ec74c9c3379153940db99177c0",
-  },
-];
+const FORMAT_RETAINED_AUTHORITY_SOURCES = [];
 
 export function deriveFormatPaths(trackedPaths) {
   const source = trackedPaths.filter(
@@ -133,9 +128,11 @@ export function deriveFormatPaths(trackedPaths) {
       "docs/engineering-quality-profile.json",
       "docs/engineering-quality-source-policy.yaml",
       "docs/engineering-quality.md",
+      ".github/workflows/docs-admission-evidence.yml",
       ".github/workflows/docs-protocol-check.yml",
       "docs/governance/docs-gen3-current-policy-mapping.md",
       "governance/docs-protocol-policy-v2.schema.json",
+      "governance/docs-b304-registry-recovery.json",
     ]),
   ].toSorted((left, right) =>
     String(left) < String(right) ? -1 : String(left) > String(right) ? 1 : 0,
@@ -472,6 +469,11 @@ export function assertQualityAdoption({
           "scripts/validate-renovate.ts",
           "scripts/validate-renovate.test.ts",
           "scripts/validate-renovate-abi.probe.ts",
+          "scripts/docs-b304-registry-incident.ts",
+          "scripts/docs-b304-registry-incident.test.ts",
+          "scripts/docs-b304-admission-integration.test.ts",
+          "scripts/docs-b304-recovery-staging.ts",
+          "scripts/docs-b304-recovery-staging.test.ts",
         ],
         compilerManifest: "stack-toolchain/toolchain-manifest.json",
       },
@@ -493,12 +495,7 @@ export function assertQualityAdoption({
           gitBlob: "c34697abc079e0a161fb3872a8a9acb07e951ded",
         },
       ],
-      formatRetainedAuthoritySources: [
-        {
-          path: "scripts/verify-docs-admission-change.mjs",
-          gitBlob: "f3db341a5d9fc5ec74c9c3379153940db99177c0",
-        },
-      ],
+      formatRetainedAuthoritySources: [],
     },
     "quality profile changed",
   );
@@ -540,6 +537,11 @@ export function assertQualityAdoption({
         "scripts/validate-renovate.ts",
         "scripts/validate-renovate.test.ts",
         "scripts/validate-renovate-abi.probe.ts",
+        "scripts/docs-b304-registry-incident.ts",
+        "scripts/docs-b304-registry-incident.test.ts",
+        "scripts/docs-b304-admission-integration.test.ts",
+        "scripts/docs-b304-recovery-staging.ts",
+        "scripts/docs-b304-recovery-staging.test.ts",
       ],
     },
     "strict compiler scope and settings must stay exact",

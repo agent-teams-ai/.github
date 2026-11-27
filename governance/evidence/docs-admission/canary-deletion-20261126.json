@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "confirmed_repository_deletion",
+  "recorded_at": "2026-11-26T15:47:14Z",
+  "repository": "agent-teams-ai/docs-protocol-canary-20260817",
+  "repository_id": 1336577313,
+  "provider_event": {
+    "provider": "github",
+    "observation_surface": "authenticated organization audit-log UI",
+    "source_url": "https://github.com/organizations/agent-teams-ai/settings/audit-log?q=repo%3Aagent-teams-ai%2Fdocs-protocol-canary-20260817+action%3Arepo.destroy",
+    "document_id": "GXPKylkw6o0u4YsjkObImQ",
+    "action": "repo.destroy",
+    "operation_type": "remove",
+    "created_at": "2026-11-14T20:48:41Z",
+    "actor": "777genius",
+    "actor_id": 13103045,
+    "actor_is_bot": false,
+    "organization": "agent-teams-ai",
+    "organization_id": 280712041,
+    "public_repo": true,
+    "visibility": "public"
+  },
+  "current_failure": {
+    "controller": "agent-teams-ai/.github",
+    "pull_request": 434,
+    "base_revision": "5d8bc6ab30d401d5282d830a700673a463bf4f88",
+    "head_revision": "34e9f442e4ebeef48aac143125abc1d315aa0f69",
+    "workflow_run_id": 45844625711,
+    "run_attempt": 1,
+    "job_id": 139994983431,
+    "conclusion": "failure",
+    "reason": "The trusted base verifier resolves every active admitted repository before narrowing current-source checks and received HTTP 404 for this still-active policy row.",
+    "decoded_utf8_log_sha256": "4c9b5438c156cfe0b4c8b8122a8ca62313831625e0eb6ed81eec173e2c3e8118"
+  },
+  "historical_basis": {
+    "controller_revision": "5d8bc6ab30d401d5282d830a700673a463bf4f88",
+    "inventory_path": "governance/organization-repository-inventory.json",
+    "inventory_revision": "2026-09-16.1",
+    "inventory_git_blob": "5e7eba0371cae96742956324114f7af8bc190b9b",
+    "inventory_sha256": "eb96f831a920fc1446b6ea2d721a2b7ab604130c7e1e767f5dddc50b62ef4ed9",
+    "policy_path": "governance/docs-protocol-policy-v2.json",
+    "policy_git_blob": "2d60b967eb37185a6f85c84c031950dc73458e34",
+    "observed_cohort_id": "docs-2026-09-11-stable20",
+    "observed_revision": "cfb26622b4add7102c59f67fc146fee744a03cdd"
+  },
+  "scope": {
+    "source_change": "Compute current expected membership from the existing validated inventory/registration union and explicit deleted lifecycle records with exact repository ID and name; preserve all raw dated inventory and historical ledger/security inputs.",
+    "retirement_data": "A later policy-only change may mark this one row deleted and update active/owned counts from 11 to 10 while retaining its historical admission fields and all other rows.",
+    "activation": "This inert record neither changes the policy lifecycle nor authorizes a protected source transition.",
+    "admission": "Retirement remains full-fleet current admission because lifecycle/count changes cannot use the single-active-consumer scope.",
+    "limits": [
+      "HTTP 404 is corroboration of unavailability, not the deletion proof.",
+      "No fresh complete census, pending-registration handoff, FMS adoption or new package qualification is claimed.",
+      "Archived/transferred retirement and deletion of other repository identities are outside this source correction."
+    ]
+  }
+}
