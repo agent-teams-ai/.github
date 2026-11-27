@@ -149,6 +149,14 @@ For the greenfield delivery order, intended consumers, and shared-library
 ownership map, read the [Foundation-first ecosystem vision](architecture/ecosystem-vision.md).
 That route does not change an adopted standard, release gate, or accepted ADR.
 
+## Evolution-ready architecture
+
+Apply the [evolution-ready architecture guide](architecture/evolution-readiness.md)
+to applicable new or substantially changed boundaries: independent replacement
+by default, stronger live-update and other capability profiles only when
+qualified. Reuse its owner and evidence routes. This is common authoring
+practice, not a silent FMS/CMS migration, runtime dependency or blanket gate.
+
 ## Language selection and runtime boundaries
 
 Owner direction recorded on 2026-10-22: TypeScript remains the main application
