@@ -6,7 +6,9 @@ on:
       - diagnostics/orchestrator-e2e-api-quota-20261127
 
 permissions:
+  actions: read
   contents: read
+  pull-requests: read
 
 jobs:
   observe:
@@ -26,7 +28,7 @@ jobs:
 
           failed = False
           for label, url in (
-              ("source_commit", "https://api.github.com/repos/agent-teams-ai/.github/git/commits/72fa7a8af02e9ba7904c912f0bbb457254381002"),
+              ("candidate_pull", "https://api.github.com/repos/agent-teams-ai/.github/pulls/463"),
               ("generic_rate", "https://api.github.com/rate_limit"),
           ):
               request = urllib.request.Request(
@@ -57,9 +59,9 @@ jobs:
                           "x-ratelimit-resource", "retry-after",
                       )},
                   }
-                  if label == "source_commit" and status == 200:
-                      record["source_sha"] = body["sha"]
-                      failed |= body["sha"] != "72fa7a8af02e9ba7904c912f0bbb457254381002"
+                  if label == "candidate_pull" and status == 200:
+                      record["pull"] = {"number": body["number"], "head": body["head"]["sha"], "base": body["base"]["sha"]}
+                      failed |= body["number"] != 463 or body["head"]["sha"] != "15cf953bb8017312be05b70ba1dff6c45a0aa951" or body["base"]["sha"] != "997f24396598f93cf1b03bb26436a5ec7686ddef"
                   if label == "generic_rate" and status == 200:
                       core = body["resources"]["core"]
                       record["core"] = {key: core[key] for key in ("limit", "remaining", "used", "reset")}
