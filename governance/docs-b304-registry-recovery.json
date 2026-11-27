@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "authorization": {
+    "id": "b304-deleted-canary-retirement-20261127",
+    "state": "revoked",
+    "valid_from": "2026-11-27T02:29:24Z",
+    "expires_at": "2026-11-28T02:29:24Z",
+    "controller": {
+      "repository": "agent-teams-ai/.github",
+      "repository_id": 1316243981
+    },
+    "pull_number": 453,
+    "pull_id": 5520122277,
+    "head_ref": "fix/retire-deleted-docs-canary-20261127",
+    "operation": {
+      "kind": "retire-deleted-canary",
+      "repository_id": 1336577313,
+      "before_policy_blob": "2d60b967eb37185a6f85c84c031950dc73458e34",
+      "after_policy_blob": "f0d9b42d2968aabcc3d5148374286cd280ee34eb",
+      "registry_blob": "10a07154e9361bfc148bab9ecb2ca1155325824d",
+      "exceptions_blob": "7fb208e80500a9ff3dfc449e03c9700e6e15e82e"
+    },
+    "incident": {
+      "repository": "agent-teams-ai/agent-runtime",
+      "repository_id": 1314129620,
+      "source_head": "cae4d350c947cd9f74bc04130531527c9a36baeb",
+      "runner_revision": "b30455e32cf5d54ade6d8301637701347e4ce57c"
+    },
+    "proof": {
+      "revision": "9d8aa752886c00d5b3d9154e0b6c00e65a4e33cc",
+      "path": "governance/evidence/docs-b304-registry-recovery/runtime-20261126.json",
+      "blob": "dba83124c585eb6f31a3da8020f9744606e8f493"
+    },
+    "verifier_source": {
+      "revision": "9d8aa752886c00d5b3d9154e0b6c00e65a4e33cc",
+      "path": "scripts/docs-b304-registry-incident.ts",
+      "blob": "6fe65b2b66a479cd26be7008e19478aefcceee47"
+    },
+    "owner_decision": {
+      "comment_id": 7208227137,
+      "actor_id": 13103045,
+      "actor_login": "777genius",
+      "body_digest": "sha256:f2afa46ce52d1e2d0e2871701cd9d3b8b6bcb304d51021a0822e8dcfb2b939ef"
+    }
+  }
+}
