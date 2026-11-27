@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -385,6 +385,22 @@ void test("ordinary EF desired orchestration never reads or consumes a dormant B
   await writeFile(policy, encode(value.policy));
   await writeFile(exceptions, sourceBytes("governance/docs-protocol-exceptions.json"));
   await writeFile(inventory, sourceBytes("governance/organization-repository-inventory.json"));
+  // Checkout authority and the fixture clock must describe the same pinned
+  // source, independently of later append-only registry events on main.
+  await mkdir(join(directory, "governance"));
+  await symlink(join(repositoryRoot, ".git"), join(directory, ".git"), "dir");
+  for (const path of [
+    registryPath,
+    "governance/docs-protocol-policy-v2.schema.json",
+    "governance/docs-protocol-exceptions.schema.json",
+    "governance/docs-qualified-cohorts.schema.json",
+    "governance/code-security-defaults.json",
+    "governance/organization-repository-inventory.schema.json",
+    "governance/executable-spec-qualification.json",
+    "governance/actions-policy.json",
+  ]) {
+    await writeFile(join(directory, path), sourceBytes(path));
+  }
   const execution = {
     controller: { repository: "agent-teams-ai/.github", repository_id: 1316243981 },
     pull_number: 9001,
@@ -399,33 +415,40 @@ void test("ordinary EF desired orchestration never reads or consumes a dormant B
   };
   let controllerReads = 0;
   let b304Reads = 0;
-  const report = object(
-    await invoke(
-      admission,
-      "verifyDocsAdmissionChange",
-      { policy, exceptions, inventory },
-      {
-        ...value.adapters,
-        clock: () => asOf,
-        execution,
-        basePolicyBytes: sourceBytes(policyPath),
-        verifyController: (observed: unknown) => {
-          assert.deepEqual(observed, execution);
-          controllerReads += 1;
-          return observed;
+  const cwd = process.cwd();
+  let report: JsonRecord;
+  process.chdir(directory);
+  try {
+    report = object(
+      await invoke(
+        admission,
+        "verifyDocsAdmissionChange",
+        { policy, exceptions, inventory },
+        {
+          ...value.adapters,
+          clock: () => asOf,
+          execution,
+          basePolicyBytes: sourceBytes(policyPath),
+          verifyController: (observed: unknown) => {
+            assert.deepEqual(observed, execution);
+            controllerReads += 1;
+            return observed;
+          },
+          readBaseFile: async (path: string, revision: string) => {
+            if (path === b304AuthorityPath) {
+              b304Reads += 1;
+              throw new Error("An out-of-scope record must not be consumed.");
+            }
+            const content = await invoke(admission, "readAdmissionBaseFile", path, revision);
+            assert.ok(content === null || Buffer.isBuffer(content));
+            return content;
+          },
         },
-        readBaseFile: async (path: string, revision: string) => {
-          if (path === b304AuthorityPath) {
-            b304Reads += 1;
-            throw new Error("An out-of-scope record must not be consumed.");
-          }
-          const content = await invoke(admission, "readAdmissionBaseFile", path, revision);
-          assert.ok(content === null || Buffer.isBuffer(content));
-          return content;
-        },
-      },
-    ),
-  );
+      ),
+    );
+  } finally {
+    process.chdir(cwd);
+  }
   assert.equal(controllerReads, 2);
   assert.equal(b304Reads, 0);
   assert.equal(value.state.pendingCalls, 0);
