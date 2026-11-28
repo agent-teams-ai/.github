@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -30,7 +31,9 @@ const records = (value: unknown): Record<string, unknown>[] => {
   assert.ok(Array.isArray(value));
   return value.map(data);
 };
-const manifestFrom = (files: Map<string, string>) => {
+const manifestFrom = (
+  files: Map<string, string>,
+): Record<string, unknown> & { scripts: Record<string, string> } => {
   const manifest = data(JSON.parse(files.get("package.json") ?? "{}"));
   const scripts = Object.fromEntries(
     Object.entries(data(manifest.scripts)).map(([name, value]) => {
@@ -234,6 +237,428 @@ void test("complete explicit SDK bootstrap reports configuration only without ex
   assert.equal(result.status, "configured_not_qualified");
   assert.equal(result.guide, BOOTSTRAP_GUIDE);
   assert.ok(result.inspected_paths.includes("tsconfig.base.json"));
+});
+
+const fixtureDocument = (files: Map<string, string>, path: string) =>
+  data(JSON.parse(files.get(path) ?? "{}"));
+const fixtureDigest = (files: Map<string, string>, path: string) => {
+  const text = files.get(path);
+  assert.ok(text !== undefined, `Missing fixture input: ${path}`);
+  return createHash("sha256").update(text).digest("hex");
+};
+
+function refreshTopologyInputs(files: Map<string, string>): void {
+  const topology = fixtureDocument(files, "architecture/topology.json");
+  const derivedFrom = records(topology.derivedFrom).map((entry) => {
+    assert.ok(typeof entry.path === "string");
+    const path = entry.path;
+    return { path, sha256: fixtureDigest(files, path) };
+  });
+  files.set("architecture/topology.json", json({ ...topology, derivedFrom }));
+}
+
+async function modernFixture() {
+  const original = await fixture();
+  const { files } = original;
+  const manifest = manifestFrom(files);
+  files.set(
+    "package.json",
+    json({
+      ...manifest,
+      devDependencies: {
+        "@agent-teams/engineering-foundation": "4.0.2",
+        "@agent-teams/feature-module-standard": "0.4.3",
+        "stack-toolchain": "0.3.1",
+      },
+      scripts: {
+        ...manifest.scripts,
+        typecheck: "stack-toolchain typecheck",
+        "foundation:check": "agent-teams-foundation check --consumer .",
+      },
+    }),
+  );
+  files.set(
+    "foundation.config.yaml",
+    json({ ...fixtureDocument(files, "foundation.config.yaml"), schemaVersion: 3 }),
+  );
+  files.set(
+    "architecture/coverage.yaml",
+    json({
+      schemaVersion: 5,
+      sourcePolicyPath: "architecture/source.yaml",
+      suppressionPolicyPath: "architecture/suppressions.yaml",
+      lintConfigPath: "oxlint.json",
+      topologyPath: "architecture/topology.json",
+      toolchainConfigPath: "toolchain.config.json",
+      scripts: { full: "check", scope: "quality:scope", typed: "quality:typed" },
+    }),
+  );
+  files.set(
+    "oxlint.json",
+    json({ extends: ["./node_modules/stack-toolchain/presets/oxlint/type-aware.json"] }),
+  );
+  files.set(
+    "toolchain.config.json",
+    json({
+      schemaVersion: 1,
+      typecheck: { projects: ["tsconfig.quality.json"] },
+      lint: { config: "oxlint.json" },
+    }),
+  );
+  files.set(
+    "tsconfig.quality.json",
+    json({
+      extends: "stack-toolchain/presets/typescript/node.json",
+      include: ["packages/**/*.ts"],
+    }),
+  );
+  files.set(
+    "architecture/topology.json",
+    json({
+      schemaVersion: 1,
+      censusRoots: ["packages"],
+      packageRoots: [".", "packages/sdk"],
+      sourceRoots: ["packages/sdk/src"],
+      testRoots: ["packages/sdk/test"],
+      excludedRoots: [],
+      toolingFiles: [],
+      derivedFrom: [{ path: "architecture/profile.json" }, { path: "architecture/coverage.yaml" }],
+    }),
+  );
+  refreshTopologyInputs(files);
+  return original;
+}
+
+void test("reviewed coverage v5 uses one digest-bound FMS profile and Stack-owned aggregate compiler authority", async () => {
+  const { files, source } = await modernFixture();
+  const accepted = await checkRepositoryAdmission(source);
+  assert.deepEqual(accepted.issues, []);
+  assert.equal(accepted.status, "configured_not_qualified");
+  assert.ok(accepted.inspected_paths.includes("tsconfig.quality.json"));
+  assert.ok(!accepted.inspected_paths.includes("packages/sdk/tsconfig.json"));
+  const manifest = manifestFrom(files);
+  files.set(
+    "package.json",
+    json({
+      ...manifest,
+      scripts: {
+        ...manifest.scripts,
+        typecheck: "stack-toolchain compile --project tsconfig.quality.json",
+      },
+    }),
+  );
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+  files.set(
+    "package.json",
+    json({
+      ...manifest,
+      scripts: {
+        ...manifest.scripts,
+        typecheck: "stack-toolchain typecheck --json --config toolchain.config.json",
+      },
+    }),
+  );
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+  files.set("architecture/profile.json", "\uFEFF" + files.get("architecture/profile.json"));
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some((entry) =>
+      entry.message.includes("derivation bytes do not match"),
+    ),
+    "A leading BOM changes digest-bound bytes even though JSON parsing accepts it",
+  );
+  refreshTopologyInputs(files);
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+});
+
+void test("coverage v5 refuses stale, ambiguous or incomplete topology without legacy duplicate authorities", async () => {
+  const cases: readonly [string, (files: Map<string, string>) => void, string][] = [
+    [
+      "stale profile bytes",
+      (files) =>
+        files.set("architecture/profile.json", files.get("architecture/profile.json") + "\n"),
+      "derivation bytes do not match",
+    ],
+    [
+      "stale coverage bytes",
+      (files) =>
+        files.set("architecture/coverage.yaml", files.get("architecture/coverage.yaml") + "\n"),
+      "derivation bytes do not match",
+    ],
+    [
+      "missing FMS binding",
+      (files) => {
+        const topology = fixtureDocument(files, "architecture/topology.json");
+        files.set(
+          "architecture/topology.json",
+          json({
+            ...topology,
+            derivedFrom: records(topology.derivedFrom).filter(
+              (entry) => entry.path !== "architecture/profile.json",
+            ),
+          }),
+        );
+      },
+      "exactly one owned FMS",
+    ],
+    [
+      "ambiguous FMS binding",
+      (files) => {
+        files.set("architecture/second-profile.json", files.get("architecture/profile.json") ?? "");
+        const topology = fixtureDocument(files, "architecture/topology.json");
+        files.set(
+          "architecture/topology.json",
+          json({
+            ...topology,
+            derivedFrom: [
+              ...records(topology.derivedFrom),
+              {
+                path: "architecture/second-profile.json",
+                sha256: fixtureDigest(files, "architecture/second-profile.json"),
+              },
+            ],
+          }),
+        );
+      },
+      "exactly one owned FMS",
+    ],
+    [
+      "dropped source root",
+      (files) =>
+        files.set(
+          "architecture/topology.json",
+          json({
+            ...fixtureDocument(files, "architecture/topology.json"),
+            sourceRoots: ["packages/other/src"],
+          }),
+        ),
+      "Each real production module",
+    ],
+    [
+      "dropped package root",
+      (files) =>
+        files.set(
+          "architecture/topology.json",
+          json({ ...fixtureDocument(files, "architecture/topology.json"), packageRoots: ["."] }),
+        ),
+      "Each real production module",
+    ],
+    [
+      "narrowed production census",
+      (files) =>
+        files.set(
+          "architecture/topology.json",
+          json({
+            ...fixtureDocument(files, "architecture/topology.json"),
+            censusRoots: ["packages/sdk"],
+          }),
+        ),
+      "census omits",
+    ],
+    [
+      "excluded production subtree",
+      (files) =>
+        files.set(
+          "architecture/topology.json",
+          json({
+            ...fixtureDocument(files, "architecture/topology.json"),
+            excludedRoots: ["packages/sdk/src/features"],
+          }),
+        ),
+      "Each real production module",
+    ],
+    [
+      "duplicate old compiler authority",
+      (files) => {
+        files.set(
+          "architecture/coverage.yaml",
+          json({
+            ...fixtureDocument(files, "architecture/coverage.yaml"),
+            compilerProjects: ["packages/sdk/tsconfig.json"],
+          }),
+        );
+        refreshTopologyInputs(files);
+      },
+      "legacy duplicate",
+    ],
+    [
+      "duplicate old FMS authority",
+      (files) => {
+        files.set(
+          "architecture/coverage.yaml",
+          json({
+            ...fixtureDocument(files, "architecture/coverage.yaml"),
+            featureProfilePath: "architecture/profile.json",
+          }),
+        );
+        refreshTopologyInputs(files);
+      },
+      "legacy duplicate",
+    ],
+    [
+      "different lint authority",
+      (files) =>
+        files.set(
+          "toolchain.config.json",
+          json({
+            ...fixtureDocument(files, "toolchain.config.json"),
+            lint: { config: "unrelated.json" },
+          }),
+        ),
+      "same type-aware",
+    ],
+  ];
+  for (const [label, mutate, diagnostic] of cases) {
+    const { files, source } = await modernFixture();
+    mutate(files);
+    const rejected = await checkRepositoryAdmission(source);
+    assert.equal(rejected.status, "incomplete", label);
+    assert.ok(
+      rejected.issues.some((entry) => entry.message.includes(diagnostic)),
+      label,
+    );
+  }
+});
+
+function stackCompileRoute(projects: readonly string[]): string {
+  return projects.map((path) => `stack-toolchain compile --project ${path}`).join(" && ");
+}
+
+void test("coverage v5 accepts the exact newer LMU graph with all standalone compiler projects", async () => {
+  const { files, source } = await modernFixture();
+  const manifest = manifestFrom(files);
+  const projects = [
+    "tsconfig.quality.json",
+    "tsconfig.portable.json",
+    "tsconfig.tools.json",
+    "tsconfig.tests.json",
+  ];
+  const devDependencies = {
+    "@agent-teams/engineering-foundation": "4.0.3",
+    "@agent-teams/feature-module-standard": "0.4.4",
+    "stack-toolchain": "0.4.0",
+  };
+  files.set(
+    "toolchain.config.json",
+    json({
+      ...fixtureDocument(files, "toolchain.config.json"),
+      typecheck: { projects },
+    }),
+  );
+  for (const path of projects.slice(1)) {
+    files.set(path, json({ extends: "./tsconfig.quality.json", include: ["packages/**/*.ts"] }));
+  }
+  const setManifest = (typecheck: string, graph = devDependencies) => {
+    files.set(
+      "package.json",
+      json({ ...manifest, devDependencies: graph, scripts: { ...manifest.scripts, typecheck } }),
+    );
+  };
+  setManifest(stackCompileRoute(projects));
+  const accepted = await checkRepositoryAdmission(source);
+  assert.deepEqual(accepted.issues, []);
+  assert.equal(accepted.status, "configured_not_qualified");
+  for (const path of projects) {
+    assert.ok(accepted.inspected_paths.includes(path));
+  }
+  setManifest("stack-toolchain typecheck");
+  assert.deepEqual((await checkRepositoryAdmission(source)).issues, []);
+  setManifest(stackCompileRoute(projects.slice(0, -1)));
+  assert.ok(
+    (await checkRepositoryAdmission(source)).issues.some((entry) =>
+      entry.message.includes("actual strict compiler/build"),
+    ),
+  );
+
+  // Reject every partial upgrade/downgrade, not only an unknown Stack pin.
+  const previous = {
+    "@agent-teams/engineering-foundation": "4.0.2",
+    "@agent-teams/feature-module-standard": "0.4.3",
+    "stack-toolchain": "0.3.1",
+  };
+  const names = [
+    "@agent-teams/engineering-foundation",
+    "@agent-teams/feature-module-standard",
+    "stack-toolchain",
+  ] as const;
+  for (let mask = 1; mask < 7; mask += 1) {
+    const mixed = { ...devDependencies };
+    for (const [index, name] of names.entries()) {
+      if ((mask & (1 << index)) !== 0) {
+        mixed[name] = previous[name];
+      }
+    }
+    setManifest(stackCompileRoute(projects), mixed);
+    const rejected = await checkRepositoryAdmission(source);
+    assert.equal(rejected.status, "incomplete", JSON.stringify(mixed));
+    assert.ok(
+      rejected.issues.some((entry) => entry.message.includes("reviewed Foundation")),
+      JSON.stringify(mixed),
+    );
+  }
+});
+
+void test("coverage v5 requires the reviewed development graph and effective native compiler route", async () => {
+  for (const [name, version] of [
+    ["@agent-teams/engineering-foundation", "4.0.1"],
+    ["@agent-teams/feature-module-standard", "0.4.2"],
+    ["stack-toolchain", "0.1.1"],
+    ["stack-toolchain", "^0.3.1"],
+    ["stack-toolchain", "0.4.0"],
+  ]) {
+    assert.ok(name !== undefined);
+    const { files, source } = await modernFixture();
+    const manifest = manifestFrom(files);
+    files.set(
+      "package.json",
+      json({
+        ...manifest,
+        devDependencies: { ...data(manifest.devDependencies), [name]: version },
+      }),
+    );
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some((entry) =>
+        entry.message.includes("reviewed Foundation"),
+      ),
+    );
+  }
+  for (const command of [
+    "stack-toolchain typecheck --help",
+    "stack-toolchain typecheck --config unrelated.json",
+    "stack-toolchain compile --project packages/sdk/tsconfig.json",
+    "stack-toolchain compile --build tsconfig.build.json",
+    "node tools/pretend-build.ts",
+  ]) {
+    const { files, source } = await modernFixture();
+    const manifest = manifestFrom(files);
+    files.set(
+      "package.json",
+      json({ ...manifest, scripts: { ...manifest.scripts, typecheck: command } }),
+    );
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some((entry) =>
+        entry.message.includes("actual strict compiler/build"),
+      ),
+      command,
+    );
+  }
+  for (const compiler of [
+    { include: [] },
+    { files: [], references: [] },
+    { include: ["packages/**/*.ts"], compilerOptions: { skipLibCheck: true } },
+    { include: ["packages/**/*.ts"], compilerOptions: { noCheck: true } },
+    { include: ["packages/**/*.ts"], compilerOptions: { strict: false } },
+  ]) {
+    const { files, source } = await modernFixture();
+    files.set(
+      "tsconfig.quality.json",
+      json({ extends: "stack-toolchain/presets/typescript/node.json", ...compiler }),
+    );
+    assert.ok(
+      (await checkRepositoryAdmission(source)).issues.some(
+        (entry) => entry.path === "tsconfig.quality.json",
+      ),
+    );
+  }
 });
 
 void test("qualified Stack 0.1.1 presets preserve strict admission; spoofed, unpinned or weakened variants fail", async () => {
@@ -660,12 +1085,18 @@ void test("local reader rejects symlinks, oversized files, invalid UTF-8 and tra
   const root = await mkdtemp(join(tmpdir(), "repository-admission-reader-"));
   try {
     await writeFile(join(root, "target"), "inert");
+    await writeFile(join(root, "bom"), "\uFEFFinert");
     await symlink(join(root, "target"), join(root, "link"));
     await writeFile(join(root, "large"), Buffer.alloc(MAX_FILE_BYTES + 1));
     await writeFile(join(root, "invalid"), Buffer.from([0xc3, 0x28]));
     execFileSync("mkfifo", [join(root, "fifo")]);
     const source = await localAdmissionSource(root);
     assert.equal(await source.read("target"), "inert");
+    assert.equal(
+      await source.read("bom"),
+      "\uFEFFinert",
+      "Byte identity retains a leading UTF-8 BOM",
+    );
     for (const path of ["link", "large", "invalid", "../target"]) {
       await assert.rejects(source.read(path));
     }
