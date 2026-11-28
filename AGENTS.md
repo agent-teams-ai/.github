@@ -1,5 +1,7 @@
 # Agent Navigation
 
+Use the [documentation map](docs/README.md) to select the applicable organization policy, standard or evidence.
+
 This repository owns organization-wide defaults and immutable shared
 architecture standards. It does not own product-specific architecture.
 
@@ -32,10 +34,13 @@ Before choosing or duplicating reusable development tooling, read the
 [development tools catalog](docs/development-tools.md) and follow its link to
 the owning guide. Check availability and repository adoption before using a tool.
 
-Before choosing backend technologies, read the
-[backend stack reference](docs/backend-stack.md). Apply the target repository's
-explicit adoption and existing decisions; do not install the entire stack or
-change pins merely because a reference exists.
+Before choosing or updating shared technologies, read the
+[Technology Stack Catalog](docs/technology-stack.md) and its owning section.
+Check the newest eligible release in its approved channel, reuse existing
+qualification evidence, and pin the tested version. For backend choices,
+also read the [backend stack reference](docs/backend-stack.md).
+Apply the target repository's explicit adoption and existing decisions;
+do not install the entire stack or change unrelated pins.
 
 For feature-module architecture:
 
